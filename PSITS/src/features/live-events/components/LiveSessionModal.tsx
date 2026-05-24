@@ -2,24 +2,7 @@ import { Modal } from '@/shared/components/Common';
 import { Button, Input, TextArea } from '@/shared/components/Form';
 import type { LiveSession, LiveSessionFormState, LiveSessionStatus } from '@/features/live-events/types/liveSessions';
 
-function toYouTubeEmbedUrl(url?: string | null) {
-  const u = String(url || '').trim();
-  if (!u) return null;
-  try {
-    const parsed = new URL(u);
-    if (parsed.hostname === 'youtu.be') {
-      const id = parsed.pathname.replace('/', '').trim();
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-    if (parsed.hostname.includes('youtube.com')) {
-      const id = parsed.searchParams.get('v');
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
+// removed unused helper function
 
 type LiveSessionModalProps = {
   isOpen: boolean;
@@ -65,7 +48,7 @@ export function LiveSessionModal({
   onSaveDraft,
   onCreate,
 }: LiveSessionModalProps) {
-  const streamPreview = toYouTubeEmbedUrl(formData.streamUrl);
+  // const streamPreview = toYouTubeEmbedUrl(formData.streamUrl);
 
   return (
     <Modal

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { MainLayout } from '@/shared/layouts';
@@ -45,7 +45,7 @@ export const LiveStudioPage = () => {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const peersRef = useRef<{ [socketId: string]: RTCPeerConnection }>({});
 
-  const isHost = session?.createdBy === String(user?.id) || user?.role === 'admin' || user?.role === 'super_admin';
+  const isHost = user?.role === 'admin' || user?.role === 'super_admin';
 
   useEffect(() => {
     if (!sessionId) return;
@@ -250,7 +250,7 @@ export const LiveStudioPage = () => {
         }
       });
 
-      s.on('session:user-left', (payload: any) => {
+      s.on('session:user-left', (_payload: any) => {
         // cleanup if needed
       });
 
