@@ -1,0 +1,80 @@
+const { pool } = require('./db');
+
+function toPartnerDto(row) {
+  return {
+    id: String(row.id),
+    company: row.company,
+    type: row.type,
+    contactPerson: row.contact_person,
+    location: row.location,
+    email: row.email,
+    phone: row.phone,
+    website: row.website,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function listPartners(_req, res) {
+  const [rows] = await pool.execute('SELECT * FROM partners ORDER BY created_at DESC');
+  return res.json({ success: true, partners: rows.map(toPartnerDto) });
+}
+
+async function createPartner(req, res) {
+  const body = req.body || {};
+  const company = String(body.company || '').trim();
+  if (!company) return res.status(400).json({ success: false, message: 'Company name is required.' });
+
+  const type = body.type ? String(body.type).trim() : '';
+  const contactPerson = body.contactPerson ? String(body.contactPerson).trim() : '';
+  const location = body.location ? String(body.location).trim() : '';
+  const email = body.email ? String(body.email).trim() : '';
+  const phone = body.phone ? String(body.phone).trim() : '';
+  const website = body.website ? String(body.website).trim() : null;
+
+  const [result] = await pool.execute(
+    `INSERT INTO partners (company, type, contact_person, location, email, phone, website, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [company, type, contactPerson, location, email, phone, website, req.user?.id || null]
+  );
+
+  const [rows] = await pool.execute('SELECT * FROM partners WHERE id = ? LIMIT 1', [result.insertId]);
+  return res.status(201).json({ success: true, partner: toPartnerDto(rows[0]) });
+}
+
+async function updatePartner(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const body = req.body || {};
+  const sets = [];
+  const params = [];
+
+  if (typeof body.company === 'string' && body.company.trim()) { sets.push('company = ?'); params.push(body.company.trim()); }
+  if (typeof body.type === 'string') { sets.push('type = ?'); params.push(body.type.trim()); }
+  if (typeof body.contactPerson === 'string') { sets.push('contact_person = ?'); params.push(body.contactPerson.trim()); }
+  if (typeof body.location === 'string') { sets.push('location = ?'); params.push(body.location.trim()); }
+  if (typeof body.email === 'string') { sets.push('email = ?'); params.push(body.email.trim()); }
+  if (typeof body.phone === 'string') { sets.push('phone = ?'); params.push(body.phone.trim()); }
+  if (body.website !== undefined) { sets.push('website = ?'); params.push(body.website ? String(body.website).trim() : null); }
+
+  if (!sets.length) return res.status(400).json({ success: false, message: 'No fields to update.' });
+  params.push(id);
+
+  await pool.execute(`UPDATE partners SET ${sets.join(', ')} WHERE id = ?`, params);
+  const [rows] = await pool.execute('SELECT * FROM partners WHERE id = ? LIMIT 1', [id]);
+  if (!rows.length) return res.status(404).json({ success: false, message: 'Partner not found.' });
+  return res.json({ success: true, partner: toPartnerDto(rows[0]) });
+}
+
+async function deletePartner(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const [result] = await pool.execute('DELETE FROM partners WHERE id = ?', [id]);
+  if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Partner not found.' });
+  return res.json({ success: true });
+}
+
+module.exports = { listPartners, createPartner, updatePartner, deletePartner };
+

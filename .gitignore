@@ -1,0 +1,13 @@
+**/node_modules/
+**/.npm-cache/
+**/.vscode/
+**/dist/
+**/build/
+**/.DS_Store
+**/.env
+**/.env.*
+**/uploads/
+**/*.log
+**/*.err.log
+**/*.out.log
+**/test-results/
