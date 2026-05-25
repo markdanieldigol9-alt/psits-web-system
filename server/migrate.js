@@ -17,6 +17,10 @@ function verifyPassword(password, passwordHash) {
 }
 
 async function migrate() {
+  if (process.env.SKIP_MIGRATION === 'true') {
+    console.log('Skipping migration as SKIP_MIGRATION=true');
+    return;
+  }
   const getColumnType = async (tableName, columnName, fallback) => {
     try {
       const [rows] = await pool.execute(
