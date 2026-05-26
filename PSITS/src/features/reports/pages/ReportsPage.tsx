@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Button, Card } from '@/shared/components/Form';
-import { useAuth } from '@/shared/context/AuthContext';
+
 import api from '@/shared/services/api';
 import { Modal } from '@/shared/components/Common';
 import {
