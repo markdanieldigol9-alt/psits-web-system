@@ -122,7 +122,7 @@ export const ForumPage = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-900">Community Forum</h1>
-            <p className="mt-2 text-gray-600">Announcements, news, stories, and discussions.</p>
+            <p className="mt-2 text-gray-600">News, stories, and discussions.</p>
           </div>
           <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} className="w-full sm:w-auto">
             <Plus size={18} /> Create Post
@@ -133,7 +133,6 @@ export const ForumPage = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as any)} className="rounded-lg border border-gray-300 px-3 py-2">
               <option value="all">All</option>
-              <option value="announcement">Announcements</option>
               <option value="news">News</option>
               <option value="story">Stories</option>
               <option value="blog">Blogs</option>
@@ -212,7 +211,6 @@ export const ForumPage = () => {
               { value: 'story', label: 'Story' },
               { value: 'blog', label: 'Blog' },
               ...(canModerate ? [
-                { value: 'announcement', label: 'Announcement' },
                 { value: 'news', label: 'News' },
               ] : []),
             ]}
