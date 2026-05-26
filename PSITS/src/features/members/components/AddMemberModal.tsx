@@ -54,8 +54,23 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
     if (!type) nextErrors.memberType = 'Member type is required';
     if (!formData.email?.trim()) nextErrors.email = 'Email is required';
     else if (!validateEmail(formData.email)) nextErrors.email = 'Invalid email format';
-    if (!formData.password) nextErrors.password = 'Password is required';
-    else if (formData.password.length < 6) nextErrors.password = 'Password must be at least 6 characters';
+    
+    if (!formData.password) {
+      nextErrors.password = 'Password is required';
+    } else {
+      if (formData.password.length < 10) {
+        nextErrors.password = 'Password must be at least 10 characters';
+      } else if (!/[A-Z]/.test(formData.password)) {
+        nextErrors.password = 'Password must include at least one uppercase letter';
+      } else if (!/[a-z]/.test(formData.password)) {
+        nextErrors.password = 'Password must include at least one lowercase letter';
+      } else if (!/[0-9]/.test(formData.password)) {
+        nextErrors.password = 'Password must include at least one number';
+      } else if (!/[^\w\s]/.test(formData.password)) {
+        nextErrors.password = 'Password must include at least one special character';
+      }
+    }
+    
     if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match';
 
     if (!formData.contactNumber?.trim()) nextErrors.contactNumber = 'Contact number is required';
