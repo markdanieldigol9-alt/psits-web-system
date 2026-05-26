@@ -13,10 +13,6 @@ import {
   Wallet,
   CheckCircle2,
   TrendingUp,
-  Calendar,
-  ClipboardList,
-  BadgeDollarSign,
-  BarChart3,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -59,7 +55,6 @@ const reportCards = [
 
 
 export const ReportsPage = () => {
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<any | null>(null);
   const [previewReport, setPreviewReport] = useState<string | null>(null);
