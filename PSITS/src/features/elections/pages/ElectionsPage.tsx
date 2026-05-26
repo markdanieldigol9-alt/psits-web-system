@@ -157,7 +157,7 @@ export const ElectionsPage = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-900">Officer Elections</h1>
-            <p className="mt-2 text-gray-600">Create election periods, manage candidates, and record winners.</p>
+            <p className="mt-2 text-gray-600">Election periods, manage candidates, and record winners.</p>
           </div>
           {canManage && (
             <Button variant="primary" size="lg" onClick={openCreate} className="w-full sm:w-auto">
