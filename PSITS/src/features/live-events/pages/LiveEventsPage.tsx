@@ -434,7 +434,7 @@ export const LiveEventsPage = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Live Events</h1>
-            <p className="mt-2 text-gray-600">Create and host livestream sessions for PSITS activities.</p>
+            <p className="mt-2 text-gray-600">Livestream sessions for PSITS activities.</p>
           </div>
           {canManage && (
             <Button variant="primary" onClick={openCreate} className="inline-flex items-center gap-2">
