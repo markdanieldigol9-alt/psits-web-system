@@ -57,40 +57,13 @@ const reportCards = [
   },
 ];
 
-const industryCapabilities = [
-  {
-    title: 'Event Management',
-    description: 'Showcase how the platform organizes events, schedules activities, and supports structured registrations.',
-    icon: Calendar,
-  },
-  {
-    title: 'Session Tracking',
-    description: 'Track workshops, forums, and partner-led activities.',
-    icon: ClipboardList,
-  },
-  {
-    title: 'Member Organization',
-    description: 'Present how member profiles and participation records are managed in one connected system.',
-    icon: Users,
-  },
-  {
-    title: 'Payment History',
-    description: 'Make payment records, verification flow, and transaction visibility clear for sponsors and collaborators.',
-    icon: BadgeDollarSign,
-  },
-  {
-    title: 'Reports & Insights',
-    description: 'Summarize growth, participation, and revenue data that industry partners can review quickly.',
-    icon: BarChart3,
-  },
-];
 
 export const ReportsPage = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<any | null>(null);
   const [previewReport, setPreviewReport] = useState<string | null>(null);
-  const isIndustryMember = user?.role === 'member' && user?.memberType === 'industry';
+
 
   useEffect(() => {
     let cancelled = false;
@@ -125,37 +98,6 @@ export const ReportsPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6 pb-4">
-        {isIndustryMember && (
-          <Card className="overflow-hidden">
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <div className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
-                  Industry View
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900">PSITS Hub System Overview</h1>
-                <p className="max-w-3xl text-sm text-gray-600 sm:text-base">
-                  This interface makes the platform&apos;s core value visible for industry partners: event management,
-                  attendance tracking, member organization, payment history, and reports in one connected system.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {industryCapabilities.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-blue-50/60 p-4">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-primary">
-                        <Icon size={20} />
-                      </div>
-                      <h2 className="text-base font-semibold text-gray-900">{item.title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-gray-600">{item.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </Card>
-        )}
 
         <Card title="Reports">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
