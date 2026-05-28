@@ -9,7 +9,6 @@ import api from '@/shared/services/api';
 import { Plus, Users, Trophy } from 'lucide-react';
 
 type ElectionStatus = 'draft' | 'open' | 'closed' | 'archived';
-type CandidateStatus = 'pending' | 'approved' | 'disqualified' | 'winner';
 
 export const ElectionsPage = () => {
   const { user } = useAuth();
@@ -23,7 +22,7 @@ export const ElectionsPage = () => {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingElection, setEditingElection] = useState<any | null>(null);
-  const [form, setForm] = useState({ title: '', description: '', startDate: '', endDate: '', status: 'draft' as ElectionStatus });
+  const [form, setForm] = useState({ title: '', description: '', startDate: '', endDate: '', status: 'draft' as ElectionStatus, allowedPositions: [] as string[] });
 
   const [selectedElectionId, setSelectedElectionId] = useState<string | null>(null);
   const [details, setDetails] = useState<{ election: any; candidates: any[] } | null>(null);
@@ -35,6 +34,16 @@ export const ElectionsPage = () => {
 
   const [confirmSave, setConfirmSave] = useState(false);
   const [confirmWinner, setConfirmWinner] = useState<{ candidateId: string; name: string; position: string } | null>(null);
+
+  const [hasVoted, setHasVoted] = useState(false);
+  const [showVotingModal, setShowVotingModal] = useState(false);
+  const [selectedVotes, setSelectedVotes] = useState<Record<string, string>>({});
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  const [confirmDeleteElection, setConfirmDeleteElection] = useState<{ id: string; title: string } | null>(null);
+  const [confirmDeleteCandidate, setConfirmDeleteCandidate] = useState<{ id: string; name: string } | null>(null);
 
   const load = async () => {
     setIsLoading(true);
@@ -55,7 +64,14 @@ export const ElectionsPage = () => {
 
   const openCreate = () => {
     setEditingElection(null);
-    setForm({ title: '', description: '', startDate: '', endDate: '', status: 'draft' });
+    setForm({
+      title: '',
+      description: '',
+      startDate: '',
+      endDate: '',
+      status: 'draft',
+      allowedPositions: ['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']
+    });
     setShowEditModal(true);
   };
 
@@ -67,9 +83,69 @@ export const ElectionsPage = () => {
       startDate: election.startDate || '',
       endDate: election.endDate || '',
       status: (election.status || 'draft') as ElectionStatus,
+      allowedPositions: election.allowedPositions || ['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']
     });
     setShowEditModal(true);
   };
+
+  const deleteElection = async () => {
+    if (!confirmDeleteElection) return;
+    setIsLoading(true);
+    try {
+      const { data } = await api.deleteElection(confirmDeleteElection.id);
+      if (data?.success) {
+        setElections((prev) => prev.filter((e) => String(e.id) !== confirmDeleteElection.id));
+        addNotification({
+          userId: 'current',
+          title: 'Election Deleted',
+          message: 'Election deleted successfully.',
+          type: 'success',
+          isRead: false
+        });
+      }
+      setConfirmDeleteElection(null);
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        title: 'Error',
+        message: err.message || 'Failed to delete election.',
+        type: 'error',
+        isRead: false
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const removeCandidate = async () => {
+    if (!confirmDeleteCandidate || !selectedElectionId) return;
+    setIsLoading(true);
+    try {
+      const { data } = await api.deleteElectionCandidate(selectedElectionId, confirmDeleteCandidate.id);
+      if (data?.success) {
+        setDetails((prev) => prev ? { ...prev, candidates: data.candidates || [] } : prev);
+        addNotification({
+          userId: 'current',
+          title: 'Candidate Removed',
+          message: 'Candidate removed successfully.',
+          type: 'success',
+          isRead: false
+        });
+      }
+      setConfirmDeleteCandidate(null);
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        title: 'Error',
+        message: err.message || 'Failed to remove candidate.',
+        type: 'error',
+        isRead: false
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const openDetails = async (id: string) => {
     setSelectedElectionId(id);
@@ -78,10 +154,33 @@ export const ElectionsPage = () => {
     try {
       const { data } = await api.getElection(id);
       if (data?.success) setDetails({ election: data.election, candidates: data.candidates || [] });
+      if (user?.role === 'member') {
+        const { data: votedResp } = await api.checkVoted(id);
+        if (votedResp?.success) setHasVoted(votedResp.voted);
+      }
     } catch {
       // ignore
     }
   };
+
+  useEffect(() => {
+    if (!details?.election || details.election.status !== 'open') return;
+    const interval = setInterval(() => {
+      const end = new Date(details.election.endDate + 'T23:59:59');
+      const diff = end.getTime() - new Date().getTime();
+      if (diff <= 0) {
+        setTimeLeft('Election Ended');
+        clearInterval(interval);
+      } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [details]);
 
   const loadActiveMembers = async () => {
     try {
@@ -151,6 +250,17 @@ export const ElectionsPage = () => {
     }
   };
 
+  const candidatesByPosition = useMemo(() => {
+    if (!details?.candidates) return {};
+    const grouped: Record<string, any[]> = {};
+    details.candidates.forEach((c) => {
+      const pos = c.position || 'Other';
+      if (!grouped[pos]) grouped[pos] = [];
+      grouped[pos].push(c);
+    });
+    return grouped;
+  }, [details]);
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -193,13 +303,25 @@ export const ElectionsPage = () => {
                   </div>
                   <Badge variant={e.status === 'open' ? 'success' : e.status === 'draft' ? 'info' : e.status === 'closed' ? 'warning' : 'info'}>{String(e.status).toUpperCase()}</Badge>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={() => void openDetails(String(e.id))}>
-                    <Users size={16} /> Details
-                  </Button>
+                <div className="mt-4 flex flex-wrap gap-2 items-center justify-between w-full">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => void openDetails(String(e.id))}>
+                      <Users size={16} /> Details
+                    </Button>
+                    {canManage && (
+                      <Button variant="secondary" size="sm" onClick={() => openEdit(e)}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                   {canManage && (
-                    <Button variant="secondary" size="sm" onClick={() => openEdit(e)}>
-                      Edit
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmDeleteElection({ id: String(e.id), title: e.title })}
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                    >
+                      Delete
                     </Button>
                   )}
                 </div>
@@ -220,6 +342,44 @@ export const ElectionsPage = () => {
             <Input label="Start Date" type="date" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
             <Input label="End Date" type="date" value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
           </div>
+
+          {/* Contested Positions Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">Contested Officer Positions</label>
+            <p className="text-xs text-gray-500">Select the officer positions that will be active and voted for in this election.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+              {['President', 'Vice President', 'Secretary', 'Treasurer', 'Member'].map((pos) => {
+                const isChecked = form.allowedPositions.includes(pos);
+                return (
+                  <label
+                    key={pos}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer select-none transition-all ${
+                      isChecked
+                        ? 'border-blue-500 bg-blue-50/20 text-blue-900 font-semibold ring-1 ring-blue-500'
+                        : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                      checked={isChecked}
+                      onChange={() => {
+                        setForm((prev) => {
+                          const exist = prev.allowedPositions.includes(pos);
+                          const next = exist
+                            ? prev.allowedPositions.filter((p) => p !== pos)
+                            : [...prev.allowedPositions, pos];
+                          return { ...prev, allowedPositions: next };
+                        });
+                      }}
+                    />
+                    <span className="text-sm">{pos}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           {canManage && (
             <Select
               label="Status"
@@ -233,11 +393,12 @@ export const ElectionsPage = () => {
               onChange={(e) => setForm((p) => ({ ...p, status: (e.target as HTMLSelectElement).value as ElectionStatus }))}
             />
           )}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button variant="primary" onClick={() => setConfirmSave(true)} isLoading={isLoading}>Save</Button>
           </div>
         </div>
       </Modal>
+
 
       <VerifyActionModal
         isOpen={confirmSave}
@@ -256,21 +417,49 @@ export const ElectionsPage = () => {
         {!details ? (
           <div className="text-sm text-gray-500">Loading...</div>
         ) : (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-gray-200 p-4">
+          <div className="space-y-4 font-sans">
+            <div className="rounded-lg border border-gray-250 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-gray-900">{details.election.title}</p>
                   <p className="text-sm text-gray-600 mt-1">{details.election.description || '—'}</p>
                   <p className="text-xs text-gray-500 mt-2">{details.election.startDate} → {details.election.endDate}</p>
                 </div>
-                <Badge variant={details.election.status === 'open' ? 'success' : 'info'}>{String(details.election.status).toUpperCase()}</Badge>
+                <Badge variant={details.election.status === 'open' ? 'success' : details.election.status === 'closed' ? 'warning' : 'info'}>{String(details.election.status).toUpperCase()}</Badge>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-900">Candidates</p>
-              {canManage && (
+            {/* Voting CTA Card for Members */}
+            {user?.role === 'member' && details.election.status === 'open' && (
+              <div className="rounded-xl border p-5 text-center space-y-3 bg-blue-50/50 border-blue-200">
+                {hasVoted ? (
+                  <div className="space-y-1">
+                    <p className="text-green-800 font-bold text-lg">✓ Vote Submitted Successfully</p>
+                    <p className="text-green-600 text-sm font-medium">You have already cast your ballot in this election. Thank you for participating.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-blue-900 font-bold text-lg">Elections are Open!</p>
+                    <p className="text-blue-700 text-sm max-w-md mx-auto">Please review the list of candidates and click below to submit your secure ballot.</p>
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        setSelectedVotes({});
+                        setShowDetailsModal(false);
+                        setShowVotingModal(true);
+                      }}
+                      className="px-6 py-2"
+                    >
+                      Cast Your Vote Now
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between border-b border-gray-150 pb-2">
+              <p className="text-sm font-semibold text-gray-900">Candidates & Results</p>
+              {canManage && (details.election.status === 'draft' || details.election.status === 'open') && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -284,43 +473,97 @@ export const ElectionsPage = () => {
               )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-600">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Member</th>
-                    <th className="px-4 py-2 text-left">Position</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Votes</th>
-                    <th className="px-4 py-2 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {details.candidates.map((c) => (
-                    <tr key={c.id}>
-                      <td className="px-4 py-2 text-gray-800">{c.memberName || c.memberEmail || c.memberId}</td>
-                      <td className="px-4 py-2 text-gray-700">{c.position}</td>
-                      <td className="px-4 py-2 text-gray-700">{c.status as CandidateStatus}</td>
-                      <td className="px-4 py-2 text-gray-700">{c.votesCount || 0}</td>
-                      <td className="px-4 py-2 text-right">
-                        {canManage && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setConfirmWinner({ candidateId: String(c.id), name: c.memberName || c.memberEmail || 'Candidate', position: c.position })}
-                            disabled={c.status === 'winner'}
+            {/* Grouped Visual Candidates & Results List */}
+            <div className="space-y-6">
+              {Object.entries(candidatesByPosition).map(([position, positionCandidates]) => {
+                const maxVotes = Math.max(...positionCandidates.map((c) => c.votesCount || 0));
+                const totalPosVotes = positionCandidates.reduce((acc, curr) => acc + (curr.votesCount || 0), 0);
+
+                return (
+                  <div key={position} className="border border-gray-250 rounded-xl p-4 bg-gray-50/40 space-y-3 shadow-sm">
+                    <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 text-sm flex items-center justify-between">
+                      <span>{position}</span>
+                      {(canManage || details.election.status === 'closed' || details.election.status === 'archived') && <span className="text-xs text-gray-500 font-normal">Total Votes: {totalPosVotes}</span>}
+                    </h4>
+                    <div className="space-y-3">
+                      {positionCandidates.map((c: any) => {
+                        const pct = totalPosVotes > 0 ? Math.round(((c.votesCount || 0) / totalPosVotes) * 100) : 0;
+                        const isWinner = c.status === 'winner';
+                        const isLeading = (c.votesCount || 0) === maxVotes && maxVotes > 0;
+
+                        return (
+                          <div
+                            key={c.id}
+                            className={`flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-lg border bg-white ${
+                              isWinner
+                                ? 'border-green-300 ring-1 ring-green-300 bg-green-50/10'
+                                : isLeading && details.election.status !== 'draft'
+                                ? 'border-yellow-300 ring-1 ring-yellow-300 bg-yellow-50/10'
+                                : 'border-gray-200 hover:border-blue-300'
+                            }`}
                           >
-                            <Trophy size={16} /> {c.status === 'winner' ? 'Winner' : 'Mark Winner'}
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {!details.candidates.length && (
-                    <tr><td className="px-4 py-6 text-gray-500" colSpan={5}>No candidates yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-900 text-sm">{c.memberName || c.memberEmail}</span>
+                                {isWinner && (
+                                  <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                                    Winner
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5 italic truncate">"{c.platform || 'No platform bio provided.'}"</p>
+
+                              {/* Progress bar visual for results */}
+                              {(canManage || details.election.status === 'closed' || details.election.status === 'archived') && details.election.status !== 'draft' && (
+                                <div className="mt-2 flex items-center gap-2">
+                                  <div className="flex-1 bg-gray-150 rounded-full h-2">
+                                    <div
+                                      className={`h-2 rounded-full ${isWinner ? 'bg-green-600' : isLeading ? 'bg-yellow-500' : 'bg-blue-600'}`}
+                                      style={{ width: `${pct}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-700 min-w-[32px] text-right">{pct}%</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3 justify-between md:justify-end">
+                              {(canManage || details.election.status === 'closed' || details.election.status === 'archived') && (
+                                <span className="text-xs font-semibold text-gray-600 bg-gray-150 px-2.5 py-1 rounded-lg">
+                                  {c.votesCount || 0} Votes
+                                </span>
+                              )}
+
+                              {canManage && (
+                                <div className="flex items-center gap-1.5">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      setConfirmWinner({
+                                        candidateId: String(c.id),
+                                        name: c.memberName || c.memberEmail || 'Candidate',
+                                        position: c.position,
+                                      })
+                                    }
+                                    disabled={c.status === 'winner'}
+                                    className="py-1 px-2.5 text-xs flex items-center gap-1"
+                                  >
+                                    <Trophy size={13} /> {c.status === 'winner' ? 'Winner' : 'Mark Winner'}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              {!details.candidates.length && (
+                <div className="text-center py-6 text-gray-500 text-sm font-medium">No candidates added yet.</div>
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -328,6 +571,128 @@ export const ElectionsPage = () => {
           </div>
         )}
       </Modal>
+
+      <Modal isOpen={showVotingModal} onClose={() => setShowVotingModal(false)} title="Election Voting Ballot" size="lg">
+        {!details ? (
+          <div className="text-sm text-gray-500">Loading...</div>
+        ) : showSuccessScreen ? (
+          <div className="text-center py-12 space-y-4 font-sans">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 animate-bounce">
+              <Trophy size={48} />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Vote Submitted Successfully!</h2>
+            <p className="text-gray-600 max-w-md mx-auto font-medium">
+              Your secure ballot has been successfully received by the PSITS Hub election system. Thank you for participating.
+            </p>
+            <div className="flex justify-center gap-1.5 pt-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse delay-100"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse delay-200"></span>
+            </div>
+            <div className="pt-6">
+              <Button variant="primary" onClick={() => { setShowVotingModal(false); setShowSuccessScreen(false); void load(); }}>Close</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 font-sans">
+            <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
+              <h3 className="font-bold text-blue-900 text-lg">{details.election.title}</h3>
+              <p className="text-blue-700 text-sm mt-1">{details.election.description || 'No description provided.'}</p>
+              <div className="mt-3 flex items-center justify-between text-xs text-blue-800 font-semibold bg-blue-100/50 rounded p-2">
+                <span>VOTING ENDS: {details.election.endDate}</span>
+                {timeLeft && <span className="animate-pulse text-red-600">⌛ {timeLeft}</span>}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {Object.entries(candidatesByPosition).map(([position, positionCandidates]) => (
+                <div key={position} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm space-y-4">
+                  <h4 className="text-md font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center justify-between">
+                    <span>{position}</span>
+                    <span className="text-xs font-normal text-gray-500">Select exactly 1 candidate</span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {positionCandidates.map((c: any) => {
+                      const isSelected = selectedVotes[position] === String(c.id);
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => setSelectedVotes((prev) => ({ ...prev, [position]: String(c.id) }))}
+                          className={`relative border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                            isSelected
+                              ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-600'
+                              : 'border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-800 font-bold text-lg select-none">
+                              {c.memberName ? c.memberName.split(' ').map((n: string) => n[0]).slice(0,2).join('') : 'C'}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 truncate">{c.memberName || c.memberEmail}</p>
+                              <p className="text-xs text-gray-500 font-medium">BS Information Technology</p>
+                              <p className="text-xs text-gray-600 mt-2 line-clamp-2 italic">
+                                "{c.platform || 'No platform bio provided.'}"
+                              </p>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <span className="absolute top-3 right-3 text-blue-600">
+                              <Trophy size={18} className="fill-blue-600" />
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-150">
+              <Button variant="outline" onClick={() => setShowVotingModal(false)}>Cancel</Button>
+              <Button
+                variant="primary"
+                disabled={Object.keys(selectedVotes).length === 0}
+                onClick={() => setShowConfirmSubmit(true)}
+              >
+                Submit Vote
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <VerifyActionModal
+        isOpen={showConfirmSubmit}
+        title="Confirm Your Vote"
+        message="Are you sure you want to submit your vote? Once submitted, you cannot change your selections."
+        confirmLabel="Submit Vote"
+        confirmVariant="primary"
+        onCancel={() => setShowConfirmSubmit(false)}
+        onVerified={async () => {
+          setShowConfirmSubmit(false);
+          setIsLoading(true);
+          try {
+            if (!selectedElectionId) return;
+            const { data } = await api.castVote(selectedElectionId, selectedVotes);
+            if (data?.success) {
+              setShowSuccessScreen(true);
+              setHasVoted(true);
+            }
+          } catch (err: any) {
+            addNotification({
+              userId: 'current',
+              title: 'Voting Failed',
+              message: err.response?.data?.message || err.message || 'Failed to cast vote.',
+              type: 'error',
+              isRead: false
+            });
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+      />
 
       <Modal isOpen={showAddCandidate} onClose={() => setShowAddCandidate(false)} title="Add Candidate" size="md">
         <div className="space-y-3">
@@ -340,7 +705,18 @@ export const ElectionsPage = () => {
             value={candidateForm.memberId}
             onChange={(e) => setCandidateForm((p) => ({ ...p, memberId: (e.target as HTMLSelectElement).value }))}
           />
-          <Input label="Position" value={candidateForm.position} onChange={(e) => setCandidateForm((p) => ({ ...p, position: e.target.value }))} />
+          <Select
+            label="Position"
+            options={[
+              { value: '', label: 'Select position' },
+              ...(details?.election?.allowedPositions || ['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']).map((pos: string) => ({
+                value: pos,
+                label: pos,
+              })),
+            ]}
+            value={candidateForm.position}
+            onChange={(e) => setCandidateForm((p) => ({ ...p, position: (e.target as HTMLSelectElement).value }))}
+          />
           <TextArea label="Platform (optional)" rows={4} value={candidateForm.platform} onChange={(e) => setCandidateForm((p) => ({ ...p, platform: (e.target as HTMLTextAreaElement).value }))} />
           <div className="flex justify-end gap-2">
             <Button variant="primary" onClick={() => void addCandidate()} isLoading={isLoading}>Add</Button>
@@ -357,6 +733,30 @@ export const ElectionsPage = () => {
         onCancel={() => setConfirmWinner(null)}
         onVerified={async () => {
           await markWinner();
+        }}
+      />
+
+      <VerifyActionModal
+        isOpen={!!confirmDeleteCandidate}
+        title="Remove Candidate"
+        message={confirmDeleteCandidate ? `Are you sure you want to remove ${confirmDeleteCandidate.name} as a candidate?` : ''}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onCancel={() => setConfirmDeleteCandidate(null)}
+        onVerified={async () => {
+          await removeCandidate();
+        }}
+      />
+
+      <VerifyActionModal
+        isOpen={!!confirmDeleteElection}
+        title="Delete Election"
+        message={confirmDeleteElection ? `Are you sure you want to delete ${confirmDeleteElection.title}? This will also delete all associated candidates and votes.` : ''}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onCancel={() => setConfirmDeleteElection(null)}
+        onVerified={async () => {
+          await deleteElection();
         }}
       />
     </MainLayout>

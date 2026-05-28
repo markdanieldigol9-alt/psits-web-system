@@ -15,6 +15,14 @@ function formatDateOnly(value) {
 }
 
 function toElectionDto(row) {
+  let allowedPositions = [];
+  try {
+    if (row.allowed_positions) {
+      allowedPositions = JSON.parse(row.allowed_positions);
+    }
+  } catch (e) {
+    // ignore
+  }
   return {
     id: String(row.id),
     title: row.title,
@@ -22,6 +30,7 @@ function toElectionDto(row) {
     startDate: formatDateOnly(row.start_date),
     endDate: formatDateOnly(row.end_date),
     status: row.status,
+    allowedPositions,
     createdBy: row.created_by ? String(row.created_by) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -103,6 +112,9 @@ async function createElection(req, res) {
   const startDate = String(body.startDate || '').trim();
   const endDate = String(body.endDate || '').trim();
   const status = body.status ? String(body.status).trim() : 'draft';
+  const allowedPositions = Array.isArray(body.allowedPositions) 
+    ? JSON.stringify(body.allowedPositions) 
+    : JSON.stringify(['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']);
 
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
     return json(res, 400, { success: false, message: 'Title, startDate, and endDate are required.' });
@@ -115,9 +127,9 @@ async function createElection(req, res) {
   }
 
   const [result] = await pool.execute(
-    `INSERT INTO elections (title, description, start_date, end_date, status, created_by)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [title, description, startDate, endDate, status, req.user?.id || null]
+    `INSERT INTO elections (title, description, start_date, end_date, status, allowed_positions, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [title, description, startDate, endDate, status, allowedPositions, req.user?.id || null]
   );
 
   const [rows] = await pool.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [result.insertId]);
@@ -152,6 +164,10 @@ async function updateElection(req, res) {
     if (!['draft', 'open', 'closed', 'archived'].includes(s)) return json(res, 400, { success: false, message: 'Invalid status.' });
     sets.push('status = ?'); params.push(s);
   }
+  if (Array.isArray(body.allowedPositions)) {
+    sets.push('allowed_positions = ?');
+    params.push(JSON.stringify(body.allowedPositions));
+  }
 
   if (!sets.length) return json(res, 400, { success: false, message: 'No fields to update.' });
 
@@ -162,6 +178,7 @@ async function updateElection(req, res) {
   if (!rows.length) return json(res, 404, { success: false, message: 'Election not found.' });
   return json(res, 200, { success: true, election: toElectionDto(rows[0]) });
 }
+
 
 async function addCandidate(req, res) {
   const electionId = Number(req.params.id);
@@ -352,6 +369,160 @@ async function markWinner(req, res) {
   }
 }
 
+async function castVote(req, res) {
+  const electionId = Number(req.params.id);
+  const userId = req.user?.id;
+
+  if (!Number.isFinite(electionId)) {
+    return json(res, 400, { success: false, message: 'Invalid election id.' });
+  }
+  if (!userId) {
+    return json(res, 401, { success: false, message: 'Unauthorized.' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Check if the election exists and is open
+    const [eRows] = await conn.execute(
+      'SELECT status, start_date, end_date FROM elections WHERE id = ? LIMIT 1',
+      [electionId]
+    );
+    if (!eRows.length) {
+      await conn.rollback();
+      return json(res, 404, { success: false, message: 'Election not found.' });
+    }
+
+    const election = eRows[0];
+    if (election.status !== 'open') {
+      await conn.rollback();
+      return json(res, 400, { success: false, message: 'Voting is only allowed for open elections.' });
+    }
+
+    // Verify user is a member
+    if (req.user?.role !== 'member') {
+      await conn.rollback();
+      return json(res, 403, { success: false, message: 'Only members can vote.' });
+    }
+
+    // Check if already voted
+    const [vRows] = await conn.execute(
+      'SELECT election_id FROM election_votes WHERE election_id = ? AND user_id = ? LIMIT 1',
+      [electionId, userId]
+    );
+    if (vRows.length) {
+      await conn.rollback();
+      return json(res, 400, { success: false, message: 'You have already voted in this election.' });
+    }
+
+    // Expecting body to contain an object where keys are positions and values are candidateIds:
+    // e.g. { votes: { "President": 12, "Vice President": 15 } }
+    const votes = req.body?.votes;
+    if (!votes || typeof votes !== 'object') {
+      await conn.rollback();
+      return json(res, 400, { success: false, message: 'Votes selection is required.' });
+    }
+
+    const positionVotes = Object.entries(votes);
+    if (positionVotes.length === 0) {
+      await conn.rollback();
+      return json(res, 400, { success: false, message: 'At least one vote is required.' });
+    }
+
+    // Loop through the selected candidates, verify they match the position/election, and increment votes_count
+    for (const [position, candidateIdStr] of positionVotes) {
+      const candidateId = Number(candidateIdStr);
+      if (!Number.isFinite(candidateId)) {
+        await conn.rollback();
+        return json(res, 400, { success: false, message: `Invalid candidate selected for position ${position}.` });
+      }
+
+      const [candRows] = await conn.execute(
+        "SELECT id FROM election_candidates WHERE id = ? AND election_id = ? AND position = ? AND status IN ('pending', 'approved', 'winner') LIMIT 1",
+        [candidateId, electionId, position]
+      );
+      if (!candRows.length) {
+        await conn.rollback();
+        return json(res, 400, { success: false, message: `Selected candidate for position ${position} is not valid.` });
+      }
+
+      // Increment votes_count
+      await conn.execute(
+        'UPDATE election_candidates SET votes_count = votes_count + 1 WHERE id = ?',
+        [candidateId]
+      );
+    }
+
+    // Record that the user has voted
+    await conn.execute(
+      'INSERT INTO election_votes (election_id, user_id) VALUES (?, ?)',
+      [electionId, userId]
+    );
+
+    await conn.commit();
+    return json(res, 200, { success: true, message: 'Vote cast successfully.' });
+  } catch (err) {
+    await conn.rollback();
+    return json(res, 500, { success: false, message: err instanceof Error ? err.message : 'Failed to cast vote.' });
+  } finally {
+    conn.release();
+  }
+}
+
+async function checkVotedStatus(req, res) {
+  const electionId = Number(req.params.id);
+  const userId = req.user?.id;
+
+  if (!Number.isFinite(electionId)) {
+    return json(res, 400, { success: false, message: 'Invalid election id.' });
+  }
+  if (!userId) {
+    return json(res, 401, { success: false, message: 'Unauthorized.' });
+  }
+
+  const [rows] = await pool.execute(
+    'SELECT election_id FROM election_votes WHERE election_id = ? AND user_id = ? LIMIT 1',
+    [electionId, userId]
+  );
+  return json(res, 200, { success: true, voted: rows.length > 0 });
+}
+
+async function deleteCandidate(req, res) {
+  const electionId = Number(req.params.id);
+  const candidateId = Number(req.params.candidateId);
+  if (!Number.isFinite(electionId) || !Number.isFinite(candidateId)) {
+    return json(res, 400, { success: false, message: 'Invalid id.' });
+  }
+
+  await pool.execute(
+    'DELETE FROM election_candidates WHERE election_id = ? AND id = ?',
+    [electionId, candidateId]
+  );
+
+  const [candRows] = await pool.execute(
+    `SELECT
+       c.*,
+       u.full_name AS member_name,
+       u.email AS member_email
+     FROM election_candidates c
+     JOIN users u ON u.id = c.member_id
+     WHERE c.election_id = ?
+     ORDER BY c.position ASC, c.created_at ASC`,
+    [electionId]
+  );
+
+  return json(res, 200, { success: true, candidates: candRows.map(toCandidateDto) });
+}
+
+async function deleteElection(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
+
+  await pool.execute('DELETE FROM elections WHERE id = ?', [id]);
+  return json(res, 200, { success: true, message: 'Election deleted successfully.' });
+}
+
 module.exports = {
   listElections,
   getElectionDetails,
@@ -360,5 +531,9 @@ module.exports = {
   addCandidate,
   updateCandidate,
   markWinner,
+  castVote,
+  checkVotedStatus,
+  deleteCandidate,
+  deleteElection,
 };
 

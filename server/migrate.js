@@ -828,6 +828,8 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 
+  try { await pool.query('ALTER TABLE elections ADD COLUMN allowed_positions TEXT NULL'); } catch { /* ignore */ }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS election_candidates (
       id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -849,6 +851,21 @@ async function migrate() {
         ON DELETE CASCADE,
       CONSTRAINT fk_election_candidates_member
         FOREIGN KEY (member_id) REFERENCES users(id)
+        ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS election_votes (
+      election_id INT UNSIGNED NOT NULL,
+      user_id INT UNSIGNED NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (election_id, user_id),
+      CONSTRAINT fk_election_votes_election
+        FOREIGN KEY (election_id) REFERENCES elections(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_election_votes_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);

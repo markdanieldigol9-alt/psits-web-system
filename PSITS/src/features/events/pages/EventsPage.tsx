@@ -640,11 +640,7 @@ export const EventsPage = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-900">Events Management</h1>
-            <p className="text-gray-600 mt-2">
-              {canManageEvents
-                ? 'Admin/Officer: create, update, and control event operations.'
-                : 'Member: register, upload participants/payment proof, and monitor event status.'}
-            </p>
+            <p className="text-gray-600 mt-2">Events Activites managements</p>
           </div>
           {canManageEvents && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">

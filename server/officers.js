@@ -128,7 +128,8 @@ async function createOfficer(req, res) {
 
   const startDate = body.startDate ? String(body.startDate).trim() : null;
   const start = startDate || new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const end = formatDateOnly(addYears(start, 5));
+  const endDate = body.endDate ? String(body.endDate).trim() : null;
+  const end = endDate || formatDateOnly(addYears(start, 5));
 
   const passwordHash = hashPassword(password);
 
@@ -232,7 +233,8 @@ async function assignOfficer(req, res) {
 
   const startDate = body.startDate ? String(body.startDate).trim() : null;
   const start = startDate || new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const end = formatDateOnly(addYears(start, 5));
+  const endDate = body.endDate ? String(body.endDate).trim() : null;
+  const end = endDate || formatDateOnly(addYears(start, 5));
 
   const conn = await pool.getConnection();
   try {

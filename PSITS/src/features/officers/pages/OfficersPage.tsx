@@ -6,8 +6,15 @@ import { Plus, Archive } from 'lucide-react';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { AddOfficerModal } from '@/features/officers/components/AddOfficerModal';
-import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { useAuth } from '@/shared/context/AuthContext';
+import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
+
+const formatYear = (dateStr?: string | null) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return String(dateStr);
+  return date.getFullYear().toString();
+};
 
 export const OfficersPage = () => {
   const { user } = useAuth();
@@ -20,7 +27,7 @@ export const OfficersPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [confirmAssign, setConfirmAssign] = useState(false);
-  const [pendingAssign, setPendingAssign] = useState<{ userId: string; position: string; startDate?: string } | null>(null);
+  const [pendingAssign, setPendingAssign] = useState<{ userId: string; position: string; startDate?: string; endDate?: string } | null>(null);
   const [changeTarget, setChangeTarget] = useState<{ id: string; name: string; position: string } | null>(null);
 
   const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin';
@@ -119,7 +126,7 @@ export const OfficersPage = () => {
                     <td className="px-6 py-4 text-gray-600 text-sm">{officer.position}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{officer.sectorDetails || officer.sector}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">
-                      {officer.termStart} {officer.termEnd && `- ${officer.termEnd}`}
+                      {formatYear(officer.termStart)}{officer.termEnd ? ` - ${formatYear(officer.termEnd)}` : ''}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant={officer.officerStatus === 'active' ? 'success' : 'error'}>
@@ -258,7 +265,7 @@ export const OfficersPage = () => {
             if (replaceOfficerId) {
               await api.deleteOfficer(String(replaceOfficerId));
             }
-            const { data: resp } = await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate);
+            const { data: resp } = await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate, pendingAssign.endDate);
             const created = resp?.officer;
             if (created) setOfficers((prev) => [created, ...prev]);
             addNotification({

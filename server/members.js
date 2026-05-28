@@ -432,7 +432,7 @@ async function createMember(req, res) {
   const passwordHash = `s2:${salt.toString('hex')}:${hash.toString('hex')}`;
 
   const contactNumber = String(body.contactNumber || '').trim();
-  const birthdateRaw = body.birthdate;
+  const birthdateRaw = body.birthdate ?? body.birthDate;
   const birthdate = birthdateRaw === undefined || birthdateRaw === null || String(birthdateRaw).trim() === ''
     ? null
     : String(birthdateRaw).trim();
@@ -520,9 +520,10 @@ async function updateMember(req, res) {
   const companyEmail = body.companyEmail ? String(body.companyEmail).trim() : null;
   const website = body.website ? String(body.website).trim() : null;
   const membershipMode = body.membershipMode ? String(body.membershipMode).trim() : null;
-  const hasBirthdate = Object.prototype.hasOwnProperty.call(body, 'birthdate');
+  const hasBirthdate = Object.prototype.hasOwnProperty.call(body, 'birthdate') || Object.prototype.hasOwnProperty.call(body, 'birthDate');
+  const birthdateRaw = hasBirthdate ? (body.birthdate ?? body.birthDate) : null;
   const birthdate = hasBirthdate
-    ? (body.birthdate === null || String(body.birthdate).trim() === '' ? null : String(body.birthdate).trim())
+    ? (birthdateRaw === null || String(birthdateRaw).trim() === '' ? null : String(birthdateRaw).trim())
     : null;
   if (hasBirthdate && birthdate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
     return json(res, 400, { success: false, message: 'Birthdate must be in YYYY-MM-DD format.' });

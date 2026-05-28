@@ -84,6 +84,24 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
     if (type === 'individual') {
       if (!formData.fullName?.trim()) nextErrors.fullName = 'Full name is required';
       if (!formData.gender?.trim()) nextErrors.gender = 'Gender is required';
+      if (!formData.birthDate?.trim()) {
+        nextErrors.birthDate = 'Birthdate is required';
+      } else {
+        const birthDateObj = new Date(`${formData.birthDate}T00:00:00`);
+        if (Number.isNaN(birthDateObj.getTime())) {
+          nextErrors.birthDate = 'Invalid birthdate format';
+        } else {
+          const today = new Date();
+          let age = today.getFullYear() - birthDateObj.getFullYear();
+          const m = today.getMonth() - birthDateObj.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+            age--;
+          }
+          if (age < 16) {
+            nextErrors.birthDate = 'Individual membership requires age 16 or older';
+          }
+        }
+      }
     }
 
     if (type === 'institution') {
@@ -141,6 +159,7 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
         email,
         username: String(formData.username || email.split('@')[0] || '').trim(),
         sector: finalSector,
+        birthdate: formData.birthDate,
       });
       handleClose();
     } catch (err) {
@@ -183,7 +202,15 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
             <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
               <Input label="Full Name" value={formData.fullName || ''} onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))} error={errors.fullName} />
               <Input label="Email Address" type="email" value={formData.email || ''} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} error={errors.email} />
-              <Input label="Birthdate" type="date" value={formData.birthDate || ''} onChange={(e) => setFormData((p) => ({ ...p, birthDate: e.target.value }))} />
+              <Input
+                label="Birthdate"
+                required
+                type="date"
+                value={formData.birthDate || ''}
+                onChange={(e) => setFormData((p) => ({ ...p, birthDate: e.target.value }))}
+                error={errors.birthDate}
+                helperText="Must be age 16 or older."
+              />
               <Select
                 label="Gender"
                 options={[

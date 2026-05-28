@@ -34,6 +34,7 @@ export const AddOfficerModal = ({
   const [formData, setFormData] = useState({
     position: '',
     startDate: '',
+    endDate: '',
   });
   const [errors, setErrors] = useState<Record<string,string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -123,9 +124,14 @@ export const AddOfficerModal = ({
     if (!validate()) return;
     try {
       setError(null);
-      await onSubmit({ userId: selectedMember!.id, position: formData.position, startDate: formData.startDate || undefined });
+      await onSubmit({
+        userId: selectedMember!.id,
+        position: formData.position,
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined,
+      });
       // reset
-      setFormData({ position: '', startDate: '' });
+      setFormData({ position: '', startDate: '', endDate: '' });
       setErrors({});
       setMemberQuery('');
       setMemberResults([]);
@@ -254,6 +260,14 @@ export const AddOfficerModal = ({
               value={formData.startDate}
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               helperText="Optional. Leave blank to use today."
+            />
+
+            <Input
+              label="Service End Date"
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              helperText="Optional. Leave blank to auto-calculate (5 years)."
             />
 
             <Input

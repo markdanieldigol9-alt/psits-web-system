@@ -137,8 +137,8 @@ class ApiService {
     return this.client.get('/officers');
   }
 
-  assignOfficer(userId: string, position: string, startDate?: string) {
-    return this.client.post('/officers/assign', { userId, position, startDate });
+  assignOfficer(userId: string, position: string, startDate?: string, endDate?: string) {
+    return this.client.post('/officers/assign', { userId, position, startDate, endDate });
   }
 
   createOfficer(data: any) {
@@ -454,6 +454,22 @@ class ApiService {
 
   markElectionWinner(electionId: string, candidateId: string) {
     return this.client.post(`/elections/${electionId}/candidates/${candidateId}/winner`);
+  }
+
+  checkVoted(electionId: string) {
+    return this.client.get(`/elections/${electionId}/voted`);
+  }
+
+  castVote(electionId: string, votes: Record<string, string>) {
+    return this.client.post(`/elections/${electionId}/vote`, { votes });
+  }
+
+  deleteElection(id: string) {
+    return this.client.delete(`/elections/${id}`);
+  }
+
+  deleteElectionCandidate(electionId: string, candidateId: string) {
+    return this.client.delete(`/elections/${electionId}/candidates/${candidateId}`);
   }
 
   // Community Forum

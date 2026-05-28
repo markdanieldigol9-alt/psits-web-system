@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Shield, Zap, Users, Code, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/components/Form';
 
 export const LandingPage = () => {
@@ -58,40 +58,7 @@ export const LandingPage = () => {
             </div>
           </div>
 
-          {/* Feature Grid */}
-          <div className="mt-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="glass p-8 rounded-2xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <div className="w-12 h-12 bg-blue-100 text-primary rounded-xl flex items-center justify-center mb-6">
-                <Users size={24} />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Member Management</h3>
-              <p className="text-gray-600 leading-relaxed">Streamline applications, automated renewals, and lifecycle tracking in one secure platform.</p>
-            </div>
-            
-            <div className="glass p-8 rounded-2xl animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              <div className="w-12 h-12 bg-green-100 text-success rounded-xl flex items-center justify-center mb-6">
-                <Zap size={24} />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Live Events</h3>
-              <p className="text-gray-600 leading-relaxed">Host competitions, workshops, and livestreams directly within the PSITS portal.</p>
-            </div>
 
-            <div className="glass p-8 rounded-2xl animate-fade-in" style={{ animationDelay: '0.6s' }}>
-              <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6">
-                <Shield size={24} />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Secure Payments</h3>
-              <p className="text-gray-600 leading-relaxed">Submit payment proofs and manage financial records securely with admin verification.</p>
-            </div>
-
-            <div className="glass p-8 rounded-2xl animate-fade-in" style={{ animationDelay: '0.8s' }}>
-              <div className="w-12 h-12 bg-orange-100 text-warning rounded-xl flex items-center justify-center mb-6">
-                <Code size={24} />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Industry Partners</h3>
-              <p className="text-gray-600 leading-relaxed">Collaborate with tech sponsors and partners to bring more value to the student community.</p>
-            </div>
-          </div>
         </div>
       </main>
 

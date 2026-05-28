@@ -35,7 +35,7 @@ const {
 } = require('./announcementInteractions');
 const { listPartners, createPartner, updatePartner, deletePartner } = require('./partners');
 const { listPayments, createPayment, verifyPayment } = require('./payments');
-const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner } = require('./elections');
+const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
 const {
   listLiveEvents,
@@ -359,6 +359,10 @@ app.put('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole
 app.post('/api/elections/:id/candidates', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), addCandidate);
 app.put('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateCandidate);
 app.post('/api/elections/:id/candidates/:candidateId/winner', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), markWinner);
+app.delete('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteCandidate);
+app.delete('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteElection);
+app.get('/api/elections/:id/voted', requireMigrationReady, authMiddleware, requireRole(['member']), checkVotedStatus);
+app.post('/api/elections/:id/vote', requireMigrationReady, authMiddleware, requireRole(['member']), castVote);
 
 // Community Forum
 app.get('/api/forum/posts', requireMigrationReady, authMiddleware, listPosts);

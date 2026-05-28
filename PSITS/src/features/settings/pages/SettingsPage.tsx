@@ -178,6 +178,7 @@ export const SettingsPage = () => {
               <>
                 <Select
                   label="Member Type"
+                  disabled
                   options={[
                     { value: 'student', label: 'Student' },
                     { value: 'individual', label: 'Individual' },
