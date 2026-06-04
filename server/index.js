@@ -21,8 +21,9 @@ const {
   changeMemberStatus,
   deleteMember,
   resendApprovalEmail,
+  triggerExpirationCheck,
 } = require('./members');
-const { getDashboardReport } = require('./reports');
+const { getDashboardReport, getElectionReport, getPartnerContributionsReport } = require('./reports');
 const { getMe, updateMe } = require('./me');
 const { listEvents, createEvent, updateEvent, deleteEvent } = require('./events');
 const { listAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } = require('./announcements');
@@ -33,7 +34,7 @@ const {
   getAnnouncementLikes,
   setAnnouncementLike,
 } = require('./announcementInteractions');
-const { listPartners, createPartner, updatePartner, deletePartner } = require('./partners');
+const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, deletePartnerContribution } = require('./partners');
 const { listPayments, createPayment, verifyPayment } = require('./payments');
 const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
@@ -65,6 +66,7 @@ const { listInstitutionMembers, bulkCreateInstitutionMembers, approveInstitution
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
 const { sendSmtpTest } = require('./emailTest');
 const { resendFailedApprovalEmails } = require('./mailer');
+const { checkExpiringMemberships } = require('./services/expirationService');
 const { buildRedisClient, createRateLimiter } = require('./rateLimiter');
 const { attachLiveRealtime } = require('./liveRealtime');
 const app = express();
@@ -305,6 +307,7 @@ app.delete('/api/members/:id', requireMigrationReady, authMiddleware, requireRol
 app.delete('/api/memberships/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteMember);
 app.post('/api/members/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
 app.post('/api/memberships/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
+app.post('/api/members/trigger-expiration-check', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), triggerExpirationCheck);
 
 // Officers
 app.get('/api/officers', requireMigrationReady, authMiddleware, listOfficers);
@@ -345,6 +348,9 @@ app.get('/api/partners', requireMigrationReady, authMiddleware, listPartners);
 app.post('/api/partners', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createPartner);
 app.put('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updatePartner);
 app.delete('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deletePartner);
+app.get('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, listPartnerContributions);
+app.post('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createPartnerContribution);
+app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deletePartnerContribution);
 
 // Payments
 app.get('/api/payments', requireMigrationReady, authMiddleware, listPayments);
@@ -398,7 +404,9 @@ app.get('/api/institution-members', authMiddleware, listInstitutionMembers);
 app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member']), bulkCreateInstitutionMembers);
 app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), approveInstitutionMember);
 
- app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getDashboardReport);
+  app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getDashboardReport);
+  app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getElectionReport);
+  app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getPartnerContributionsReport);
 
 // SMTP test (admin/super_admin only)
 app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin']), sendSmtpTest);
@@ -488,6 +496,26 @@ setInterval(async () => {
     console.error('Session cleanup failed:', err);
   }
 }, 60 * 60 * 1000);
+
+// Run membership expiration check every 24 hours
+setInterval(async () => {
+  try {
+    await checkExpiringMemberships();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Membership expiration check failed:', err);
+  }
+}, 24 * 60 * 60 * 1000);
+
+// Run initial check 10 seconds after startup
+setTimeout(async () => {
+  try {
+    await checkExpiringMemberships();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Initial membership expiration check failed:', err);
+  }
+}, 10 * 1000);
 
 // Cleanup expired live session recordings (15-day retention after upload)
 setInterval(async () => {

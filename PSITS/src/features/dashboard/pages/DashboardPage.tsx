@@ -108,7 +108,34 @@ export const DashboardPage = () => {
       }
 
       if (announcementsRes.data?.success) {
-        setMemberAnnouncements(announcementsRes.data.announcements || []);
+        const list = announcementsRes.data.announcements || [];
+        setMemberAnnouncements(list);
+
+        // Notify member about new announcements they haven't been alerted of yet
+        const notifiedKey = `psits_notified_announcements_${user?.id ?? 'guest'}`;
+        const notifiedRaw = localStorage.getItem(notifiedKey);
+        const notifiedIds = notifiedRaw ? (JSON.parse(notifiedRaw) as string[]) : [];
+        let updatedIds = [...notifiedIds];
+        let hasNew = false;
+
+        list.forEach((ann: any) => {
+          const annId = String(ann.id);
+          if (!notifiedIds.includes(annId)) {
+            addNotification({
+              userId: String(user?.id ?? 'guest'),
+              title: 'New Announcement',
+              message: `New announcement: "${ann.title}"`,
+              type: 'info',
+              isRead: false,
+            });
+            updatedIds.push(annId);
+            hasNew = true;
+          }
+        });
+
+        if (hasNew) {
+          localStorage.setItem(notifiedKey, JSON.stringify(updatedIds));
+        }
       }
     } catch {
       // keep member dashboard usable on partial failures

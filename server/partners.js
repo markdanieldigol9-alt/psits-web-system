@@ -76,5 +76,89 @@ async function deletePartner(req, res) {
   return res.json({ success: true });
 }
 
-module.exports = { listPartners, createPartner, updatePartner, deletePartner };
+function toContributionDto(row) {
+  return {
+    id: String(row.id),
+    partnerId: String(row.partner_id),
+    eventId: row.event_id ? String(row.event_id) : null,
+    eventTitle: row.event_title || null,
+    dealTitle: row.deal_title,
+    contributionType: row.contribution_type,
+    valueAmount: row.value_amount ? Number(row.value_amount) : null,
+    description: row.description || '',
+    createdAt: row.created_at,
+  };
+}
+
+async function listPartnerContributions(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid partner id.' });
+
+  const [rows] = await pool.execute(
+    `SELECT pc.*, e.title AS event_title
+     FROM partner_contributions pc
+     LEFT JOIN events e ON e.id = pc.event_id
+     WHERE pc.partner_id = ?
+     ORDER BY pc.created_at DESC`,
+    [id]
+  );
+  return res.json({ success: true, contributions: rows.map(toContributionDto) });
+}
+
+async function createPartnerContribution(req, res) {
+  const partnerId = Number(req.params.id);
+  if (!Number.isFinite(partnerId)) return res.status(400).json({ success: false, message: 'Invalid partner id.' });
+
+  const body = req.body || {};
+  const dealTitle = String(body.dealTitle || '').trim();
+  const contributionType = String(body.contributionType || '').trim();
+
+  if (!dealTitle || !contributionType) {
+    return res.status(400).json({ success: false, message: 'Deal title and contribution type are required.' });
+  }
+
+  const allowedTypes = ['funds', 'prizes', 'equipment', 'venue', 'services', 'other'];
+  if (!allowedTypes.includes(contributionType)) {
+    return res.status(400).json({ success: false, message: 'Invalid contribution type.' });
+  }
+
+  const eventId = body.eventId ? Number(body.eventId) : null;
+  const valueAmount = body.valueAmount !== undefined && body.valueAmount !== null ? Number(body.valueAmount) : null;
+  const description = body.description ? String(body.description).trim() : null;
+
+  const [result] = await pool.execute(
+    `INSERT INTO partner_contributions (partner_id, event_id, deal_title, contribution_type, value_amount, description)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [partnerId, eventId, dealTitle, contributionType, valueAmount, description]
+  );
+
+  const [rows] = await pool.execute(
+    `SELECT pc.*, e.title AS event_title
+     FROM partner_contributions pc
+     LEFT JOIN events e ON e.id = pc.event_id
+     WHERE pc.id = ? LIMIT 1`,
+    [result.insertId]
+  );
+
+  return res.status(201).json({ success: true, contribution: toContributionDto(rows[0]) });
+}
+
+async function deletePartnerContribution(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const [result] = await pool.execute('DELETE FROM partner_contributions WHERE id = ?', [id]);
+  if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Contribution not found.' });
+  return res.json({ success: true });
+}
+
+module.exports = {
+  listPartners,
+  createPartner,
+  updatePartner,
+  deletePartner,
+  listPartnerContributions,
+  createPartnerContribution,
+  deletePartnerContribution,
+};
 

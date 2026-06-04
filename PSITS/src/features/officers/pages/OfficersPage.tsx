@@ -21,7 +21,7 @@ export const OfficersPage = () => {
   const { addNotification } = useNotification();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'past'>('all');
   const [officers, setOfficers] = useState<any[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,14 +31,13 @@ export const OfficersPage = () => {
   const [changeTarget, setChangeTarget] = useState<{ id: string; name: string; position: string } | null>(null);
 
   const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin';
-  const isMemberViewer = user?.role === 'member';
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setIsLoading(true);
       try {
-        const { data } = await api.getOfficers();
+        const { data } = await api.getOfficers(filterStatus);
         if (!cancelled && data?.success) setOfficers(data.officers || []);
       } catch {
         // ignore
@@ -50,7 +49,7 @@ export const OfficersPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filterStatus]);
 
   const filteredOfficers = useMemo(
     () =>
@@ -89,20 +88,19 @@ export const OfficersPage = () => {
           )}
         </div>
 
-        {!isMemberViewer && (
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value as any);
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Officers</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        )}
+        <select
+          value={filterStatus}
+          onChange={(e) => {
+            setFilterStatus(e.target.value as any);
+            setCurrentPage(1);
+          }}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="all">All Officers</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="past">Past Officers</option>
+        </select>
 
         <Card>
           <div className="overflow-x-auto">
@@ -129,7 +127,7 @@ export const OfficersPage = () => {
                       {formatYear(officer.termStart)}{officer.termEnd ? ` - ${formatYear(officer.termEnd)}` : ''}
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant={officer.officerStatus === 'active' ? 'success' : 'error'}>
+                      <Badge variant={officer.officerStatus === 'active' ? 'success' : officer.officerStatus === 'past' ? 'warning' : 'error'}>
                         {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
                       </Badge>
                     </td>
@@ -265,9 +263,9 @@ export const OfficersPage = () => {
             if (replaceOfficerId) {
               await api.deleteOfficer(String(replaceOfficerId));
             }
-            const { data: resp } = await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate, pendingAssign.endDate);
-            const created = resp?.officer;
-            if (created) setOfficers((prev) => [created, ...prev]);
+            await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate, pendingAssign.endDate);
+            const { data: resp } = await api.getOfficers(filterStatus);
+            if (resp?.success) setOfficers(resp.officers || []);
             addNotification({
               userId: 'current',
               title: 'Officer Assigned',
@@ -306,7 +304,8 @@ export const OfficersPage = () => {
           setIsLoading(true);
           try {
             await api.deleteOfficer(confirmDelete.id);
-            setOfficers((prev) => prev.filter((x) => String(x.id) !== String(confirmDelete.id)));
+            const { data: resp } = await api.getOfficers(filterStatus);
+            if (resp?.success) setOfficers(resp.officers || []);
             addNotification({
               userId: 'current',
               title: 'Officer Archived',

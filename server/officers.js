@@ -68,10 +68,20 @@ async function positionInUse(conn, position, excludeUserId = null) {
 }
 
 async function listOfficers(req, res) {
-  const where = ["u.role = 'officer'"];
-  const params = [];
+  const status = req.query.status ? String(req.query.status).trim().toLowerCase() : 'all';
   const role = String(req.user?.role || '').toLowerCase();
-  const isMemberViewer = role === 'member' || role.startsWith('member_');
+  const isMemberViewer = role === 'member';
+
+  const where = [];
+  const params = [];
+
+  if (status === 'active') {
+    where.push("u.role = 'officer' AND o.officer_status = 'active'");
+  } else if (status === 'past') {
+    where.push("o.officer_status = 'past'");
+  } else {
+    where.push("(u.role = 'officer' OR o.officer_status = 'past')");
+  }
 
   if (isMemberViewer) {
     where.push("u.status = 'active'");
@@ -97,7 +107,7 @@ async function listOfficers(req, res) {
      FROM users u
      JOIN officers o ON o.user_id = u.id
      WHERE ${where.join(' AND ')}
-     ORDER BY u.created_at DESC`
+     ORDER BY o.start_date DESC, u.created_at DESC`
     ,
     params
   );
@@ -440,10 +450,21 @@ async function deleteOfficer(req, res) {
       return res.status(404).json({ success: false, message: 'Officer not found.' });
     }
 
+    const officerColumnSet = await getOfficerColumnSet(conn);
     const endDate = new Date().toISOString().slice(0, 10);
+    const sets = ['end_date = COALESCE(end_date, ?)'];
+    const params = [endDate];
+    if (officerColumnSet.has('term_end')) {
+      sets.push('term_end = COALESCE(term_end, ?)');
+      params.push(endDate);
+    }
+    if (officerColumnSet.has('officer_status')) {
+      sets.push("officer_status = 'past'");
+    }
+    params.push(userId);
     await conn.execute(
-      'UPDATE officers SET end_date = COALESCE(end_date, ?) WHERE user_id = ?',
-      [endDate, userId]
+      `UPDATE officers SET ${sets.join(', ')} WHERE user_id = ?`,
+      params
     );
     await conn.execute("UPDATE users SET role = 'member', status = 'active' WHERE id = ?", [userId]);
 

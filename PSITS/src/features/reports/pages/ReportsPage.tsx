@@ -52,6 +52,16 @@ const reportCards = [
     description: 'Analyze verified revenue grouped by payment method.',
     icon: TrendingUp,
   },
+  {
+    title: 'Election Tally',
+    description: 'View vote count tallies and winning candidates per election.',
+    icon: CheckCircle2,
+  },
+  {
+    title: 'Partner Contributions',
+    description: 'Summarize partnership deal resource values and sponsorship funds.',
+    icon: Wallet,
+  },
 ];
 
 
@@ -59,6 +69,11 @@ export const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<any | null>(null);
   const [previewReport, setPreviewReport] = useState<string | null>(null);
+
+  const [elections, setElections] = useState<any[]>([]);
+  const [selectedElectionId, setSelectedElectionId] = useState<string>('');
+  const [electionReportData, setElectionReportData] = useState<any | null>(null);
+  const [partnerReportData, setPartnerReportData] = useState<any | null>(null);
 
 
   useEffect(() => {
@@ -79,6 +94,61 @@ export const ReportsPage = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const loadElections = async () => {
+      try {
+        const { data } = await api.getElections();
+        if (data?.success) {
+          setElections(data.elections || []);
+          if (data.elections?.length > 0) {
+            setSelectedElectionId(String(data.elections[0].id));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void loadElections();
+  }, []);
+
+  useEffect(() => {
+    if (previewReport === 'Election Tally' && selectedElectionId) {
+      const fetchElectionReport = async () => {
+        setIsLoading(true);
+        try {
+          const { data } = await api.getElectionReport(selectedElectionId);
+          if (data?.success) {
+            setElectionReportData(data);
+          }
+        } catch {
+          // ignore
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      void fetchElectionReport();
+    }
+  }, [previewReport, selectedElectionId]);
+
+  useEffect(() => {
+    if (previewReport === 'Partner Contributions') {
+      const fetchPartnerReport = async () => {
+        setIsLoading(true);
+        try {
+          const { data } = await api.getPartnerContributionsReport();
+          if (data?.success) {
+            setPartnerReportData(data);
+          }
+        } catch {
+          // ignore
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      void fetchPartnerReport();
+    }
+  }, [previewReport]);
 
   const memberGrowth = (report?.memberGrowth || []).map((row: any) => ({
     month: row.month,
@@ -147,6 +217,35 @@ export const ReportsPage = () => {
           'Verified Revenue': row.value,
         }));
         exportToCSV('Revenue_By_Method_Report', dataToExport);
+      } else if (title === 'Election Tally') {
+        if (!selectedElectionId) return;
+        const { data } = await api.getElectionReport(selectedElectionId);
+        if (data?.success) {
+          const dataToExport = (data.candidates || []).map((c: any) => ({
+            'Election Title': data.election?.title || '—',
+            'Candidate Name': c.name,
+            'Position': c.position,
+            'Platform': c.platform || '—',
+            'Status': c.status,
+            'Votes Count': c.votes_count,
+            'Total Votes Cast': data.totalVotes || 0,
+          }));
+          exportToCSV(`${data.election?.title || 'Election'}_Tally_Report`, dataToExport);
+        }
+      } else if (title === 'Partner Contributions') {
+        const { data } = await api.getPartnerContributionsReport();
+        if (data?.success) {
+          const dataToExport = (data.contributions || []).map((pc: any) => ({
+            'Partner Name': pc.partner_name,
+            'Deal Title': pc.deal_title,
+            'Contribution Type': pc.contribution_type,
+            'Value Amount (PHP)': pc.value_amount,
+            'Linked Event': pc.event_title || 'General Support',
+            'Description': pc.description || '—',
+            'Log Date': pc.created_at,
+          }));
+          exportToCSV('Partner_Contributions_Report', dataToExport);
+        }
       }
     } catch {
       // ignore
@@ -298,7 +397,125 @@ export const ReportsPage = () => {
             </div>
           )}
 
-          {previewReport !== 'Membership Growth' && previewReport !== 'Revenue by Method' && (
+          {previewReport === 'Election Tally' && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-gray-50 p-4 rounded-xl border border-gray-150">
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">{electionReportData?.election?.title || 'Select Election'}</h4>
+                  <p className="text-sm text-gray-500">Status: <span className="font-semibold capitalize text-primary">{electionReportData?.election?.status}</span></p>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm text-gray-500">Total Votes Cast</span>
+                  <p className="text-2xl font-bold text-gray-900">{electionReportData?.totalVotes || 0}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700">Election:</label>
+                <select
+                  value={selectedElectionId}
+                  onChange={(e) => setSelectedElectionId(e.target.value)}
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {elections.map((el) => (
+                    <option key={el.id} value={el.id}>{el.title} ({el.status})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Candidate</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Position</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Votes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-150">
+                    {(electionReportData?.candidates || []).map((cand: any) => (
+                      <tr key={cand.id} className="hover:bg-gray-50/50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{cand.name}</td>
+                        <td className="px-4 py-3 text-gray-600">{cand.position}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-primary">{cand.votes_count}</td>
+                      </tr>
+                    ))}
+                    {(!electionReportData?.candidates || electionReportData.candidates.length === 0) && (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-8 text-center text-gray-400">No candidates registered.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {previewReport === 'Partner Contributions' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-primary/5 border border-primary/10 p-4 rounded-xl text-center">
+                  <span className="text-sm font-semibold text-primary">Total Sponsorship Value</span>
+                  <p className="text-3xl font-extrabold text-primary mt-1">
+                    ₱{(partnerReportData?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="bg-green-50 border border-green-100 p-4 rounded-xl text-center">
+                  <span className="text-sm font-semibold text-green-700">Logged Contributions</span>
+                  <p className="text-3xl font-extrabold text-green-700 mt-1">
+                    {partnerReportData?.contributions?.length || 0} Deals
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Summary By Type</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(partnerReportData?.summary || []).map((item: any) => (
+                    <div key={item.contribution_type} className="bg-gray-50 border border-gray-150 p-3 rounded-lg text-center">
+                      <span className="text-xs font-medium text-gray-500 capitalize">{item.contribution_type}</span>
+                      <p className="text-sm font-bold text-gray-800 mt-1">₱{Number(item.total_value).toLocaleString()}</p>
+                      <span className="text-[10px] text-gray-400">{item.count} items</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Partner</th>
+                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Deal Title</th>
+                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Type</th>
+                      <th className="px-3 py-2 text-right font-semibold text-gray-700">Value (PHP)</th>
+                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Target Event</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-150">
+                    {(partnerReportData?.contributions || []).map((pc: any) => (
+                      <tr key={pc.id} className="hover:bg-gray-50/50">
+                        <td className="px-3 py-2 font-medium text-gray-900">{pc.partner_name}</td>
+                        <td className="px-3 py-2 text-gray-700">{pc.deal_title}</td>
+                        <td className="px-3 py-2 text-gray-600 capitalize">{pc.contribution_type}</td>
+                        <td className="px-3 py-2 text-right font-bold text-gray-800">
+                          ₱{Number(pc.value_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-3 py-2 text-gray-500 truncate max-w-[120px]">{pc.event_title || 'General Support'}</td>
+                      </tr>
+                    ))}
+                    {(!partnerReportData?.contributions || partnerReportData.contributions.length === 0) && (
+                      <tr>
+                        <td colSpan={5} className="px-3 py-8 text-center text-gray-400">No contributions logged yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {previewReport !== 'Membership Growth' && previewReport !== 'Revenue by Method' && previewReport !== 'Election Tally' && previewReport !== 'Partner Contributions' && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
               Preview is based on the current dashboard dataset. Additional detailed reports can be added as separate endpoints under `GET /api/reports/*`.
             </div>

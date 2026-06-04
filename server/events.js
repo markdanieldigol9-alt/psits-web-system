@@ -20,6 +20,7 @@ function toEventDto(row) {
     registrationStartAt: regStart && !Number.isNaN(regStart.getTime()) ? regStart.toISOString() : null,
     registrationEndAt: regEnd && !Number.isNaN(regEnd.getTime()) ? regEnd.toISOString() : null,
     registrationOverride: row.registration_override || null,
+    eventType: row.event_type || 'seminar',
     date,
     time,
     endDate,
@@ -138,7 +139,10 @@ async function createEvent(req, res) {
   const allowedModes = ['individual', 'pair', 'team'];
   const safeMode = allowedModes.includes(registrationMode) ? registrationMode : 'individual';
 
-  const allowedTypes = ['seminar', 'workshop', 'training', 'competition', 'conference', 'meeting', 'livestream', 'other'];
+  const eventType = body.eventType ? String(body.eventType).trim() : 'seminar';
+  const allowedEventTypes = ['competition', 'seminar'];
+  const safeEventType = allowedEventTypes.includes(eventType) ? eventType : 'seminar';
+
   const safeOverride = ['open', 'closed'].includes(registrationOverride) ? registrationOverride : null;
   if (registrationStartAt && Number.isNaN(registrationStartAt.getTime())) {
     return res.status(400).json({ success: false, message: 'Invalid registration start date/time.' });
@@ -151,8 +155,8 @@ async function createEvent(req, res) {
   }
 
   const [result] = await pool.execute(
-    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, event_type, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       title,
       description,
@@ -161,6 +165,7 @@ async function createEvent(req, res) {
       registrationStartAt && !Number.isNaN(registrationStartAt.getTime()) ? registrationStartAt : null,
       registrationEndAt && !Number.isNaN(registrationEndAt.getTime()) ? registrationEndAt : null,
       safeOverride,
+      safeEventType,
       startAt,
       endAt && !Number.isNaN(endAt.getTime()) ? endAt : null,
       location,
@@ -219,6 +224,13 @@ async function updateEvent(req, res) {
   if (typeof body.description === 'string') { sets.push('description = ?'); params.push(body.description.trim()); }
   if (typeof body.guidelines === 'string') { sets.push('guidelines = ?'); params.push(body.guidelines.trim()); }
   if (typeof body.registrationMode === 'string' && allowedModes.includes(body.registrationMode)) { sets.push('registration_mode = ?'); params.push(body.registrationMode); }
+  if (typeof body.eventType === 'string') {
+    const et = String(body.eventType).trim();
+    if (!['competition', 'seminar'].includes(et)) {
+      return res.status(400).json({ success: false, message: 'Invalid eventType.' });
+    }
+    sets.push('event_type = ?'); params.push(et);
+  }
   if (body.registrationStartAt !== undefined) {
     const value = body.registrationStartAt ? new Date(body.registrationStartAt) : null;
     if (value && Number.isNaN(value.getTime())) {

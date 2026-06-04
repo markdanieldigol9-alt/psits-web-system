@@ -664,6 +664,19 @@ async function resendApprovalEmail(req, res) {
   }
 }
 
+async function triggerExpirationCheck(req, res) {
+  try {
+    const { checkExpiringMemberships } = require('./services/expirationService');
+    const result = await checkExpiringMemberships();
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err instanceof Error ? err.message : 'Expiration trigger failed.',
+    });
+  }
+}
+
 module.exports = {
   listMembers,
   listMemberStatusLogs,
@@ -673,6 +686,7 @@ module.exports = {
   changeMemberStatus,
   deleteMember,
   resendApprovalEmail,
+  triggerExpirationCheck,
 };
 
 

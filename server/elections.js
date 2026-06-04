@@ -406,6 +406,12 @@ async function castVote(req, res) {
       return json(res, 403, { success: false, message: 'Only members can vote.' });
     }
 
+    // Verify member is active (not suspended, banned, or pending)
+    if (req.user?.status !== 'active') {
+      await conn.rollback();
+      return json(res, 403, { success: false, message: 'Only active members can vote.' });
+    }
+
     // Check if already voted
     const [vRows] = await conn.execute(
       'SELECT election_id FROM election_votes WHERE election_id = ? AND user_id = ? LIMIT 1',

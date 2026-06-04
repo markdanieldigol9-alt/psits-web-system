@@ -1,4 +1,4 @@
-﻿const { pool } = require('./db');
+const { pool } = require('./db');
 
 function monthLabel(date) {
   return date.toLocaleString('en-US', { month: 'short' });
@@ -133,4 +133,77 @@ async function getDashboardReport(_req, res) {
   });
 }
 
-module.exports = { getDashboardReport };
+async function getElectionReport(req, res) {
+  const electionId = Number(req.params.id);
+  if (!Number.isFinite(electionId)) {
+    return res.status(400).json({ success: false, message: 'Invalid election ID.' });
+  }
+
+  try {
+    const [electionRows] = await pool.execute(
+      'SELECT id, title, description, start_date, end_date, status FROM elections WHERE id = ? LIMIT 1',
+      [electionId]
+    );
+
+    if (!electionRows.length) {
+      return res.status(404).json({ success: false, message: 'Election not found.' });
+    }
+
+    const [candidateRows] = await pool.execute(
+      `SELECT ec.id, ec.position, ec.platform, ec.status, ec.votes_count, u.full_name AS name
+       FROM election_candidates ec
+       JOIN users u ON u.id = ec.member_id
+       WHERE ec.election_id = ?
+       ORDER BY ec.position, ec.votes_count DESC`,
+      [electionId]
+    );
+
+    const [[{ totalVotes }]] = await pool.execute(
+      'SELECT COUNT(*) AS totalVotes FROM election_votes WHERE election_id = ?',
+      [electionId]
+    );
+
+    return res.json({
+      success: true,
+      election: electionRows[0],
+      candidates: candidateRows,
+      totalVotes: Number(totalVotes || 0)
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+async function getPartnerContributionsReport(req, res) {
+  try {
+    const [contributionRows] = await pool.execute(
+      `SELECT pc.id, pc.deal_title, pc.contribution_type, pc.value_amount, pc.description, pc.created_at,
+              p.name AS partner_name, e.title AS event_title
+       FROM partner_contributions pc
+       JOIN partners p ON p.id = pc.partner_id
+       LEFT JOIN events e ON e.id = pc.event_id
+       ORDER BY pc.created_at DESC`
+    );
+
+    const [summaryRows] = await pool.execute(
+      `SELECT pc.contribution_type, COALESCE(SUM(pc.value_amount), 0) AS total_value, COUNT(*) AS count
+       FROM partner_contributions pc
+       GROUP BY pc.contribution_type`
+    );
+
+    const [[{ totalContributionsValue }]] = await pool.execute(
+      'SELECT COALESCE(SUM(value_amount), 0) AS total FROM partner_contributions'
+    );
+
+    return res.json({
+      success: true,
+      contributions: contributionRows,
+      summary: summaryRows,
+      totalValue: Number(totalContributionsValue || 0)
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+module.exports = { getDashboardReport, getElectionReport, getPartnerContributionsReport };

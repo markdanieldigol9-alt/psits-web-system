@@ -41,6 +41,10 @@ export const LiveStudioPage = () => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
 
+  const [messages, setMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const peersRef = useRef<{ [socketId: string]: RTCPeerConnection }>({});
@@ -64,6 +68,42 @@ export const LiveStudioPage = () => {
     };
     void fetchSession();
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const loadMessages = async () => {
+      try {
+        const { data } = await api.getLiveEventChatMessages(sessionId);
+        if (data?.success) {
+          setMessages(data.messages || []);
+        }
+      } catch (err) {
+        console.error('Failed to load chat history:', err);
+      }
+    };
+    void loadMessages();
+  }, [sessionId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendChatMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !socket || !sessionId) return;
+    socket.emit('session:chat', { message: chatInput.trim() }, (response: any) => {
+      if (response && !response.ok) {
+        addNotification({
+          userId: 'current',
+          title: 'Chat Error',
+          message: response.message || 'Failed to send message',
+          type: 'error',
+          isRead: false,
+        });
+      }
+    });
+    setChatInput('');
+  };
 
   const initLocalStream = useCallback(async (video = true, audio = true) => {
     try {
@@ -292,6 +332,13 @@ export const LiveStudioPage = () => {
         }
       });
 
+      s.on('session:chat', (message: any) => {
+        setMessages((prev) => {
+          if (prev.some((m) => String(m.id) === String(message.id))) return prev;
+          return [...prev, message];
+        });
+      });
+
       s.on('disconnect', () => {
         setIsConnected(false);
       });
@@ -434,13 +481,49 @@ export const LiveStudioPage = () => {
 
         {/* Sidebar */}
         <div className="w-full lg:w-80 border-l border-gray-200 bg-white flex flex-col h-full shrink-0">
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
             <div className="p-4 border-b border-gray-100 flex items-center gap-2 font-semibold text-gray-900">
               <MessageSquare size={18} />
               Live Chat
             </div>
-            <div className="flex-1 p-4 flex items-center justify-center text-sm text-gray-500">
-              Chat interface would go here.
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((msg) => (
+                  <div key={msg.id} className="flex flex-col text-sm">
+                    <div className="flex items-baseline gap-2">
+                      <span className={`font-semibold text-xs px-1.5 py-0.5 rounded ${
+                        msg.user?.role === 'super_admin' || msg.user?.role === 'admin'
+                          ? 'bg-red-50 text-red-700 font-bold'
+                          : msg.user?.role === 'officer'
+                          ? 'bg-blue-50 text-blue-700 font-bold'
+                          : 'text-gray-700'
+                      }`}>
+                        {msg.user?.name || msg.userName || 'User'}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-gray-700 mt-1 break-words bg-gray-50 p-2 rounded-lg border border-gray-100">
+                      {msg.message}
+                    </p>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+              
+              <form onSubmit={sendChatMessage} className="p-3 border-t border-gray-100 flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                <Button type="submit" variant="primary" size="sm" disabled={!chatInput.trim()}>
+                  Send
+                </Button>
+              </form>
             </div>
           </div>
           <div className="flex-1 overflow-hidden flex flex-col border-t border-gray-200">

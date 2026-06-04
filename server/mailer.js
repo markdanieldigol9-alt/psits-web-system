@@ -171,9 +171,42 @@ If you received this message, SMTP is configured correctly.
   }
 }
 
+async function sendMembershipExpirationEmail({ to, fullName, daysRemaining, expiryDate }) {
+  if (!hasSmtpConfig()) {
+    return { sent: false, reason: 'SMTP not configured' };
+  }
+
+  const formattedDate = expiryDate ? new Date(expiryDate).toLocaleDateString() : 'N/A';
+  const subject = 'Membership Expiration Warning - PSITS Region XII';
+  const text = `Dear ${fullName},
+
+This is an automated notification that your PSITS Region XII membership will expire in ${daysRemaining} days (on ${formattedDate}).
+
+Please renew your membership through the system's Payments portal soon to maintain uninterrupted access to all organizational features, events, and activities.
+
+Thank you.
+
+Best regards,
+PSITS Region XII`;
+
+  try {
+    await getTransporter().sendMail({
+      from: smtpFrom,
+      to,
+      subject,
+      text,
+    });
+    return { sent: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Email send failed';
+    return { sent: false, reason: message };
+  }
+}
+
 module.exports = {
   sendRegistrationApprovedEmail,
   sendRegistrationSubmittedEmail,
   sendSmtpTestEmail,
   resendFailedApprovalEmails,
+  sendMembershipExpirationEmail,
 };

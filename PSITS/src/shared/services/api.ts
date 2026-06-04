@@ -132,9 +132,8 @@ class ApiService {
     return this.client.post(`/members/${id}/resend-approval-email`);
   }
 
-  // Officers
-  getOfficers() {
-    return this.client.get('/officers');
+  getOfficers(status?: string) {
+    return this.client.get('/officers', { params: status ? { status } : undefined });
   }
 
   assignOfficer(userId: string, position: string, startDate?: string, endDate?: string) {
@@ -404,9 +403,29 @@ class ApiService {
     return this.client.delete(`/partners/${id}`);
   }
 
+  getPartnerContributions(partnerId: string) {
+    return this.client.get(`/partners/${partnerId}/contributions`);
+  }
+
+  createPartnerContribution(partnerId: string, data: any) {
+    return this.client.post(`/partners/${partnerId}/contributions`, data);
+  }
+
+  deletePartnerContribution(contributionId: string) {
+    return this.client.delete(`/partners/contributions/${contributionId}`);
+  }
+
   // Reports
   getReports(type: string, filters?: any) {
     return this.client.get(`/reports/${type}`, { params: filters });
+  }
+
+  getElectionReport(id: string) {
+    return this.client.get(`/reports/elections/${id}`);
+  }
+
+  getPartnerContributionsReport() {
+    return this.client.get('/reports/partners/contributions');
   }
 
   // Audit logs

@@ -181,6 +181,7 @@ export const EventsPage = () => {
     registrationStartTime: '',
     registrationEndDate: '',
     registrationEndTime: '',
+    eventType: 'seminar',
     location: '',
     startDate: '',
     startTime: '',
@@ -386,6 +387,7 @@ export const EventsPage = () => {
       registrationStartTime: '',
       registrationEndDate: '',
       registrationEndTime: '',
+      eventType: 'seminar',
       location: '',
       startDate: '',
       startTime: '',
@@ -416,6 +418,7 @@ export const EventsPage = () => {
       registrationStartTime: regStart.time,
       registrationEndDate: regEnd.date,
       registrationEndTime: regEnd.time,
+      eventType: event.eventType || 'seminar',
       location: event.location || '',
       startDate: event.date || '',
       startTime: event.time || '',
@@ -686,6 +689,11 @@ export const EventsPage = () => {
                     <div className="flex items-center gap-2">
                       {isRegistered && <Badge variant="success">Registered</Badge>}
                       {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
+                      {event.eventType && (
+                        <Badge variant={event.eventType === 'competition' ? 'error' : 'info'}>
+                          {event.eventType === 'competition' ? 'Competition' : 'Seminar'}
+                        </Badge>
+                      )}
                       {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
                       <Badge variant={getStatusColor(event.status)}>
                         {String(event.status).charAt(0).toUpperCase() + String(event.status).slice(1)}
@@ -844,6 +852,7 @@ export const EventsPage = () => {
               ...(registrationStartAt ? { registrationStartAt } : {}),
               ...(registrationEndAt ? { registrationEndAt } : {}),
               location: formData.location.trim(),
+              eventType: formData.eventType,
               startAt,
               ...(endAt ? { endAt } : {}),
               fee: Number(formData.fee) || 0,
@@ -914,6 +923,16 @@ export const EventsPage = () => {
             ]}
             value={formData.registrationMode}
             onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
+          />
+
+          <Select
+            label="Event Category"
+            options={[
+              { value: 'seminar', label: 'Seminar' },
+              { value: 'competition', label: 'Competition' },
+            ]}
+            value={formData.eventType}
+            onChange={(e) => setFormData((p) => ({ ...p, eventType: (e.target as HTMLSelectElement).value }))}
           />
 
           <div className="flex items-center gap-2 mb-4 mt-2">

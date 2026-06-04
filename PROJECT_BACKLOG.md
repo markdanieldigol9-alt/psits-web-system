@@ -14,9 +14,9 @@ Source: Panel comments captured on 2026-04-30
 ### Events
 
 - [x] Remove “Cancel” button in Create/Edit Event modal
-- [ ] Add event type differentiation (competition/training/seminar/meeting/other)
+- [x] Add event type differentiation (competition/seminar) per revised Objective 4
 - [ ] Add type-specific fields per event type (scope-dependent)
-- [ ] Add separate phases for registration: **Start Registration** and **End Registration**
+- [x] Add separate phases for registration: **Start Registration** and **End Registration**
 - [ ] Increase team complexity (team name, logo, roster) for team-based events
 - [ ] Improve event module rules (different treatment per type)
 

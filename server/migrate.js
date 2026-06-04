@@ -259,6 +259,7 @@ async function migrate() {
       registration_start_at DATETIME NULL,
       registration_end_at DATETIME NULL,
       registration_override ENUM('open','closed') NULL,
+      event_type ENUM('competition','seminar') NOT NULL DEFAULT 'seminar',
       start_at DATETIME NOT NULL,
       end_at DATETIME NULL,
       location VARCHAR(191) NOT NULL DEFAULT '',
@@ -358,6 +359,13 @@ async function migrate() {
   // Backwards compatible column add (older DBs created before registration mode).
   try {
     await pool.query("ALTER TABLE events ADD COLUMN registration_mode ENUM('individual','pair','group','team') NOT NULL DEFAULT 'individual'");
+  } catch {
+    // ignore if column already exists / insufficient permissions
+  }
+
+  // Backwards compatible column add for event_type enum (competition/seminar)
+  try {
+    await pool.query("ALTER TABLE events ADD COLUMN event_type ENUM('competition','seminar') NOT NULL DEFAULT 'seminar'");
   } catch {
     // ignore if column already exists / insufficient permissions
   }
@@ -489,6 +497,27 @@ async function migrate() {
   try { await pool.query("ALTER TABLE partners ADD COLUMN partnership_status VARCHAR(64) NOT NULL DEFAULT 'active'"); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE partners ADD COLUMN description TEXT NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE partners ADD COLUMN archived_at DATETIME NULL'); } catch { /* ignore */ }
+
+  // Partner Contributions
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS partner_contributions (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      partner_id INT UNSIGNED NOT NULL,
+      event_id INT UNSIGNED NULL,
+      deal_title VARCHAR(191) NOT NULL,
+      contribution_type ENUM('funds', 'prizes', 'equipment', 'venue', 'services', 'other') NOT NULL,
+      value_amount DECIMAL(10,2) NULL,
+      description TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      CONSTRAINT fk_contributions_partner
+        FOREIGN KEY (partner_id) REFERENCES partners(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_contributions_event
+        FOREIGN KEY (event_id) REFERENCES events(id)
+        ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
 
   // Payments
   await pool.query(`
