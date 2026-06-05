@@ -156,13 +156,12 @@ async function createPayment(req, res) {
       return res.status(404).json({ success: false, message: 'Event not found.' });
     }
     eventFee = Number(eventRows[0].registration_fee || 0);
-    amount = eventFee;
   }
 
   if (!Number.isFinite(amount) || amount <= 0) {
     return res.status(400).json({
       success: false,
-      message: eventFee !== null ? 'Event fee is 0. No payment required.' : 'Amount must be greater than 0.',
+      message: eventFee !== null && eventFee === 0 ? 'Event fee is 0. No payment required.' : 'Amount must be greater than 0.',
     });
   }
 
@@ -172,6 +171,22 @@ async function createPayment(req, res) {
 
   const memberId = req.user?.id;
   if (!memberId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
+
+  if (eventId && Number.isFinite(eventId)) {
+    const [paymentRows] = await pool.execute(
+      "SELECT SUM(amount) AS total_paid FROM payments WHERE event_id = ? AND member_id = ? AND status = 'verified'",
+      [eventId, memberId]
+    );
+    const totalPaid = Number(paymentRows[0]?.total_paid || 0);
+    const remainingBalance = eventFee - totalPaid;
+
+    if (amount > remainingBalance + 0.01) {
+      return res.status(400).json({
+        success: false,
+        message: `Amount exceeds the remaining balance of PHP ${remainingBalance.toFixed(2)}.`,
+      });
+    }
+  }
 
   if (!['event', 'membership_renewal'].includes(paymentKind)) {
     return res.status(400).json({ success: false, message: 'Invalid payment kind.' });

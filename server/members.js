@@ -416,20 +416,58 @@ async function createMember(req, res) {
   const email = String(body.email || '').trim().toLowerCase();
   const username = String(body.username || email.split('@')[0] || '').trim();
   const password = String(body.password || '');
+  const membershipMode = body.membershipMode ? String(body.membershipMode).trim() : null;
 
-  if (!fullName || !email || !username || !password) {
-    return json(res, 400, { success: false, message: 'Missing required fields.' });
+  function normalizeEmail(val) {
+    return String(val || '').trim().toLowerCase();
   }
 
-  const passwordError = validatePasswordRules(password);
-  if (passwordError) {
-    return json(res, 400, { success: false, message: passwordError });
+  function formatMySqlDateTime(date) {
+    if (!date) return null;
+    return date.toISOString().slice(0, 19).replace('T', ' ');
   }
 
-  const crypto = require('node:crypto');
-  const salt = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(password, salt, 64);
-  const passwordHash = `s2:${salt.toString('hex')}:${hash.toString('hex')}`;
+  let existingUser = null;
+  if (membershipMode === 'renew') {
+    const renewAccountId = body.renewAccountId ? String(body.renewAccountId).trim() : '';
+    const lookupId = Number(renewAccountId);
+    const lookupValue = Number.isFinite(lookupId) ? lookupId : normalizeEmail(renewAccountId || email);
+
+    const [rows] = await pool.execute(
+      `SELECT * FROM users WHERE ${Number.isFinite(lookupId) ? 'id = ?' : 'email = ?'} LIMIT 1`,
+      [lookupValue]
+    );
+    existingUser = rows[0] || null;
+
+    if (!existingUser && email) {
+      const [rowsEmail] = await pool.execute(
+        `SELECT * FROM users WHERE email = ? LIMIT 1`,
+        [email]
+      );
+      existingUser = rowsEmail[0] || null;
+    }
+
+    if (!existingUser) {
+      return json(res, 404, { success: false, message: 'Existing member account to renew not found.' });
+    }
+  }
+
+  // Password hashing and validation
+  let passwordHash = null;
+  if (membershipMode === 'renew' && !password) {
+    // Keep existing password
+    passwordHash = existingUser.password_hash;
+  } else {
+    // Regular validation and hashing
+    const passwordError = validatePasswordRules(password);
+    if (passwordError) {
+      return json(res, 400, { success: false, message: passwordError });
+    }
+    const crypto = require('node:crypto');
+    const salt = crypto.randomBytes(16);
+    const hash = crypto.scryptSync(password, salt, 64);
+    passwordHash = `s2:${salt.toString('hex')}:${hash.toString('hex')}`;
+  }
 
   const contactNumber = String(body.contactNumber || '').trim();
   const birthdateRaw = body.birthdate ?? body.birthDate;
@@ -468,29 +506,126 @@ async function createMember(req, res) {
   const representativePosition2 = body.representativePosition2 ? String(body.representativePosition2).trim() : null;
   const companyEmail = body.companyEmail ? String(body.companyEmail).trim() : null;
   const website = body.website ? String(body.website).trim() : null;
-  const membershipMode = body.membershipMode ? String(body.membershipMode).trim() : null;
 
-  try {
-    const [result] = await pool.execute(
-      `INSERT INTO users
-        (email, username, full_name, password_hash, role, contact_number, sector, sector_details, member_type, terms_accepted, status, birthdate, address, gender, occupation, representative_name, representative_name_2, position, representative_position_2, company_email, website, membership_mode)
-       VALUES
-        (?, ?, ?, ?, 'member', ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [email, username, fullName, passwordHash, contactNumber, sector, sectorDetails, memberType, 1, birthdate, address, gender, occupation, representativeName, representativeName2, position, representativePosition2, companyEmail, website, membershipMode]
-    );
+  if (membershipMode === 'renew') {
+    try {
+      let startAt = new Date();
+      let expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
 
-    const insertedId = result.insertId;
-    const [rows] = await pool.execute(
-      `SELECT * FROM users WHERE id = ?`,
-      [insertedId]
-    );
-    return json(res, 201, { success: true, member: toMemberDto(rows[0]) });
-  } catch (err) {
-    if (isDbError(err)) throw err;
-    const message = err && err.code === 'ER_DUP_ENTRY'
-      ? 'Email or username already exists.'
-      : 'Create member failed.';
-    return json(res, 400, { success: false, message });
+      if (existingUser.membership_expires_at) {
+        const currentExpiry = new Date(existingUser.membership_expires_at);
+        if (currentExpiry.getTime() > Date.now()) {
+          startAt = currentExpiry;
+          expiresAt = new Date(currentExpiry.getTime() + 365 * 24 * 60 * 60 * 1000);
+        }
+      }
+
+      await pool.execute(
+        `UPDATE users
+         SET
+           full_name = ?,
+           password_hash = ?,
+           contact_number = ?,
+           sector = ?,
+           sector_details = ?,
+           member_type = ?,
+           birthdate = ?,
+           address = ?,
+           gender = ?,
+           occupation = ?,
+           representative_name = ?,
+           representative_name_2 = ?,
+           position = ?,
+           representative_position_2 = ?,
+           company_email = ?,
+           website = ?,
+           membership_mode = ?,
+           membership_started_at = ?,
+           membership_expires_at = ?,
+           status = 'active',
+           status_updated_at = NOW(),
+           status_updated_by = ?
+         WHERE id = ?`,
+        [
+          fullName,
+          passwordHash,
+          contactNumber,
+          sector,
+          sectorDetails,
+          memberType,
+          birthdate,
+          address,
+          gender,
+          occupation,
+          representativeName,
+          representativeName2,
+          position,
+          representativePosition2,
+          companyEmail,
+          website,
+          'renew',
+          formatMySqlDateTime(startAt),
+          formatMySqlDateTime(expiresAt),
+          req.user?.id || null,
+          existingUser.id
+        ]
+      );
+
+      if (existingUser.status !== 'active') {
+        await appendMemberStatusLog({
+          memberId: existingUser.id,
+          oldStatus: String(existingUser.status || ''),
+          newStatus: 'active',
+          reason: 'Membership renewed by admin/officer',
+          changedBy: req.user?.id || null,
+        });
+
+        if (existingUser.email) {
+          try {
+            await sendRegistrationApprovedEmail({
+              to: existingUser.email,
+              fullName: fullName || existingUser.full_name || 'Member',
+              userId: existingUser.id,
+            });
+          } catch (err) {
+            // ignore
+          }
+        }
+      }
+
+      const [rows] = await pool.execute(
+        `SELECT * FROM users WHERE id = ?`,
+        [existingUser.id]
+      );
+      return json(res, 200, { success: true, member: toMemberDto(rows[0]) });
+    } catch (err) {
+      if (isDbError(err)) throw err;
+      return json(res, 400, { success: false, message: 'Renew member failed: ' + (err?.message || err) });
+    }
+  } else {
+    // Original registration logic
+    try {
+      const [result] = await pool.execute(
+        `INSERT INTO users
+          (email, username, full_name, password_hash, role, contact_number, sector, sector_details, member_type, terms_accepted, status, birthdate, address, gender, occupation, representative_name, representative_name_2, position, representative_position_2, company_email, website, membership_mode)
+         VALUES
+          (?, ?, ?, ?, 'member', ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [email, username, fullName, passwordHash, contactNumber, sector, sectorDetails, memberType, 1, birthdate, address, gender, occupation, representativeName, representativeName2, position, representativePosition2, companyEmail, website, membershipMode]
+      );
+
+      const insertedId = result.insertId;
+      const [rows] = await pool.execute(
+        `SELECT * FROM users WHERE id = ?`,
+        [insertedId]
+      );
+      return json(res, 201, { success: true, member: toMemberDto(rows[0]) });
+    } catch (err) {
+      if (isDbError(err)) throw err;
+      const message = err && err.code === 'ER_DUP_ENTRY'
+        ? 'Email or username already exists.'
+        : 'Create member failed.';
+      return json(res, 400, { success: false, message });
+    }
   }
 }
 

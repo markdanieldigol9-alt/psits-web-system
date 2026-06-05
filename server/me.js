@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { pool } = require('./db');
 
 function formatDateOnly(value) {
@@ -7,6 +8,12 @@ function formatDateOnly(value) {
   const month = String(value.getMonth() + 1).padStart(2, '0');
   const day = String(value.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(String(password), salt, 64);
+  return `s2:${salt.toString('hex')}:${hash.toString('hex')}`;
 }
 
 function toUserDto(row) {
@@ -57,27 +64,49 @@ async function updateMe(req, res) {
   if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
 
   const body = req.body || {};
-  const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : null;
-  const contactNumber = typeof body.contactNumber === 'string' ? body.contactNumber.trim() : null;
-  const sectorDetails = typeof body.sectorDetails === 'string' ? body.sectorDetails.trim() : null;
-  const hasBirthdate = Object.prototype.hasOwnProperty.call(body, 'birthdate');
-  const birthdate = hasBirthdate
-    ? (body.birthdate === null || String(body.birthdate).trim() === '' ? null : String(body.birthdate).trim())
-    : null;
-  if (hasBirthdate && birthdate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
-    return res.status(400).json({ success: false, message: 'Birthdate must be in YYYY-MM-DD format.' });
-  }
-
-  let memberType = typeof body.memberType === 'string' ? body.memberType.trim() : null;
-  if (memberType === 'school') memberType = 'student';
-
   const sets = [];
   const params = [];
-  if (fullName) { sets.push('full_name = ?'); params.push(fullName); }
-  if (contactNumber !== null) { sets.push('contact_number = ?'); params.push(contactNumber); }
-  if (sectorDetails !== null) { sets.push('sector_details = ?'); params.push(sectorDetails); }
-  if (hasBirthdate) { sets.push('birthdate = ?'); params.push(birthdate); }
-  if (memberType) { sets.push('member_type = ?'); params.push(memberType); }
+
+  const addField = (col, val) => {
+    sets.push(`${col} = ?`);
+    params.push(val);
+  };
+
+  if (body.fullName !== undefined) addField('full_name', typeof body.fullName === 'string' ? body.fullName.trim() : null);
+  if (body.contactNumber !== undefined) addField('contact_number', typeof body.contactNumber === 'string' ? body.contactNumber.trim() : null);
+  if (body.sectorDetails !== undefined) addField('sector_details', typeof body.sectorDetails === 'string' ? body.sectorDetails.trim() : null);
+  if (body.memberType !== undefined) {
+    let mt = typeof body.memberType === 'string' ? body.memberType.trim() : null;
+    if (mt === 'school') mt = 'student';
+    addField('member_type', mt);
+  }
+  
+  if (body.birthdate !== undefined || body.birthDate !== undefined) {
+    const bdate = body.birthdate !== undefined ? body.birthdate : body.birthDate;
+    const birthdateStr = (bdate === null || String(bdate).trim() === '') ? null : String(bdate).trim();
+    if (birthdateStr !== null && !/^\d{4}-\d{2}-\d{2}$/.test(birthdateStr)) {
+      return res.status(400).json({ success: false, message: 'Birthdate must be in YYYY-MM-DD format.' });
+    }
+    addField('birthdate', birthdateStr);
+  }
+
+  if (body.address !== undefined) addField('address', typeof body.address === 'string' ? body.address.trim() : null);
+  if (body.gender !== undefined) addField('gender', typeof body.gender === 'string' ? body.gender.trim() : null);
+  if (body.occupation !== undefined) addField('occupation', typeof body.occupation === 'string' ? body.occupation.trim() : null);
+  if (body.representativeName !== undefined) addField('representative_name', typeof body.representativeName === 'string' ? body.representativeName.trim() : null);
+  if (body.representativeName2 !== undefined) addField('representative_name_2', typeof body.representativeName2 === 'string' ? body.representativeName2.trim() : null);
+  if (body.position !== undefined) addField('position', typeof body.position === 'string' ? body.position.trim() : null);
+  if (body.representativePosition2 !== undefined) addField('representative_position_2', typeof body.representativePosition2 === 'string' ? body.representativePosition2.trim() : null);
+  if (body.companyEmail !== undefined) addField('company_email', typeof body.companyEmail === 'string' ? body.companyEmail.trim() : null);
+  if (body.website !== undefined) addField('website', typeof body.website === 'string' ? body.website.trim() : null);
+
+  if (typeof body.password === 'string' && body.password.trim()) {
+    const pw = body.password.trim();
+    if (pw.length < 10) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 10 characters long.' });
+    }
+    addField('password_hash', hashPassword(pw));
+  }
 
   if (!sets.length) {
     return res.status(400).json({ success: false, message: 'No fields to update.' });

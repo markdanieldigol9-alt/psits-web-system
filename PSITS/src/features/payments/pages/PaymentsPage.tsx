@@ -53,6 +53,12 @@ export const PaymentsPage = () => {
   const getVerificationStatus = (payment: any) =>
     String(payment?.verificationStatus || payment?.status || 'pending').toLowerCase();
 
+  const formatPaymentMethod = (method: string) => {
+    if (!method) return '-';
+    if (method === 'bank_transfer') return 'Bank Transfer';
+    return method.toUpperCase();
+  };
+
   const filteredPayments = scopedPayments.filter((payment) => {
     const status = getVerificationStatus(payment);
     return filterStatus === 'all' || status === filterStatus;
@@ -196,7 +202,7 @@ export const PaymentsPage = () => {
               <tbody className="divide-y divide-gray-200">
                 {paginatedPayments.map((payment) => {
                   const status = getVerificationStatus(payment);
-                  const method = String(payment.method || payment.paymentMethod || '').toUpperCase() || '-';
+                  const formattedMethod = formatPaymentMethod(payment.method || payment.paymentMethod || '');
                   const eventLabel =
                     payment.event ||
                     (payment.paymentKind === 'membership_renewal' ? 'Membership Renewal' : 'Membership Fee');
@@ -212,7 +218,12 @@ export const PaymentsPage = () => {
                     <td className="px-6 py-4 font-bold text-primary">
                       ₱{payment.amount.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{method}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="text-gray-950 font-medium">{formattedMethod}</span>
+                      {payment.referenceNumber && (
+                        <div className="text-xs text-gray-500 font-mono mt-0.5">Ref: {payment.referenceNumber}</div>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {getStatusIcon(status)}
@@ -276,8 +287,9 @@ export const PaymentsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               {!isMember && <div><span className="font-semibold">Member:</span> {viewing.memberName}</div>}
               <div><span className="font-semibold">Event:</span> {viewing.event || '-'}</div>
-              <div><span className="font-semibold">Amount:</span> â‚±{Number(viewing.amount || 0).toLocaleString()}</div>
-              <div><span className="font-semibold">Method:</span> {viewing.method}</div>
+              <div><span className="font-semibold">Amount:</span> ₱{Number(viewing.amount || 0).toLocaleString()}</div>
+              <div><span className="font-semibold">Method:</span> {formatPaymentMethod(viewing.method || viewing.paymentMethod)}</div>
+              <div><span className="font-semibold">Reference Number:</span> <span className="font-mono">{viewing.referenceNumber || 'N/A'}</span></div>
               <div><span className="font-semibold">Status:</span> {getVerificationStatus(viewing)}</div>
               <div><span className="font-semibold">Date:</span> {viewing.date}</div>
             </div>

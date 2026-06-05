@@ -12,6 +12,9 @@ interface AddOfficerModalProps {
   initialPosition?: string;
   lockPosition?: boolean;
   title?: string;
+  initialMember?: MemberOption | null;
+  initialStartDate?: string;
+  initialEndDate?: string;
 }
 
 type MemberOption = {
@@ -22,6 +25,16 @@ type MemberOption = {
   status?: string;
 };
 
+const formatDateForInput = (dateStr?: string | null) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const AddOfficerModal = ({
   isOpen,
   onClose,
@@ -30,6 +43,9 @@ export const AddOfficerModal = ({
   initialPosition,
   lockPosition = false,
   title,
+  initialMember = null,
+  initialStartDate,
+  initialEndDate,
 }: AddOfficerModalProps) => {
   const [formData, setFormData] = useState({
     position: '',
@@ -53,11 +69,26 @@ export const AddOfficerModal = ({
   };
 
   useEffect(() => {
-    if (!isOpen) return;
-    if (initialPosition) {
-      setFormData((p) => ({ ...p, position: initialPosition }));
+    if (!isOpen) {
+      setFormData({ position: '', startDate: '', endDate: '' });
+      setSelectedMember(null);
+      setMemberQuery('');
+      setMemberResults([]);
+      setErrors({});
+      setError(null);
+      return;
     }
-  }, [isOpen, initialPosition]);
+    setFormData({
+      position: initialPosition || '',
+      startDate: formatDateForInput(initialStartDate),
+      endDate: formatDateForInput(initialEndDate),
+    });
+    setSelectedMember(initialMember || null);
+    setMemberQuery('');
+    setMemberResults([]);
+    setErrors({});
+    setError(null);
+  }, [isOpen, initialPosition, initialStartDate, initialEndDate, initialMember]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -279,7 +310,9 @@ export const AddOfficerModal = ({
             />
           </div>
           <div className="flex justify-end gap-3 mt-4">
-            <Button variant="primary" size="lg" type="submit" disabled={isLoading}>{isLoading ? 'Assigning...' : 'Assign Officer'}</Button>
+            <Button variant="primary" size="lg" type="submit" disabled={isLoading}>
+              {isLoading ? (initialMember ? 'Updating...' : 'Assigning...') : (initialMember ? 'Update Officer' : 'Assign Officer')}
+            </Button>
           </div>
         </form>
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/shared/components/Common';
-import { Button, Input } from '@/shared/components/Form';
+import { Button, Input, TextArea } from '@/shared/components/Form';
 import api from '@/shared/services/api';
 
 interface VerifyActionModalProps {
@@ -12,8 +12,10 @@ interface VerifyActionModalProps {
   confirmVariant?: 'primary' | 'danger';
   requireText?: string;
   requirePassword?: boolean;
+  requireReason?: boolean;
+  reasonPlaceholder?: string;
   onCancel: () => void;
-  onVerified: () => Promise<void> | void;
+  onVerified: (reason?: string) => Promise<void> | void;
 }
 
 export const VerifyActionModal = ({
@@ -25,11 +27,14 @@ export const VerifyActionModal = ({
   confirmVariant = 'primary',
   requireText,
   requirePassword = false,
+  requireReason = false,
+  reasonPlaceholder,
   onCancel,
   onVerified,
 }: VerifyActionModalProps) => {
   const [typed, setTyped] = useState('');
   const [password, setPassword] = useState('');
+  const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,6 +42,7 @@ export const VerifyActionModal = ({
     if (!isOpen) {
       setTyped('');
       setPassword('');
+      setReason('');
       setError(null);
       setIsLoading(false);
     }
@@ -64,7 +70,7 @@ export const VerifyActionModal = ({
                 const { data } = await api.verifyPassword(password);
                 if (!data?.success) throw new Error(data?.message || 'Verification failed.');
               }
-              await onVerified();
+              await onVerified(reason);
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Verification failed.');
             } finally {
@@ -81,6 +87,16 @@ export const VerifyActionModal = ({
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             placeholder={requireText}
+          />
+        )}
+
+        {requireReason && (
+          <TextArea
+            label="Remarks / Violation Reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={reasonPlaceholder || "Type the remarks or violation reasons here..."}
+            rows={3}
           />
         )}
 

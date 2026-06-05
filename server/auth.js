@@ -604,24 +604,52 @@ async function renewLookup(req, res) {
   const body = req.body || {};
   const renewAccountId = String(body.renewAccountId || '').trim();
   const contactNumber = String(body.contactNumber || '').trim();
-  if (!renewAccountId || !contactNumber) {
-    return json(res, 400, { success: false, message: 'Renew account ID and contact number are required.' });
+  if (!renewAccountId) {
+    return json(res, 400, { success: false, message: 'Renew account ID or email is required.' });
+  }
+
+  // Check if request is from an authenticated admin or officer
+  const header = req.header('authorization') || '';
+  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+  let isPrivileged = false;
+  if (token) {
+    try {
+      const [callerRows] = await pool.execute(
+        `SELECT role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > NOW() LIMIT 1`,
+        [token]
+      );
+      if (callerRows.length && ['super_admin', 'admin', 'officer'].includes(callerRows[0].role)) {
+        isPrivileged = true;
+      }
+    } catch (e) {
+      // ignore token validation error, treat as non-privileged
+    }
+  }
+
+  if (!isPrivileged && !contactNumber) {
+    return json(res, 400, { success: false, message: 'Contact number is required.' });
   }
 
   const lookupId = Number(renewAccountId);
   const lookupValue = Number.isFinite(lookupId) ? lookupId : normalizeEmail(renewAccountId);
 
-  const [rows] = await pool.execute(
-    `SELECT
+  let query = `SELECT
        id, email, full_name, contact_number, sector, sector_details, member_type,
        address, gender, occupation, representative_name, representative_name_2,
        position, representative_position_2, company_email, website
      FROM users
-     WHERE ${Number.isFinite(lookupId) ? 'id = ?' : 'email = ?'}
-       AND contact_number = ?
-     LIMIT 1`,
-    [lookupValue, contactNumber]
-  );
+     WHERE ${Number.isFinite(lookupId) ? 'id = ?' : 'email = ?'}`;
+  
+  const queryParams = [lookupValue];
+
+  if (!isPrivileged) {
+    query += ` AND contact_number = ?`;
+    queryParams.push(contactNumber);
+  }
+
+  query += ` LIMIT 1`;
+
+  const [rows] = await pool.execute(query, queryParams);
 
   if (!rows.length) {
     return json(res, 404, { success: false, message: 'No matching account found.' });

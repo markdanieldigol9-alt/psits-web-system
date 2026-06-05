@@ -28,7 +28,7 @@ export const OfficersPage = () => {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [confirmAssign, setConfirmAssign] = useState(false);
   const [pendingAssign, setPendingAssign] = useState<{ userId: string; position: string; startDate?: string; endDate?: string } | null>(null);
-  const [changeTarget, setChangeTarget] = useState<{ id: string; name: string; position: string } | null>(null);
+  const [changeTarget, setChangeTarget] = useState<any | null>(null);
 
   const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin';
 
@@ -150,13 +150,7 @@ export const OfficersPage = () => {
                         <button
                           type="button"
                           className="ml-2 px-2 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
-                          onClick={() =>
-                            setChangeTarget({
-                              id: String(officer.id),
-                              name: officer.fullName || officer.email || 'this officer',
-                              position: String(officer.position || '').trim(),
-                            })
-                          }
+                          onClick={() => setChangeTarget(officer)}
                           aria-label="Change officer"
                           title="Change officer"
                         >
@@ -214,7 +208,19 @@ export const OfficersPage = () => {
           isLoading={isLoading}
           title="Change Officer"
           initialPosition={changeTarget?.position}
-          lockPosition
+          initialStartDate={changeTarget?.termStart}
+          initialEndDate={changeTarget?.termEnd}
+          initialMember={
+            changeTarget
+              ? {
+                  id: String(changeTarget.id),
+                  fullName: changeTarget.fullName || changeTarget.name || '',
+                  email: changeTarget.email || '',
+                  sector: changeTarget.sector,
+                  status: changeTarget.officerStatus === 'active' ? 'active' : 'inactive',
+                }
+              : null
+          }
           onSubmit={async (data) => {
             if (!changeTarget) return;
             const isPositionTaken = officers.some(
@@ -233,7 +239,11 @@ export const OfficersPage = () => {
               });
               return;
             }
-            setPendingAssign({ ...data, replaceOfficerId: changeTarget.id, replaceOfficerName: changeTarget.name } as any);
+            setPendingAssign({
+              ...data,
+              replaceOfficerId: changeTarget.id,
+              replaceOfficerName: changeTarget.fullName || changeTarget.email || 'this officer',
+            } as any);
             setConfirmAssign(true);
             setChangeTarget(null);
           }}
@@ -245,7 +255,9 @@ export const OfficersPage = () => {
         title="Verify Officer Assignment"
         message={
           (pendingAssign as any)?.replaceOfficerId
-            ? 'This will replace the current officer in this position. Continue?'
+            ? String(pendingAssign?.userId) === String((pendingAssign as any).replaceOfficerId)
+              ? `This will update the details of ${(pendingAssign as any).replaceOfficerName || 'the officer'}. Continue?`
+              : `This will replace ${(pendingAssign as any).replaceOfficerName || 'the officer'} with a new member. Continue?`
             : 'Are you sure you want to assign this officer?'
         }
         confirmLabel="Accept"
@@ -261,15 +273,30 @@ export const OfficersPage = () => {
           try {
             const replaceOfficerId = (pendingAssign as any).replaceOfficerId;
             if (replaceOfficerId) {
-              await api.deleteOfficer(String(replaceOfficerId));
+              if (String(pendingAssign.userId) === String(replaceOfficerId)) {
+                // Update same officer's details
+                await api.updateOfficer(String(replaceOfficerId), {
+                  position: pendingAssign.position,
+                  startDate: pendingAssign.startDate,
+                  endDate: pendingAssign.endDate,
+                });
+              } else {
+                // Replace with a different member
+                await api.deleteOfficer(String(replaceOfficerId));
+                await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate, pendingAssign.endDate);
+              }
+            } else {
+              // Assign a completely new officer
+              await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate, pendingAssign.endDate);
             }
-            await api.assignOfficer(pendingAssign.userId, pendingAssign.position, pendingAssign.startDate, pendingAssign.endDate);
             const { data: resp } = await api.getOfficers(filterStatus);
             if (resp?.success) setOfficers(resp.officers || []);
+            
+            const isUpdate = replaceOfficerId && String(pendingAssign.userId) === String(replaceOfficerId);
             addNotification({
               userId: 'current',
-              title: 'Officer Assigned',
-              message: 'Officer role assigned successfully.',
+              title: isUpdate ? 'Officer Details Updated' : 'Officer Assigned',
+              message: isUpdate ? 'Officer details updated successfully.' : 'Officer role assigned successfully.',
               type: 'success',
               isRead: false,
             });
@@ -279,7 +306,7 @@ export const OfficersPage = () => {
             addNotification({
               userId: 'current',
               title: 'Error',
-              message: err instanceof Error ? err.message : 'Failed to assign officer.',
+              message: err instanceof Error ? err.message : 'Failed to update/assign officer.',
               type: 'error',
               isRead: false,
             });

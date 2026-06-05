@@ -190,11 +190,19 @@ export const MembersPage = () => {
     try {
       const { data } = await api.createMember(memberData);
       const newMember = data?.member;
-      if (newMember) setMembers((prev) => [newMember, ...prev]);
+      if (newMember) {
+        setMembers((prev) => {
+          const exists = prev.some((m) => String(m.id) === String(newMember.id));
+          if (exists) {
+            return prev.map((m) => (String(m.id) === String(newMember.id) ? newMember : m));
+          }
+          return [newMember, ...prev];
+        });
+      }
       addNotification({
         userId: 'current',
-        title: 'Member Added',
-        message: `${memberData.fullName} has been added successfully.`,
+        title: memberData.membershipMode === 'renew' ? 'Member Renewed' : 'Member Added',
+        message: `${memberData.fullName} has been ${memberData.membershipMode === 'renew' ? 'renewed' : 'added'} successfully.`,
         type: 'success',
         isRead: false,
       });
@@ -247,12 +255,12 @@ export const MembersPage = () => {
     }
   };
 
-  const handleConfirmStatusChange = async () => {
+  const handleConfirmStatusChange = async (reason?: string) => {
     if (!confirmStatusChange) return;
     const { id, status } = confirmStatusChange;
     setApprovingId(id);
     try {
-      const { data } = await api.changeMemberStatus(id, status);
+      const { data } = await api.changeMemberStatus(id, status, reason);
       const updated = data?.member;
       if (updated) {
         setMembers((prev: any[]) => prev.map((m: any) => (String(m.id) === String(id) ? { ...m, ...updated } : m)));
@@ -770,6 +778,7 @@ export const MembersPage = () => {
         onClose={() => setIsAddMemberModalOpen(false)}
         onSubmit={handleAddMember}
         isLoading={isLoading}
+        existingMembers={members}
       />
 
       <VerifyActionModal
@@ -815,6 +824,8 @@ export const MembersPage = () => {
         confirmLabel={confirmStatusChange?.confirmLabel || 'Confirm'}
         confirmVariant={confirmStatusChange?.confirmVariant || 'primary'}
         requireText={confirmStatusChange?.requireText}
+        requireReason={confirmStatusChange?.status === 'suspended' || confirmStatusChange?.status === 'banned'}
+        reasonPlaceholder={confirmStatusChange?.status === 'suspended' ? 'Enter suspension reason / violation details...' : 'Enter ban reason / violation details...'}
         onCancel={() => {
           if (approvingId) return;
           setConfirmStatusChange(null);

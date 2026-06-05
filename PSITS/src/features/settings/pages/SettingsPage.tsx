@@ -6,6 +6,7 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import { useAuth } from '@/shared/context/AuthContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
+import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
 
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -20,6 +21,16 @@ const formatDate = (value?: string | null) => {
   const dt = new Date(value);
   if (Number.isNaN(dt.getTime())) return String(value);
   return dt.toLocaleDateString();
+};
+
+const formatDateForInput = (dateStr?: string | null) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export const SettingsPage = () => {
@@ -38,13 +49,30 @@ export const SettingsPage = () => {
     file: null as File | null,
     previewUrl: '',
   });
+
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
     contactNumber: user?.contactNumber || '',
     sectorDetails: user?.sectorDetails || '',
     memberType: user?.memberType || '',
+    birthDate: formatDateForInput(user?.birthdate),
+    gender: user?.gender || '',
+    address: user?.address || '',
+    occupation: user?.occupation || '',
+    representativeName: user?.representativeName || '',
+    representativeName2: user?.representativeName2 || '',
+    position: user?.position || '',
+    representativePosition2: user?.representativePosition2 || '',
+    companyEmail: user?.companyEmail || '',
+    website: user?.website || '',
+    password: '',
+    confirmPassword: '',
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isMember = user?.role === 'member';
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +82,18 @@ export const SettingsPage = () => {
       contactNumber: user.contactNumber || '',
       sectorDetails: user.sectorDetails || '',
       memberType: user.memberType || '',
+      birthDate: formatDateForInput(user.birthdate),
+      gender: user.gender || '',
+      address: user.address || '',
+      occupation: user.occupation || '',
+      representativeName: user.representativeName || '',
+      representativeName2: user.representativeName2 || '',
+      position: user.position || '',
+      representativePosition2: user.representativePosition2 || '',
+      companyEmail: user.companyEmail || '',
+      website: user.website || '',
+      password: '',
+      confirmPassword: '',
     });
 
     // Refresh from server (in case details changed)
@@ -69,6 +109,16 @@ export const SettingsPage = () => {
             sector: data.user.sector,
             sectorDetails: data.user.sectorDetails,
             memberType: data.user.memberType,
+            birthdate: data.user.birthdate,
+            address: data.user.address,
+            gender: data.user.gender,
+            occupation: data.user.occupation,
+            representativeName: data.user.representativeName,
+            representativeName2: data.user.representativeName2,
+            position: data.user.position,
+            representativePosition2: data.user.representativePosition2,
+            companyEmail: data.user.companyEmail,
+            website: data.user.website,
             membershipStartedAt: data.user.membershipStartedAt ?? null,
             membershipExpiresAt: data.user.membershipExpiresAt ?? null,
             status: data.user.status ?? null,
@@ -86,7 +136,6 @@ export const SettingsPage = () => {
 
   if (!user) return null;
 
-  const isMember = user.role === 'member';
   const hasExpiryWindow = isMember;
   const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;
   const isExpired = hasExpiryWindow && expiresAt ? expiresAt.getTime() < Date.now() : false;
@@ -95,17 +144,122 @@ export const SettingsPage = () => {
       ? Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       : null;
 
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
+    const namePattern = /^[A-Za-z\s.'-]+$/;
+
+    if (!isMember) {
+      if (!formData.fullName.trim()) nextErrors.fullName = 'Full name is required';
+      if (!formData.contactNumber.trim()) nextErrors.contactNumber = 'Contact number is required';
+    } else {
+      const type = formData.memberType;
+      
+      if (!formData.contactNumber.trim()) nextErrors.contactNumber = 'Contact number is required';
+      else if (!validatePhoneNumber(formData.contactNumber)) nextErrors.contactNumber = 'Invalid contact number';
+
+      if (!formData.address?.trim()) nextErrors.address = 'Address is required';
+
+      if (type === 'individual') {
+        if (!formData.fullName.trim()) nextErrors.fullName = 'Full name is required';
+        else if (!namePattern.test(formData.fullName.trim())) nextErrors.fullName = 'Full name must contain letters only';
+        if (!formData.gender?.trim()) nextErrors.gender = 'Gender is required';
+        if (!formData.birthDate?.trim()) nextErrors.birthDate = 'Birthdate is required';
+        if (formData.birthDate) {
+          const birth = new Date(`${formData.birthDate}T00:00:00`);
+          if (!Number.isNaN(birth.getTime())) {
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+              age -= 1;
+            }
+            if (age < 16) nextErrors.birthDate = 'Individual membership requires age 16 or older';
+          }
+        }
+      }
+
+      if (type === 'institution') {
+        if (!formData.sectorDetails?.trim()) nextErrors.sectorDetails = 'Institution name is required';
+        if (!formData.representativeName?.trim()) nextErrors.representativeName = 'Representative name is required';
+        else if (!namePattern.test(formData.representativeName.trim())) nextErrors.representativeName = 'Representative name must contain letters only';
+        if (!formData.representativeName2?.trim()) nextErrors.representativeName2 = '2nd representative is required';
+        else if (!namePattern.test(formData.representativeName2.trim())) nextErrors.representativeName2 = '2nd representative must contain letters only';
+        if (!formData.position?.trim()) nextErrors.position = 'Representative 1 position is required';
+        if (!formData.representativePosition2?.trim()) nextErrors.representativePosition2 = 'Representative 2 position is required';
+        if (!formData.companyEmail?.trim()) nextErrors.companyEmail = 'Institution email is required';
+        else if (!validateEmail(formData.companyEmail)) nextErrors.companyEmail = 'Invalid email address';
+      }
+
+      if (type === 'industry') {
+        if (!formData.sectorDetails?.trim()) nextErrors.sectorDetails = 'Company name is required';
+        if (!formData.representativeName?.trim()) nextErrors.representativeName = 'Representative name is required';
+        else if (!namePattern.test(formData.representativeName.trim())) nextErrors.representativeName = 'Representative name must contain letters only';
+        if (!formData.gender?.trim()) nextErrors.gender = 'Gender is required';
+        if (!formData.position?.trim()) nextErrors.position = 'Position is required';
+        if (!formData.companyEmail?.trim()) nextErrors.companyEmail = 'Company email is required';
+        else if (!validateEmail(formData.companyEmail)) nextErrors.companyEmail = 'Invalid email address';
+        if (formData.website && !/^https?:\/\//i.test(formData.website)) {
+          nextErrors.website = 'Website must start with http:// or https://';
+        }
+      }
+    }
+
+    if (formData.password) {
+      const passwordValue = formData.password;
+      if (passwordValue.length < 10) nextErrors.password = 'Password must be at least 10 characters';
+      else if (!/[A-Z]/.test(passwordValue)) nextErrors.password = 'Password must include at least one uppercase letter';
+      else if (!/[a-z]/.test(passwordValue)) nextErrors.password = 'Password must include at least one lowercase letter';
+      else if (!/[0-9]/.test(passwordValue)) nextErrors.password = 'Password must include at least one number';
+      else if (!/[^\w\s]/.test(passwordValue)) nextErrors.password = 'Password must include at least one special character';
+      if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      const payload: any = {
-        fullName: formData.fullName,
-        contactNumber: formData.contactNumber,
-      };
+      const payload: any = {};
 
-      if (isMember) {
-        payload.sectorDetails = formData.sectorDetails;
-        payload.memberType = formData.memberType;
+      if (!isMember) {
+        payload.fullName = formData.fullName;
+        payload.contactNumber = formData.contactNumber;
+      } else {
+        const type = formData.memberType;
+        payload.contactNumber = formData.contactNumber;
+        payload.address = formData.address;
+
+        if (type === 'individual') {
+          payload.fullName = formData.fullName;
+          payload.birthdate = formData.birthDate;
+          payload.gender = formData.gender;
+        }
+
+        if (type === 'institution') {
+          payload.sectorDetails = formData.sectorDetails;
+          payload.companyEmail = formData.companyEmail;
+          payload.representativeName = formData.representativeName;
+          payload.fullName = formData.representativeName;
+          payload.position = formData.position;
+          payload.representativeName2 = formData.representativeName2;
+          payload.representativePosition2 = formData.representativePosition2;
+        }
+
+        if (type === 'industry') {
+          payload.sectorDetails = formData.sectorDetails;
+          payload.representativeName = formData.representativeName;
+          payload.fullName = formData.representativeName;
+          payload.gender = formData.gender;
+          payload.position = formData.position;
+          payload.companyEmail = formData.companyEmail;
+          payload.website = formData.website;
+        }
+      }
+
+      if (formData.password) {
+        payload.password = formData.password;
       }
 
       const { data } = await api.updateMe(payload);
@@ -119,6 +273,16 @@ export const SettingsPage = () => {
         sector: data.user.sector,
         sectorDetails: data.user.sectorDetails,
         memberType: data.user.memberType,
+        birthdate: data.user.birthdate,
+        address: data.user.address,
+        gender: data.user.gender,
+        occupation: data.user.occupation,
+        representativeName: data.user.representativeName,
+        representativeName2: data.user.representativeName2,
+        position: data.user.position,
+        representativePosition2: data.user.representativePosition2,
+        companyEmail: data.user.companyEmail,
+        website: data.user.website,
         membershipStartedAt: data.user.membershipStartedAt ?? null,
         membershipExpiresAt: data.user.membershipExpiresAt ?? null,
         status: data.user.status ?? null,
@@ -134,6 +298,8 @@ export const SettingsPage = () => {
         type: 'success',
         isRead: false,
       });
+
+      setFormData((prev) => ({ ...prev, password: '', confirmPassword: '' }));
     } catch (err) {
       addNotification({
         userId: 'current',
@@ -156,49 +322,268 @@ export const SettingsPage = () => {
         </div>
 
         <Card className="p-6 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Full Name"
-              value={formData.fullName}
-              onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
-            />
-            <Input
-              label="Email Address"
-              type="email"
-              value={formData.email}
-              disabled
-            />
-            <Input
-              label="Contact Number"
-              value={formData.contactNumber}
-              onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
-            />
+          <div className="space-y-6">
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Member Profile Information</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Update your account details. Fields marked with <span className="text-red-500">*</span> are required.
+              </p>
+            </div>
 
-            {isMember && (
-              <>
-                <Select
-                  label="Member Type"
-                  disabled
-                  options={[
-                    { value: 'student', label: 'Student' },
-                    { value: 'individual', label: 'Individual' },
-                    { value: 'industry', label: 'Industry' },
-                    { value: 'institution', label: 'Institution' },
-                  ]}
-                  value={formData.memberType}
-                  onChange={(e) => setFormData((p) => ({ ...p, memberType: e.target.value }))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Member Type"
+                disabled
+                options={[
+                  { value: 'individual', label: 'Individual' },
+                  { value: 'industry', label: 'Industry' },
+                  { value: 'institution', label: 'Institution' },
+                ]}
+                value={formData.memberType || ''}
+                onChange={() => {}}
+              />
+              <Input
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                disabled
+                helperText="Email address cannot be changed."
+              />
+            </div>
+
+            {/* Non-member Profile Form */}
+            {!isMember && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input
+                  label="Full Name"
+                  required
+                  value={formData.fullName}
+                  onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
+                  error={errors.fullName}
                 />
                 <Input
-                  label={user.sector === 'school' ? 'School / University' : user.sector === 'industry' ? 'Industry' : 'Institution'}
-                  value={formData.sectorDetails}
-                  onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))}
+                  label="Contact Number"
+                  required
+                  value={formData.contactNumber}
+                  onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
+                  error={errors.contactNumber}
                 />
-              </>
+              </div>
             )}
+
+            {/* Member: Individual Form */}
+            {isMember && formData.memberType === 'individual' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input
+                  label="Full Name"
+                  required
+                  value={formData.fullName}
+                  onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
+                  error={errors.fullName}
+                />
+                <Input
+                  label="Birthdate"
+                  required
+                  type="date"
+                  value={formData.birthDate || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, birthDate: e.target.value }))}
+                  error={errors.birthDate}
+                  helperText="Must be age 16 or older."
+                />
+                <Select
+                  label="Gender"
+                  required
+                  options={[
+                    { value: 'Male', label: 'Male' },
+                    { value: 'Female', label: 'Female' },
+                    { value: 'Prefer not to say', label: 'Prefer not to say' },
+                  ]}
+                  value={formData.gender || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
+                  error={errors.gender}
+                />
+                <Input
+                  label="Contact Number"
+                  required
+                  value={formData.contactNumber}
+                  onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
+                  error={errors.contactNumber}
+                />
+                <Input
+                  label="Address"
+                  required
+                  value={formData.address || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
+                  error={errors.address}
+                  className="md:col-span-2"
+                />
+              </div>
+            )}
+
+            {/* Member: Institution Form */}
+            {isMember && formData.memberType === 'institution' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input
+                  label="Institution Name"
+                  required
+                  value={formData.sectorDetails || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))}
+                  error={errors.sectorDetails}
+                />
+                <Input
+                  label="Institution Address"
+                  required
+                  value={formData.address || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
+                  error={errors.address}
+                />
+                <Input
+                  label="Institution Email"
+                  required
+                  type="email"
+                  value={formData.companyEmail || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value }))}
+                  error={errors.companyEmail}
+                />
+                <Input
+                  label="Institution Contact Number"
+                  required
+                  value={formData.contactNumber || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
+                  error={errors.contactNumber}
+                />
+                <Input
+                  label="1st Institution Representative Name"
+                  required
+                  value={formData.representativeName || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value }))}
+                  error={errors.representativeName}
+                />
+                <Input
+                  label="Representative 1 Position"
+                  required
+                  value={formData.position || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))}
+                  error={errors.position}
+                />
+                <Input
+                  label="2nd Institution Representative Name"
+                  required
+                  value={formData.representativeName2 || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, representativeName2: e.target.value }))}
+                  error={errors.representativeName2}
+                />
+                <Input
+                  label="Representative 2 Position"
+                  required
+                  value={formData.representativePosition2 || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, representativePosition2: e.target.value }))}
+                  error={errors.representativePosition2}
+                />
+              </div>
+            )}
+
+            {/* Member: Industry Form */}
+            {isMember && formData.memberType === 'industry' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input
+                  label="Company Name"
+                  required
+                  value={formData.sectorDetails || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))}
+                  error={errors.sectorDetails}
+                />
+                <Input
+                  label="Company Address"
+                  required
+                  value={formData.address || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
+                  error={errors.address}
+                />
+                <Input
+                  label="Representative Name"
+                  required
+                  value={formData.representativeName || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value }))}
+                  error={errors.representativeName}
+                />
+                <Select
+                  label="Gender"
+                  required
+                  options={[
+                    { value: 'Male', label: 'Male' },
+                    { value: 'Female', label: 'Female' },
+                    { value: 'Prefer not to say', label: 'Prefer not to say' },
+                  ]}
+                  value={formData.gender || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
+                  error={errors.gender}
+                />
+                <Input
+                  label="Contact Number"
+                  required
+                  value={formData.contactNumber || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
+                  error={errors.contactNumber}
+                />
+                <Input
+                  label="Position"
+                  required
+                  value={formData.position || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))}
+                  error={errors.position}
+                />
+                <Input
+                  label="Company Email"
+                  required
+                  type="email"
+                  value={formData.companyEmail || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value }))}
+                  error={errors.companyEmail}
+                />
+                <Input
+                  label="Company Website (Optional)"
+                  value={formData.website || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, website: e.target.value }))}
+                  error={errors.website}
+                />
+              </div>
+            )}
+
+            {/* Password Update Section */}
+            <div className="rounded-lg border border-gray-200 p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2">Change Password</h3>
+              <p className="text-xs text-gray-500">Leave blank if you do not wish to change your password.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="New Password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
+                  error={errors.password}
+                  helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special."
+                />
+                <Input
+                  label="Confirm New Password"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))}
+                  error={errors.confirmPassword}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end mt-6">
-            <Button variant="primary" onClick={() => setConfirmSave(true)} isLoading={isLoading}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (validateForm()) {
+                  setConfirmSave(true);
+                }
+              }}
+              isLoading={isLoading}
+            >
               Save Changes
             </Button>
           </div>

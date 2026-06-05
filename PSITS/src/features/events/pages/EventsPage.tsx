@@ -158,14 +158,18 @@ export const EventsPage = () => {
     name: string;
   } | null>(null);
 
+  const [memberPayments, setMemberPayments] = useState<any[]>([]);
+
   const [paymentForm, setPaymentForm] = useState<{
-    method: 'gcash' | 'paypal' | 'paymaya' | 'card';
+    method: 'gcash' | 'paypal' | 'paymaya' | 'bank_transfer';
     amount: number;
+    referenceNumber: string;
     file: File | null;
     previewUrl: string;
   }>({
     method: 'gcash',
     amount: 0,
+    referenceNumber: '',
     file: null,
     previewUrl: '',
   });
@@ -204,7 +208,7 @@ export const EventsPage = () => {
   const [customTemplates, setCustomTemplates] = useState<Record<string, StoredTemplate>>({});
   const resetPaymentForm = (amount = 0) => {
     if (paymentForm.previewUrl) URL.revokeObjectURL(paymentForm.previewUrl);
-    setPaymentForm({ method: 'gcash', amount, file: null, previewUrl: '' });
+    setPaymentForm({ method: 'gcash', amount, referenceNumber: '', file: null, previewUrl: '' });
   };
   const closePaymentModal = () => {
     if (isSubmittingPayment) return;
@@ -246,28 +250,56 @@ export const EventsPage = () => {
     };
   }, [teamProfilePreview]);
 
+  const getEventPaymentStats = (eventId: string | number, fee: number) => {
+    const eventPays = memberPayments.filter(
+      (p) => String(p.eventId) === String(eventId)
+    );
+    const totalVerifiedPaid = eventPays
+      .filter((p) => String(p.verificationStatus || p.status || '').toLowerCase() === 'verified')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const totalPendingPaid = eventPays
+      .filter((p) => String(p.verificationStatus || p.status || '').toLowerCase() === 'pending')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const remainingBalance = Math.max(0, fee - totalVerifiedPaid);
+    const percentPaid = fee > 0 ? Math.min(100, Math.round((totalVerifiedPaid / fee) * 100)) : 0;
+    return {
+      totalVerifiedPaid,
+      totalPendingPaid,
+      remainingBalance,
+      percentPaid,
+    };
+  };
+
   useEffect(() => {
     if (!isMember) return;
     let cancelled = false;
-    const loadMyRegistrations = async () => {
+    const loadMyData = async () => {
       try {
-        const { data } = await api.getMyEventRegistrations();
-        if (!cancelled && data?.success) {
-          const regs = data.registrations || [];
-          const registeredMap: Record<string, boolean> = {};
-          const statusMap: Record<string, string> = {};
-          regs.forEach((reg: any) => {
-            registeredMap[String(reg.eventId)] = true;
-            statusMap[String(reg.eventId)] = reg.status;
-          });
-          setRegisteredEventIds(registeredMap);
-          setMemberStatusByEvent(statusMap);
+        const [regRes, payRes] = await Promise.all([
+          api.getMyEventRegistrations(),
+          api.getPayments()
+        ]);
+        if (!cancelled) {
+          if (regRes.data?.success) {
+            const regs = regRes.data.registrations || [];
+            const registeredMap: Record<string, boolean> = {};
+            const statusMap: Record<string, string> = {};
+            regs.forEach((reg: any) => {
+              registeredMap[String(reg.eventId)] = true;
+              statusMap[String(reg.eventId)] = reg.status;
+            });
+            setRegisteredEventIds(registeredMap);
+            setMemberStatusByEvent(statusMap);
+          }
+          if (payRes.data?.success) {
+            setMemberPayments(payRes.data.payments || []);
+          }
         }
       } catch {
         // ignore
       }
     };
-    void loadMyRegistrations();
+    void loadMyData();
     return () => {
       cancelled = true;
     };
@@ -575,7 +607,8 @@ export const EventsPage = () => {
     setPaymentError(null);
     setPaymentEvent(event);
     setPaymentFlow(flow);
-    resetPaymentForm(Number(event?.fee || 0));
+    const stats = getEventPaymentStats(event.id, Number(event.fee || 0));
+    resetPaymentForm(stats.remainingBalance);
     setShowPaymentModal(true);
   };
 
@@ -713,6 +746,26 @@ export const EventsPage = () => {
                       </div>
                     )}
                   </div>
+
+                  {isMember && isPaidEvent && isRegistered && (() => {
+                    const stats = getEventPaymentStats(event.id, Number(event.fee || 0));
+                    return (
+                      <div className="space-y-1 text-xs bg-blue-50/20 p-2 rounded border border-blue-100/30">
+                        <div className="flex justify-between font-semibold text-gray-600">
+                          <span>Paid: {formatCurrency(stats.totalVerifiedPaid)} ({stats.percentPaid}%)</span>
+                          {stats.totalPendingPaid > 0 && (
+                            <span className="text-yellow-600 italic">({formatCurrency(stats.totalPendingPaid)} pending)</span>
+                          )}
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${stats.percentPaid}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="border-t border-gray-200 pt-3 flex items-center justify-between">
                     <span className="font-bold text-primary">{formatCurrency(event.fee)}</span>
@@ -1096,8 +1149,9 @@ export const EventsPage = () => {
               const detailsEventId = String(detailsEvent.id);
               const detailsRegistrationStatus = memberStatusByEvent[detailsEventId] || '';
               const isPaidEvent = Number(detailsEvent.fee || 0) > 0;
-              const hasPaymentSubmitted = detailsRegistrationStatus === 'Payment Submitted';
-              const canUploadPaymentProof = isRegistered && isPaidEvent && !hasPaymentSubmitted;
+              const stats = getEventPaymentStats(detailsEventId, Number(detailsEvent.fee || 0));
+              const hasPaymentSubmitted = detailsRegistrationStatus === 'Payment Submitted' || stats.totalPendingPaid > 0;
+              const canUploadPaymentProof = isRegistered && isPaidEvent && stats.remainingBalance > 0;
 
               return (
                 <>
@@ -1468,6 +1522,25 @@ export const EventsPage = () => {
                 )}
 
                 <div className="text-sm text-gray-600">Registration Fee: <span className="font-semibold text-gray-900">{formatCurrency(detailsEvent.fee)}</span></div>
+                {isMember && isPaidEvent && (
+                  <div className="space-y-1.5 mt-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50">
+                    <div className="flex justify-between text-xs font-semibold text-gray-700">
+                      <span>Payment Progress</span>
+                      <span>{formatCurrency(stats.totalVerifiedPaid)} / {formatCurrency(detailsEvent.fee)} Paid ({stats.percentPaid}%)</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-primary h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${stats.percentPaid}%` }}
+                      ></div>
+                    </div>
+                    {stats.totalPendingPaid > 0 && (
+                      <p className="text-xs text-yellow-600 italic font-medium">
+                        * PHP {stats.totalPendingPaid.toLocaleString()} pending verification
+                      </p>
+                    )}
+                  </div>
+                )}
                 {participantFileName && (
                   <div className="text-xs text-gray-600">Uploaded file: {participantFileName} ({participantUploadCount} rows){isUploadingParticipants ? ' - Processing...' : ''}</div>
                 )}
@@ -1656,6 +1729,22 @@ export const EventsPage = () => {
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            const targetEvent = paymentEvent || detailsEvent;
+            if (!targetEvent) return;
+            const stats = getEventPaymentStats(targetEvent.id, Number(targetEvent.fee || 0));
+            const amt = Number(paymentForm.amount);
+            if (!amt || amt <= 0) {
+              setPaymentError('Please enter a valid amount greater than 0.');
+              return;
+            }
+            if (amt > stats.remainingBalance + 0.01) {
+              setPaymentError(`Amount cannot exceed the remaining balance of PHP ${stats.remainingBalance.toLocaleString()}.`);
+              return;
+            }
+            if (!paymentForm.referenceNumber.trim()) {
+              setPaymentError('Please enter the transaction reference number.');
+              return;
+            }
             if (!paymentForm.file) {
               setPaymentError('Please upload a screenshot/photo of the transaction.');
               return;
@@ -1682,7 +1771,7 @@ export const EventsPage = () => {
                 { value: 'gcash', label: 'GCash' },
                 { value: 'paymaya', label: 'PayMaya' },
                 { value: 'paypal', label: 'PayPal' },
-                { value: 'card', label: 'Card' },
+                { value: 'bank_transfer', label: 'Bank Transfer' },
               ]}
               value={paymentForm.method}
               onChange={(e) => setPaymentForm((p) => ({ ...p, method: (e.target as HTMLSelectElement).value as any }))}
@@ -1691,9 +1780,19 @@ export const EventsPage = () => {
               label="Amount"
               type="number"
               value={String(paymentForm.amount)}
-              readOnly
-              helperText="Amount is fixed by the event registration fee."
+              onChange={(e) => setPaymentForm((p) => ({ ...p, amount: Number((e.target as HTMLInputElement).value) || 0 }))}
+              helperText="You can adjust this amount to make a partial payment."
             />
+            <div className="md:col-span-2">
+              <Input
+                label="Reference Number"
+                type="text"
+                value={paymentForm.referenceNumber}
+                onChange={(e) => setPaymentForm((p) => ({ ...p, referenceNumber: (e.target as HTMLInputElement).value }))}
+                placeholder="Enter transaction reference number"
+                required
+              />
+            </div>
           </div>
 
           <div>
@@ -1768,8 +1867,16 @@ export const EventsPage = () => {
               eventId: targetEvent.id,
               amount: Number(paymentForm.amount) || Number(targetEvent.fee) || 0,
               method: paymentForm.method,
+              referenceNumber: paymentForm.referenceNumber,
               proofUrl,
             });
+
+            if (isMember) {
+              const { data: payRes } = await api.getPayments();
+              if (payRes?.success) {
+                setMemberPayments(payRes.payments || []);
+              }
+            }
 
             setMemberStatusByEvent((prev) => ({ ...prev, [String(targetEvent.id)]: 'Payment Submitted' }));
             addNotification({

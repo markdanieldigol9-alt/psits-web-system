@@ -13,6 +13,7 @@ export interface User {
   sector: Sector;
   sectorDetails?: string;
   memberType?: MemberType;
+  birthdate?: string;
   address?: string;
   gender?: string;
   occupation?: string;
@@ -99,7 +100,7 @@ export interface EventRegistration {
 }
 
 // Payment Types
-export type PaymentMethod = 'gcash' | 'paypal' | 'paymaya' | 'card';
+export type PaymentMethod = 'gcash' | 'paypal' | 'paymaya' | 'bank_transfer';
 export type PaymentStatus = 'pending' | 'verified' | 'rejected';
 
 export interface Payment {

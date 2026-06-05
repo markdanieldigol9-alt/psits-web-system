@@ -11,6 +11,7 @@ interface AddMemberModalProps {
   onClose: () => void;
   onSubmit: (memberData: any) => void;
   isLoading?: boolean;
+  existingMembers?: Array<{ id: string; email: string; fullName: string }>;
 }
 
 type AddMemberFormData = Partial<RegisterData> & {
@@ -41,11 +42,12 @@ const initialForm: AddMemberFormData = {
   birthDate: '',
 };
 
-export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }: AddMemberModalProps) => {
+export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, existingMembers }: AddMemberModalProps) => {
   const [formData, setFormData] = useState<AddMemberFormData>(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isLookupPopulated, setIsLookupPopulated] = useState(false);
 
   const validateForm = () => {
     const nextErrors: Record<string, string> = {};
@@ -55,23 +57,43 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
     if (!formData.email?.trim()) nextErrors.email = 'Email is required';
     else if (!validateEmail(formData.email)) nextErrors.email = 'Invalid email format';
     
-    if (!formData.password) {
-      nextErrors.password = 'Password is required';
+    if (formData.membershipMode !== 'renew') {
+      if (!formData.password) {
+        nextErrors.password = 'Password is required';
+      } else {
+        if (formData.password.length < 10) {
+          nextErrors.password = 'Password must be at least 10 characters';
+        } else if (!/[A-Z]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one uppercase letter';
+        } else if (!/[a-z]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one lowercase letter';
+        } else if (!/[0-9]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one number';
+        } else if (!/[^\w\s]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one special character';
+        }
+      }
+      if (formData.password !== formData.confirmPassword) {
+        nextErrors.confirmPassword = 'Passwords do not match';
+      }
     } else {
-      if (formData.password.length < 10) {
-        nextErrors.password = 'Password must be at least 10 characters';
-      } else if (!/[A-Z]/.test(formData.password)) {
-        nextErrors.password = 'Password must include at least one uppercase letter';
-      } else if (!/[a-z]/.test(formData.password)) {
-        nextErrors.password = 'Password must include at least one lowercase letter';
-      } else if (!/[0-9]/.test(formData.password)) {
-        nextErrors.password = 'Password must include at least one number';
-      } else if (!/[^\w\s]/.test(formData.password)) {
-        nextErrors.password = 'Password must include at least one special character';
+      if (formData.password) {
+        if (formData.password.length < 10) {
+          nextErrors.password = 'Password must be at least 10 characters';
+        } else if (!/[A-Z]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one uppercase letter';
+        } else if (!/[a-z]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one lowercase letter';
+        } else if (!/[0-9]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one number';
+        } else if (!/[^\w\s]/.test(formData.password)) {
+          nextErrors.password = 'Password must include at least one special character';
+        }
+        if (formData.password !== formData.confirmPassword) {
+          nextErrors.confirmPassword = 'Passwords do not match';
+        }
       }
     }
-    
-    if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match';
 
     if (!formData.contactNumber?.trim()) nextErrors.contactNumber = 'Contact number is required';
     else if (!validatePhoneNumber(formData.contactNumber)) nextErrors.contactNumber = 'Invalid phone number';
@@ -132,6 +154,7 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
     setErrors({});
     setError(null);
     setIsLookingUp(false);
+    setIsLookupPopulated(false);
     onClose();
   };
 
@@ -186,22 +209,43 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
         <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {error && <Alert type="error" message={error} />}
 
-          <Select
-            label="Member Type"
-            options={[
-              { value: 'individual', label: 'Individual' },
-              { value: 'industry', label: 'Industry' },
-              { value: 'institution', label: 'Institution' },
-            ]}
-            value={formData.memberType || ''}
-            onChange={(e) => setFormData((prev) => ({ ...prev, memberType: e.target.value as MemberType }))}
-            error={errors.memberType}
-          />
+          {formData.membershipMode !== 'renew' && (
+            <Select
+              label="Member Type"
+              options={[
+                { value: 'individual', label: 'Individual' },
+                { value: 'industry', label: 'Industry' },
+                { value: 'institution', label: 'Institution' },
+              ]}
+              value={formData.memberType || ''}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, memberType: e.target.value as MemberType }));
+                setIsLookupPopulated(false);
+              }}
+              error={errors.memberType}
+            />
+          )}
+
+          {formData.membershipMode === 'renew' && isLookupPopulated && formData.memberType && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+              <span className="text-sm font-semibold text-gray-800 mr-2">Member Type:</span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                {formData.memberType}
+              </span>
+            </div>
+          )}
 
           {formData.memberType === 'individual' && (
             <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
               <Input label="Full Name" value={formData.fullName || ''} onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))} error={errors.fullName} />
-              <Input label="Email Address" type="email" value={formData.email || ''} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} error={errors.email} />
+              <Input
+                label="Email Address"
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
+                error={errors.email}
+                disabled={isLookupPopulated || isLoading}
+              />
               <Input
                 label="Birthdate"
                 required
@@ -233,7 +277,14 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
             <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
               <Input label="Institution Name" value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
               <Input label="Institution Address" value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
-              <Input label="Institution Email" type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: p.email || e.target.value }))} error={errors.companyEmail} />
+              <Input
+                label="Institution Email"
+                type="email"
+                value={formData.companyEmail || ''}
+                onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: p.email || e.target.value }))}
+                error={errors.companyEmail}
+                disabled={isLookupPopulated || isLoading}
+              />
               <Input label="Institution Contact Number" value={formData.contactNumber || ''} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
               <Input label="1st Institution Representative Name" value={formData.representativeName || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value, fullName: p.fullName || e.target.value }))} error={errors.representativeName} />
               <Input label="Representative 1 Position" value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
@@ -263,7 +314,14 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
               />
               <Input label="Contact Number" value={formData.contactNumber || ''} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
               <Input label="Position" value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
-              <Input label="Company Email" type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: p.email || e.target.value }))} error={errors.companyEmail} />
+              <Input
+                label="Company Email"
+                type="email"
+                value={formData.companyEmail || ''}
+                onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: p.email || e.target.value }))}
+                error={errors.companyEmail}
+                disabled={isLookupPopulated || isLoading}
+              />
               <Input label="Company Website (Optional)" value={formData.website || ''} onChange={(e) => setFormData((p) => ({ ...p, website: e.target.value }))} />
               <Input label="Password" type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} />
               <Input label="Confirm Password" type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
@@ -277,26 +335,45 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
               { value: 'renew', label: 'Renew' },
             ]}
             value={formData.membershipMode || ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              const val = e.target.value as 'new' | 'renew';
               setFormData((prev) => ({
                 ...prev,
-                membershipMode: e.target.value as 'new' | 'renew',
-              }))
-            }
+                membershipMode: val,
+              }));
+              if (val === 'new') {
+                setIsLookupPopulated(false);
+              }
+            }}
             error={errors.membershipMode}
           />
 
           {formData.membershipMode === 'renew' && (
             <div className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 md:grid-cols-3">
-              <Input
-                required
-                label="Previous Account ID or Email"
-                value={formData.renewAccountId || ''}
-                onChange={(e) => setFormData((p) => ({ ...p, renewAccountId: e.target.value }))}
-                error={errors.renewAccountId}
-                helperText="Use this to pull existing account details for renewal."
-                className="md:col-span-2"
-              />
+              {existingMembers && existingMembers.length > 0 ? (
+                <Select
+                  required
+                  label="Select Account Email to Renew"
+                  options={existingMembers.map((m) => ({
+                    value: m.email || '',
+                    label: `${m.fullName || 'No Name'} (${m.email})`,
+                  }))}
+                  value={formData.renewAccountId || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, renewAccountId: e.target.value }))}
+                  error={errors.renewAccountId}
+                  className="md:col-span-2"
+                />
+              ) : (
+                <Input
+                  required
+                  label="Previous Account ID or Email"
+                  value={formData.renewAccountId || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, renewAccountId: e.target.value }))}
+                  error={errors.renewAccountId}
+                  helperText="Use this to pull existing account details for renewal."
+                  className="md:col-span-2"
+                />
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -304,11 +381,10 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
                 isLoading={isLookingUp}
                 disabled={isLoading}
                 onClick={async () => {
-                  if (!formData.renewAccountId?.trim() || !formData.contactNumber?.trim()) {
+                  if (!formData.renewAccountId?.trim()) {
                     setErrors((prev) => ({
                       ...prev,
-                      renewAccountId: formData.renewAccountId?.trim() ? '' : 'Previous Account Email or ID is required',
-                      contactNumber: formData.contactNumber?.trim() ? '' : 'Contact number is required for lookup',
+                      renewAccountId: 'Previous Account Email or ID is required',
                     }));
                     return;
                   }
@@ -317,33 +393,37 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false }:
                   try {
                     const { data } = await api.renewLookup({
                       renewAccountId: formData.renewAccountId.trim(),
-                      contactNumber: formData.contactNumber.trim(),
+                      contactNumber: formData.contactNumber?.trim() || '',
                     });
                     if (data?.member) {
                       const m = data.member;
                       setFormData((prev) => ({
                         ...prev,
-                        fullName: prev.fullName || m.fullName || '',
-                        email: prev.email || m.email || '',
+                        fullName: m.fullName || '',
+                        email: m.email || '',
                         sector: (m.sector || prev.sector) as any,
-                        sectorDetails: prev.sectorDetails || m.sectorDetails || '',
+                        sectorDetails: m.sectorDetails || '',
                         memberType: (m.memberType || prev.memberType) as MemberType,
-                        address: prev.address || m.address || '',
-                        gender: prev.gender || m.gender || '',
-                        occupation: prev.occupation || m.occupation || '',
-                        representativeName: prev.representativeName || m.representativeName || '',
-                        representativeName2: prev.representativeName2 || m.representativeName2 || '',
-                        position: prev.position || m.position || '',
-                        representativePosition2: prev.representativePosition2 || m.representativePosition2 || '',
-                        companyEmail: prev.companyEmail || m.companyEmail || '',
-                        website: prev.website || m.website || '',
+                        address: m.address || '',
+                        gender: m.gender || '',
+                        occupation: m.occupation || '',
+                        representativeName: m.representativeName || '',
+                        representativeName2: m.representativeName2 || '',
+                        position: m.position || '',
+                        representativePosition2: m.representativePosition2 || '',
+                        companyEmail: m.companyEmail || '',
+                        website: m.website || '',
+                        contactNumber: m.contactNumber || '',
                       }));
+                      setIsLookupPopulated(true);
                       setError(null);
                     } else {
                       setError('No matching account found.');
+                      setIsLookupPopulated(false);
                     }
                   } catch (err) {
                     setError(err instanceof Error ? err.message : 'Lookup failed.');
+                    setIsLookupPopulated(false);
                   } finally {
                     setIsLookingUp(false);
                   }

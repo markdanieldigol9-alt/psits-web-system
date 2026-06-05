@@ -96,7 +96,7 @@ async function getDashboardReport(_req, res) {
     { name: 'GCash', value: revenueMap.get('gcash') || 0 },
     { name: 'PayPal', value: revenueMap.get('paypal') || 0 },
     { name: 'PayMaya', value: revenueMap.get('paymaya') || 0 },
-    { name: 'Card', value: revenueMap.get('card') || 0 },
+    { name: 'Bank Transfer', value: (revenueMap.get('bank_transfer') || 0) + (revenueMap.get('card') || 0) },
   ];
 
   const summary = isModerator
