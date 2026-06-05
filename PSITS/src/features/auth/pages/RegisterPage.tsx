@@ -36,6 +36,7 @@ export const RegisterPage = () => {
     website: '',
     contactNumber: '',
     paymentProof: '',
+    referenceNumber: '',
     termsAccepted: false,
     birthDate: '',
   });
@@ -67,6 +68,7 @@ export const RegisterPage = () => {
     else if (!/[^\w\s]/.test(passwordValue)) nextErrors.password = 'Password must include at least one special character';
     if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match';
     if (!formData.paymentProof) nextErrors.paymentProof = 'Payment proof is required';
+    if (!formData.referenceNumber?.trim()) nextErrors.referenceNumber = 'Reference number is required';
     if (!formData.termsAccepted) nextErrors.termsAccepted = 'You must accept the terms and conditions';
 
     if (type === 'individual') {
@@ -191,6 +193,7 @@ export const RegisterPage = () => {
         website: '',
         contactNumber: '',
         paymentProof: '',
+        referenceNumber: '',
         termsAccepted: false,
         birthDate: '',
       });
@@ -308,6 +311,15 @@ export const RegisterPage = () => {
           {errors.paymentProof && <p className="mt-1 text-sm text-red-600">{errors.paymentProof}</p>}
           {formData.paymentProof && <img src={formData.paymentProof} alt="Payment proof" className="mt-2 h-28 rounded border object-contain" />}
         </div>
+
+        <Input
+          label="Reference Number"
+          required
+          value={formData.referenceNumber || ''}
+          onChange={(e) => setFormData((prev) => ({ ...prev, referenceNumber: e.target.value }))}
+          error={errors.referenceNumber}
+          placeholder="Enter GCash/Transaction Reference Number"
+        />
 
         <label className="flex items-start gap-2">
           <input

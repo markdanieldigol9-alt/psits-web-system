@@ -62,6 +62,7 @@ export interface RegisterData {
   website?: string;
   membershipMode?: 'new' | 'renew';
   paymentProof?: string; // base64
+  referenceNumber?: string;
   termsAccepted?: boolean;
 }
 

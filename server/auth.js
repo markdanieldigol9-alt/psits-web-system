@@ -184,6 +184,11 @@ async function register(req, res) {
   const website = body.website ? String(body.website).trim() : null;
   const membershipMode = body.membershipMode ? String(body.membershipMode).trim() : 'new';
   const paymentProof = body.paymentProof ? String(body.paymentProof) : null;
+  const referenceNumber = body.referenceNumber ? String(body.referenceNumber).trim() : null;
+
+  if (paymentProof && !referenceNumber) {
+    return json(res, 400, { success: false, message: 'Reference number is required.' });
+  }
 
   if (memberType === 'industry') {
     if (!sectorDetails) return json(res, 400, { success: false, message: 'Company name is required.' });
@@ -321,9 +326,31 @@ async function register(req, res) {
             const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
             await fs.writeFile(path.join(dir, filename), buffer);
 
+            const [payColumnRows] = await pool.execute('SHOW COLUMNS FROM payments');
+            const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
+
+            const payCols = ['member_id', 'amount', 'method', 'proof_url', 'status'];
+            const payVals = [insertedId, 0, 'gcash', `/uploads/payment-proofs/${filename}`, 'pending'];
+
+            if (payColumnSet.has('reference_number')) {
+              payCols.push('reference_number');
+              payVals.push(referenceNumber);
+            }
+            if (payColumnSet.has('payment_kind')) {
+              payCols.push('payment_kind');
+              payVals.push('membership_renewal');
+            }
+            if (payColumnSet.has('payment_method')) {
+              payCols.push('payment_method');
+              payVals.push('gcash');
+            }
+
+            const payPlaceholders = payCols.map(() => '?').join(', ');
+            const payColumnSql = payCols.map((c) => `\`${c}\``).join(', ');
+
             await pool.execute(
-              `INSERT INTO payments (member_id, amount, method, proof_url, status) VALUES (?, 0, 'gcash', ?, 'pending')`,
-              [insertedId, `/uploads/payment-proofs/${filename}`]
+              `INSERT INTO payments (${payColumnSql}) VALUES (${payPlaceholders})`,
+              payVals
             );
           } catch (err) {
             // Don't block registration if optional payment proof storage fails.
