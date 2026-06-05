@@ -5,7 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Calendar, Users, MapPin, Clock, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye } from 'lucide-react';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -708,104 +708,127 @@ export const EventsPage = () => {
 
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-4">
           {filteredEvents.map((event) => {
             const isRegistered = !!registeredEventIds[String(event.id)];
             const statusText = memberStatusByEvent[String(event.id)] || event.status;
             const isPaidEvent = Number(event?.fee || 0) > 0;
             const regState = getRegistrationState(event);
             return (
-              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-6 space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
-                    <div className="flex items-center gap-2">
-                      {isRegistered && <Badge variant="success">Registered</Badge>}
-                      {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
-                      {event.eventType && (
-                        <Badge variant={event.eventType === 'competition' ? 'error' : 'info'}>
-                          {event.eventType === 'competition' ? 'Competition' : 'Seminar'}
-                        </Badge>
-                      )}
-                      {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
-                      <Badge variant={getStatusColor(event.status)}>
-                        {String(event.status).charAt(0).toUpperCase() + String(event.status).slice(1)}
-                      </Badge>
+              <Card key={event.id} className="p-6 overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                      EV
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        PSITS Hub Event
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Scheduled on {event.date} at {event.time}
+                      </p>
                     </div>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isRegistered && <Badge variant="success">Registered</Badge>}
+                    {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
+                    {event.eventType && (
+                      <Badge variant={event.eventType === 'competition' ? 'error' : 'info'}>
+                        {event.eventType === 'competition' ? 'Competition' : 'Seminar'}
+                      </Badge>
+                    )}
+                    {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
+                    <Badge variant={getStatusColor(event.status)}>
+                      {String(event.status).charAt(0).toUpperCase() + String(event.status).slice(1)}
+                    </Badge>
+                  </div>
+                </div>
 
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2"><Calendar size={16} /> {event.date}</div>
-                    <div className="flex items-center gap-2"><Clock size={16} /> {event.time}</div>
-                    <div className="flex items-center gap-2"><MapPin size={16} /> {event.location}</div>
-                    <div className="flex items-center gap-2"><Users size={16} /> {event.registrations} / {event.capacity} participants</div>
-                    <div className="flex items-center gap-2"><Megaphone size={16} /> Mode: {String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</div>
-                    {isMember && (event.registrationStartAt || event.registrationEndAt) && (
-                      <div className="text-xs text-gray-500">
-                        Registration: {event.registrationStartAt ? String(event.registrationStartAt).replace('T', ' ').slice(0, 16) : '—'} → {event.registrationEndAt ? String(event.registrationEndAt).replace('T', ' ').slice(0, 16) : '—'}
+                {event.description && (
+                  <p className="mb-4 whitespace-pre-wrap text-gray-700 text-sm">{event.description}</p>
+                )}
+
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 rounded-lg bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400" /> <span><strong>Location:</strong> {event.location}</span></div>
+                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>Capacity:</strong> {event.registrations} / {event.capacity} participants</span></div>
+                  <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400" /> <span><strong>Mode:</strong> {String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
+                  {isMember && (event.registrationStartAt || event.registrationEndAt) && (
+                    <div className="sm:col-span-2 md:col-span-3 text-xs text-gray-500 border-t border-gray-200/60 pt-2 mt-1">
+                      <strong>Registration Window:</strong> {event.registrationStartAt ? String(event.registrationStartAt).replace('T', ' ').slice(0, 16) : '—'} to {event.registrationEndAt ? String(event.registrationEndAt).replace('T', ' ').slice(0, 16) : '—'}
+                    </div>
+                  )}
+                </div>
+
+                {isMember && isPaidEvent && isRegistered && (() => {
+                  const stats = getEventPaymentStats(event.id, Number(event.fee || 0));
+                  return (
+                    <div className="mb-4 space-y-1 text-xs bg-blue-50/20 p-3 rounded-lg border border-blue-100/30">
+                      <div className="flex justify-between font-semibold text-gray-600">
+                        <span>Paid: {formatCurrency(stats.totalVerifiedPaid)} ({stats.percentPaid}%)</span>
+                        {stats.totalPendingPaid > 0 && (
+                          <span className="text-yellow-600 italic">({formatCurrency(stats.totalPendingPaid)} pending)</span>
+                        )}
                       </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${stats.percentPaid}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 pt-4 mt-4">
+                  <div className="flex items-center gap-4">
+                    <span className="text-lg font-bold text-primary">Fee: {formatCurrency(event.fee)}</span>
+                    {isMember && (
+                      <span className="text-sm text-gray-600">
+                        <strong>Registration Status:</strong> {String(statusText).charAt(0).toUpperCase() + String(statusText).slice(1)}
+                      </span>
                     )}
                   </div>
 
-                  {isMember && isPaidEvent && isRegistered && (() => {
-                    const stats = getEventPaymentStats(event.id, Number(event.fee || 0));
-                    return (
-                      <div className="space-y-1 text-xs bg-blue-50/20 p-2 rounded border border-blue-100/30">
-                        <div className="flex justify-between font-semibold text-gray-600">
-                          <span>Paid: {formatCurrency(stats.totalVerifiedPaid)} ({stats.percentPaid}%)</span>
-                          {stats.totalPendingPaid > 0 && (
-                            <span className="text-yellow-600 italic">({formatCurrency(stats.totalPendingPaid)} pending)</span>
-                          )}
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-primary h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${stats.percentPaid}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setDetailsEvent(event)}>
+                      <Eye size={16} /> View Details
+                    </Button>
 
-                  <div className="border-t border-gray-200 pt-3 flex items-center justify-between">
-                    <span className="font-bold text-primary">{formatCurrency(event.fee)}</span>
-                    <Button variant="outline" size="sm" onClick={() => setDetailsEvent(event)}>View Details</Button>
-                  </div>
+                    {canManageEvents && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => openEditModal(event)}>
+                          <Pencil size={16} /> Edit / Update
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setConfirmToggle({
+                              eventId: String(event.id),
+                              nextStatus: event.status === 'cancelled' ? 'upcoming' : 'cancelled',
+                              title: event.title,
+                            })
+                          }
+                        >
+                          <Power size={16} /> {event.status === 'cancelled' ? 'Turn On' : 'Turn Off'}
+                        </Button>
+                      </>
+                    )}
 
-                  {canManageEvents && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(event)}>
-                        <Pencil size={16} /> Edit / Update
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setConfirmToggle({
-                            eventId: String(event.id),
-                            nextStatus: event.status === 'cancelled' ? 'upcoming' : 'cancelled',
-                            title: event.title,
-                          })
-                        }
-                      >
-                        <Power size={16} /> {event.status === 'cancelled' ? 'Turn On' : 'Turn Off'}
-                      </Button>
-                    </div>
-                  )}
-
-                  {isMember && (
-                    <div className="space-y-2">
+                    {isMember && (
                       <Button
                         variant={isRegistered ? 'secondary' : 'primary'}
                         size="sm"
                         onClick={() => void handleRegister(event)}
                         disabled={isRegistered || regState.key !== 'open'}
+                        className="min-w-[140px]"
                       >
                         <CheckCircle size={16} /> {isRegistered ? 'Registered' : (isPaidEvent ? 'Register & Upload Proof' : 'Register for Event')}
                       </Button>
-                      <div className="text-xs text-gray-600">Status: {String(statusText).charAt(0).toUpperCase() + String(statusText).slice(1)}</div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </Card>
             );
