@@ -185,6 +185,7 @@ async function register(req, res) {
   const membershipMode = body.membershipMode ? String(body.membershipMode).trim() : 'new';
   const paymentProof = body.paymentProof ? String(body.paymentProof) : null;
   const referenceNumber = body.referenceNumber ? String(body.referenceNumber).trim() : null;
+  const paymentMethod = (body.paymentMethod || body.method) ? String(body.paymentMethod || body.method).trim() : 'gcash';
 
   if (paymentProof && !referenceNumber) {
     return json(res, 400, { success: false, message: 'Reference number is required.' });
@@ -330,7 +331,7 @@ async function register(req, res) {
             const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
 
             const payCols = ['member_id', 'amount', 'method', 'proof_url', 'status'];
-            const payVals = [insertedId, 0, 'gcash', `/uploads/payment-proofs/${filename}`, 'pending'];
+            const payVals = [insertedId, 0, paymentMethod, `/uploads/payment-proofs/${filename}`, 'pending'];
 
             if (payColumnSet.has('reference_number')) {
               payCols.push('reference_number');
@@ -342,7 +343,7 @@ async function register(req, res) {
             }
             if (payColumnSet.has('payment_method')) {
               payCols.push('payment_method');
-              payVals.push('gcash');
+              payVals.push(paymentMethod);
             }
 
             const payPlaceholders = payCols.map(() => '?').join(', ');

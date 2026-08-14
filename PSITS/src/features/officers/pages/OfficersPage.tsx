@@ -6,6 +6,7 @@ import { Plus, Archive } from 'lucide-react';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { AddOfficerModal } from '@/features/officers/components/AddOfficerModal';
+import { ManagePositionsModal } from '@/features/officers/components/ManagePositionsModal';
 import { useAuth } from '@/shared/context/AuthContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 
@@ -29,6 +30,7 @@ export const OfficersPage = () => {
   const [confirmAssign, setConfirmAssign] = useState(false);
   const [pendingAssign, setPendingAssign] = useState<{ userId: string; position: string; startDate?: string; endDate?: string } | null>(null);
   const [changeTarget, setChangeTarget] = useState<any | null>(null);
+  const [isManagePositionsOpen, setIsManagePositionsOpen] = useState(false);
 
   const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin';
 
@@ -81,10 +83,15 @@ export const OfficersPage = () => {
             </p>
           </div>
           {canManageOfficers && (
-            <Button variant="primary" size="lg" onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto">
-              <Plus size={20} />
-              Assign Officer
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="lg" onClick={() => setIsManagePositionsOpen(true)} className="w-full sm:w-auto">
+                Manage Positions
+              </Button>
+              <Button variant="primary" size="lg" onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto">
+                <Plus size={20} />
+                Assign Officer
+              </Button>
+            </div>
           )}
         </div>
 
@@ -354,6 +361,12 @@ export const OfficersPage = () => {
           }
         }}
       />
+      {canManageOfficers && (
+        <ManagePositionsModal
+          isOpen={isManagePositionsOpen}
+          onClose={() => setIsManagePositionsOpen(false)}
+        />
+      )}
     </MainLayout>
   );
 };

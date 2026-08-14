@@ -128,17 +128,37 @@ export const AddOfficerModal = ({
     };
   }, [isOpen, memberQuery, selectedMember]);
 
+  const [availablePositions, setAvailablePositions] = useState<string[]>([
+    'President',
+    'Vice President',
+    'Treasurer',
+    'Secretary',
+    'Member',
+  ]);
+  const [isCreatingPosition, setIsCreatingPosition] = useState(false);
+  const [newPositionInput, setNewPositionInput] = useState('');
+  const [isAddingPosLoading, setIsAddingPosLoading] = useState(false);
+
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
 
     const loadPositions = async () => {
       try {
-        const { data } = await api.getOfficers();
-        const officers = (data?.officers || []) as any[];
-        const active = officers.filter((o) => o.status === 'active');
+        const [offResp, posResp] = await Promise.all([
+          api.getOfficers(),
+          api.getOfficerPositions(),
+        ]);
+        const officers = (offResp.data?.officers || []) as any[];
+        const active = officers.filter((o) => o.status === 'active' || o.officerStatus === 'active');
         const positions = new Set(active.map((o) => String(o.position || '').trim()).filter(Boolean));
         if (!cancelled) setTakenPositions(positions);
+
+        const fetchedPositions = posResp.data?.positions || [];
+        if (fetchedPositions.length > 0) {
+          const names = fetchedPositions.map((p: any) => p.name);
+          if (!cancelled) setAvailablePositions(names);
+        }
       } catch {
         if (!cancelled) setTakenPositions(new Set());
       }
@@ -149,6 +169,29 @@ export const AddOfficerModal = ({
       cancelled = true;
     };
   }, [isOpen]);
+
+  const handleQuickAddPosition = async () => {
+    const title = newPositionInput.trim();
+    if (!title) return;
+    setIsAddingPosLoading(true);
+    try {
+      const { data } = await api.createOfficerPosition({ name: title });
+      if (data?.success) {
+        const createdName = data.position.name;
+        if (!availablePositions.includes(createdName)) {
+          setAvailablePositions((prev) => [...prev, createdName]);
+        }
+        setFormData((prev) => ({ ...prev, position: createdName }));
+        setNewPositionInput('');
+        setIsCreatingPosition(false);
+        setErrors((prev) => ({ ...prev, position: '' }));
+      }
+    } catch (err: any) {
+      setErrors((prev) => ({ ...prev, position: err.message || 'Failed to create position.' }));
+    } finally {
+      setIsAddingPosLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,28 +299,76 @@ export const AddOfficerModal = ({
               )}
             </div>
 
-            <Select
-              label="Position"
-              options={[
-                { value: 'President', label: takenPositions.has('President') ? 'President (Assigned)' : 'President' },
-                { value: 'Vice President', label: takenPositions.has('Vice President') ? 'Vice President (Assigned)' : 'Vice President' },
-                { value: 'Treasurer', label: takenPositions.has('Treasurer') ? 'Treasurer (Assigned)' : 'Treasurer' },
-                { value: 'Secretary', label: takenPositions.has('Secretary') ? 'Secretary (Assigned)' : 'Secretary' },
-                { value: 'Member', label: takenPositions.has('Member') ? 'Member (Assigned)' : 'Member' }
-              ]}
-              value={formData.position}
-              onChange={(e) => {
-                if (lockPosition) return;
-                if (takenPositions.has(e.target.value)) {
-                  setErrors((prev) => ({ ...prev, position: 'Position already assigned.' }));
-                  return;
-                }
-                setErrors((prev) => ({ ...prev, position: '' }));
-                setFormData({ ...formData, position: e.target.value });
-              }}
-              disabled={lockPosition}
-              error={errors.position}
-            />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-semibold text-gray-700">Position</label>
+                {!lockPosition && !isCreatingPosition && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingPosition(true)}
+                    className="text-xs text-primary hover:underline font-medium"
+                  >
+                    + Create Position
+                  </button>
+                )}
+              </div>
+
+              {!isCreatingPosition ? (
+                <Select
+                  options={[
+                    { value: '', label: 'Select an option' },
+                    ...availablePositions.map((pos) => ({
+                      value: pos,
+                      label: takenPositions.has(pos) ? `${pos} (Assigned)` : pos,
+                    })),
+                  ]}
+                  value={formData.position}
+                  onChange={(e) => {
+                    if (lockPosition) return;
+                    if (takenPositions.has(e.target.value)) {
+                      setErrors((prev) => ({ ...prev, position: 'Position already assigned.' }));
+                      return;
+                    }
+                    setErrors((prev) => ({ ...prev, position: '' }));
+                    setFormData({ ...formData, position: e.target.value });
+                  }}
+                  disabled={lockPosition}
+                  error={errors.position}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Enter position title..."
+                      value={newPositionInput}
+                      onChange={(e) => setNewPositionInput(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleQuickAddPosition}
+                      isLoading={isAddingPosLoading}
+                    >
+                      Add
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsCreatingPosition(false);
+                        setNewPositionInput('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             {takenPositions.size > 0 && (
               <p className="text-xs text-gray-500 md:col-span-2">Positions marked as assigned are unavailable until cleared.</p>
             )}

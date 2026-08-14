@@ -836,6 +836,42 @@ async function migrate() {
   try { await pool.query('ALTER TABLE officers ADD COLUMN term_end DATE NULL'); } catch { /* ignore */ }
   try { await pool.query("ALTER TABLE officers ADD COLUMN officer_status ENUM('active','inactive','past') NOT NULL DEFAULT 'active'"); } catch { /* ignore */ }
 
+  // Dynamic Officer Positions
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS officer_positions (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      name VARCHAR(191) NOT NULL,
+      description TEXT NULL,
+      is_default TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_officer_positions_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
+  try {
+    const [posCount] = await pool.query('SELECT COUNT(*) AS cnt FROM officer_positions');
+    if (posCount[0] && posCount[0].cnt === 0) {
+      const defaults = [
+        ['President', 'Lead organization executive', 1],
+        ['Vice President', 'Assisting organization executive', 1],
+        ['Secretary', 'Record keeping and administration', 1],
+        ['Treasurer', 'Financial management and records', 1],
+        ['Member', 'Board or committee member position', 1]
+      ];
+      for (const [pName, pDesc, pIsDef] of defaults) {
+        // eslint-disable-next-line no-await-in-loop
+        await pool.query(
+          'INSERT IGNORE INTO officer_positions (name, description, is_default) VALUES (?, ?, ?)',
+          [pName, pDesc, pIsDef]
+        );
+      }
+    }
+  } catch {
+    // Ignore seeding error
+  }
+
   // Officer elections
   await pool.query(`
     CREATE TABLE IF NOT EXISTS elections (
@@ -1030,6 +1066,27 @@ async function migrate() {
     }
   } catch {
     // ignore
+  }
+
+  // Create settings table for dynamic config (e.g. GCash QR code)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key_name VARCHAR(191) NOT NULL,
+      value_text TEXT NULL,
+      PRIMARY KEY (key_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
+  // Seed default GCash QR code setting if not exists
+  const [existingSettings] = await pool.execute(
+    'SELECT key_name FROM settings WHERE key_name = ? LIMIT 1',
+    ['gcash_qr_code']
+  );
+  if (!existingSettings.length) {
+    await pool.execute(
+      'INSERT INTO settings (key_name, value_text) VALUES (?, ?)',
+      ['gcash_qr_code', '']
+    );
   }
 
   // Seed initial Super Admin if missing (matches credentials in PSITS/README)

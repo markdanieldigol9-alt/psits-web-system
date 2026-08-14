@@ -38,6 +38,18 @@ export const SettingsPage = () => {
   const { addNotification } = useNotification();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState({
+    gcash_qr_code: '',
+    paymaya_qr_code: '',
+    bank_transfer_qr_code: '',
+    bank_transfer_details: '',
+    cash_instructions: '',
+  });
+  const [qrFiles, setQrFiles] = useState<Record<string, File | null>>({});
+  const [qrPreviews, setQrPreviews] = useState<Record<string, string>>({});
+  const [activePaymentTab, setActivePaymentTab] = useState<'gcash' | 'paymaya' | 'bank_transfer' | 'cash_officer'>('gcash');
+  const [isPaymentSettingsLoading, setIsPaymentSettingsLoading] = useState(false);
+  const [paymentSettingsError, setPaymentSettingsError] = useState<string | null>(null);
   const [confirmSave, setConfirmSave] = useState(false);
   const [isRenewalOpen, setIsRenewalOpen] = useState(false);
   const [renewalSubmitting, setRenewalSubmitting] = useState(false);
@@ -133,6 +145,92 @@ export const SettingsPage = () => {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
+      const fetchSettings = async () => {
+        try {
+          const { data } = await api.getPublicSettings();
+          if (data?.success && data.settings) {
+            setPaymentSettings({
+              gcash_qr_code: data.settings.gcash_qr_code || '',
+              paymaya_qr_code: data.settings.paymaya_qr_code || '',
+              bank_transfer_qr_code: data.settings.bank_transfer_qr_code || '',
+              bank_transfer_details: data.settings.bank_transfer_details || '',
+              cash_instructions: data.settings.cash_instructions || '',
+            });
+            setQrPreviews({
+              gcash: data.settings.gcash_qr_code || '',
+              paymaya: data.settings.paymaya_qr_code || '',
+              bank_transfer: data.settings.bank_transfer_qr_code || '',
+            });
+          }
+        } catch (err) {
+          console.error('Failed to load settings', err);
+        }
+      };
+      fetchSettings();
+    }
+  }, [user?.role]);
+
+  const handleQrFileSelect = (method: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      setPaymentSettingsError('File must be 8MB or below');
+      return;
+    }
+
+    setPaymentSettingsError(null);
+    setQrFiles((prev) => ({ ...prev, [method]: file }));
+    setQrPreviews((prev) => ({ ...prev, [method]: URL.createObjectURL(file) }));
+  };
+
+  const handleSavePaymentSettings = async () => {
+    setIsPaymentSettingsLoading(true);
+    setPaymentSettingsError(null);
+    try {
+      const updatedSettings = { ...paymentSettings };
+
+      for (const key of ['gcash', 'paymaya', 'bank_transfer'] as const) {
+        const file = qrFiles[key];
+        if (file) {
+          const dataUrl = await readAsDataUrl(file);
+          const { data } = await api.uploadQrCode(dataUrl);
+          if (data?.success && data.url) {
+            const settingKey = `${key}_qr_code` as keyof typeof updatedSettings;
+            updatedSettings[settingKey] = data.url;
+          }
+        }
+      }
+
+      const { data: updateRes } = await api.updateSettings(updatedSettings);
+      if (!updateRes?.success) {
+        throw new Error(updateRes?.message || 'Failed to save payment settings');
+      }
+
+      setPaymentSettings(updatedSettings);
+      setQrPreviews({
+        gcash: updatedSettings.gcash_qr_code,
+        paymaya: updatedSettings.paymaya_qr_code,
+        bank_transfer: updatedSettings.bank_transfer_qr_code,
+      });
+      setQrFiles({});
+
+      addNotification({
+        userId: 'current',
+        title: 'Settings Saved',
+        message: 'Payment method settings have been updated successfully.',
+        type: 'success',
+        isRead: false,
+      });
+    } catch (err) {
+      setPaymentSettingsError(err instanceof Error ? err.message : 'Failed to save payment settings');
+    } finally {
+      setIsPaymentSettingsLoading(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -588,6 +686,178 @@ export const SettingsPage = () => {
             </Button>
           </div>
         </Card>
+
+        {(user.role === 'admin' || user.role === 'super_admin') && (
+          <Card className="p-6">
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Payment Method Settings</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Configure payment QR codes and instructions for all accepted payment methods during registration and renewals.
+              </p>
+            </div>
+
+            {/* Payment Method Selector Tabs */}
+            <div className="flex border-b border-gray-200 mb-6 gap-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActivePaymentTab('gcash')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activePaymentTab === 'gcash'
+                    ? 'border-primary text-primary font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                GCash
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePaymentTab('paymaya')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activePaymentTab === 'paymaya'
+                    ? 'border-primary text-primary font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                PayMaya / Maya
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePaymentTab('bank_transfer')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activePaymentTab === 'bank_transfer'
+                    ? 'border-primary text-primary font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Bank Transfer
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePaymentTab('cash_officer')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activePaymentTab === 'cash_officer'
+                    ? 'border-primary text-primary font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Cash through Officer
+              </button>
+            </div>
+
+            {paymentSettingsError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {paymentSettingsError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {activePaymentTab === 'gcash' && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">GCash QR Code</label>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={(e) => handleQrFileSelect('gcash', e)}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
+                  {qrPreviews.gcash && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-1">Current / Preview GCash QR Code:</p>
+                      <img
+                        src={qrPreviews.gcash}
+                        alt="GCash QR Code"
+                        className="h-48 rounded border object-contain bg-white p-2"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activePaymentTab === 'paymaya' && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">PayMaya / Maya QR Code</label>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={(e) => handleQrFileSelect('paymaya', e)}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
+                  {qrPreviews.paymaya && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-1">Current / Preview Maya QR Code:</p>
+                      <img
+                        src={qrPreviews.paymaya}
+                        alt="PayMaya / Maya QR Code"
+                        className="h-48 rounded border object-contain bg-white p-2"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activePaymentTab === 'bank_transfer' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Bank Transfer QR Code (Optional)</label>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={(e) => handleQrFileSelect('bank_transfer', e)}
+                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                    {qrPreviews.bank_transfer && (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-500 mb-1">Current / Preview Bank QR Code:</p>
+                        <img
+                          src={qrPreviews.bank_transfer}
+                          alt="Bank Transfer QR Code"
+                          className="h-48 rounded border object-contain bg-white p-2"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Bank Account Details / Instructions</label>
+                    <textarea
+                      rows={3}
+                      value={paymentSettings.bank_transfer_details}
+                      onChange={(e) =>
+                        setPaymentSettings((prev) => ({ ...prev, bank_transfer_details: e.target.value }))
+                      }
+                      placeholder="e.g. Bank Name: BDO&#10;Account Name: PSITS Region XII&#10;Account Number: 1234-5678-9012"
+                      className="block w-full rounded-lg border border-gray-300 p-2.5 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activePaymentTab === 'cash_officer' && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Cash Payment Instructions</label>
+                  <textarea
+                    rows={3}
+                    value={paymentSettings.cash_instructions}
+                    onChange={(e) =>
+                      setPaymentSettings((prev) => ({ ...prev, cash_instructions: e.target.value }))
+                    }
+                    placeholder="e.g. Hand over payment to your school's authorized PSITS officer or treasurer and ask for the official receipt number."
+                    className="block w-full rounded-lg border border-gray-300 p-2.5 text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="primary"
+                  onClick={handleSavePaymentSettings}
+                  isLoading={isPaymentSettingsLoading}
+                >
+                  Save Payment Settings
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {hasExpiryWindow && (
           <Card className="p-6">

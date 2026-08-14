@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input } from '@/shared/components/Form';
 import { Badge, EmptyState, Modal, Pagination, StatusBadge } from '@/shared/components/Common';
@@ -54,8 +55,10 @@ export const MembersPage = () => {
   const [viewingTab, setViewingTab] = useState<'profile' | 'status' | 'payments' | 'events' | 'activity'>('profile');
   const [statusLogs, setStatusLogs] = useState<any[]>([]);
   const [isLoadingStatusLogs, setIsLoadingStatusLogs] = useState(false);
+  const navigate = useNavigate();
   const [memberHistory, setMemberHistory] = useState<{ payments: any[]; events: any[] } | null>(null);
   const [isLoadingMemberHistory, setIsLoadingMemberHistory] = useState(false);
+  const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
   const [editingMember, setEditingMember] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({
     fullName: '',
@@ -1027,24 +1030,72 @@ export const MembersPage = () => {
                     <thead className="bg-gray-50 text-xs uppercase text-gray-600">
                       <tr>
                         <th className="px-4 py-2 text-left">Date</th>
-                        <th className="px-4 py-2 text-left">Event</th>
+                        <th className="px-4 py-2 text-left">Type / Event</th>
                         <th className="px-4 py-2 text-left">Amount</th>
-                        <th className="px-4 py-2 text-left">Method</th>
-                        <th className="px-4 py-2 text-left">Payment</th>
-                        <th className="px-4 py-2 text-left">Process</th>
+                        <th className="px-4 py-2 text-left">Method & Ref</th>
+                        <th className="px-4 py-2 text-left">Status</th>
+                        <th className="px-4 py-2 text-left">Proof</th>
+                        <th className="px-4 py-2 text-left">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {memberHistory.payments.map((p) => (
-                        <tr key={p.id}>
-                          <td className="px-4 py-2 text-gray-600">{p.createdAt ? String(p.createdAt).slice(0, 10) : '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">{p.eventTitle || '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">PHP {Number(p.amount || 0).toLocaleString()}</td>
-                          <td className="px-4 py-2 text-gray-700">{p.paymentMethod || '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">{p.paymentStatus || '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">{p.processStatus || '-'}</td>
-                        </tr>
-                      ))}
+                      {memberHistory.payments.map((p) => {
+                        const statusStr = String(p.status || 'pending').toLowerCase();
+                        const statusVariant =
+                          statusStr === 'verified' ? 'success' : statusStr === 'rejected' ? 'error' : 'warning';
+                        const methodStr = String(p.paymentMethod || p.method || '-').toUpperCase();
+
+                        return (
+                          <tr key={p.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-gray-600 text-xs">
+                              {p.createdAt ? String(p.createdAt).slice(0, 10) : '-'}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-gray-900">
+                              {p.eventTitle || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : 'Membership Fee')}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-primary">
+                              ₱{Number(p.amount || 0).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-xs">
+                              <span className="font-semibold text-gray-800">{methodStr}</span>
+                              {p.referenceNumber && (
+                                <div className="text-gray-500 font-mono">Ref: {p.referenceNumber}</div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant={statusVariant}>
+                                {statusStr.charAt(0).toUpperCase() + statusStr.slice(1)}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              {p.proofUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingProofUrl(p.proofUrl)}
+                                  className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                                >
+                                  <Eye size={14} /> View Proof
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400">None</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  setViewingMember(null);
+                                  navigate(`/payments?search=${encodeURIComponent(viewingMember?.fullName || viewingMember?.id || '')}`);
+                                }}
+                              >
+                                Track
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1099,6 +1150,29 @@ export const MembersPage = () => {
                   setIsLoadingStatusLogs(false);
                 }}
               >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Payment Proof Lightbox Modal */}
+      <Modal
+        isOpen={Boolean(viewingProofUrl)}
+        onClose={() => setViewingProofUrl(null)}
+        title="Transaction Payment Proof"
+        size="lg"
+      >
+        {viewingProofUrl && (
+          <div className="flex flex-col items-center justify-center p-4">
+            <img
+              src={viewingProofUrl}
+              alt="Transaction Proof"
+              className="max-h-[70vh] rounded-lg border object-contain bg-gray-50"
+            />
+            <div className="mt-4 flex justify-end w-full">
+              <Button variant="secondary" onClick={() => setViewingProofUrl(null)}>
                 Close
               </Button>
             </div>

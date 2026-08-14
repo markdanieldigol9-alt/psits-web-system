@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 
 import { Card, Button, TextArea } from '@/shared/components/Form';
 import { Badge, Pagination, Modal } from '@/shared/components/Common';
-import { CheckCircle, XCircle, Clock, Eye, Edit2, Download } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import api from '@/shared/services/api';
 import { useAuth } from '@/shared/context/AuthContext';
@@ -15,6 +16,9 @@ const mockPayments: any[] = [];
 export const PaymentsPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || searchParams.get('member') || '';
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -25,6 +29,8 @@ export const PaymentsPage = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [confirmAction, setConfirmAction] = useState<{ payment: any; status: 'verified' | 'rejected'; rejectionReason?: string } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [paymentLogs, setPaymentLogs] = useState<any[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const isMember = user?.role === 'member';
 
   useEffect(() => {
@@ -46,6 +52,31 @@ export const PaymentsPage = () => {
     };
   }, [filterStatus]);
 
+  useEffect(() => {
+    if (!viewing?.id) {
+      setPaymentLogs([]);
+      return;
+    }
+    let cancelled = false;
+    const loadLogs = async () => {
+      setIsLoadingLogs(true);
+      try {
+        const { data } = await api.getPaymentStatusLogs(viewing.id);
+        if (!cancelled && data?.success) {
+          setPaymentLogs(data.logs || []);
+        }
+      } catch {
+        if (!cancelled) setPaymentLogs([]);
+      } finally {
+        if (!cancelled) setIsLoadingLogs(false);
+      }
+    };
+    void loadLogs();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewing?.id]);
+
   const scopedPayments = isMember
     ? payments.filter((payment) => String(payment.memberId) === String(user?.id || ''))
     : payments;
@@ -61,7 +92,20 @@ export const PaymentsPage = () => {
 
   const filteredPayments = scopedPayments.filter((payment) => {
     const status = getVerificationStatus(payment);
-    return filterStatus === 'all' || status === filterStatus;
+    const matchesStatus = filterStatus === 'all' || status === filterStatus;
+    
+    if (!searchTerm.trim()) return matchesStatus;
+
+    const term = searchTerm.toLowerCase().trim();
+    const matchesSearch =
+      (payment.memberName && String(payment.memberName).toLowerCase().includes(term)) ||
+      (payment.event && String(payment.event).toLowerCase().includes(term)) ||
+      (payment.referenceNumber && String(payment.referenceNumber).toLowerCase().includes(term)) ||
+      (payment.method && String(payment.method).toLowerCase().includes(term)) ||
+      (payment.paymentMethod && String(payment.paymentMethod).toLowerCase().includes(term)) ||
+      (payment.memberId && String(payment.memberId) === term);
+
+    return matchesStatus && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
@@ -153,20 +197,40 @@ export const PaymentsPage = () => {
           </Card>
         </div>
 
-        {/* Filter */}
-        <select
-          value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value as any);
-            setCurrentPage(1);
-          }}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="all">All Payments</option>
-          <option value="pending">Pending</option>
-          <option value="verified">Verified</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        {/* Filter and Search Bar */}
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by member, ref #, event, or method..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+                if (e.target.value) {
+                  setSearchParams({ search: e.target.value });
+                } else {
+                  setSearchParams({});
+                }
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value as any);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+          >
+            <option value="all">All Payments</option>
+            <option value="pending">Pending</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
 
         {/* Payments Table */}
         <Card>
@@ -300,12 +364,56 @@ export const PaymentsPage = () => {
                 <img
                   src={viewing.proofUrl}
                   alt="Transaction proof"
-                  className="w-full max-h-96 object-contain"
+                  className="w-full max-h-96 object-contain rounded border"
                 />
               </div>
             ) : (
-              <div className="text-sm text-gray-600">No transaction proof uploaded.</div>
+              <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded border">No transaction proof uploaded.</div>
             )}
+
+            {/* Payment Audit Logs & Status History */}
+            <div className="rounded-lg border border-gray-200 p-4 space-y-3 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-900">Payment Audit & Status Logs</h4>
+                {viewing.memberName && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = viewing.memberName;
+                      setViewing(null);
+                      setSearchTerm(name);
+                      setSearchParams({ search: name });
+                    }}
+                    className="text-xs text-primary hover:underline font-semibold"
+                  >
+                    Filter All Payments for {viewing.memberName}
+                  </button>
+                )}
+              </div>
+
+              {isLoadingLogs ? (
+                <p className="text-xs text-gray-500">Loading logs...</p>
+              ) : paymentLogs.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {paymentLogs.map((log) => (
+                    <div key={log.id} className="text-xs border-l-2 border-primary pl-3 py-1 bg-white rounded shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-800">
+                          {log.oldStatus ? `${log.oldStatus.toUpperCase()} → ${log.newStatus.toUpperCase()}` : log.newStatus.toUpperCase()}
+                        </span>
+                        <span className="text-gray-400 text-[11px]">
+                          {log.createdAt ? new Date(log.createdAt).toLocaleString() : ''}
+                        </span>
+                      </div>
+                      <div className="text-gray-600 mt-0.5">By: {log.changedByName}</div>
+                      {log.remarks && <div className="text-red-600 italic mt-0.5">Note: {log.remarks}</div>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 italic">No status changes logged yet for this payment.</p>
+              )}
+            </div>
 
             {canVerify && getVerificationStatus(viewing) === 'pending' && (
               <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">

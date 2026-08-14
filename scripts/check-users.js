@@ -12,8 +12,11 @@ function verifyPassword(password, passwordHash) {
 
 async function main() {
   const passwords = {
+    'admin@psits.com': 'AdminPsits@123',
+    'agdulangon@gmail.com': '12345678',
     'digol.348659@gensan.sti.edu.ph': '@STIgensan12345',
     'mdigol19@mail.com': '@Md12345678',
+    'tesda@gmail.com': '@Tesda12345678',
   };
 
   const [rows] = await pool.query('SELECT * FROM users');

@@ -480,4 +480,101 @@ async function deleteOfficer(req, res) {
   }
 }
 
-module.exports = { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer };
+async function listOfficerPositions(req, res) {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, name, description, is_default AS isDefault, created_at AS createdAt FROM officer_positions ORDER BY id ASC'
+    );
+    return res.json({ success: true, positions: rows.map(r => ({ ...r, id: String(r.id), isDefault: Boolean(r.isDefault) })) });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch officer positions.' });
+  }
+}
+
+async function createOfficerPosition(req, res) {
+  const body = req.body || {};
+  const name = String(body.name || '').trim();
+  const description = String(body.description || '').trim();
+
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'Position name is required.' });
+  }
+
+  try {
+    const [existing] = await pool.execute(
+      'SELECT id FROM officer_positions WHERE LOWER(name) = LOWER(?) LIMIT 1',
+      [name]
+    );
+    if (existing.length) {
+      return res.status(400).json({ success: false, message: 'Position name already exists.' });
+    }
+
+    const [result] = await pool.execute(
+      'INSERT INTO officer_positions (name, description, is_default) VALUES (?, ?, 0)',
+      [name, description || null]
+    );
+
+    return res.status(201).json({
+      success: true,
+      position: {
+        id: String(result.insertId),
+        name,
+        description: description || null,
+        isDefault: false,
+      },
+    });
+  } catch (err) {
+    return res.status(400).json({ success: false, message: 'Failed to create officer position.' });
+  }
+}
+
+async function deleteOfficerPosition(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid position ID.' });
+  }
+
+  try {
+    const [rows] = await pool.execute('SELECT id, name, is_default FROM officer_positions WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'Position not found.' });
+    }
+
+    const pos = rows[0];
+
+    const [assigned] = await pool.execute(
+      `SELECT o.user_id
+       FROM officers o
+       JOIN users u ON u.id = o.user_id
+       WHERE LOWER(o.position) = LOWER(?)
+         AND u.role = 'officer'
+         AND u.status = 'active'
+       LIMIT 1`,
+      [pos.name]
+    );
+
+    if (assigned.length) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete position "${pos.name}" because it is currently assigned to an active officer.`,
+      });
+    }
+
+    await pool.execute('DELETE FROM officer_positions WHERE id = ?', [id]);
+    return res.json({ success: true, message: 'Position deleted successfully.' });
+  } catch (err) {
+    return res.status(400).json({ success: false, message: 'Failed to delete position.' });
+  }
+}
+
+module.exports = {
+  listOfficers,
+  createOfficer,
+  assignOfficer,
+  updateOfficer,
+  deleteOfficer,
+  listOfficerPositions,
+  createOfficerPosition,
+  deleteOfficerPosition,
+};
+

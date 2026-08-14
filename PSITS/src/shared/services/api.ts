@@ -152,6 +152,19 @@ class ApiService {
     return this.client.delete(`/officers/${id}`);
   }
 
+  // Officer Positions
+  getOfficerPositions() {
+    return this.client.get('/officer-positions');
+  }
+
+  createOfficerPosition(data: { name: string; description?: string }) {
+    return this.client.post('/officer-positions', data);
+  }
+
+  deleteOfficerPosition(id: string | number) {
+    return this.client.delete(`/officer-positions/${id}`);
+  }
+
   // Events
   getEvents(filters?: any) {
     return this.client.get('/events', { params: filters });
@@ -348,6 +361,10 @@ class ApiService {
     return this.client.put(`/payments/${paymentId}/verify`, data);
   }
 
+  getPaymentStatusLogs(paymentId: string) {
+    return this.client.get(`/payments/${paymentId}/logs`);
+  }
+
   // Announcements
   getAnnouncements() {
     return this.client.get('/announcements');
@@ -528,8 +545,18 @@ class ApiService {
   setForumLike(postId: string, liked: boolean) {
     return this.client.post(`/forum/posts/${postId}/like`, { liked });
   }
+
+  getPublicSettings() {
+    return this.client.get('/settings/public');
+  }
+
+  updateSettings(settings: Record<string, string>) {
+    return this.client.put('/settings', { settings });
+  }
+
+  uploadQrCode(dataUrl: string) {
+    return this.client.post('/uploads/qr-code', { dataUrl });
+  }
 }
 
 export default new ApiService();
-
-

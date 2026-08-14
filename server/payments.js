@@ -359,4 +359,34 @@ async function verifyPayment(req, res) {
   return res.json({ success: true, payment: toPaymentDto(rows[0]) });
 }
 
-module.exports = { listPayments, createPayment, verifyPayment };
+async function getPaymentStatusLogs(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid payment id.' });
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT l.*, u.full_name AS changed_by_name
+       FROM payment_status_logs l
+       LEFT JOIN users u ON u.id = l.changed_by
+       WHERE l.payment_id = ?
+       ORDER BY l.created_at ASC`,
+      [id]
+    );
+
+    const logs = rows.map((r) => ({
+      id: String(r.id),
+      paymentId: String(r.payment_id),
+      oldStatus: r.old_status,
+      newStatus: r.new_status,
+      remarks: r.remarks,
+      changedByName: r.changed_by_name || 'System',
+      createdAt: r.created_at,
+    }));
+
+    return res.json({ success: true, logs });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch payment status logs.', error: err.message });
+  }
+}
+
+module.exports = { listPayments, createPayment, verifyPayment, getPaymentStatusLogs };

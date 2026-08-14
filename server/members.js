@@ -204,7 +204,7 @@ async function getMemberDetails(req, res) {
   if (!rows.length) return json(res, 404, { success: false, message: 'Member not found.' });
   const member = rows[0];
 
-  // Payment history (latest 30)
+  // Payment history (latest 50)
   let payments = [];
   try {
     const [payRows] = await pool.execute(
@@ -215,18 +215,19 @@ async function getMemberDetails(req, res) {
        LEFT JOIN events e ON e.id = p.event_id
        WHERE p.member_id = ?
        ORDER BY p.created_at DESC
-       LIMIT 30`,
+       LIMIT 50`,
       [id]
     );
     payments = payRows.map((p) => ({
       id: String(p.id),
       eventId: p.event_id ? String(p.event_id) : null,
-      eventTitle: p.event_title || '',
+      eventTitle: p.event_title || (p.payment_kind === 'membership_renewal' ? 'Membership Renewal' : 'Membership Fee'),
+      paymentKind: p.payment_kind || 'event',
       amount: Number(p.amount || 0),
       paymentMethod: p.payment_method || p.method || null,
       paymentStatus: p.payment_status || null,
       processStatus: p.process_status || null,
-      status: p.status || null,
+      status: p.status || 'pending',
       referenceNumber: p.reference_number || null,
       proofUrl: p.proof_url || null,
       rejectionReason: p.rejection_reason || null,
@@ -234,11 +235,12 @@ async function getMemberDetails(req, res) {
       verifiedAt: p.verified_at || null,
       createdAt: p.created_at,
     }));
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch member payment history:', err);
     payments = [];
   }
 
-  // Event participation (latest 30)
+  // Event participation (latest 50)
   let events = [];
   try {
     const [regRows] = await pool.execute(
@@ -246,11 +248,12 @@ async function getMemberDetails(req, res) {
          er.*,
          e.title AS event_title,
          e.start_at,
-         e.end_atFROM event_registrations er
+         e.end_at
+       FROM event_registrations er
        JOIN events e ON e.id = er.event_id
        WHERE er.member_id = ?
        ORDER BY er.created_at DESC
-       LIMIT 30`,
+       LIMIT 50`,
       [id]
     );
     events = regRows.map((r) => ({
@@ -264,7 +267,8 @@ async function getMemberDetails(req, res) {
       eventStartAt: r.start_at,
       eventEndAt: r.end_at,
     }));
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch member event history:', err);
     events = [];
   }
 

@@ -35,7 +35,7 @@ const {
   setAnnouncementLike,
 } = require('./announcementInteractions');
 const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, deletePartnerContribution } = require('./partners');
-const { listPayments, createPayment, verifyPayment } = require('./payments');
+const { listPayments, createPayment, verifyPayment, getPaymentStatusLogs } = require('./payments');
 const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
 const {
@@ -61,7 +61,7 @@ const {
   downloadLiveEventRecording,
   cleanupExpiredLiveEventRecordings,
 } = require('./liveEvents');
-const { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer } = require('./officers');
+const { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer, listOfficerPositions, createOfficerPosition, deleteOfficerPosition } = require('./officers');
 const { listInstitutionMembers, bulkCreateInstitutionMembers, approveInstitutionMember } = require('./institutionMembers');
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
 const { sendSmtpTest } = require('./emailTest');
@@ -281,6 +281,34 @@ app.post('/api/uploads/announcement-image', authMiddleware, requireRole(['super_
   return res.status(201).json({ success: true, url: `/uploads/announcement-images/${filename}` });
 });
 
+app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+  const body = req.body || {};
+  const dataUrl = String(body.dataUrl || '');
+
+  const match = dataUrl.match(/^data:(image\/(png|jpeg|jpg|webp));base64,(.+)$/);
+  if (!match) {
+    return res.status(400).json({ success: false, message: 'Invalid image format. Use a PNG/JPG/WebP data URL.' });
+  }
+
+  const mime = match[1];
+  const base64 = match[3];
+  const buffer = Buffer.from(base64, 'base64');
+
+  const maxBytes = 8 * 1024 * 1024;
+  if (!buffer.length || buffer.length > maxBytes) {
+    return res.status(400).json({ success: false, message: 'Image is required and must be <= 8MB.' });
+  }
+
+  const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+  const dir = path.join(__dirname, 'uploads', 'qr-codes');
+  await fs.mkdir(dir, { recursive: true });
+
+  const filename = `qr-code-${Date.now()}.${ext}`;
+  await fs.writeFile(path.join(dir, filename), buffer);
+
+  return res.status(201).json({ success: true, url: `/uploads/qr-codes/${filename}` });
+});
+
 app.post('/api/auth/register', requireMigrationReady, registerLimiter, register);
 app.post('/api/auth/login', requireMigrationReady, loginLimiter, login);
 app.post('/api/auth/verify-password', requireMigrationReady, verifyLimiter, authMiddleware, verifyCurrentPassword);
@@ -290,6 +318,36 @@ app.post('/api/auth/create-admin', authMiddleware, requireRole(['super_admin']),
 
 app.get('/api/me', authMiddleware, getMe);
 app.put('/api/me', authMiddleware, updateMe);
+
+app.get('/api/settings/public', requireMigrationReady, async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT key_name, value_text FROM settings');
+    const settings = {};
+    rows.forEach((row) => {
+      settings[row.key_name] = row.value_text;
+    });
+    res.json({ success: true, settings });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch settings', error: err.message });
+  }
+});
+
+app.put('/api/settings', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+  const body = req.body || {};
+  const settings = body.settings || {};
+
+  try {
+    for (const [key, val] of Object.entries(settings)) {
+      await pool.execute(
+        'INSERT INTO settings (key_name, value_text) VALUES (?, ?) ON DUPLICATE KEY UPDATE value_text = ?',
+        [key, val, val]
+      );
+    }
+    res.json({ success: true, message: 'Settings updated successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to update settings', error: err.message });
+  }
+});
 
 app.get('/api/members', requireMigrationReady, authMiddleware, listMembers);
 app.get('/api/memberships', requireMigrationReady, authMiddleware, listMembers);
@@ -315,6 +373,9 @@ app.post('/api/officers', requireMigrationReady, authMiddleware, requireRole(['s
 app.post('/api/officers/assign', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), assignOfficer);
 app.put('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), updateOfficer);
 app.delete('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteOfficer);
+app.get('/api/officer-positions', requireMigrationReady, authMiddleware, listOfficerPositions);
+app.post('/api/officer-positions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), createOfficerPosition);
+app.delete('/api/officer-positions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteOfficerPosition);
 
 // Events
 app.get('/api/events', requireMigrationReady, authMiddleware, listEvents);
@@ -356,6 +417,7 @@ app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddlew
 app.get('/api/payments', requireMigrationReady, authMiddleware, listPayments);
 app.post('/api/payments', requireMigrationReady, authMiddleware, requireRole(['member']), createPayment);
 app.put('/api/payments/:id/verify', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), verifyPayment);
+app.get('/api/payments/:id/logs', requireMigrationReady, authMiddleware, getPaymentStatusLogs);
 
 // Elections
 app.get('/api/elections', requireMigrationReady, authMiddleware, listElections);

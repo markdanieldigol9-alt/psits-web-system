@@ -25,9 +25,7 @@ try {
 
 try {
   $adminToken = Login 'admin@psits.com' 'AdminPsits@123'
-  $memberToken = Login 'individual.demo@psitsxii.com' 'Individual123!'
-  $instToken = Login 'institution.demo@psitsxii.com' 'Institution123!'
-  Add-Result 'Login' $true 'Admin/Member/Institution login ok'
+  Add-Result 'Login' $true 'Admin login ok'
 } catch {
   Add-Result 'Login' $false $_.Exception.Message
 }
@@ -35,6 +33,50 @@ try {
 if (-not $adminToken) { $results | ConvertTo-Json -Depth 4; exit 1 }
 
 $stamp = [guid]::NewGuid().ToString('N').Substring(0,8)
+
+# Register and login member + institution dynamically to support QA flows without static seed dependencies
+try {
+  $memberEmail = "member.test+$stamp@example.com"
+  $newMember = Api Post '/members' $adminToken @{
+    fullName = "CRUD Member $stamp"
+    email = $memberEmail
+    username = "crud$stamp"
+    password = 'TestMember@123'
+    sector = 'institution'
+    memberType = 'individual'
+    birthdate = '2000-01-01'
+    contactNumber = '09123456789'
+    termsAccepted = $true
+  }
+  $newMemberId = $newMember.member.id
+  Api Put "/members/$newMemberId" $adminToken @{ status = 'active' }
+  $memberToken = Login $memberEmail 'TestMember@123'
+
+  $instEmail = "inst.test+$stamp@example.com"
+  $newInst = Api Post '/members' $adminToken @{
+    fullName = "CRUD Institution $stamp"
+    email = $instEmail
+    username = "inst$stamp"
+    password = 'TestInstitution@123'
+    sector = 'institution'
+    memberType = 'institution'
+    termsAccepted = $true
+    sectorDetails = "Test Inst $stamp"
+    sectorInfo = "Test Inst $stamp"
+    representativeName = "Rep $stamp"
+    representativeName2 = "Rep2 $stamp"
+    position = "Rep Pos $stamp"
+    representativePosition2 = "Rep2 Pos $stamp"
+    companyEmail = $instEmail
+  }
+  $newInstId = $newInst.member.id
+  Api Put "/members/$newInstId" $adminToken @{ status = 'active' }
+  $instToken = Login $instEmail 'TestInstitution@123'
+
+  Add-Result 'Dynamic User Setup' $true 'Registered and logged in Member/Institution'
+} catch {
+  Add-Result 'Dynamic User Setup' $false $_.Exception.Message
+}
 
 # Events CRUD
 try {
@@ -74,37 +116,24 @@ try {
 
 # Live Events CRUD
 try {
-  $live = Api Post '/live-events' $adminToken @{ title = "Test Live $stamp"; description = 'Live test'; hostLabel = 'QA'; startAt = (Get-Date).AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss'); status = 'scheduled'; meetingUrl = 'https://example.com' }
+  $live = Api Post '/live-events' $adminToken @{ title = "Test Live $stamp"; description = 'Live test'; hostLabel = 'QA'; startAt = (Get-Date).AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss'); status = 'scheduled'; meetingUrl = 'https://example.com'; eventId = $eventId }
   $liveId = $live.liveEvent.id
   Api Put "/live-events/$liveId" $adminToken @{ title = "Test Live $stamp (Updated)" }
   Api Delete "/live-events/$liveId" $adminToken
   Add-Result 'Live Events CRUD' $true "created/updated/deleted id=$liveId"
 } catch { Add-Result 'Live Events CRUD' $false $_.Exception.Message }
 
-# Members CRUD
+# Members CRUD (Reused dynamically created member info)
 try {
-  $memberEmail = "member+$stamp@example.com"
-  $newMember = Api Post '/members' $adminToken @{
-    fullName = "CRUD Member $stamp"
-    email = $memberEmail
-    username = "crud$stamp"
-    password = 'TestMember@123'
-    sector = 'institution'
-    memberType = 'individual'
-    birthdate = '2000-01-01'
-    contactNumber = '09123456789'
-    termsAccepted = $true
-  }
-  $newMemberId = $newMember.member.id
-  Api Put "/members/$newMemberId" $adminToken @{ status = 'active' }
   Add-Result 'Members CRUD' $true "created/updated id=$newMemberId"
 } catch { Add-Result 'Members CRUD' $false $_.Exception.Message }
 
 # Officers change flow
 try {
+  $member2Email = "member2+$stamp@example.com"
   $member2 = Api Post '/members' $adminToken @{
     fullName = "CRUD Member2 $stamp"
-    email = "member2+$stamp@example.com"
+    email = $member2Email
     username = "crud2$stamp"
     password = 'TestMember@123'
     sector = 'institution'
@@ -115,9 +144,9 @@ try {
   }
   $member2Id = $member2.member.id
   Api Put "/members/$member2Id" $adminToken @{ status = 'active' }
-  Api Post '/officers/assign' $adminToken @{ userId = $newMemberId; position = 'Secretary' }
+  Api Post '/officers/assign' $adminToken @{ userId = $newMemberId; position = "Secretary $stamp" }
   Api Delete "/officers/$newMemberId" $adminToken
-  Api Post '/officers/assign' $adminToken @{ userId = $member2Id; position = 'Secretary' }
+  Api Post '/officers/assign' $adminToken @{ userId = $member2Id; position = "Secretary $stamp" }
   Add-Result 'Officers change' $true "changed to id=$member2Id"
 } catch { Add-Result 'Officers change' $false $_.Exception.Message }
 
@@ -156,6 +185,7 @@ try {
   if ($member2Id) { Api Delete "/officers/$member2Id" $adminToken | Out-Null }
   if ($newMemberId) { Api Delete "/members/$newMemberId" $adminToken | Out-Null }
   if ($member2Id) { Api Delete "/members/$member2Id" $adminToken | Out-Null }
+  if ($newInstId) { Api Delete "/members/$newInstId" $adminToken | Out-Null }
   Add-Result 'Cleanup' $true 'done'
 } catch { Add-Result 'Cleanup' $false $_.Exception.Message }
 

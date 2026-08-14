@@ -44,12 +44,25 @@ export const ElectionsPage = () => {
 
   const [confirmDeleteElection, setConfirmDeleteElection] = useState<{ id: string; title: string } | null>(null);
   const [confirmDeleteCandidate, setConfirmDeleteCandidate] = useState<{ id: string; name: string } | null>(null);
+  const [allOfficerPositions, setAllOfficerPositions] = useState<string[]>([
+    'President',
+    'Vice President',
+    'Secretary',
+    'Treasurer',
+    'Member',
+  ]);
 
   const load = async () => {
     setIsLoading(true);
     try {
-      const { data } = await api.getElections({ status: statusFilter });
-      if (data?.success) setElections(data.elections || []);
+      const [electionsResp, posResp] = await Promise.all([
+        api.getElections({ status: statusFilter }),
+        api.getOfficerPositions(),
+      ]);
+      if (electionsResp.data?.success) setElections(electionsResp.data.elections || []);
+      if (posResp.data?.success && posResp.data.positions?.length > 0) {
+        setAllOfficerPositions(posResp.data.positions.map((p: any) => p.name));
+      }
     } catch (err) {
       addNotification({ userId: 'current', title: 'Error', message: err instanceof Error ? err.message : 'Failed to load elections.', type: 'error', isRead: false });
     } finally {
@@ -70,7 +83,7 @@ export const ElectionsPage = () => {
       startDate: '',
       endDate: '',
       status: 'draft',
-      allowedPositions: ['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']
+      allowedPositions: [...allOfficerPositions]
     });
     setShowEditModal(true);
   };
@@ -83,7 +96,7 @@ export const ElectionsPage = () => {
       startDate: election.startDate || '',
       endDate: election.endDate || '',
       status: (election.status || 'draft') as ElectionStatus,
-      allowedPositions: election.allowedPositions || ['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']
+      allowedPositions: election.allowedPositions || [...allOfficerPositions]
     });
     setShowEditModal(true);
   };
@@ -348,7 +361,7 @@ export const ElectionsPage = () => {
             <label className="block text-sm font-semibold text-gray-700">Contested Officer Positions</label>
             <p className="text-xs text-gray-500">Select the officer positions that will be active and voted for in this election.</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-              {['President', 'Vice President', 'Secretary', 'Treasurer', 'Member'].map((pos) => {
+              {allOfficerPositions.map((pos) => {
                 const isChecked = form.allowedPositions.includes(pos);
                 return (
                   <label

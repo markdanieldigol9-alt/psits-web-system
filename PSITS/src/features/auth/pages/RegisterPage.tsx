@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '@/shared/services/api';
 import { AuthLayout } from '@/shared/layouts';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
@@ -43,9 +44,32 @@ export const RegisterPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
+  const [selectedMethod, setSelectedMethod] = useState<'gcash' | 'paymaya' | 'bank_transfer' | 'cash_officer'>('gcash');
+  const [paymentSettings, setPaymentSettings] = useState<{
+    gcash_qr_code?: string;
+    paymaya_qr_code?: string;
+    bank_transfer_qr_code?: string;
+    bank_transfer_details?: string;
+    cash_instructions?: string;
+  }>({});
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.getPublicSettings();
+        if (data?.success && data.settings) {
+          setPaymentSettings(data.settings);
+        }
+      } catch (err) {
+        console.error('Failed to load settings', err);
+      }
+    };
+    fetchSettings();
+  }, []);
   // Renewal is handled inside the system after account creation (Settings → Membership).
 
-  const validateForm = () => {
+  const validateStep1 = () => {
     const nextErrors: Record<string, string> = {};
     const type = formData.memberType;
     const passwordValue = formData.password || '';
@@ -67,9 +91,6 @@ export const RegisterPage = () => {
     else if (!/[0-9]/.test(passwordValue)) nextErrors.password = 'Password must include at least one number';
     else if (!/[^\w\s]/.test(passwordValue)) nextErrors.password = 'Password must include at least one special character';
     if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match';
-    if (!formData.paymentProof) nextErrors.paymentProof = 'Payment proof is required';
-    if (!formData.referenceNumber?.trim()) nextErrors.referenceNumber = 'Reference number is required';
-    if (!formData.termsAccepted) nextErrors.termsAccepted = 'You must accept the terms and conditions';
 
     if (type === 'individual') {
       if (!formData.fullName.trim()) nextErrors.fullName = 'Full name is required';
@@ -119,6 +140,26 @@ export const RegisterPage = () => {
     return Object.keys(nextErrors).length === 0;
   };
 
+  const validateStep2 = () => {
+    const nextErrors: Record<string, string> = {};
+    if (!formData.paymentProof) nextErrors.paymentProof = 'Payment proof is required';
+    if (!formData.referenceNumber?.trim()) nextErrors.referenceNumber = 'Reference number is required';
+    if (!formData.termsAccepted) nextErrors.termsAccepted = 'You must accept the terms and conditions';
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep1()) {
+      setStep(2);
+    }
+  };
+
+  const handleBack = () => {
+    setStep(1);
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -140,7 +181,7 @@ export const RegisterPage = () => {
     e.preventDefault();
     setSubmitError(null);
     setSubmitSuccess(null);
-    if (!validateForm()) return;
+    if (!validateStep2()) return;
 
     let sector: 'school' | 'industry' | 'institution' = 'institution';
     if (formData.memberType === 'industry') sector = 'industry';
@@ -155,6 +196,7 @@ export const RegisterPage = () => {
     try {
       await register({
         ...formData,
+        paymentMethod: selectedMethod,
         fullName: fallbackFullName,
         username: formData.username?.trim() || formData.email.split('@')[0].trim(),
         email: formData.email.trim(),
@@ -204,145 +246,291 @@ export const RegisterPage = () => {
 
   return (
     <AuthLayout title="Registration Page">
-      <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-6xl mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-6xl mx-auto border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
         {submitSuccess && <Alert type="success" message={submitSuccess} />}
         {!submitSuccess && (submitError || error) && <Alert type="error" message={submitError || error || 'Registration failed.'} />}
 
-        <div className="rounded-lg border border-gray-200 p-4">
-          <h3 className="text-lg font-semibold text-gray-900">Member Information</h3>
-          <p className="mt-1 text-sm text-gray-600">Choose member type to show required fields. Fields marked with <span className="text-red-500">*</span> are required.</p>
-        </div>
-
-        <Select
-          label="Member Type"
-          required
-          options={[
-            { value: 'individual', label: 'Individual' },
-            { value: 'industry', label: 'Industry' },
-            { value: 'institution', label: 'Institution' },
-          ]}
-          value={formData.memberType || ''}
-          onChange={(e) => setFormData((prev) => ({ ...prev, memberType: e.target.value as MemberType }))}
-          error={errors.memberType}
-        />
-
-        {formData.memberType === 'individual' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
-            <Input label="Full Name" required value={formData.fullName} onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))} error={errors.fullName} />
-            <Input label="Email Address" required type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} error={errors.email} />
-            <Input
-              label="Birthdate"
-              required
-              type="date"
-              value={formData.birthDate || ''}
-              onChange={(e) => setFormData((p) => ({ ...p, birthDate: e.target.value }))}
-              error={errors.birthDate}
-              helperText="Must be age 16 or older."
-            />
-            <Select
-              label="Gender"
-              required
-              options={[
-                { value: 'Male', label: 'Male' },
-                { value: 'Female', label: 'Female' },
-                { value: 'Prefer not to say', label: 'Prefer not to say' },
-              ]}
-              value={formData.gender || ''}
-              onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
-              error={errors.gender}
-            />
-            <Input label="Address" required value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} className="md:col-span-2" />
-            <Input label="Contact Number" required value={formData.contactNumber} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
-            <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
-            <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
-          </div>
-        )}
-
-        {formData.memberType === 'institution' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
-            <Input label="Institution Name" required value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
-            <Input label="Institution Address" required value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
-            <Input label="Institution Email" required type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: e.target.value }))} error={errors.companyEmail} />
-            <Input label="Institution Contact Number" required value={formData.contactNumber || ''} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
-            <Input label="1st Institution Representative Name" required value={formData.representativeName || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value, fullName: p.fullName || e.target.value }))} error={errors.representativeName} />
-            <Input label="Representative 1 Position" required value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
-            <Input label="2nd Institution Representative Name" required value={formData.representativeName2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName2: e.target.value }))} error={errors.representativeName2} />
-            <Input label="Representative 2 Position" required value={formData.representativePosition2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativePosition2: e.target.value }))} error={errors.representativePosition2} />
-            <p className="text-xs text-gray-500 md:col-span-2">Set default password below for the representative account.</p>
-            <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
-            <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
-          </div>
-        )}
-
-        {formData.memberType === 'industry' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
-            <Input label="Company Name" required value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
-            <Input label="Company Address" required value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
-            <Input label="Representative Name" required value={formData.representativeName || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value, fullName: p.fullName || e.target.value }))} error={errors.representativeName} />
-            <Select
-              label="Gender"
-              required
-              options={[
-                { value: 'Male', label: 'Male' },
-                { value: 'Female', label: 'Female' },
-                { value: 'Prefer not to say', label: 'Prefer not to say' },
-              ]}
-              value={formData.gender || ''}
-              onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
-              error={errors.gender}
-            />
-            <Input label="Contact Number" required value={formData.contactNumber || ''} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
-            <Input label="Position" required value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
-             <Input label="Company Email" required type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: e.target.value }))} error={errors.companyEmail} />
-            <Input label="Company Website (Optional)" value={formData.website || ''} onChange={(e) => setFormData((p) => ({ ...p, website: e.target.value }))} error={errors.website} />
-            <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
-            <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
-          </div>
-        )}
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Payment Proof (Upload Transaction Screenshot)</label>
-          <input
-            type="file"
-            accept="image/png, image/jpeg, image/webp"
-            onChange={handleImageUpload}
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
-          {errors.paymentProof && <p className="mt-1 text-sm text-red-600">{errors.paymentProof}</p>}
-          {formData.paymentProof && <img src={formData.paymentProof} alt="Payment proof" className="mt-2 h-28 rounded border object-contain" />}
-        </div>
-
-        <Input
-          label="Reference Number"
-          required
-          value={formData.referenceNumber || ''}
-          onChange={(e) => setFormData((prev) => ({ ...prev, referenceNumber: e.target.value }))}
-          error={errors.referenceNumber}
-          placeholder="Enter GCash/Transaction Reference Number"
-        />
-
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            checked={Boolean(formData.termsAccepted)}
-            onChange={(e) => setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked }))}
-            className="mt-1"
-          />
-          <span className="text-sm text-gray-700">
-            I agree to the{' '}
-            <span className="font-semibold text-primary underline underline-offset-2">
-              Terms and Conditions
+        {/* Step Progress Tracker */}
+        <div className="flex items-center justify-center gap-4 mb-6 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className={`h-8 w-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${step === 1 ? 'bg-primary text-white' : 'bg-green-100 text-green-700 border border-green-200'}`}>
+              {step > 1 ? '✓' : '1'}
             </span>
-            .
-          </span>
-        </label>
-        {errors.termsAccepted && <p className="text-sm text-red-600">{errors.termsAccepted}</p>}
+            <span className={`text-sm font-medium ${step === 1 ? 'text-gray-900' : 'text-gray-500'}`}>Profile Details</span>
+          </div>
+          <div className="h-px w-16 bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <span className={`h-8 w-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${step === 2 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
+              2
+            </span>
+            <span className={`text-sm font-medium ${step === 2 ? 'text-gray-900' : 'text-gray-500'}`}>Payment Verification</span>
+          </div>
+        </div>
 
-        <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
-          Submit Registration
-        </Button>
+        {step === 1 && (
+          <div className="space-y-6">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-900">Member Information</h3>
+              <p className="mt-1 text-sm text-gray-600">Choose member type to show required fields. Fields marked with <span className="text-red-500">*</span> are required.</p>
+            </div>
 
-        <p className="text-center text-sm text-gray-600">
+            <Select
+              label="Member Type"
+              required
+              options={[
+                { value: 'individual', label: 'Individual' },
+                { value: 'industry', label: 'Industry' },
+                { value: 'institution', label: 'Institution' },
+              ]}
+              value={formData.memberType || ''}
+              onChange={(e) => setFormData((prev) => ({ ...prev, memberType: e.target.value as MemberType }))}
+              error={errors.memberType}
+            />
+
+            {formData.memberType === 'individual' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input label="Full Name" required value={formData.fullName} onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))} error={errors.fullName} />
+                <Input label="Email Address" required type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} error={errors.email} />
+                <Input
+                  label="Birthdate"
+                  required
+                  type="date"
+                  value={formData.birthDate || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, birthDate: e.target.value }))}
+                  error={errors.birthDate}
+                  helperText="Must be age 16 or older."
+                />
+                <Select
+                  label="Gender"
+                  required
+                  options={[
+                    { value: 'Male', label: 'Male' },
+                    { value: 'Female', label: 'Female' },
+                    { value: 'Prefer not to say', label: 'Prefer not to say' },
+                  ]}
+                  value={formData.gender || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
+                  error={errors.gender}
+                />
+                <Input label="Address" required value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} className="md:col-span-2" />
+                <Input label="Contact Number" required value={formData.contactNumber} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
+                <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
+                <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
+              </div>
+            )}
+
+            {formData.memberType === 'institution' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input label="Institution Name" required value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
+                <Input label="Institution Address" required value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
+                <Input label="Institution Email" required type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: e.target.value }))} error={errors.companyEmail} />
+                <Input label="Institution Contact Number" required value={formData.contactNumber || ''} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
+                <Input label="1st Institution Representative Name" required value={formData.representativeName || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value, fullName: p.fullName || e.target.value }))} error={errors.representativeName} />
+                <Input label="Representative 1 Position" required value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
+                <Input label="2nd Institution Representative Name" required value={formData.representativeName2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName2: e.target.value }))} error={errors.representativeName2} />
+                <Input label="Representative 2 Position" required value={formData.representativePosition2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativePosition2: e.target.value }))} error={errors.representativePosition2} />
+                <p className="text-xs text-gray-500 md:col-span-2">Set default password below for the representative account.</p>
+                <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
+                <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
+              </div>
+            )}
+
+            {formData.memberType === 'industry' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+                <Input label="Company Name" required value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
+                <Input label="Company Address" required value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
+                <Input label="Representative Name" required value={formData.representativeName || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value, fullName: p.fullName || e.target.value }))} error={errors.representativeName} />
+                <Select
+                  label="Gender"
+                  required
+                  options={[
+                    { value: 'Male', label: 'Male' },
+                    { value: 'Female', label: 'Female' },
+                    { value: 'Prefer not to say', label: 'Prefer not to say' },
+                  ]}
+                  value={formData.gender || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
+                  error={errors.gender}
+                />
+                <Input label="Contact Number" required value={formData.contactNumber || ''} onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))} error={errors.contactNumber} />
+                <Input label="Position" required value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
+                <Input label="Company Email" required type="email" value={formData.companyEmail || ''} onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value, email: e.target.value }))} error={errors.companyEmail} />
+                <Input label="Company Website (Optional)" value={formData.website || ''} onChange={(e) => setFormData((p) => ({ ...p, website: e.target.value }))} error={errors.website} />
+                <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
+                <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
+              </div>
+            )}
+
+            <Button type="button" onClick={handleNext} className="w-full" size="lg" disabled={!formData.memberType}>
+              Continue to Payment
+            </Button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <Select
+                label="Payment Method"
+                required
+                options={[
+                  { value: 'gcash', label: 'GCash' },
+                  { value: 'paymaya', label: 'PayMaya / Maya' },
+                  { value: 'bank_transfer', label: 'Bank Transfer' },
+                  { value: 'cash_officer', label: 'Cash through Officer' },
+                ]}
+                value={selectedMethod}
+                onChange={(e) => setSelectedMethod(e.target.value as any)}
+              />
+            </div>
+
+            {/* GCash Instructions Card */}
+            {selectedMethod === 'gcash' && (
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Scan & Pay via GCash</h3>
+                <p className="mt-1 text-sm text-gray-600 max-w-md">
+                  Please scan the GCash QR code below using your GCash app to make your registration payment. 
+                  After paying, upload your transaction screenshot and enter the reference number.
+                </p>
+                
+                {paymentSettings.gcash_qr_code ? (
+                  <div className="mt-4 p-2 bg-white border rounded-lg shadow-sm">
+                    <img
+                      src={paymentSettings.gcash_qr_code}
+                      alt="GCash QR Code"
+                      className="h-64 w-64 object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-4 p-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded-lg max-w-md">
+                    No GCash QR Code uploaded by Admin. Please contact administration for payment details.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PayMaya Instructions Card */}
+            {selectedMethod === 'paymaya' && (
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Scan & Pay via PayMaya / Maya</h3>
+                <p className="mt-1 text-sm text-gray-600 max-w-md">
+                  Please scan the PayMaya / Maya QR code below using your Maya app to make your registration payment. 
+                  After paying, upload your transaction screenshot and enter the reference number.
+                </p>
+                
+                {paymentSettings.paymaya_qr_code ? (
+                  <div className="mt-4 p-2 bg-white border rounded-lg shadow-sm">
+                    <img
+                      src={paymentSettings.paymaya_qr_code}
+                      alt="PayMaya / Maya QR Code"
+                      className="h-64 w-64 object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-4 p-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded-lg max-w-md">
+                    No PayMaya QR Code uploaded by Admin. Please contact administration for payment details.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bank Transfer Instructions Card */}
+            {selectedMethod === 'bank_transfer' && (
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Pay via Bank Transfer</h3>
+                <p className="mt-1 text-sm text-gray-600 max-w-md">
+                  Please transfer your registration payment using the bank details or QR code below.
+                </p>
+
+                {paymentSettings.bank_transfer_qr_code && (
+                  <div className="mt-4 p-2 bg-white border rounded-lg shadow-sm">
+                    <img
+                      src={paymentSettings.bank_transfer_qr_code}
+                      alt="Bank Transfer QR Code"
+                      className="h-64 w-64 object-contain"
+                    />
+                  </div>
+                )}
+
+                {paymentSettings.bank_transfer_details ? (
+                  <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg max-w-md text-left text-sm text-gray-800 whitespace-pre-line w-full">
+                    <span className="font-semibold text-gray-900 block mb-1">Bank Account Details:</span>
+                    {paymentSettings.bank_transfer_details}
+                  </div>
+                ) : !paymentSettings.bank_transfer_qr_code ? (
+                  <div className="mt-4 p-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded-lg max-w-md">
+                    No Bank Details or QR Code configured by Admin. Please contact administration for details.
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            {/* Cash through Officer Instructions Card */}
+            {selectedMethod === 'cash_officer' && (
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Cash Payment via Officer</h3>
+                <p className="mt-1 text-sm text-gray-600 max-w-md">
+                  Hand over your registration payment directly to an authorized PSITS officer or treasurer.
+                </p>
+
+                <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg max-w-md text-left text-sm text-gray-800 whitespace-pre-line w-full">
+                  <span className="font-semibold text-gray-900 block mb-1">Payment Instructions:</span>
+                  {paymentSettings.cash_instructions ||
+                    'Please hand over your registration payment to your institution/school authorized PSITS officer or treasurer, get an official receipt, and upload the receipt screenshot below.'}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Payment Proof (Upload Transaction / Receipt Screenshot)</label>
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleImageUpload}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+              {errors.paymentProof && <p className="mt-1 text-sm text-red-600">{errors.paymentProof}</p>}
+              {formData.paymentProof && <img src={formData.paymentProof} alt="Payment proof" className="mt-2 h-28 rounded border object-contain" />}
+            </div>
+
+            <Input
+              label="Reference / Receipt Number"
+              required
+              value={formData.referenceNumber || ''}
+              onChange={(e) => setFormData((prev) => ({ ...prev, referenceNumber: e.target.value }))}
+              error={errors.referenceNumber}
+              placeholder="Enter Reference or Receipt Number"
+            />
+
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={Boolean(formData.termsAccepted)}
+                onChange={(e) => setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked }))}
+                className="mt-1"
+              />
+              <span className="text-sm text-gray-700">
+                I agree to the{' '}
+                <span className="font-semibold text-primary underline underline-offset-2">
+                  Terms and Conditions
+                </span>
+                .
+              </span>
+            </label>
+            {errors.termsAccepted && <p className="text-sm text-red-600">{errors.termsAccepted}</p>}
+
+            <div className="flex gap-4">
+              <Button type="button" variant="secondary" onClick={handleBack} className="w-1/3" size="lg">
+                Back to Details
+              </Button>
+              <Button type="submit" className="w-2/3" size="lg" isLoading={isLoading}>
+                Submit Registration
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <p className="text-center text-sm text-gray-600 border-t border-gray-100 pt-4">
           Already have an account?{' '}
           <Link to="/login" className="font-medium text-primary hover:underline">
             Login here
