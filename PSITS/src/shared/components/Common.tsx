@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { X, CheckCircle2, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -12,30 +12,31 @@ interface ModalProps {
 }
 
 export const Modal = ({ isOpen, onClose, title, children, size = 'md', hideCloseButton = false }: ModalProps) => {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.activeElement as HTMLElement | null;
+    overlayRef.current?.focus();
+    return () => prev?.focus();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const sizeClasses = {
     sm: 'max-w-lg',
     md: 'max-w-2xl',
-    lg: 'max-w-3xl',
+    lg: 'max-w-4xl',
   };
-
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
-    overlayRef.current?.focus();
-    return () => prev?.focus();
-  }, []);
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-gray-900/60 dark:bg-black/75 backdrop-blur-sm overflow-y-auto transition-opacity animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       ref={overlayRef}
       onMouseDown={(e) => {
-        // Close when clicking the backdrop (not inside the panel)
         if (e.target === e.currentTarget) onClose();
       }}
       onKeyDown={(e) => {
@@ -45,24 +46,24 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md', hideClose
     >
       <div className="min-h-[100dvh] flex items-start sm:items-center justify-center p-4 sm:p-6">
         <div
-          className={`bg-white rounded-lg shadow-lg ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col`}
+          className={`bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden border border-gray-100 dark:border-slate-800 animate-scale-in text-gray-900 dark:text-slate-100`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/50">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">{title}</h2>
             {!hideCloseButton && (
               <button
                 onClick={onClose}
                 aria-label="Close modal"
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1.5 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-200/60 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             )}
           </div>
 
           {/* Body */}
-          <div className="p-6 overflow-y-auto">{children}</div>
+          <div className="p-5 sm:p-6 overflow-y-auto flex-1">{children}</div>
         </div>
       </div>
     </div>
@@ -76,21 +77,38 @@ interface AlertProps {
 }
 
 export const Alert = ({ type, message, onClose }: AlertProps) => {
-  const typeClasses = {
-    success: 'bg-green-50 border-green-200 text-green-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800',
+  const typeConfig = {
+    success: {
+      bg: 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200',
+      icon: <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />,
+    },
+    error: {
+      bg: 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200',
+      icon: <AlertCircle size={18} className="text-rose-600 dark:text-rose-400 shrink-0" />,
+    },
+    warning: {
+      bg: 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200',
+      icon: <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />,
+    },
+    info: {
+      bg: 'bg-sky-50/80 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-200',
+      icon: <Info size={18} className="text-sky-600 dark:text-sky-400 shrink-0" />,
+    },
   };
 
+  const config = typeConfig[type] || typeConfig.info;
+
   return (
-    <div className={`border rounded-lg p-4 flex items-center justify-between ${typeClasses[type]}`}>
-      <p className="font-medium">{message}</p>
+    <div className={`border rounded-xl p-3.5 sm:p-4 flex items-center justify-between gap-3 text-sm font-medium animate-fade-in shadow-2xs ${config.bg}`}>
+      <div className="flex items-center gap-2.5 min-w-0">
+        {config.icon}
+        <p className="truncate">{message}</p>
+      </div>
       {onClose && (
         <button
           onClick={onClose}
           aria-label="Close alert"
-          className="p-1 hover:opacity-70"
+          className="p-1 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 rounded transition-colors"
         >
           <X size={16} />
         </button>
@@ -105,14 +123,14 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner = ({ size = 'md' }: LoadingSpinnerProps) => {
   const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
+    sm: 'h-4 w-4 border-2',
+    md: 'h-8 w-8 border-3',
+    lg: 'h-12 w-12 border-4',
   };
 
   return (
-    <div className="flex items-center justify-center">
-      <div className={`animate-spin border-4 border-primary border-t-transparent rounded-full ${sizeClasses[size]}`} />
+    <div className="flex items-center justify-center p-4">
+      <div className={`animate-spin border-blue-600 dark:border-blue-400 border-t-transparent rounded-full ${sizeClasses[size]}`} />
     </div>
   );
 };
@@ -139,11 +157,11 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
   }
 
   return (
-    <div className="flex items-center justify-center gap-2 mt-6">
+    <div className="flex items-center justify-center gap-1.5 mt-6 pt-4 border-t border-gray-100 dark:border-slate-800">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-2 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         Previous
       </button>
@@ -152,11 +170,11 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
         <>
           <button
             onClick={() => onPageChange(1)}
-            className="px-3 py-2 hover:bg-gray-100 rounded"
+            className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             1
           </button>
-          {startPage > 2 && <span className="px-2">...</span>}
+          {startPage > 2 && <span className="px-1 text-gray-400 dark:text-slate-500 text-xs">...</span>}
         </>
       )}
 
@@ -164,10 +182,10 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
         <button
           key={page}
           onClick={() => onPageChange(page)}
-          className={`px-3 py-2 rounded ${
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
             page === currentPage
-              ? 'bg-primary text-white'
-              : 'hover:bg-gray-100'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
           }`}
         >
           {page}
@@ -176,10 +194,10 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
 
       {endPage < totalPages && (
         <>
-          {endPage < totalPages - 1 && <span className="px-2">...</span>}
+          {endPage < totalPages - 1 && <span className="px-1 text-gray-400 dark:text-slate-500 text-xs">...</span>}
           <button
             onClick={() => onPageChange(totalPages)}
-            className="px-3 py-2 hover:bg-gray-100 rounded"
+            className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             {totalPages}
           </button>
@@ -189,7 +207,7 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-2 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         Next
       </button>
@@ -205,15 +223,19 @@ interface BadgeProps {
 
 export const Badge = ({ children, variant = 'primary', className = '' }: BadgeProps) => {
   const variantClasses = {
-    primary: 'bg-blue-100 text-primary',
-    success: 'bg-green-100 text-green-700',
-    warning: 'bg-yellow-100 text-yellow-700',
-    error: 'bg-red-100 text-red-700',
-    info: 'bg-cyan-100 text-cyan-700',
+    primary: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60',
+    success: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60',
+    warning: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60',
+    error: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60',
+    info: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60',
   };
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${variantClasses[variant]} ${className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+        variantClasses[variant] || variantClasses.primary
+      } ${className}`}
+    >
       {children}
     </span>
   );
@@ -222,12 +244,12 @@ export const Badge = ({ children, variant = 'primary', className = '' }: BadgePr
 type StatusBadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand';
 
 const statusToneClasses: Record<StatusBadgeTone, string> = {
-  neutral: 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200',
-  success: 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-200',
-  warning: 'bg-yellow-50 text-yellow-800 ring-1 ring-inset ring-yellow-200',
-  danger: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200',
-  info: 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200',
-  brand: 'bg-blue-50 text-primary ring-1 ring-inset ring-blue-200',
+  neutral: 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700',
+  success: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60',
+  warning: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60',
+  danger: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60',
+  info: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60',
+  brand: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60',
 };
 
 function normalizeStatus(value: unknown) {
@@ -239,7 +261,6 @@ function normalizeStatus(value: unknown) {
 
 function getStatusTone(status: string): StatusBadgeTone {
   switch (status) {
-    // Member / registration / general
     case 'pending':
       return 'warning';
     case 'approved':
@@ -253,8 +274,6 @@ function getStatusTone(status: string): StatusBadgeTone {
       return 'warning';
     case 'banned':
       return 'danger';
-
-    // Events
     case 'ongoing':
     case 'registration_open':
       return 'info';
@@ -262,20 +281,16 @@ function getStatusTone(status: string): StatusBadgeTone {
     case 'completed':
       return 'neutral';
     case 'draft':
-      return 'brand';
     case 'published':
       return 'brand';
     case 'cancelled':
       return 'danger';
-
-    // Live sessions
     case 'scheduled':
       return 'brand';
     case 'live':
       return 'info';
     case 'ended':
       return 'neutral';
-
     default:
       return 'neutral';
   }
@@ -301,9 +316,9 @@ export const StatusBadge = ({ status, label, className = '' }: StatusBadgeProps)
   return (
     <span
       className={[
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide',
         statusToneClasses[tone],
-        isBanned ? 'bg-gray-900 text-gray-100 ring-gray-800' : '',
+        isBanned ? 'bg-gray-900 text-gray-100 border-gray-800' : '',
         className,
       ]
         .filter(Boolean)
@@ -322,10 +337,10 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ title, description, action }: EmptyStateProps) => {
   return (
-    <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
-      <p className="text-base font-semibold text-gray-900">{title}</p>
-      {description ? <p className="mt-1 text-sm text-gray-500">{description}</p> : null}
-      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
+    <div className="rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-8 sm:p-12 text-center shadow-2xs">
+      <p className="text-base font-bold text-gray-900 dark:text-slate-100">{title}</p>
+      {description ? <p className="mt-1.5 text-sm text-gray-500 dark:text-slate-400 max-w-sm mx-auto">{description}</p> : null}
+      {action ? <div className="mt-5 flex justify-center">{action}</div> : null}
     </div>
   );
 };

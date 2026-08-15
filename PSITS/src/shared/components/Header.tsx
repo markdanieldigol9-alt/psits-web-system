@@ -1,7 +1,8 @@
-import { Bell, LogOut, Settings, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Bell, LogOut, Settings, Menu, X, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
+import { useTheme } from '@/shared/context/ThemeContext';
 import { getUserInterfaceLabel } from '@/shared/utils/userInterface';
 import { Link } from 'react-router-dom';
 import logo from '@/assets/image/PSITS_Logo.png';
@@ -14,85 +15,137 @@ interface HeaderProps {
 export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
   const { user, logout } = useAuth();
   const { notifications } = useNotification();
+  const { effectiveTheme, toggleTheme } = useTheme();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
     window.location.href = '/login';
   };
 
+  const initial = user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U';
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-200/80 dark:border-slate-800 shadow-xs transition-all duration-200">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 gap-3">
-        {/* Left side - Logo and Menu Toggle */}
-        <div className="flex items-center gap-4 min-w-0">
+        {/* Left side - Logo & Mobile Menu Toggle */}
+        <div className="flex items-center gap-3.5 min-w-0">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded"
-            aria-label="Toggle menu"
+            className="lg:hidden p-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="Toggle navigation menu"
           >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <div className="flex items-center gap-2">
+          <Link to="/dashboard" className="flex items-center gap-2.5 group">
             <img
               src={logo}
-              alt="PSITS"
-              className="h-8 w-8"
+              alt="PSITS Logo"
+              className="h-8 w-8 object-contain transition-transform group-hover:scale-105"
             />
-            <span className="text-lg font-bold text-primary hidden sm:inline">PSITS Hub</span>
-          </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight leading-none group-hover:text-primary transition-colors">
+                PSITS <span className="text-primary font-extrabold">Hub</span>
+              </span>
+            </div>
+          </Link>
         </div>
 
-        {/* Right side - Icons and Profile */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        {/* Right side - Badges, Notifications & Profile Dropdown */}
+        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
           {user && (
-            <span className="hidden rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-primary md:inline-flex">
+            <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/80 border border-blue-100 text-xs font-semibold text-blue-800 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
               {getUserInterfaceLabel(user)}
             </span>
           )}
-          {/* Notifications */}
-          <Link to="/notifications" className="relative p-2 hover:bg-gray-100 rounded">
-            <Bell size={20} className="text-gray-600" />
+
+          {/* Theme Quick Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-gray-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-gray-100/80 dark:hover:bg-slate-800 rounded-lg transition-all"
+            title={effectiveTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle theme"
+          >
+            {effectiveTheme === 'dark' ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} />}
+          </button>
+
+          {/* Notifications Link */}
+          <Link
+            to="/notifications"
+            className="relative p-2 text-gray-600 dark:text-slate-300 hover:text-primary hover:bg-gray-100/80 dark:hover:bg-slate-800 rounded-lg transition-all"
+            title="Notifications"
+          >
+            <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {unreadCount}
+              <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs animate-scale-in">
+                {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </Link>
 
-          {/* Profile Menu */}
-          <div className="relative">
+          {/* Profile Dropdown */}
+          <div className="relative" ref={menuRef}>
             <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded"
+              onClick={() => setShowProfileMenu((prev) => !prev)}
+              className="flex items-center gap-2.5 p-1.5 sm:px-2.5 sm:py-1.5 hover:bg-gray-100/80 rounded-xl transition-all border border-transparent hover:border-gray-200"
             >
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">
-                {user?.fullName.charAt(0).toUpperCase()}
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                  {initial}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
               </div>
-              <span className="text-sm font-medium text-gray-900 hidden sm:inline max-w-[10rem] truncate">
-                {user?.fullName}
-              </span>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-sm font-semibold text-gray-900 leading-tight max-w-[10rem] truncate">
+                  {user?.fullName || 'User'}
+                </span>
+                <span className="text-[11px] text-gray-500 capitalize leading-tight">
+                  {user?.role || 'Member'}
+                </span>
+              </div>
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+              <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 py-1.5 z-50 animate-scale-in">
+                <div className="px-4 py-2.5 border-b border-gray-100 dark:border-slate-800 sm:hidden">
+                  <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{user?.fullName}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user?.email}</p>
+                </div>
+
                 <Link
-                  to="/settings/profile"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 text-gray-700"
+                  to="/settings"
+                  className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-blue-50/60 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  <Settings size={16} /> Profile Settings
+                  <Settings size={16} className="text-gray-400 dark:text-slate-500 group-hover:text-blue-700" />
+                  Account Settings
                 </Link>
+
+                <div className="my-1 border-t border-gray-100 dark:border-slate-800" />
+
                 <button
                   onClick={() => {
                     handleLogout();
                     setShowProfileMenu(false);
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 text-gray-700 text-left"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-left"
                 >
-                  <LogOut size={16} /> Logout
+                  <LogOut size={16} />
+                  Sign Out
                 </button>
               </div>
             )}

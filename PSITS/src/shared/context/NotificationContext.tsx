@@ -18,28 +18,27 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [toasts, setToasts] = useState<Notification[]>([]);
-
   const storageKey = useMemo(() => `psits_notifications_${user?.id ?? 'guest'}`, [user?.id]);
 
-  useEffect(() => {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) {
-      setNotifications([]);
-      return;
-    }
-
+  const loadStoredNotifications = useCallback((key: string): Notification[] => {
     try {
-      const parsed: Notification[] = JSON.parse(raw).map((n: Notification) => ({
+      const raw = localStorage.getItem(key);
+      if (!raw) return [];
+      return JSON.parse(raw).map((n: Notification) => ({
         ...n,
         createdAt: new Date(n.createdAt),
       }));
-      setNotifications(parsed);
     } catch {
-      setNotifications([]);
+      return [];
     }
-  }, [storageKey]);
+  }, []);
+
+  const [notifications, setNotifications] = useState<Notification[]>(() => loadStoredNotifications(storageKey));
+  const [toasts, setToasts] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    setNotifications(loadStoredNotifications(storageKey));
+  }, [storageKey, loadStoredNotifications]);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(notifications));

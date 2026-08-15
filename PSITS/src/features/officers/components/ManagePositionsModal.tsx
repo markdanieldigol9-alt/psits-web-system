@@ -18,6 +18,11 @@ export type OfficerPositionItem = {
   createdAt?: string;
 };
 
+/**
+ * ManagePositionsModal Component
+ * Purpose: Allows Administrators & Super Admins to view, create, and remove custom officer positions.
+ * Debugging: Displays list of positions with default/custom tags. Deletion is validated server-side.
+ */
 export const ManagePositionsModal = ({
   isOpen,
   onClose,

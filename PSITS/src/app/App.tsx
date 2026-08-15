@@ -6,6 +6,7 @@ import {
 import { Suspense, lazy } from 'react';
 import { AuthProvider } from '@/shared/context/AuthContext';
 import { NotificationProvider } from '@/shared/context/NotificationContext';
+import { ThemeProvider } from '@/shared/context/ThemeContext';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { LoadingSpinner } from '@/shared/components/Common';
 import { Toasts } from '@/shared/components/Toasts';
@@ -80,8 +81,9 @@ export const App = () => {
         v7_relativeSplatPath: true,
       }}
     >
-      <AuthProvider>
-        <NotificationProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
           <Suspense
             fallback={
               <div className="h-screen flex items-center justify-center">
@@ -257,7 +259,8 @@ export const App = () => {
           </Suspense>
         </NotificationProvider>
       </AuthProvider>
-    </Router>
+    </ThemeProvider>
+  </Router>
   );
 };
 

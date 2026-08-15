@@ -380,26 +380,30 @@ export const DashboardPage = () => {
     {
       label: 'Total Members',
       value: String(summary?.totalMembers ?? 0),
+      subtitle: `${summary?.activeMembers ?? 0} active members`,
       icon: Users,
-      color: 'bg-blue-100',
+      iconBg: 'bg-blue-50 text-blue-600 border border-blue-100/80',
     },
     {
       label: 'Active Events',
       value: String(summary?.activeEvents ?? 0),
+      subtitle: 'Scheduled & ongoing',
       icon: Calendar,
-      color: 'bg-yellow-100',
+      iconBg: 'bg-amber-50 text-amber-600 border border-amber-100/80',
     },
     {
       label: 'Total Revenue',
       value: `PHP ${(summary?.totalRevenue ?? 0).toLocaleString()}`,
+      subtitle: 'Verified payments',
       icon: DollarSign,
-      color: 'bg-green-100',
+      iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/80',
     },
     {
       label: 'Pending Approvals',
       value: String(summary?.pendingApprovals ?? 0),
+      subtitle: 'Requires review',
       icon: Clock,
-      color: 'bg-red-100',
+      iconBg: 'bg-rose-50 text-rose-600 border border-rose-100/80',
     },
   ];
 
@@ -420,19 +424,21 @@ export const DashboardPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                    {isLoading && <p className="text-xs text-gray-400 mt-1">Updating...</p>}
+              <Card key={stat.label} className="p-5 sm:p-6 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wide">{stat.label}</p>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{stat.value}</p>
+                    <p className="text-xs text-gray-400 font-medium">
+                      {isLoading ? 'Refreshing...' : stat.subtitle}
+                    </p>
                   </div>
-                  <div className={`${stat.color} p-3 rounded-lg`}>
-                    <Icon className="text-gray-900" size={24} />
+                  <div className={`p-3 rounded-xl ${stat.iconBg} shadow-2xs`}>
+                    <Icon size={22} />
                   </div>
                 </div>
               </Card>

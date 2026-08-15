@@ -4,9 +4,11 @@ import { Input, Button, Select, Card } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { useAuth } from '@/shared/context/AuthContext';
+import { useTheme } from '@/shared/context/ThemeContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
+import { Sun, Moon, Monitor } from 'lucide-react';
 
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -36,6 +38,7 @@ const formatDateForInput = (dateStr?: string | null) => {
 export const SettingsPage = () => {
   const { user, updateUser } = useAuth();
   const { addNotification } = useNotification();
+  const { themeMode, setThemeMode } = useTheme();
 
   const [isLoading, setIsLoading] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState({
@@ -415,9 +418,95 @@ export const SettingsPage = () => {
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-600 mt-2">Update your account information.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Settings</h1>
+          <p className="text-gray-600 dark:text-slate-400 mt-2">Manage your account preferences, theme, and profile details.</p>
         </div>
+
+        {/* Theme & Appearance Settings */}
+        <Card className="p-6 w-full">
+          <div className="space-y-4">
+            <div className="rounded-lg border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 p-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Appearance & Theme</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+                Customize how PSITS Hub looks on your device.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Light Mode option */}
+              <button
+                type="button"
+                onClick={() => setThemeMode('light')}
+                className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                  themeMode === 'light'
+                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
+                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2.5 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
+                    <Sun size={20} />
+                  </div>
+                  {themeMode === 'light' && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Light Mode</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Bright, crisp standard view</p>
+                </div>
+              </button>
+
+              {/* Dark Mode option */}
+              <button
+                type="button"
+                onClick={() => setThemeMode('dark')}
+                className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                  themeMode === 'dark'
+                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
+                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                    <Moon size={20} />
+                  </div>
+                  {themeMode === 'dark' && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Dark Mode</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Easy on the eyes in low light</p>
+                </div>
+              </button>
+
+              {/* System Default option */}
+              <button
+                type="button"
+                onClick={() => setThemeMode('system')}
+                className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                  themeMode === 'system'
+                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
+                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <Monitor size={20} />
+                  </div>
+                  {themeMode === 'system' && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-slate-100">System Default</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Match device OS preference</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </Card>
 
         <Card className="p-6 w-full">
           <div className="space-y-6">

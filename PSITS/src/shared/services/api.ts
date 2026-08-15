@@ -132,35 +132,43 @@ class ApiService {
     return this.client.post(`/members/${id}/resend-approval-email`);
   }
 
+  /** Fetch list of officers (optional status filter: 'active', 'past', 'all') */
   getOfficers(status?: string) {
     return this.client.get('/officers', { params: status ? { status } : undefined });
   }
 
+  /** Assign a member user to an officer position */
   assignOfficer(userId: string, position: string, startDate?: string, endDate?: string) {
     return this.client.post('/officers/assign', { userId, position, startDate, endDate });
   }
 
+  /** Create new officer account directly */
   createOfficer(data: any) {
     return this.client.post('/officers', data);
   }
 
+  /** Update existing officer details or position */
   updateOfficer(id: string, data: any) {
     return this.client.put(`/officers/${id}`, data);
   }
 
+  /** Archive officer (reverts role back to member) */
   deleteOfficer(id: string) {
     return this.client.delete(`/officers/${id}`);
   }
 
   // Officer Positions
+  /** Fetch all dynamic officer positions for assignment and election forms */
   getOfficerPositions() {
     return this.client.get('/officer-positions');
   }
 
+  /** Create a new dynamic officer position title (Admin only) */
   createOfficerPosition(data: { name: string; description?: string }) {
     return this.client.post('/officer-positions', data);
   }
 
+  /** Delete a custom officer position title (Admin only) */
   deleteOfficerPosition(id: string | number) {
     return this.client.delete(`/officer-positions/${id}`);
   }

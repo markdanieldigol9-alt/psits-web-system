@@ -50,6 +50,13 @@ async function getOfficerColumnSet(conn) {
   return new Set(columnRows.map((r) => String(r.Field)));
 }
 
+/**
+ * Helper: Check if an officer position title is currently assigned to an active officer user.
+ * @param {import('mysql2/promise').Connection|import('mysql2/promise').Pool} conn Database connection pool
+ * @param {string} position Position title to check (case-insensitive)
+ * @param {number|null} [excludeUserId=null] Optional user ID to exclude (used when updating an existing officer)
+ * @returns {Promise<boolean>} True if position is already assigned to another active officer
+ */
 async function positionInUse(conn, position, excludeUserId = null) {
   const params = [position];
   let sql = `
@@ -67,6 +74,11 @@ async function positionInUse(conn, position, excludeUserId = null) {
   return rows.length > 0;
 }
 
+/**
+ * Controller: GET /api/officers
+ * Purpose: List organization officers filtered by status (active, past, all).
+ * Debugging: Logs filter query params and respects caller permissions (members see active only).
+ */
 async function listOfficers(req, res) {
   const status = req.query.status ? String(req.query.status).trim().toLowerCase() : 'all';
   const role = String(req.user?.role || '').toLowerCase();
@@ -229,6 +241,11 @@ async function createOfficer(req, res) {
   }
 }
 
+/**
+ * Controller: POST /api/officers/assign
+ * Purpose: Promote an existing active member user to an officer with a designated position and term.
+ * Debugging: Validates user eligibility (role must be member, status active) and position availability.
+ */
 async function assignOfficer(req, res) {
   const body = req.body || {};
   const userId = Number(body.userId);
@@ -480,6 +497,11 @@ async function deleteOfficer(req, res) {
   }
 }
 
+/**
+ * Controller: GET /api/officer-positions
+ * Purpose: Fetch all dynamic officer positions (both default and custom created by admin).
+ * Debugging: Returns position items ordered by ID ascending. Used by officer assignment and election forms.
+ */
 async function listOfficerPositions(req, res) {
   try {
     const [rows] = await pool.execute(
@@ -491,6 +513,11 @@ async function listOfficerPositions(req, res) {
   }
 }
 
+/**
+ * Controller: POST /api/officer-positions
+ * Purpose: Create a new custom officer position title (Admin / Super Admin only).
+ * Debugging: Checks case-insensitive title uniqueness before inserting into `officer_positions`.
+ */
 async function createOfficerPosition(req, res) {
   const body = req.body || {};
   const name = String(body.name || '').trim();
@@ -528,6 +555,11 @@ async function createOfficerPosition(req, res) {
   }
 }
 
+/**
+ * Controller: DELETE /api/officer-positions/:id
+ * Purpose: Delete a custom officer position (Admin / Super Admin only).
+ * Debugging: Rejects deletion if position is currently assigned to an active officer. Default roles cannot be deleted.
+ */
 async function deleteOfficerPosition(req, res) {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) {
