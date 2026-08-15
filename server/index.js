@@ -191,6 +191,22 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
+app.get('/api/debug-db', async (_req, res) => {
+  try {
+    const [tables] = await pool.query('SHOW TABLES');
+    const tableList = tables.map(r => Object.values(r)[0]);
+    res.json({
+      success: true,
+      skipMigration: process.env.SKIP_MIGRATION || 'not_set',
+      migrationReady,
+      migrationError,
+      tables: tableList
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
