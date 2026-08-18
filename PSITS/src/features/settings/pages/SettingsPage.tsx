@@ -9,6 +9,7 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
 import { Sun, Moon, Monitor } from 'lucide-react';
+import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -1082,6 +1083,9 @@ export const SettingsPage = () => {
               onChange={(e) => setRenewalForm((p) => ({ ...p, method: e.target.value }))}
             />
           </div>
+
+          {/* QR Code & Payment Guidelines Display */}
+          <PaymentInstructionsCard method={renewalForm.method} />
 
           <Input
             label="Reference Number (Optional)"

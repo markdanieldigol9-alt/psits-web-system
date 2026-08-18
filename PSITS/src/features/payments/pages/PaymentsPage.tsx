@@ -267,20 +267,38 @@ export const PaymentsPage = () => {
                 {paginatedPayments.map((payment) => {
                   const status = getVerificationStatus(payment);
                   const formattedMethod = formatPaymentMethod(payment.method || payment.paymentMethod || '');
-                  const eventLabel =
-                    payment.event ||
-                    (payment.paymentKind === 'membership_renewal' ? 'Membership Renewal' : 'Membership Fee');
+                  const renderPaymentKindBadge = () => {
+                    if (payment.event) {
+                      return (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
+                          Event: {payment.event}
+                        </span>
+                      );
+                    }
+                    if (payment.paymentKind === 'membership_renewal') {
+                      return (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800">
+                          Membership Renewal
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
+                        Membership Fee
+                      </span>
+                    );
+                  };
 
                   return (
-                    <tr key={payment.id} className="hover:bg-gray-50">
+                    <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                     {!isMember && (
-                      <td className="px-6 py-4 font-medium text-gray-900">
+                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-100">
                         {payment.memberName}
                       </td>
                     )}
-                    <td className="px-6 py-4 text-gray-600 text-sm">{eventLabel}</td>
-                    <td className="px-6 py-4 font-bold text-primary">
-                      ₱{payment.amount.toLocaleString()}
+                    <td className="px-6 py-4 text-sm">{renderPaymentKindBadge()}</td>
+                    <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">
+                      ₱{Number(payment.amount || 0).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className="text-gray-950 font-medium">{formattedMethod}</span>

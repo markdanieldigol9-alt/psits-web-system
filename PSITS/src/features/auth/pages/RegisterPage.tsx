@@ -7,6 +7,7 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import { Alert } from '@/shared/components/Common';
 import { Button, Input, Select } from '@/shared/components/Form';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
+import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import type { MemberType, RegisterData } from '@/shared/types';
 
 type RegisterFormData = RegisterData & {
@@ -384,102 +385,8 @@ export const RegisterPage = () => {
               />
             </div>
 
-            {/* GCash Instructions Card */}
-            {selectedMethod === 'gcash' && (
-              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Scan & Pay via GCash</h3>
-                <p className="mt-1 text-sm text-gray-600 max-w-md">
-                  Please scan the GCash QR code below using your GCash app to make your registration payment. 
-                  After paying, upload your transaction screenshot and enter the reference number.
-                </p>
-                
-                {paymentSettings.gcash_qr_code ? (
-                  <div className="mt-4 p-2 bg-white border rounded-lg shadow-sm">
-                    <img
-                      src={paymentSettings.gcash_qr_code}
-                      alt="GCash QR Code"
-                      className="h-64 w-64 object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="mt-4 p-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded-lg max-w-md">
-                    No GCash QR Code uploaded by Admin. Please contact administration for payment details.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PayMaya Instructions Card */}
-            {selectedMethod === 'paymaya' && (
-              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Scan & Pay via PayMaya / Maya</h3>
-                <p className="mt-1 text-sm text-gray-600 max-w-md">
-                  Please scan the PayMaya / Maya QR code below using your Maya app to make your registration payment. 
-                  After paying, upload your transaction screenshot and enter the reference number.
-                </p>
-                
-                {paymentSettings.paymaya_qr_code ? (
-                  <div className="mt-4 p-2 bg-white border rounded-lg shadow-sm">
-                    <img
-                      src={paymentSettings.paymaya_qr_code}
-                      alt="PayMaya / Maya QR Code"
-                      className="h-64 w-64 object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="mt-4 p-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded-lg max-w-md">
-                    No PayMaya QR Code uploaded by Admin. Please contact administration for payment details.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Bank Transfer Instructions Card */}
-            {selectedMethod === 'bank_transfer' && (
-              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Pay via Bank Transfer</h3>
-                <p className="mt-1 text-sm text-gray-600 max-w-md">
-                  Please transfer your registration payment using the bank details or QR code below.
-                </p>
-
-                {paymentSettings.bank_transfer_qr_code && (
-                  <div className="mt-4 p-2 bg-white border rounded-lg shadow-sm">
-                    <img
-                      src={paymentSettings.bank_transfer_qr_code}
-                      alt="Bank Transfer QR Code"
-                      className="h-64 w-64 object-contain"
-                    />
-                  </div>
-                )}
-
-                {paymentSettings.bank_transfer_details ? (
-                  <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg max-w-md text-left text-sm text-gray-800 whitespace-pre-line w-full">
-                    <span className="font-semibold text-gray-900 block mb-1">Bank Account Details:</span>
-                    {paymentSettings.bank_transfer_details}
-                  </div>
-                ) : !paymentSettings.bank_transfer_qr_code ? (
-                  <div className="mt-4 p-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 rounded-lg max-w-md">
-                    No Bank Details or QR Code configured by Admin. Please contact administration for details.
-                  </div>
-                ) : null}
-              </div>
-            )}
-
-            {/* Cash through Officer Instructions Card */}
-            {selectedMethod === 'cash_officer' && (
-              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 text-center flex flex-col items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Cash Payment via Officer</h3>
-                <p className="mt-1 text-sm text-gray-600 max-w-md">
-                  Hand over your registration payment directly to an authorized PSITS officer or treasurer.
-                </p>
-
-                <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg max-w-md text-left text-sm text-gray-800 whitespace-pre-line w-full">
-                  <span className="font-semibold text-gray-900 block mb-1">Payment Instructions:</span>
-                  {paymentSettings.cash_instructions ||
-                    'Please hand over your registration payment to your institution/school authorized PSITS officer or treasurer, get an official receipt, and upload the receipt screenshot below.'}
-                </div>
-              </div>
-            )}
+            {/* Payment Instructions Card */}
+            <PaymentInstructionsCard method={selectedMethod} settings={paymentSettings} />
 
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Payment Proof (Upload Transaction / Receipt Screenshot)</label>

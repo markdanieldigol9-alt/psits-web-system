@@ -9,6 +9,7 @@ import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircl
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
+import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 
 type EventStatus = 'draft' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type LiveSessionStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
@@ -1817,6 +1818,9 @@ export const EventsPage = () => {
               />
             </div>
           </div>
+
+          {/* QR Code and Payment Instructions Card */}
+          <PaymentInstructionsCard method={paymentForm.method} />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Screenshot / Photo</label>
