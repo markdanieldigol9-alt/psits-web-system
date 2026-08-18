@@ -191,15 +191,6 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
-app.get('/api/debug-db-columns', async (_req, res) => {
-  try {
-    const [cols] = await pool.query('SHOW COLUMNS FROM announcements_old');
-    res.json({ success: true, columns: cols });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
@@ -576,12 +567,7 @@ app.use((err, _req, res, _next) => {
     return res.status(503).json({ success: false, message: getDbUnavailableMessage(err) });
   }
 
-  res.status(500).json({
-    success: false,
-    message: err.message || 'Server error.',
-    error: err.message,
-    stack: err.stack
-  });
+  res.status(500).json({ success: false, message: 'Server error.' });
 });
 
 const port = Number(process.env.PORT || 3000);
