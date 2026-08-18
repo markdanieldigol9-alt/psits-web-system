@@ -18,8 +18,7 @@ function verifyPassword(password, passwordHash) {
 
 async function migrate() {
   if (process.env.SKIP_MIGRATION === 'true') {
-    console.log('Skipping migration as SKIP_MIGRATION=true');
-    return;
+    console.log('SKIP_MIGRATION=true is set, but forcing migration run to ensure all tables exist.');
   }
   const getColumnType = async (tableName, columnName, fallback) => {
     try {
