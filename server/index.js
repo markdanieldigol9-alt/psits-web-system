@@ -191,6 +191,19 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
+app.get('/api/debug-db-columns', async (_req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT TABLE_NAME as tableName, COLUMN_NAME as columnName, EXTRA as extra
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'id'
+    `);
+    res.json({ success: true, columns: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
