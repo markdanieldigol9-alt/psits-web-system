@@ -193,54 +193,8 @@ app.get('/api/health', async (_req, res) => {
 
 app.get('/api/debug-db-columns', async (_req, res) => {
   try {
-    let errorLog = [];
-    try {
-      await pool.query('SET FOREIGN_KEY_CHECKS = 0');
-      
-      // 1. Rename existing table
-      await pool.query('RENAME TABLE announcements TO announcements_old');
-      
-      // 2. Create new table with AUTO_INCREMENT
-      await pool.query(`
-        CREATE TABLE announcements (
-          id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-          title VARCHAR(191) NOT NULL,
-          content TEXT NOT NULL,
-          image_url VARCHAR(255) NULL,
-          audience_json TEXT NOT NULL,
-          status ENUM('draft','published') NOT NULL DEFAULT 'draft',
-          schedule_at DATETIME NULL,
-          created_by INT UNSIGNED NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          PRIMARY KEY (id),
-          KEY idx_announcements_status (status),
-          KEY idx_announcements_created_at (created_at),
-          CONSTRAINT fk_announcements_created_by
-            FOREIGN KEY (created_by) REFERENCES users(id)
-            ON DELETE SET NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-      `);
-      
-      // 3. Copy data
-      await pool.query('INSERT INTO announcements SELECT * FROM announcements_old');
-      
-      // 4. Drop old table
-      await pool.query('DROP TABLE announcements_old');
-      
-      errorLog.push('announcements migration workaround succeeded');
-    } catch (err) {
-      errorLog.push('announcements workaround failed: ' + err.message);
-    } finally {
-      await pool.query('SET FOREIGN_KEY_CHECKS = 1');
-    }
-
-    const [rows] = await pool.query(`
-      SELECT TABLE_NAME as tableName, COLUMN_NAME as columnName, EXTRA as extra
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'id'
-    `);
-    res.json({ success: true, columns: rows, repairLog: errorLog });
+    const [cols] = await pool.query('SHOW COLUMNS FROM announcements_old');
+    res.json({ success: true, columns: cols });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
