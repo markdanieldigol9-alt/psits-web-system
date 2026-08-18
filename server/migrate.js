@@ -20,6 +20,35 @@ async function migrate() {
   if (process.env.SKIP_MIGRATION === 'true') {
     console.log('SKIP_MIGRATION=true is set, but forcing migration run to ensure all tables exist.');
   }
+
+  // Self-healing database repair: Ensure all primary key 'id' columns have AUTO_INCREMENT.
+  // This resolves the "Field 'id' doesn't have a default value" errors on cloud databases.
+  try {
+    const [idCols] = await pool.query(`
+      SELECT TABLE_NAME as tableName
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND COLUMN_NAME = 'id'
+        AND DATA_TYPE IN ('int', 'mediumint', 'smallint', 'bigint')
+        AND EXTRA NOT LIKE '%auto_increment%'
+    `);
+    
+    for (const row of idCols) {
+      const table = row.tableName;
+      try {
+        console.log(`Repairing schema: Adding AUTO_INCREMENT to \`${table}\`.id`);
+        // Disable foreign key checks temporarily to avoid constraint violation errors during column modification
+        await pool.query('SET FOREIGN_KEY_CHECKS = 0');
+        await pool.query(`ALTER TABLE \`${table}\` MODIFY COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT`);
+        await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+      } catch (err) {
+        console.error(`Failed to repair auto-increment for \`${table}\`.id:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to run self-healing auto-increment check:', err.message);
+  }
+
   const getColumnType = async (tableName, columnName, fallback) => {
     try {
       const [rows] = await pool.execute(
