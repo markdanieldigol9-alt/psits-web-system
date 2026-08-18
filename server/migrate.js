@@ -22,7 +22,7 @@ async function migrate() {
   }
 
   // Self-healing database repair: Ensure all primary key 'id' columns have AUTO_INCREMENT.
-  // This resolves the "Field 'id' doesn't have a default value" errors on cloud databases.
+  // This resolves the "Field 'id' doesn't have a default value" errors on cloud databases like TiDB.
   try {
     const [idCols] = await pool.query(`
       SELECT TABLE_NAME as tableName
@@ -33,16 +33,94 @@ async function migrate() {
         AND EXTRA NOT LIKE '%auto_increment%'
     `);
     
-    for (const row of idCols) {
-      const table = row.tableName;
+    // List of key tables we want to repair
+    const tablesToRepair = idCols.map(r => r.tableName).filter(name => {
+      return !['partner_contributions', 'officer_positions'].includes(name);
+    });
+
+    for (const tableName of tablesToRepair) {
       try {
-        console.log(`Repairing schema: Adding AUTO_INCREMENT to \`${table}\`.id`);
-        // Disable foreign key checks temporarily to avoid constraint violation errors during column modification
+        let targetTable = tableName;
+        // Verify if table exists or is currently renamed
+        const [exists] = await pool.query(
+          "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1",
+          [tableName]
+        );
+        if (!exists.length) {
+          const [oldExists] = await pool.query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1",
+            [`${tableName}_old`]
+          );
+          if (oldExists.length) {
+            targetTable = `${tableName}_old`;
+          } else {
+            console.warn(`Table ${tableName} does not exist and no backup found.`);
+            continue;
+          }
+        }
+
+        console.log(`Recreating table ${tableName} to add AUTO_INCREMENT...`);
+        const [createRows] = await pool.query(`SHOW CREATE TABLE \`${targetTable}\``);
+        let createSql = createRows[0]['Create Table'];
+
+        // Modify the SQL definition
+        const idRegex = /`id`\s+(int\(\d+\)|int)\s+unsigned\s+NOT\s+NULL,/;
+        const idRegexSigned = /`id`\s+(int\(\d+\)|int)\s+NOT\s+NULL,/;
+        
+        if (idRegex.test(createSql)) {
+          createSql = createSql.replace(idRegex, '`id` $1 unsigned NOT NULL AUTO_INCREMENT,');
+        } else if (idRegexSigned.test(createSql)) {
+          createSql = createSql.replace(idRegexSigned, '`id` $1 NOT NULL AUTO_INCREMENT,');
+        } else {
+          console.warn(`Could not match id column in SHOW CREATE TABLE for ${tableName}`);
+          continue;
+        }
+
+        // Clean up renamed table name in SHOW CREATE TABLE output if targetTable was targetTable_old
+        if (targetTable !== tableName) {
+          createSql = createSql.replace(`CREATE TABLE \`${tableName}_old\``, `CREATE TABLE \`${tableName}\``);
+        }
+
         await pool.query('SET FOREIGN_KEY_CHECKS = 0');
-        await pool.query(`ALTER TABLE \`${table}\` MODIFY COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT`);
-        await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+        
+        // Rename current to backup (if it exists)
+        if (targetTable === tableName) {
+          await pool.query(`DROP TABLE IF EXISTS \`${tableName}_old\``);
+          await pool.query(`RENAME TABLE \`${tableName}\` TO \`${tableName}_old\``);
+        }
+        
+        // Create new table
+        await pool.query(createSql);
+        
+        // Copy columns dynamically
+        const [newCols] = await pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+        const colNames = newCols.map(c => c.Field);
+        const escapedCols = colNames.map(name => `\`${name}\``).join(', ');
+        
+        await pool.query(`
+          INSERT INTO \`${tableName}\` (${escapedCols})
+          SELECT ${escapedCols} FROM \`${tableName}_old\`
+        `);
+        
+        // Drop backup
+        await pool.query(`DROP TABLE \`${tableName}_old\``);
+        console.log(`Successfully added AUTO_INCREMENT to table ${tableName}`);
       } catch (err) {
-        console.error(`Failed to repair auto-increment for \`${table}\`.id:`, err.message);
+        console.error(`Failed to repair auto-increment for table ${tableName}:`, err.message);
+        // Attempt recovery
+        try {
+          const [exists] = await pool.query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1",
+            [tableName]
+          );
+          if (!exists.length) {
+            await pool.query(`RENAME TABLE \`${tableName}_old\` TO \`${tableName}\``);
+          }
+        } catch {
+          // ignore
+        }
+      } finally {
+        await pool.query('SET FOREIGN_KEY_CHECKS = 1');
       }
     }
   } catch (err) {
