@@ -193,12 +193,23 @@ app.get('/api/health', async (_req, res) => {
 
 app.get('/api/debug-db-columns', async (_req, res) => {
   try {
+    let errorLog = [];
+    try {
+      await pool.query('SET FOREIGN_KEY_CHECKS = 0');
+      await pool.query('ALTER TABLE announcements MODIFY COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+      errorLog.push('announcements succeeded');
+    } catch (err) {
+      errorLog.push('announcements failed: ' + err.message);
+    } finally {
+      await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
+
     const [rows] = await pool.query(`
       SELECT TABLE_NAME as tableName, COLUMN_NAME as columnName, EXTRA as extra
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'id'
     `);
-    res.json({ success: true, columns: rows });
+    res.json({ success: true, columns: rows, repairLog: errorLog });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
