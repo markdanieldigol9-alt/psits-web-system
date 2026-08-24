@@ -33,6 +33,9 @@ function toEventDto(row) {
     isEsports: Boolean(row.is_esports),
     esportsGame: row.esports_game || null,
     esportsBracketFormat: row.esports_bracket_format || null,
+    bannerUrl: row.banner_url || null,
+    themeColor: row.theme_color || '#2563eb',
+    customBadge: row.custom_badge || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -154,9 +157,13 @@ async function createEvent(req, res) {
     return res.status(400).json({ success: false, message: 'Registration end must be after registration start.' });
   }
 
+  const bannerUrl = body.bannerUrl ? String(body.bannerUrl).trim() : null;
+  const themeColor = body.themeColor ? String(body.themeColor).trim() : '#2563eb';
+  const customBadge = body.customBadge ? String(body.customBadge).trim() : null;
+
   const [result] = await pool.execute(
-    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, event_type, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, event_type, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, banner_url, theme_color, custom_badge, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       title,
       description,
@@ -175,6 +182,9 @@ async function createEvent(req, res) {
       isEsports ? 1 : 0,
       esportsGame,
       esportsBracketFormat,
+      bannerUrl,
+      themeColor,
+      customBadge,
       req.user?.id || null,
     ]
   );
@@ -300,6 +310,15 @@ async function updateEvent(req, res) {
   }
   if (body.esportsBracketFormat !== undefined) {
     sets.push('esports_bracket_format = ?'); params.push(body.esportsBracketFormat ? String(body.esportsBracketFormat).trim() : null);
+  }
+  if (body.bannerUrl !== undefined) {
+    sets.push('banner_url = ?'); params.push(body.bannerUrl ? String(body.bannerUrl).trim() : null);
+  }
+  if (body.themeColor !== undefined) {
+    sets.push('theme_color = ?'); params.push(body.themeColor ? String(body.themeColor).trim() : '#2563eb');
+  }
+  if (body.customBadge !== undefined) {
+    sets.push('custom_badge = ?'); params.push(body.customBadge ? String(body.customBadge).trim() : null);
   }
 
   const hasExplicitStatus = typeof body.status === 'string' && allowedStatus.includes(body.status);

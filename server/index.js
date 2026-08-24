@@ -34,7 +34,7 @@ const {
   getAnnouncementLikes,
   setAnnouncementLike,
 } = require('./announcementInteractions');
-const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, deletePartnerContribution } = require('./partners');
+const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, updatePartnerContribution, deletePartnerContribution } = require('./partners');
 const { listPayments, createPayment, verifyPayment, getPaymentStatusLogs } = require('./payments');
 const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
@@ -281,6 +281,34 @@ app.post('/api/uploads/announcement-image', authMiddleware, requireRole(['super_
   return res.status(201).json({ success: true, url: `/uploads/announcement-images/${filename}` });
 });
 
+app.post('/api/uploads/event-banner', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+  const body = req.body || {};
+  const dataUrl = String(body.dataUrl || '');
+
+  const match = dataUrl.match(/^data:(image\/(png|jpeg|jpg|webp));base64,(.+)$/);
+  if (!match) {
+    return res.status(400).json({ success: false, message: 'Invalid image format. Use a PNG/JPG/WebP data URL.' });
+  }
+
+  const mime = match[1];
+  const base64 = match[3];
+  const buffer = Buffer.from(base64, 'base64');
+
+  const maxBytes = 8 * 1024 * 1024;
+  if (!buffer.length || buffer.length > maxBytes) {
+    return res.status(400).json({ success: false, message: 'Image is required and must be <= 8MB.' });
+  }
+
+  const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+  const dir = path.join(__dirname, 'uploads', 'event-banners');
+  await fs.mkdir(dir, { recursive: true });
+
+  const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+  await fs.writeFile(path.join(dir, filename), buffer);
+
+  return res.status(201).json({ success: true, url: `/uploads/event-banners/${filename}` });
+});
+
 app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
@@ -453,12 +481,13 @@ app.post('/api/announcements/:id/likes', authMiddleware, setAnnouncementLike);
 
 // Partners
 app.get('/api/partners', requireMigrationReady, authMiddleware, listPartners);
-app.post('/api/partners', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createPartner);
-app.put('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updatePartner);
-app.delete('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deletePartner);
+app.post('/api/partners', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), createPartner);
+app.put('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), updatePartner);
+app.delete('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), deletePartner);
 app.get('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, listPartnerContributions);
-app.post('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createPartnerContribution);
-app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deletePartnerContribution);
+app.post('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), createPartnerContribution);
+app.put('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), updatePartnerContribution);
+app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), deletePartnerContribution);
 
 // Payments
 app.get('/api/payments', requireMigrationReady, authMiddleware, listPayments);
@@ -483,7 +512,7 @@ app.post('/api/elections/:id/vote', requireMigrationReady, authMiddleware, requi
 app.get('/api/forum/posts', requireMigrationReady, authMiddleware, listPosts);
 app.post('/api/forum/posts', requireMigrationReady, authMiddleware, createPost);
 app.put('/api/forum/posts/:id', requireMigrationReady, authMiddleware, updatePost);
-app.delete('/api/forum/posts/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deletePost);
+app.delete('/api/forum/posts/:id', requireMigrationReady, authMiddleware, deletePost);
 app.get('/api/forum/posts/:id/comments', requireMigrationReady, authMiddleware, listComments);
 app.post('/api/forum/posts/:id/comments', requireMigrationReady, authMiddleware, addComment);
 app.post('/api/forum/posts/:id/like', requireMigrationReady, authMiddleware, setLike);

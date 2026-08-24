@@ -141,8 +141,15 @@ async function updatePost(req, res) {
 async function deletePost(req, res) {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
+
+  const [rows] = await pool.execute('SELECT * FROM forum_posts WHERE id = ? LIMIT 1', [id]);
+  if (!rows.length) return json(res, 404, { success: false, message: 'Post not found.' });
+  const post = rows[0];
+
   const role = String(req.user?.role || '').toLowerCase();
-  if (!['super_admin', 'admin', 'officer'].includes(role)) return json(res, 403, { success: false, message: 'Forbidden.' });
+  const isOwner = Number(post.author_id) === Number(req.user?.id);
+  const canModerate = ['super_admin', 'admin', 'officer'].includes(role);
+  if (!canModerate && !isOwner) return json(res, 403, { success: false, message: 'Forbidden.' });
 
   await pool.execute('DELETE FROM forum_posts WHERE id = ?', [id]);
   return json(res, 200, { success: true });

@@ -192,6 +192,18 @@ async function addCandidate(req, res) {
     return json(res, 400, { success: false, message: 'memberId and position are required.' });
   }
 
+  // Enforce one position per candidate per election
+  const [alreadyRunning] = await pool.execute(
+    `SELECT position FROM election_candidates WHERE election_id = ? AND member_id = ? LIMIT 1`,
+    [electionId, memberId]
+  );
+  if (alreadyRunning.length) {
+    return json(res, 400, {
+      success: false,
+      message: `This candidate is already running for ${alreadyRunning[0].position} in this election. Candidates can only run for one position per election.`
+    });
+  }
+
   // Only approved members can be candidates
   const [mrows] = await pool.execute(
     `SELECT id FROM users WHERE id = ? AND role = 'member' AND status = 'active' LIMIT 1`,
@@ -331,14 +343,39 @@ async function markWinner(req, res) {
       return json(res, 400, { success: false, message: 'Winner must be an active member.' });
     }
 
-    if (String(mRows[0].role) !== 'officer') {
+    // Update user record with officer role and winning position
+    const [uCols] = await conn.execute('SHOW COLUMNS FROM users');
+    const userColSet = new Set(uCols.map((c) => String(c.Field)));
+
+    // Replaces previous officer holding this exact position
+    const [previousOfficers] = await conn.execute(
+      'SELECT user_id FROM officers WHERE position = ? AND user_id <> ?',
+      [position, memberId]
+    );
+    const [offCols] = await conn.execute('SHOW COLUMNS FROM officers');
+    const columnSet = new Set(offCols.map((c) => String(c.Field)));
+
+    for (const prev of previousOfficers) {
+      const prevUserId = prev.user_id;
+      if (columnSet.has('officer_status')) {
+        await conn.execute("UPDATE officers SET officer_status = 'past' WHERE user_id = ? AND position = ?", [prevUserId, position]);
+      }
+      const [otherPositions] = await conn.execute(
+        "SELECT user_id FROM officers WHERE user_id = ? AND position <> ? AND (officer_status IS NULL OR officer_status = 'active')",
+        [prevUserId, position]
+      );
+      if (!otherPositions.length && userColSet.has('position')) {
+        await conn.execute("UPDATE users SET role = 'member', position = 'Member' WHERE id = ? AND role = 'officer'", [prevUserId]);
+      }
+    }
+
+    if (userColSet.has('position')) {
+      await conn.execute("UPDATE users SET role = 'officer', position = ?, status = 'active' WHERE id = ?", [position, memberId]);
+    } else {
       await conn.execute("UPDATE users SET role = 'officer', status = 'active' WHERE id = ?", [memberId]);
     }
 
     // Officers table (best-effort upsert)
-    const [offCols] = await conn.execute('SHOW COLUMNS FROM officers');
-    const columnSet = new Set(offCols.map((c) => String(c.Field)));
-
     const [existingOfficer] = await conn.execute('SELECT user_id FROM officers WHERE user_id = ? LIMIT 1', [memberId]);
     if (existingOfficer.length) {
       const sets = ['position = ?', 'start_date = ?', 'end_date = ?'];

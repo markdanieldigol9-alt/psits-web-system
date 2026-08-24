@@ -61,6 +61,7 @@ const menuItems = {
     { label: 'Membership', icon: Users, href: '/members' },
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
+    { label: 'Live Events', icon: Video, href: '/live-events' },
     { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Forum', icon: MessageSquareText, href: '/forum' },
@@ -170,7 +171,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
               alt="PSITS"
               className="h-8 w-8 object-contain"
             />
-            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">PSITS Hub</span>
+            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">PSITS</span>
           </div>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">{getUserInterfaceLabel(user)} Interface</p>
         </div>

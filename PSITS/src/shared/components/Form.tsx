@@ -148,11 +148,13 @@ interface CardProps {
   className?: string;
   title?: string;
   subtitle?: string;
+  style?: React.CSSProperties;
 }
 
-export const Card = ({ children, className = '', title, subtitle }: CardProps) => {
+export const Card = ({ children, className = '', title, subtitle, style }: CardProps) => {
   return (
     <div
+      style={style}
       className={`bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-xs transition-all duration-200 hover:shadow-md hover:border-gray-300/80 dark:hover:border-slate-700 text-gray-900 dark:text-slate-100 ${className}`}
     >
       {(title || subtitle) && (

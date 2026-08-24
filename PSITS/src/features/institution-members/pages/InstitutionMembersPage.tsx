@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MainLayout } from '@/shared/layouts';
-import { Card, Input, Button, Badge } from '@/shared/components/Form';
-import { Pagination } from '@/shared/components/Common';
+import { Card, Input, Button, Badge, Select, TextArea } from '@/shared/components/Form';
+import { Pagination, Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
-import { Upload, Users, Search, Download } from 'lucide-react';
+import { Upload, Users, Search, Download, Plus, Key, FileSpreadsheet } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 
 type InstitutionMember = {
@@ -64,6 +64,7 @@ const parseCsv = (text: string) => {
     return {
       fullName: get(row, ['fullname', 'name']),
       email: get(row, ['email']),
+      password: get(row, ['password', 'pass', 'initialpassword', 'userpassword']),
       contactNumber: get(row, ['contactnumber', 'contact', 'phone']),
       gender: get(row, ['gender']),
       position: get(row, ['position']),
@@ -81,6 +82,73 @@ export const InstitutionMembersPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [singleForm, setSingleForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    contactNumber: '',
+    gender: 'Male',
+    position: 'Student',
+    eventTitle: '',
+    notes: '',
+  });
+
+  const handleDownloadTemplate = () => {
+    const templateContent = 'fullName,email,password,contactNumber,gender,position,eventTitle,notes\n' +
+      'Juan Dela Cruz,juan.delacruz@example.com,Password123!,09171234567,Male,Student,PSITS Regional Assembly,Participant\n' +
+      'Maria Clara,maria.clara@example.com,Password123!,09181234567,Female,Student,PSITS Regional Assembly,Participant';
+    const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'institution_members_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSingleAdd = async () => {
+    if (!singleForm.fullName.trim()) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'Full Name is required.', type: 'error', isRead: false });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await api.bulkUploadInstitutionMembers([singleForm]);
+      const { data } = await api.getInstitutionMembers();
+      if (data?.success) setMembers(data.members || []);
+      addNotification({
+        userId: 'current',
+        title: 'Member Added',
+        message: `${singleForm.fullName} added successfully & portal login account provisioned!`,
+        type: 'success',
+        isRead: false,
+      });
+      setShowAddModal(false);
+      setSingleForm({
+        fullName: '',
+        email: '',
+        password: '',
+        contactNumber: '',
+        gender: 'Male',
+        position: 'Student',
+        eventTitle: '',
+        notes: '',
+      });
+    } catch (err) {
+      addNotification({
+        userId: 'current',
+        title: 'Failed',
+        message: err instanceof Error ? err.message : 'Failed to add institution member.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const isInstitutionMember = user?.role === 'member' && user?.memberType === 'institution';
   const canViewAll = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
@@ -224,34 +292,56 @@ export const InstitutionMembersPage = () => {
                 : 'View institution-uploaded member records.'}
             </p>
           </div>
-          <Button variant="secondary" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto">
-            <Download size={20} />
-            Export CSV
-          </Button>
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            {(isInstitutionMember || canViewAll) && (
+              <Button variant="primary" size="lg" onClick={() => setShowAddModal(true)}>
+                <Plus size={20} />
+                Add Member
+              </Button>
+            )}
+            <Button variant="secondary" size="lg" onClick={handleExportCSV}>
+              <Download size={20} />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
-        {isInstitutionMember && (
-          <Card title="Upload CSV" subtitle="Headers: fullName,email,contactNumber,gender,position,eventTitle,notes">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="text-sm text-gray-600">
-                Upload your institution members list in CSV format.
-              </p>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white hover:bg-blue-900">
-                <Upload size={16} />
-                {isUploading ? 'Uploading...' : 'Upload CSV'}
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  className="hidden"
-                  disabled={isUploading}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    await onUploadCsv(file);
-                    e.currentTarget.value = '';
-                  }}
-                />
-              </label>
+        {(isInstitutionMember || canViewAll) && (
+          <Card
+            title="Upload Institution Members & Portal Login Setup"
+            subtitle="Headers: fullName, email, password (optional), contactNumber, gender, position, eventTitle, notes"
+          >
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-700">
+                  Upload your institution participants in bulk. Include an <strong>email</strong> and <strong>password</strong> so members can log in directly to the PSITS portal.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1"
+                >
+                  <FileSpreadsheet size={14} /> Download Sample CSV Template
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900 shadow-sm transition-all">
+                  <Upload size={16} />
+                  {isUploading ? 'Uploading...' : 'Upload CSV File'}
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    disabled={isUploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      await onUploadCsv(file);
+                      e.currentTarget.value = '';
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </Card>
         )}
@@ -339,6 +429,106 @@ export const InstitutionMembersPage = () => {
           </div>
         </Card>
       </div>
+
+      {/* Add Institution Member Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Institution Member" size="lg">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSingleAdd();
+          }}
+        >
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 flex items-start gap-3">
+            <Key size={20} className="text-blue-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-blue-900 leading-relaxed">
+              <strong>Portal Login Account Setup:</strong> Members uploaded here automatically receive a portal login account.
+              Set an optional initial password below (or leave blank to allow login using the institution password).
+            </div>
+          </div>
+
+          <Input
+            label="Full Name *"
+            placeholder="e.g. Juan Dela Cruz"
+            required
+            value={singleForm.fullName}
+            onChange={(e) => setSingleForm((p) => ({ ...p, fullName: e.target.value }))}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Email Address *"
+              type="email"
+              placeholder="e.g. member@institution.edu.ph"
+              required
+              value={singleForm.email}
+              onChange={(e) => setSingleForm((p) => ({ ...p, email: e.target.value }))}
+            />
+            <Input
+              label="Login Password (optional)"
+              type="password"
+              placeholder="Set custom login password..."
+              value={singleForm.password}
+              onChange={(e) => setSingleForm((p) => ({ ...p, password: e.target.value }))}
+              helperText="If blank, member can log in using institution password."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Contact Number"
+              placeholder="e.g. 09171234567"
+              value={singleForm.contactNumber}
+              onChange={(e) => setSingleForm((p) => ({ ...p, contactNumber: e.target.value }))}
+            />
+            <Select
+              label="Gender"
+              options={[
+                { value: 'Male', label: 'Male' },
+                { value: 'Female', label: 'Female' },
+                { value: 'Prefer not to say', label: 'Prefer not to say' },
+              ]}
+              value={singleForm.gender}
+              onChange={(e) => setSingleForm((p) => ({ ...p, gender: (e.target as HTMLSelectElement).value }))}
+            />
+            <Select
+              label="Position / Role"
+              options={[
+                { value: 'Student', label: 'Student' },
+                { value: 'Faculty', label: 'Faculty / Adviser' },
+                { value: 'Officer', label: 'Student Officer' },
+                { value: 'Member', label: 'Member' },
+              ]}
+              value={singleForm.position}
+              onChange={(e) => setSingleForm((p) => ({ ...p, position: (e.target as HTMLSelectElement).value }))}
+            />
+          </div>
+
+          <Input
+            label="Event Title (optional)"
+            placeholder="e.g. PSITS Regional Assembly 2026"
+            value={singleForm.eventTitle}
+            onChange={(e) => setSingleForm((p) => ({ ...p, eventTitle: e.target.value }))}
+          />
+
+          <TextArea
+            label="Notes / Remarks (optional)"
+            rows={2}
+            placeholder="Add any specific notes or department details..."
+            value={singleForm.notes}
+            onChange={(e) => setSingleForm((p) => ({ ...p, notes: (e.target as HTMLTextAreaElement).value }))}
+          />
+
+          <div className="border-t border-gray-200 pt-4 flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isUploading}>
+              Add & Provision Account
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </MainLayout>
   );
 };

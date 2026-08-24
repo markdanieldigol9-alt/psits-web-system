@@ -6,7 +6,7 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
-import { Heart, MessageSquare, Plus, Pin } from 'lucide-react';
+import { Heart, MessageSquare, Plus, Pin, Pencil, Trash2 } from 'lucide-react';
 
 type PostType = 'announcement' | 'news' | 'story' | 'blog' | 'discussion' | 'question';
 
@@ -102,6 +102,91 @@ export const ForumPage = () => {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
+
+  // Edit & Delete Post State
+  const [editingPost, setEditingPost] = useState<any | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    content: string;
+    type: PostType;
+    imageUrl: string;
+    videoUrl: string;
+  }>({
+    title: '',
+    content: '',
+    type: 'discussion',
+    imageUrl: '',
+    videoUrl: '',
+  });
+
+  const [deletingPost, setDeletingPost] = useState<any | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const openEditPost = (p: any) => {
+    const parsed = parsePostContent(p.content);
+    setEditingPost(p);
+    setEditForm({
+      title: p.title || '',
+      content: parsed.body || p.content || '',
+      type: p.type || 'discussion',
+      imageUrl: p.imageUrl || '',
+      videoUrl: p.videoUrl || '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPost) return;
+    if (!editForm.title.trim()) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'Title is required.', type: 'error', isRead: false });
+      return;
+    }
+    if (!editForm.content.trim()) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'Content is required.', type: 'error', isRead: false });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await api.updateForumPost(String(editingPost.id), {
+        title: editForm.title.trim(),
+        content: editForm.content.trim(),
+        type: editForm.type,
+        imageUrl: editForm.imageUrl.trim() || null,
+        videoUrl: editForm.videoUrl.trim() || null,
+      });
+      addNotification({ userId: 'current', title: 'Success', message: 'Post updated successfully!', type: 'success', isRead: false });
+      setShowEditModal(false);
+      setEditingPost(null);
+      await load();
+    } catch (err) {
+      addNotification({ userId: 'current', title: 'Error', message: err instanceof Error ? err.message : 'Failed to update post.', type: 'error', isRead: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openDeletePost = (p: any) => {
+    setDeletingPost(p);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPost) return;
+    setIsLoading(true);
+    try {
+      await api.deleteForumPost(String(deletingPost.id));
+      addNotification({ userId: 'current', title: 'Deleted', message: 'Post deleted successfully.', type: 'success', isRead: false });
+      setShowDeleteConfirm(false);
+      setDeletingPost(null);
+      await load();
+    } catch (err) {
+      addNotification({ userId: 'current', title: 'Error', message: err instanceof Error ? err.message : 'Failed to delete post.', type: 'error', isRead: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const load = async () => {
     setIsLoading(true);
@@ -416,6 +501,26 @@ export const ForumPage = () => {
                         <Pin size={15} /> {p.isPinned ? 'Unpin' : 'Pin'}
                       </Button>
                     )}
+                    {(canModerate || String(p.authorId) === String(user?.id)) && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditPost(p)}
+                          className="hover:text-blue-600 hover:border-blue-200 transition-colors"
+                        >
+                          <Pencil size={15} /> Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDeletePost(p)}
+                          className="hover:text-red-600 hover:border-red-200 transition-colors text-red-600"
+                        >
+                          <Trash2 size={15} /> Delete
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </Card>
               );
@@ -687,6 +792,67 @@ export const ForumPage = () => {
           })()}
         </div>
       </Modal>
+
+      {/* Edit Post Modal */}
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit / Update Post" size="lg">
+        <div className="space-y-4">
+          <Select
+            label="Post Category"
+            options={[
+              { value: 'discussion', label: 'Discussion' },
+              { value: 'question', label: 'Question' },
+              { value: 'story', label: 'Story' },
+              { value: 'blog', label: 'Blog' },
+              ...(canModerate ? [{ value: 'news', label: 'News' }] : []),
+            ]}
+            value={editForm.type}
+            onChange={(e) => setEditForm((p) => ({ ...p, type: (e.target as HTMLSelectElement).value as PostType }))}
+          />
+          <Input
+            label="Title"
+            value={editForm.title}
+            onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
+            required
+          />
+          <TextArea
+            label="Content"
+            rows={5}
+            value={editForm.content}
+            onChange={(e) => setEditForm((p) => ({ ...p, content: (e.target as HTMLTextAreaElement).value }))}
+            required
+          />
+          <Input
+            label="Image URL (optional)"
+            placeholder="https://..."
+            value={editForm.imageUrl}
+            onChange={(e) => setEditForm((p) => ({ ...p, imageUrl: e.target.value }))}
+          />
+          <Input
+            label="Video URL (optional)"
+            placeholder="https://youtu.be/..."
+            value={editForm.videoUrl}
+            onChange={(e) => setEditForm((p) => ({ ...p, videoUrl: e.target.value }))}
+          />
+
+          <div className="border-t border-gray-200 pt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button variant="primary" onClick={() => void handleSaveEdit()} isLoading={isLoading}>
+              Update Post
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Post Confirmation Modal */}
+      <VerifyActionModal
+        isOpen={showDeleteConfirm}
+        title="Delete Post"
+        message={`Are you sure you want to delete the post "${deletingPost?.title}"? This action cannot be undone.`}
+        confirmLabel="Yes, Delete Post"
+        confirmVariant="danger"
+        onCancel={() => setShowDeleteConfirm(false)}
+        onVerified={() => void handleConfirmDelete()}
+      />
     </MainLayout>
   );
 };

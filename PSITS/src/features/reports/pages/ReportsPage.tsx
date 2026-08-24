@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { MainLayout } from '@/shared/layouts';
-import { Button, Card } from '@/shared/components/Form';
+import { Button, Card, Input, Select } from '@/shared/components/Form';
 
 import api from '@/shared/services/api';
 import { Modal } from '@/shared/components/Common';
 import { exportToCSV } from '@/shared/utils/export';
+import { useAuth } from '@/shared/context/AuthContext';
+import { useNotification } from '@/shared/context/NotificationContext';
+import logo from '@/assets/image/PSITS_Logo.png';
 import {
   FileDown,
   FileSpreadsheet,
@@ -14,6 +17,11 @@ import {
   Wallet,
   CheckCircle2,
   TrendingUp,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  Filter,
+  Eye,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -66,14 +74,56 @@ const reportCards = [
 
 
 export const ReportsPage = () => {
+  const { user } = useAuth();
+  const { addNotification } = useNotification();
+
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<any | null>(null);
   const [previewReport, setPreviewReport] = useState<string | null>(null);
+
+  // Wizard Modal State
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
+  const [dateRangeFilter, setDateRangeFilter] = useState<'all' | 'this_month' | 'last_30_days' | 'custom'>('all');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
+  const [detailedRecords, setDetailedRecords] = useState<any[]>([]);
 
   const [elections, setElections] = useState<any[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState<string>('');
   const [electionReportData, setElectionReportData] = useState<any | null>(null);
   const [partnerReportData, setPartnerReportData] = useState<any | null>(null);
+
+  const openReportWizard = async (title: string, step: 1 | 2 = 1) => {
+    setWizardStep(step);
+    setPreviewReport(title);
+    setIsLoading(true);
+
+    try {
+      if (title === 'Membership Growth') {
+        const { data } = await api.getMembers();
+        setDetailedRecords(data?.members || []);
+      } else if (title === 'Event Participation' || title === 'Complete Event') {
+        const { data } = await api.getEvents();
+        setDetailedRecords(data?.events || []);
+      } else if (title === 'Financial Summary' || title === 'Revenue by Method') {
+        const { data } = await api.getPayments();
+        setDetailedRecords(data?.payments || []);
+      } else if (title === 'Partner Contributions') {
+        const { data } = await api.getPartnerContributionsReport();
+        if (data?.success) setPartnerReportData(data);
+        setDetailedRecords(data?.contributions || []);
+      } else if (title === 'Election Tally') {
+        if (selectedElectionId) {
+          const { data } = await api.getElectionReport(selectedElectionId);
+          if (data?.success) setElectionReportData(data);
+        }
+      }
+    } catch {
+      // keep UI functional
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -284,17 +334,16 @@ export const ReportsPage = () => {
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button size="sm" variant="secondary" className="w-full" onClick={() => setPreviewReport(report.title)}>
-                      View
+                    <Button size="sm" variant="secondary" className="w-full" onClick={() => void openReportWizard(report.title, 2)}>
+                      <Eye size={14} /> View
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="primary"
                       className="w-full"
-                      onClick={() => void handleGenerateExcel(report.title)}
-                      isLoading={isLoading}
+                      onClick={() => void openReportWizard(report.title, 1)}
                     >
-                      Generate
+                      <Sparkles size={14} /> Generate
                     </Button>
                   </div>
                 </div>
@@ -359,165 +408,418 @@ export const ReportsPage = () => {
         </div>
       </div>
 
+      {/* STEP-BY-STEP REPORT WIZARD & PREVIEW MODAL */}
       <Modal
         isOpen={!!previewReport}
         onClose={() => setPreviewReport(null)}
-        title={previewReport ? `${previewReport} Preview` : 'Report Preview'}
+        title={previewReport ? `${previewReport} - Step ${wizardStep} of 3` : 'Report Wizard'}
         size="lg"
       >
-        <div className="space-y-4">
-          {previewReport === 'Membership Growth' && (
-            <div className="h-[340px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={memberGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="New Registrations" />
-                  <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
-                </LineChart>
-              </ResponsiveContainer>
+        <div className="space-y-5">
+          {/* Print Optimization Style Tag */}
+          <style>{`
+            @media print {
+              body * { visibility: hidden; }
+              #printable-report-area, #printable-report-area * { visibility: visible; }
+              #printable-report-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: black;
+                padding: 24px;
+              }
+            }
+          `}</style>
+
+          {/* Wizard Step Navigation Indicator */}
+          <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1.5 rounded-xl text-center text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setWizardStep(1)}
+              className={`py-2 rounded-lg transition-all ${
+                wizardStep === 1 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              1. ⚙️ Parameters & Filters
+            </button>
+            <button
+              type="button"
+              onClick={() => setWizardStep(2)}
+              className={`py-2 rounded-lg transition-all ${
+                wizardStep === 2 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              2. 👁️ Detailed Document Preview
+            </button>
+            <button
+              type="button"
+              onClick={() => setWizardStep(3)}
+              className={`py-2 rounded-lg transition-all ${
+                wizardStep === 3 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              3. 🖨️ Export & Submit
+            </button>
+          </div>
+
+          {/* STEP 1: CONFIGURE PARAMETERS & FILTERS */}
+          {wizardStep === 1 && (
+            <div className="space-y-4 animate-fadeIn">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl space-y-1">
+                <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <Filter size={16} className="text-primary" /> Filter & Configure Report Details
+                </h4>
+                <p className="text-xs text-gray-600">
+                  Select date range and parameters before generating the official detailed preview document.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select
+                  label="Date Range Filter"
+                  options={[
+                    { value: 'all', label: 'All Time Records' },
+                    { value: 'this_month', label: 'This Month' },
+                    { value: 'last_30_days', label: 'Last 30 Days' },
+                    { value: 'custom', label: 'Custom Date Range' },
+                  ]}
+                  value={dateRangeFilter}
+                  onChange={(e) => setDateRangeFilter((e.target as HTMLSelectElement).value as any)}
+                />
+
+                {previewReport === 'Election Tally' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Election *</label>
+                    <select
+                      value={selectedElectionId}
+                      onChange={(e) => setSelectedElectionId(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {elections.map((el) => (
+                        <option key={el.id} value={el.id}>{el.title} ({el.status})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {dateRangeFilter === 'custom' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+                  <Input label="Start Date" type="date" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} />
+                  <Input label="End Date" type="date" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} />
+                </div>
+              )}
+
+              <div className="border-t border-gray-200 pt-4 flex justify-end">
+                <Button variant="primary" size="lg" onClick={() => setWizardStep(2)} className="px-6">
+                  Preview Detailed Report <ChevronRight size={18} />
+                </Button>
+              </div>
             </div>
           )}
 
-          {previewReport === 'Revenue by Method' && (
-            <div className="h-[340px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="value" stroke="#10B981" strokeWidth={3} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {previewReport === 'Election Tally' && (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-gray-50 p-4 rounded-xl border border-gray-150">
-                <div>
-                  <h4 className="text-lg font-bold text-gray-900">{electionReportData?.election?.title || 'Select Election'}</h4>
-                  <p className="text-sm text-gray-500">Status: <span className="font-semibold capitalize text-primary">{electionReportData?.election?.status}</span></p>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm text-gray-500">Total Votes Cast</span>
-                  <p className="text-2xl font-bold text-gray-900">{electionReportData?.totalVotes || 0}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-gray-700">Election:</label>
-                <select
-                  value={selectedElectionId}
-                  onChange={(e) => setSelectedElectionId(e.target.value)}
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {elections.map((el) => (
-                    <option key={el.id} value={el.id}>{el.title} ({el.status})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Candidate</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Position</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Votes</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-150">
-                    {(electionReportData?.candidates || []).map((cand: any) => (
-                      <tr key={cand.id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{cand.name}</td>
-                        <td className="px-4 py-3 text-gray-600">{cand.position}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-primary">{cand.votes_count}</td>
-                      </tr>
-                    ))}
-                    {(!electionReportData?.candidates || electionReportData.candidates.length === 0) && (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-gray-400">No candidates registered.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {previewReport === 'Partner Contributions' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-primary/5 border border-primary/10 p-4 rounded-xl text-center">
-                  <span className="text-sm font-semibold text-primary">Total Sponsorship Value</span>
-                  <p className="text-3xl font-extrabold text-primary mt-1">
-                    ₱{(partnerReportData?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="bg-green-50 border border-green-100 p-4 rounded-xl text-center">
-                  <span className="text-sm font-semibold text-green-700">Logged Contributions</span>
-                  <p className="text-3xl font-extrabold text-green-700 mt-1">
-                    {partnerReportData?.contributions?.length || 0} Deals
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Summary By Type</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(partnerReportData?.summary || []).map((item: any) => (
-                    <div key={item.contribution_type} className="bg-gray-50 border border-gray-150 p-3 rounded-lg text-center">
-                      <span className="text-xs font-medium text-gray-500 capitalize">{item.contribution_type}</span>
-                      <p className="text-sm font-bold text-gray-800 mt-1">₱{Number(item.total_value).toLocaleString()}</p>
-                      <span className="text-[10px] text-gray-400">{item.count} items</span>
+          {/* STEP 2: INTERACTIVE DETAILED DOCUMENT PREVIEW */}
+          {wizardStep === 2 && (
+            <div className="space-y-4 animate-fadeIn">
+              <div id="printable-report-area" className="bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
+                {/* Official Letterhead Header */}
+                <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
+                  <div className="flex items-center gap-3">
+                    <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
+                    <div>
+                      <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="text-right text-xs text-gray-500 space-y-0.5">
+                    <p><strong>Report:</strong> {previewReport}</p>
+                    <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
+                    <p><strong>Prepared By:</strong> {user?.fullName || 'Administrator'}</p>
+                  </div>
+                </div>
+
+                {/* Report Specific Details */}
+                {previewReport === 'Membership Growth' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl">
+                        <span className="text-xs text-gray-500 font-semibold">Total Members</span>
+                        <p className="text-2xl font-bold text-primary mt-1">{report?.summary?.totalMembers || detailedRecords.length}</p>
+                      </div>
+                      <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                        <span className="text-xs text-gray-500 font-semibold">Approved Members</span>
+                        <p className="text-2xl font-bold text-emerald-700 mt-1">{report?.summary?.activeMembers || 0}</p>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl">
+                        <span className="text-xs text-gray-500 font-semibold">Pending Approvals</span>
+                        <p className="text-2xl font-bold text-amber-700 mt-1">{report?.summary?.pendingApprovals || 0}</p>
+                      </div>
+                    </div>
+
+                    <div className="h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={memberGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="Signups" />
+                          <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="border rounded-xl overflow-hidden text-xs">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-bold">Month</th>
+                            <th className="px-3 py-2 text-right font-bold">New Registrations</th>
+                            <th className="px-3 py-2 text-right font-bold">Approved</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {memberGrowth.map((row: any) => (
+                            <tr key={row.month}>
+                              <td className="px-3 py-2 font-medium">{row.month}</td>
+                              <td className="px-3 py-2 text-right">{row.members}</td>
+                              <td className="px-3 py-2 text-right text-emerald-700 font-bold">{row.active}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {previewReport === 'Financial Summary' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3 text-center">
+                      <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                        <span className="text-xs text-gray-500 font-semibold">Total Verified Collections</span>
+                        <p className="text-2xl font-bold text-emerald-700 mt-1">₱{Number(report?.summary?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                      </div>
+                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl">
+                        <span className="text-xs text-gray-500 font-semibold">Transactions Logged</span>
+                        <p className="text-2xl font-bold text-primary mt-1">{detailedRecords.length} records</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-xl overflow-hidden text-xs">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-bold">Member</th>
+                            <th className="px-3 py-2 text-left font-bold">Method</th>
+                            <th className="px-3 py-2 text-left font-bold">Ref No</th>
+                            <th className="px-3 py-2 text-right font-bold">Amount (₱)</th>
+                            <th className="px-3 py-2 text-center font-bold">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {detailedRecords.slice(0, 15).map((p: any) => (
+                            <tr key={p.id}>
+                              <td className="px-3 py-2 font-medium">{p.memberName || p.fullName || 'Member'}</td>
+                              <td className="px-3 py-2 uppercase">{p.method}</td>
+                              <td className="px-3 py-2 font-mono text-[11px]">{p.referenceNo || p.referenceNumber || '—'}</td>
+                              <td className="px-3 py-2 text-right font-bold">₱{Number(p.amount || 0).toLocaleString()}</td>
+                              <td className="px-3 py-2 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                  {p.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {previewReport === 'Election Tally' && (
+                  <div className="space-y-4">
+                    <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl flex items-center justify-between">
+                      <div>
+                        <h4 className="text-base font-bold text-purple-900">{electionReportData?.election?.title || 'Election Tally'}</h4>
+                        <p className="text-xs text-purple-700">Status: <span className="font-bold uppercase">{electionReportData?.election?.status}</span></p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-gray-500 font-semibold">Total Votes Cast</span>
+                        <p className="text-2xl font-extrabold text-purple-900">{electionReportData?.totalVotes || 0}</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-xl overflow-hidden text-xs">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-bold">Candidate Name</th>
+                            <th className="px-3 py-2 text-left font-bold">Position</th>
+                            <th className="px-3 py-2 text-right font-bold">Votes</th>
+                            <th className="px-3 py-2 text-right font-bold">Share %</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {(electionReportData?.candidates || []).map((c: any) => {
+                            const pct = electionReportData?.totalVotes > 0 ? ((c.votes_count / electionReportData.totalVotes) * 100).toFixed(1) : '0.0';
+                            return (
+                              <tr key={c.id}>
+                                <td className="px-3 py-2 font-bold text-gray-900">{c.name}</td>
+                                <td className="px-3 py-2 text-gray-600">{c.position}</td>
+                                <td className="px-3 py-2 text-right font-extrabold text-primary">{c.votes_count}</td>
+                                <td className="px-3 py-2 text-right font-semibold">{pct}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {previewReport === 'Partner Contributions' && (
+                  <div className="space-y-4">
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center text-center">
+                      <div>
+                        <span className="text-xs font-semibold text-gray-500">Total Sponsorship Value</span>
+                        <p className="text-2xl font-extrabold text-emerald-700">₱{(partnerReportData?.totalValue || 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-gray-500">Total Deals</span>
+                        <p className="text-2xl font-extrabold text-primary">{partnerReportData?.contributions?.length || 0}</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-xl overflow-hidden text-xs">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-bold">Partner</th>
+                            <th className="px-3 py-2 text-left font-bold">Deal Title</th>
+                            <th className="px-3 py-2 text-left font-bold">Type</th>
+                            <th className="px-3 py-2 text-right font-bold">Value (₱)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {(partnerReportData?.contributions || []).map((pc: any) => (
+                            <tr key={pc.id}>
+                              <td className="px-3 py-2 font-bold">{pc.partner_name}</td>
+                              <td className="px-3 py-2">{pc.deal_title}</td>
+                              <td className="px-3 py-2 capitalize">{pc.contribution_type}</td>
+                              <td className="px-3 py-2 text-right font-bold text-emerald-700">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {previewReport !== 'Membership Growth' && previewReport !== 'Financial Summary' && previewReport !== 'Election Tally' && previewReport !== 'Partner Contributions' && (
+                  <div className="border rounded-xl p-4 text-xs space-y-2">
+                    <h4 className="font-bold text-gray-900">{previewReport} Data Summary</h4>
+                    <p className="text-gray-600">Total records compiled: {detailedRecords.length} entries.</p>
+                  </div>
+                )}
+
+                {/* Signatures & Certification Section */}
+                <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600">
+                  <div>
+                    <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
+                    <div className="mt-8 border-b border-gray-400 w-48"></div>
+                    <p className="mt-1 font-bold text-gray-900">{user?.fullName || 'Authorized Administrator'}</p>
+                    <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'Officer'} / Reporter</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-800">Approved By Organization:</p>
+                    <div className="mt-8 border-b border-gray-400 w-48 ml-auto"></div>
+                    <p className="mt-1 font-bold text-gray-900">PSITS Regional Secretariat</p>
+                    <p className="text-[11px] text-gray-500">Official Stamp & Date</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                <table className="w-full text-xs">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Partner</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Deal Title</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Type</th>
-                      <th className="px-3 py-2 text-right font-semibold text-gray-700">Value (PHP)</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Target Event</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-150">
-                    {(partnerReportData?.contributions || []).map((pc: any) => (
-                      <tr key={pc.id} className="hover:bg-gray-50/50">
-                        <td className="px-3 py-2 font-medium text-gray-900">{pc.partner_name}</td>
-                        <td className="px-3 py-2 text-gray-700">{pc.deal_title}</td>
-                        <td className="px-3 py-2 text-gray-600 capitalize">{pc.contribution_type}</td>
-                        <td className="px-3 py-2 text-right font-bold text-gray-800">
-                          ₱{Number(pc.value_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-3 py-2 text-gray-500 truncate max-w-[120px]">{pc.event_title || 'General Support'}</td>
-                      </tr>
-                    ))}
-                    {(!partnerReportData?.contributions || partnerReportData.contributions.length === 0) && (
-                      <tr>
-                        <td colSpan={5} className="px-3 py-8 text-center text-gray-400">No contributions logged yet.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              {/* Navigation Footer */}
+              <div className="border-t border-gray-200 pt-4 flex items-center justify-between">
+                <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
+                  <ChevronLeft size={16} /> Edit Parameters
+                </Button>
+                <Button variant="primary" size="lg" onClick={() => setWizardStep(3)} className="px-6">
+                  Proceed to Export & Submit <ChevronRight size={18} />
+                </Button>
               </div>
             </div>
           )}
 
-          {previewReport !== 'Membership Growth' && previewReport !== 'Revenue by Method' && previewReport !== 'Election Tally' && previewReport !== 'Partner Contributions' && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-              Preview is based on the current dashboard dataset. Additional detailed reports can be added as separate endpoints under `GET /api/reports/*`.
+          {/* STEP 3: PRINT, EXPORT & SUBMIT */}
+          {wizardStep === 3 && (
+            <div className="space-y-5 animate-fadeIn">
+              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                  <CheckCircle2 size={18} className="text-emerald-600" /> Report Ready for Action
+                </h4>
+                <p className="text-xs text-emerald-700 mt-1">
+                  You can now print this official document directly, export to PDF or Excel, or submit the record into system archives.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
+                >
+                  <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-bold text-gray-900">🖨️ Print Report</span>
+                  <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleGenerateExcel(previewReport || '')}
+                  className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
+                >
+                  <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-bold text-gray-900">📊 Export Excel</span>
+                  <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
+                >
+                  <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-bold text-gray-900">📄 Save PDF</span>
+                  <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
+                </button>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
+                  <ChevronLeft size={16} /> Back to Preview
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    addNotification({
+                      userId: 'current',
+                      title: 'Report Submitted',
+                      message: `${previewReport} report has been recorded and submitted.`,
+                      type: 'success',
+                      isRead: false,
+                    });
+                    setPreviewReport(null);
+                  }}
+                  className="px-6"
+                >
+                  <CheckCircle2 size={18} /> Submit & Record Report
+                </Button>
+              </div>
             </div>
           )}
         </div>

@@ -137,23 +137,6 @@ export function LiveSessionModal({
                   <strong>Built-In Studio selected.</strong> You will be able to go live using your camera, share your screen, or play a pre-recorded scene directly from the system after creating the session.
                 </div>
               )}
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
-              <div>
-                <h4 className="text-base font-semibold text-gray-900">Schedule</h4>
-                <p className="mt-1 text-sm text-gray-600">Set the live schedule and initial session status.</p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Input label="Start Date" type="date" value={formData.startDate} onChange={(e) => onChange({ startDate: e.target.value })} />
-                <Input label="Start Time" type="time" value={formData.startTime} onChange={(e) => onChange({ startTime: e.target.value })} />
-                <Input label="End Date" type="date" value={formData.endDate} onChange={(e) => onChange({ endDate: e.target.value })} />
-                <Input label="End Time" type="time" value={formData.endTime} onChange={(e) => onChange({ endTime: e.target.value })} />
-              </div>
-
-              {formErrors.startDate && <p className="text-xs text-red-600">{formErrors.startDate}</p>}
-              {formErrors.schedule && <p className="text-xs text-red-600">{formErrors.schedule}</p>}
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">Status</label>

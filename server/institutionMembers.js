@@ -1,5 +1,6 @@
 const { pool } = require('./db');
 const crypto = require('node:crypto');
+const { hashPassword } = require('./auth');
 
 function json(res, status, body) {
   res.status(status).json(body);
@@ -47,12 +48,17 @@ function safeUsernameFromEmail(email) {
   return (cleaned || 'instmember').slice(0, 24);
 }
 
-async function ensureInstitutionParticipantUser({ email, fullName, contactNumber, institutionUserId }) {
+async function ensureInstitutionParticipantUser({ email, fullName, contactNumber, passwordHash, institutionUserId }) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return null;
 
-  const [existing] = await pool.execute('SELECT id FROM users WHERE email = ? LIMIT 1', [normalizedEmail]);
-  if (existing.length) return String(existing[0].id);
+  const [existing] = await pool.execute('SELECT id, password_hash FROM users WHERE email = ? LIMIT 1', [normalizedEmail]);
+  if (existing.length) {
+    if (passwordHash && existing[0].password_hash !== passwordHash) {
+      await pool.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, existing[0].id]);
+    }
+    return String(existing[0].id);
+  }
 
   const [instRows] = await pool.execute(
     'SELECT password_hash, sector_details FROM users WHERE id = ? LIMIT 1',
@@ -60,7 +66,7 @@ async function ensureInstitutionParticipantUser({ email, fullName, contactNumber
   );
   if (!instRows.length) return null;
 
-  const institutionPasswordHash = instRows[0].password_hash;
+  const finalPasswordHash = passwordHash || instRows[0].password_hash;
   const institutionName = instRows[0].sector_details || null;
 
   const base = safeUsernameFromEmail(normalizedEmail);
@@ -78,7 +84,7 @@ async function ensureInstitutionParticipantUser({ email, fullName, contactNumber
           normalizedEmail,
           username,
           String(fullName || '').trim() || base,
-          institutionPasswordHash,
+          finalPasswordHash,
           String(contactNumber || '').trim(),
           institutionName,
           institutionUserId,
@@ -99,21 +105,19 @@ async function ensureInstitutionParticipantUser({ email, fullName, contactNumber
 
 async function listInstitutionMembers(req, res) {
   const role = req.user?.role;
-  const memberType = req.user?.member_type;
-  const where = [];
-  const params = [];
+  const institutionUserId = req.user?.id;
   const search = req.query.search ? String(req.query.search).trim() : '';
   const eventTitle = req.query.eventTitle ? String(req.query.eventTitle).trim() : '';
   const eventId = req.query.eventId ? Number(req.query.eventId) : null;
   const status = req.query.status ? String(req.query.status).trim().toLowerCase() : '';
+  const where = [];
+  const params = [];
 
   if (canViewAll(role)) {
     // no scope filter
-  } else if (role === 'member' && memberType === 'institution') {
-    where.push('im.institution_user_id = ?');
-    params.push(req.user.id);
   } else {
-    return json(res, 403, { success: false, message: 'Forbidden.' });
+    where.push('im.institution_user_id = ?');
+    params.push(institutionUserId);
   }
 
   if (search) {
@@ -171,8 +175,8 @@ async function bulkCreateInstitutionMembers(req, res) {
   const body = req.body || {};
   const incoming = Array.isArray(body.members) ? body.members : [];
 
-  if (!(role === 'member' && memberType === 'institution')) {
-    return json(res, 403, { success: false, message: 'Only institutional members can upload participants.' });
+  if (!(role === 'member' && memberType === 'institution') && !canViewAll(role)) {
+    return json(res, 403, { success: false, message: 'Only institutional members and officers/admins can upload participants.' });
   }
 
   if (!incoming.length) {
@@ -184,16 +188,21 @@ async function bulkCreateInstitutionMembers(req, res) {
   }
 
   const cleanRows = incoming
-    .map((row) => ({
-      eventId: row.eventId ? Number(row.eventId) : null,
-      fullName: String(row.fullName || '').trim(),
-      email: row.email ? String(row.email).trim().toLowerCase() : null,
-      contactNumber: row.contactNumber ? String(row.contactNumber).trim() : null,
-      gender: row.gender ? String(row.gender).trim() : null,
-      position: row.position ? String(row.position).trim() : null,
-      eventTitle: row.eventTitle ? String(row.eventTitle).trim() : null,
-      notes: row.notes ? String(row.notes).trim() : null,
-    }))
+    .map((row) => {
+      const rawPw = row.password ? String(row.password).trim() : '';
+      const pwHash = rawPw ? hashPassword(rawPw) : (row.passwordHash ? String(row.passwordHash).trim() : null);
+      return {
+        eventId: row.eventId ? Number(row.eventId) : null,
+        fullName: String(row.fullName || '').trim(),
+        email: row.email ? String(row.email).trim().toLowerCase() : null,
+        contactNumber: row.contactNumber ? String(row.contactNumber).trim() : null,
+        gender: row.gender ? String(row.gender).trim() : null,
+        position: row.position ? String(row.position).trim() : null,
+        eventTitle: row.eventTitle ? String(row.eventTitle).trim() : null,
+        notes: row.notes ? String(row.notes).trim() : null,
+        passwordHash: pwHash,
+      };
+    })
     .filter((row) => row.fullName);
 
   if (!cleanRows.length) {
@@ -212,20 +221,37 @@ async function bulkCreateInstitutionMembers(req, res) {
     row.gender,
     row.position,
     row.eventTitle,
-    'pending',
+    'approved',
+    createdBy,
+    new Date(),
     null,
-    null,
-    null,
+    row.passwordHash,
     row.notes,
     createdBy,
   ]);
 
   await pool.query(
     `INSERT INTO institution_members
-      (institution_user_id, event_id, full_name, email, contact_number, gender, position, event_title, status, approved_by, approved_at, rejection_reason, notes, created_by)
+      (institution_user_id, event_id, full_name, email, contact_number, gender, position, event_title, status, approved_by, approved_at, rejection_reason, password_hash, notes, created_by)
      VALUES ?`,
     [values]
   );
+
+  for (const row of cleanRows) {
+    if (row.email) {
+      try {
+        await ensureInstitutionParticipantUser({
+          email: row.email,
+          fullName: row.fullName,
+          contactNumber: row.contactNumber,
+          passwordHash: row.passwordHash,
+          institutionUserId,
+        });
+      } catch (err) {
+        console.error('Account provisioning warning:', err);
+      }
+    }
+  }
 
   return json(res, 201, {
     success: true,
@@ -272,14 +298,13 @@ async function approveInstitutionMember(req, res) {
   );
   if (!rows.length) return json(res, 404, { success: false, message: 'Participant not found.' });
 
-  // Provision a login account for approved institutional participants (if an email is provided).
-  // They can authenticate using the institution account password (password hash is copied + linked via institution_owner_id).
   if (status === 'approved' && rows[0].email) {
     try {
       await ensureInstitutionParticipantUser({
         email: rows[0].email,
         fullName: rows[0].full_name,
         contactNumber: rows[0].contact_number,
+        passwordHash: rows[0].password_hash,
         institutionUserId: rows[0].institution_user_id,
       });
     } catch {

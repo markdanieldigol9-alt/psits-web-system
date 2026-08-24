@@ -57,8 +57,8 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
               className="h-8 w-8 object-contain transition-transform group-hover:scale-105"
             />
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight leading-none group-hover:text-primary transition-colors">
-                PSITS <span className="text-primary font-extrabold">Hub</span>
+              <span className="text-lg font-extrabold text-primary tracking-tight leading-none transition-colors">
+                PSITS
               </span>
             </div>
           </Link>

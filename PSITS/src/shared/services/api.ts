@@ -357,6 +357,10 @@ class ApiService {
     return this.client.post('/uploads/announcement-image', { dataUrl });
   }
 
+  uploadEventBanner(dataUrl: string) {
+    return this.client.post('/uploads/event-banner', { dataUrl });
+  }
+
   createPayment(data: any) {
     return this.client.post('/payments', data);
   }
@@ -434,6 +438,10 @@ class ApiService {
 
   createPartnerContribution(partnerId: string, data: any) {
     return this.client.post(`/partners/${partnerId}/contributions`, data);
+  }
+
+  updatePartnerContribution(contributionId: string, data: any) {
+    return this.client.put(`/partners/contributions/${contributionId}`, data);
   }
 
   deletePartnerContribution(contributionId: string) {

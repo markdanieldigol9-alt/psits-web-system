@@ -4,11 +4,37 @@ import { io, Socket } from 'socket.io-client';
 import { MainLayout } from '@/shared/layouts';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
-import { Button } from '@/shared/components/Form';
+import { Button, Input } from '@/shared/components/Form';
 import { LoadingSpinner, Badge } from '@/shared/components/Common';
-import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, Users, MessageSquare } from 'lucide-react';
+import logo from '@/assets/image/PSITS_Logo.png';
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  MonitorUp,
+  PhoneOff,
+  Users,
+  MessageSquare,
+  Layers,
+  Tv,
+  Trophy,
+  Coffee,
+  CheckCircle,
+} from 'lucide-react';
 import api from '@/shared/services/api';
 import type { LiveSession } from '@/features/live-events/types/liveSessions';
+
+export type LiveSceneType = 'camera' | 'screen' | 'starting' | 'brb' | 'award' | 'ending';
+
+const SCENES: { id: LiveSceneType; label: string; icon: string; description: string }[] = [
+  { id: 'camera', label: 'Camera Scene', icon: '🎥', description: 'Live host camera & microphone feed' },
+  { id: 'screen', label: 'Screen Share', icon: '🖥️', description: 'Full screen presentation & demo' },
+  { id: 'starting', label: 'Starting Soon', icon: '🎬', description: 'Pre-stream countdown & welcome banner' },
+  { id: 'brb', label: 'Be Right Back', icon: '⏸️', description: 'Intermission break overlay' },
+  { id: 'award', label: 'Award Ceremony', icon: '🏆', description: 'Special winner announcement overlay' },
+  { id: 'ending', label: 'Stream Ending', icon: '🏁', description: 'Session conclusion banner' },
+];
 
 const getApiBaseUrl = () => {
   const fromEnv = (import.meta as any)?.env?.VITE_API_URL;
@@ -40,6 +66,13 @@ export const LiveStudioPage = () => {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
+
+  // Live Scene Manager State
+  const [currentScene, setCurrentScene] = useState<LiveSceneType>('camera');
+  const [lowerThirdText, setLowerThirdText] = useState<string>('');
+  const [showLowerThird, setShowLowerThird] = useState<boolean>(false);
+  const [lowerThirdInput, setLowerThirdInput] = useState<string>('');
+  const [showScenePanel, setShowScenePanel] = useState<boolean>(false);
 
   const [messages, setMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -87,6 +120,32 @@ export const LiveStudioPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const changeScene = (sceneId: LiveSceneType) => {
+    setCurrentScene(sceneId);
+    socket?.emit('session:scene-change', {
+      sceneId,
+      showLowerThird,
+      lowerThirdText,
+    });
+    addNotification({
+      userId: 'current',
+      title: 'Live Scene Switched',
+      message: `Switched stage scene to ${SCENES.find((s) => s.id === sceneId)?.label || sceneId}`,
+      type: 'info',
+      isRead: false,
+    });
+  };
+
+  const updateLowerThird = (text: string, show: boolean) => {
+    setLowerThirdText(text);
+    setShowLowerThird(show);
+    socket?.emit('session:scene-change', {
+      sceneId: currentScene,
+      showLowerThird: show,
+      lowerThirdText: text,
+    });
+  };
 
   const sendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,6 +391,12 @@ export const LiveStudioPage = () => {
         }
       });
 
+      s.on('session:scene-change', (data: any) => {
+        if (data?.sceneId) setCurrentScene(data.sceneId);
+        if (typeof data?.showLowerThird === 'boolean') setShowLowerThird(data.showLowerThird);
+        if (typeof data?.lowerThirdText === 'string') setLowerThirdText(data.lowerThirdText);
+      });
+
       s.on('session:chat', (message: any) => {
         setMessages((prev) => {
           if (prev.some((m) => String(m.id) === String(message.id))) return prev;
@@ -407,6 +472,81 @@ export const LiveStudioPage = () => {
             </div>
           </div>
 
+          {/* Host Live Scene Switcher & Lower Third Toolbar */}
+          {isHost && (
+            <div className="mb-3 bg-white p-3 rounded-2xl shadow-xs border border-gray-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers size={18} className="text-primary" />
+                  <span className="text-xs font-extrabold uppercase text-gray-900 tracking-wider">Live Broadcast Scenes</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full uppercase">
+                    Active: {SCENES.find((s) => s.id === currentScene)?.label}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowScenePanel(!showScenePanel)}
+                  className="text-xs text-primary font-bold hover:underline flex items-center gap-1"
+                >
+                  <Tv size={14} /> {showScenePanel ? 'Hide Controls' : 'Lower Third Overlay'}
+                </button>
+              </div>
+
+              {/* Scene Switcher Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {SCENES.map((sc) => {
+                  const isActive = currentScene === sc.id;
+                  return (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={() => changeScene(sc.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        isActive
+                          ? 'bg-primary text-white shadow-sm ring-2 ring-blue-600 scale-105'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                      title={sc.description}
+                    >
+                      <span>{sc.icon}</span>
+                      <span>{sc.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Lower Third Ticker Form */}
+              {showScenePanel && (
+                <div className="pt-2 border-t border-gray-150 flex flex-col sm:flex-row items-center gap-2">
+                  <Input
+                    placeholder="Enter lower-third overlay banner text (e.g. Speaker Name, Announcement)..."
+                    value={lowerThirdInput}
+                    onChange={(e) => setLowerThirdInput(e.target.value)}
+                    className="flex-1 text-xs"
+                  />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => updateLowerThird(lowerThirdInput.trim(), true)}
+                      disabled={!lowerThirdInput.trim()}
+                    >
+                      Show Overlay
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLowerThird('', false)}
+                      disabled={!showLowerThird}
+                    >
+                      Hide Overlay
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex-1 bg-black rounded-3xl overflow-hidden relative shadow-lg ring-1 ring-gray-900/5">
             {isHost ? (
               <video
@@ -425,8 +565,65 @@ export const LiveStudioPage = () => {
                 className="w-full h-full object-contain"
               />
             )}
+
+            {/* LIVE SCENE OVERLAYS */}
+            {currentScene === 'starting' && (
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-950 via-slate-900 to-black text-white flex flex-col items-center justify-center p-6 text-center z-20">
+                <img src={logo} alt="PSITS Logo" className="h-20 w-20 object-contain mb-4 animate-bounce" />
+                <span className="px-3 py-1 bg-blue-500/20 border border-blue-400/40 rounded-full text-blue-300 text-xs font-bold uppercase tracking-widest mb-2">
+                  Live Stream Session
+                </span>
+                <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">{session.title}</h2>
+                <p className="text-sm text-gray-300 max-w-md">STARTING SOON • Stay tuned! Broadcast will begin momentarily.</p>
+              </div>
+            )}
+
+            {currentScene === 'brb' && (
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-950 via-slate-900 to-black text-white flex flex-col items-center justify-center p-6 text-center z-20">
+                <Coffee size={52} className="text-amber-400 mb-3 animate-pulse" />
+                <span className="px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-amber-300 text-xs font-bold uppercase tracking-widest mb-2">
+                  Intermission Break
+                </span>
+                <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">BE RIGHT BACK</h2>
+                <p className="text-sm text-gray-300">The session is taking a short break and will resume shortly.</p>
+              </div>
+            )}
+
+            {currentScene === 'award' && (
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-950 via-amber-950 to-black text-white flex flex-col items-center justify-center p-6 text-center z-20">
+                <Trophy size={56} className="text-yellow-400 mb-3 animate-pulse" />
+                <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-400/40 rounded-full text-yellow-300 text-xs font-bold uppercase tracking-widest mb-2">
+                  Official Award Ceremony
+                </span>
+                <h2 className="text-3xl font-extrabold text-yellow-300 tracking-tight mb-2">WINNER ANNOUNCEMENT</h2>
+                <p className="text-sm text-gray-200">{session.title} — Celebrating Excellence</p>
+              </div>
+            )}
+
+            {currentScene === 'ending' && (
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-black text-white flex flex-col items-center justify-center p-6 text-center z-20">
+                <CheckCircle size={48} className="text-green-400 mb-3" />
+                <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">THANK YOU FOR WATCHING</h2>
+                <p className="text-sm text-gray-300">This PSITS live stream session has officially concluded.</p>
+              </div>
+            )}
+
+            {/* LOWER THIRD OVERLAY BANNER */}
+            {showLowerThird && lowerThirdText && (
+              <div className="absolute bottom-6 left-6 right-6 z-30">
+                <div className="bg-gradient-to-r from-primary via-blue-900 to-slate-900 border-l-4 border-yellow-400 p-4 rounded-xl shadow-2xl text-white flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img src={logo} alt="PSITS Logo" className="h-9 w-9 object-contain" />
+                    <div>
+                      <p className="text-xs font-bold uppercase text-yellow-300 tracking-wider">PSITS Live Announcement</p>
+                      <h4 className="text-base font-extrabold text-white leading-tight">{lowerThirdText}</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
-            {!isHost && !remoteVideoRef.current?.srcObject && (
+            {!isHost && !remoteVideoRef.current?.srcObject && currentScene === 'camera' && (
               <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                 <div className="text-center">
                   <VideoOff size={48} className="mx-auto mb-4 opacity-50" />

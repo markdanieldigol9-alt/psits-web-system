@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, Select, TextArea } from '@/shared/components/Form';
 import { Badge, Modal } from '@/shared/components/Common';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Pencil, Calendar } from 'lucide-react';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { AddPartnerModal } from '@/features/partners/components/AddPartnerModal';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -12,6 +12,7 @@ import api from '@/shared/services/api';
 export const PartnersPage = () => {
   const [partners, setPartners] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; company: string } | null>(null);
   const [confirmCreate, setConfirmCreate] = useState(false);
@@ -23,6 +24,7 @@ export const PartnersPage = () => {
   
   const [isContribModalOpen, setIsContribModalOpen] = useState(false);
   const [contribPartnerId, setContribPartnerId] = useState<string | null>(null);
+  const [editingContrib, setEditingContrib] = useState<any | null>(null);
   const [newContrib, setNewContrib] = useState({
     dealTitle: '',
     contributionType: 'funds',
@@ -34,7 +36,7 @@ export const PartnersPage = () => {
   const { addNotification } = useNotification();
   const { user } = useAuth();
 
-  const canManagePartners = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const canManagePartners = Boolean(user);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,7 +80,30 @@ export const PartnersPage = () => {
     }
   };
 
-  const handleAddContrib = async (e: React.FormEvent) => {
+  const isEventUpcoming = (evt?: any) => {
+    if (!evt) return false;
+    const d = evt.startDate || evt.date || evt.eventStartDate;
+    if (!d) return true;
+    const eventDate = new Date(d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate >= today || evt.status === 'upcoming' || evt.status === 'published' || evt.eventStatus === 'upcoming';
+  };
+
+  const handleOpenEditContrib = (contrib: any, partnerId: string) => {
+    setEditingContrib(contrib);
+    setContribPartnerId(partnerId);
+    setNewContrib({
+      dealTitle: contrib.dealTitle || '',
+      contributionType: contrib.contributionType || 'funds',
+      valueAmount: contrib.valueAmount !== null && contrib.valueAmount !== undefined ? String(contrib.valueAmount) : '',
+      description: contrib.description || '',
+      eventId: contrib.eventId ? String(contrib.eventId) : '',
+    });
+    setIsContribModalOpen(true);
+  };
+
+  const handleSaveContrib = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contribPartnerId) return;
 
@@ -97,18 +122,34 @@ export const PartnersPage = () => {
 
     setIsLoading(true);
     try {
-      const { data } = await api.createPartnerContribution(contribPartnerId, payload);
-      if (data?.success && data.contribution) {
-        setContributionsMap((prev) => ({
-          ...prev,
-          [contribPartnerId]: [data.contribution, ...(prev[contribPartnerId] || [])],
-        }));
-        addNotification({ userId: 'current', title: 'Added', message: 'Contribution logged successfully.', type: 'success', isRead: false });
-        setIsContribModalOpen(false);
-        setNewContrib({ dealTitle: '', contributionType: 'funds', valueAmount: '', description: '', eventId: '' });
+      if (editingContrib) {
+        const { data } = await api.updatePartnerContribution(editingContrib.id, payload);
+        if (data?.success && data.contribution) {
+          setContributionsMap((prev) => ({
+            ...prev,
+            [contribPartnerId]: (prev[contribPartnerId] || []).map((c) =>
+              c.id === editingContrib.id ? data.contribution : c
+            ),
+          }));
+          addNotification({ userId: 'current', title: 'Updated', message: 'Contribution updated successfully.', type: 'success', isRead: false });
+          setIsContribModalOpen(false);
+          setEditingContrib(null);
+          setNewContrib({ dealTitle: '', contributionType: 'funds', valueAmount: '', description: '', eventId: '' });
+        }
+      } else {
+        const { data } = await api.createPartnerContribution(contribPartnerId, payload);
+        if (data?.success && data.contribution) {
+          setContributionsMap((prev) => ({
+            ...prev,
+            [contribPartnerId]: [data.contribution, ...(prev[contribPartnerId] || [])],
+          }));
+          addNotification({ userId: 'current', title: 'Added', message: 'Contribution logged successfully.', type: 'success', isRead: false });
+          setIsContribModalOpen(false);
+          setNewContrib({ dealTitle: '', contributionType: 'funds', valueAmount: '', description: '', eventId: '' });
+        }
       }
     } catch (err: any) {
-      addNotification({ userId: 'current', title: 'Error', message: err.message || 'Failed to add contribution.', type: 'error', isRead: false });
+      addNotification({ userId: 'current', title: 'Error', message: err.message || 'Failed to save contribution.', type: 'error', isRead: false });
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +203,14 @@ export const PartnersPage = () => {
         </div>
         {canManagePartners && (
           <div className="flex justify-end">
-            <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setEditingPartner(null);
+                setIsModalOpen(true);
+              }}
+              className="w-full sm:w-auto"
+            >
               <Plus size={18} /> Add Partner
             </Button>
           </div>
@@ -176,7 +224,7 @@ export const PartnersPage = () => {
                     <p className="font-semibold text-lg text-gray-900">{p.company}</p>
                     <p className="text-sm text-gray-600 mt-1">{p.type} Partner</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -187,13 +235,27 @@ export const PartnersPage = () => {
                       Deals
                     </Button>
                     {canManagePartners && (
-                      <button
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        aria-label="Delete partner"
-                        onClick={() => setConfirmDelete({ id: p.id, company: p.company })}
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <>
+                        <button
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          aria-label="Edit partner"
+                          title="Edit Partner Profile"
+                          onClick={() => {
+                            setEditingPartner(p);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          aria-label="Delete partner"
+                          title="Delete Partner"
+                          onClick={() => setConfirmDelete({ id: p.id, company: p.company })}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -221,6 +283,8 @@ export const PartnersPage = () => {
                         size="sm"
                         onClick={() => {
                           setContribPartnerId(p.id);
+                          setEditingContrib(null);
+                          setNewContrib({ dealTitle: '', contributionType: 'funds', valueAmount: '', description: '', eventId: '' });
                           setIsContribModalOpen(true);
                         }}
                         className="inline-flex items-center gap-1"
@@ -239,34 +303,65 @@ export const PartnersPage = () => {
                           Total Value Logged: ₱{calculateTotalContributions(contributionsMap[p.id]).toLocaleString()}
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
-                          {contributionsMap[p.id].map((c: any) => (
-                            <div key={c.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-start justify-between gap-3">
-                              <div className="space-y-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-semibold text-sm text-gray-900 truncate">{c.dealTitle}</span>
-                                  <Badge variant={getContribBadgeVariant(c.contributionType)}>
-                                    {c.contributionType.toUpperCase()}
-                                  </Badge>
+                          {contributionsMap[p.id].map((c: any) => {
+                            const linkedEvent = events.find((e) => String(e.id) === String(c.eventId)) || {
+                              title: c.eventTitle,
+                              startDate: c.eventStartDate,
+                              status: c.eventStatus,
+                            };
+                            const isUpcoming = c.eventId ? isEventUpcoming(linkedEvent) : false;
+
+                            return (
+                              <div key={c.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-start justify-between gap-3">
+                                <div className="space-y-1.5 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-semibold text-sm text-gray-900 truncate">{c.dealTitle}</span>
+                                    <Badge variant={getContribBadgeVariant(c.contributionType)}>
+                                      {c.contributionType.toUpperCase()}
+                                    </Badge>
+                                  </div>
+                                  {c.description && <p className="text-xs text-gray-700 whitespace-pre-wrap">{c.description}</p>}
+                                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600 mt-1">
+                                    {c.valueAmount !== null && (
+                                      <span className="font-bold text-primary bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                        ₱{Number(c.valueAmount).toLocaleString()}
+                                      </span>
+                                    )}
+                                    {c.eventTitle && (
+                                      <span className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded text-[10px] ${
+                                        isUpcoming
+                                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                      }`}>
+                                        <Calendar size={11} />
+                                        {isUpcoming ? '🟢 Upcoming Event:' : '🔴 Past Event:'} {c.eventTitle}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                {c.description && <p className="text-xs text-gray-700 whitespace-pre-wrap">{c.description}</p>}
-                                <div className="flex flex-wrap gap-x-3 text-[10px] text-gray-500 mt-1">
-                                  {c.valueAmount !== null && (
-                                    <span className="font-semibold text-primary">Value: ₱{Number(c.valueAmount).toLocaleString()}</span>
-                                  )}
-                                  {c.eventTitle && <span className="italic">Event: {c.eventTitle}</span>}
-                                </div>
+                                {canManagePartners && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition"
+                                      aria-label="Edit contribution"
+                                      title="Edit Deal / Contribution"
+                                      onClick={() => handleOpenEditContrib(c, p.id)}
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
+                                    <button
+                                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition"
+                                      aria-label="Delete contribution"
+                                      title="Delete Deal"
+                                      onClick={() => void handleDeleteContrib(c.id, p.id)}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                              {canManagePartners && (
-                                <button
-                                  className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded shrink-0"
-                                  aria-label="Delete contribution"
-                                  onClick={() => void handleDeleteContrib(c.id, p.id)}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </>
                     )}
@@ -307,11 +402,33 @@ export const PartnersPage = () => {
       {canManagePartners && (
         <AddPartnerModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          initialData={editingPartner}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingPartner(null);
+          }}
           isLoading={isLoading}
           onSubmit={async (data) => {
-            setPendingPartnerData(data);
-            setConfirmCreate(true);
+            if (editingPartner) {
+              setIsLoading(true);
+              try {
+                const resp = await api.updatePartner(editingPartner.id, data);
+                const updated = resp.data?.partner;
+                if (updated) {
+                  setPartners((prev) => prev.map((x) => (x.id === editingPartner.id ? updated : x)));
+                  addNotification({ userId: 'current', title: 'Partner Updated', message: `${updated.company} updated successfully`, type: 'success', isRead: false });
+                }
+                setIsModalOpen(false);
+                setEditingPartner(null);
+              } catch (err: any) {
+                addNotification({ userId: 'current', title: 'Error', message: err.message || 'Unable to update partner', type: 'error', isRead: false });
+              } finally {
+                setIsLoading(false);
+              }
+            } else {
+              setPendingPartnerData(data);
+              setConfirmCreate(true);
+            }
           }}
         />
       )}
@@ -346,17 +463,25 @@ export const PartnersPage = () => {
         }}
       />
 
-      <Modal isOpen={isContribModalOpen} onClose={() => setIsContribModalOpen(false)} title="Log Partner Contribution" size="lg">
-        <form onSubmit={handleAddContrib} className="space-y-4">
+      <Modal
+        isOpen={isContribModalOpen}
+        onClose={() => {
+          setIsContribModalOpen(false);
+          setEditingContrib(null);
+        }}
+        title={editingContrib ? 'Edit Partner Contribution' : 'Log Partner Contribution'}
+        size="lg"
+      >
+        <form onSubmit={handleSaveContrib} className="space-y-4">
           <Input
-            label="Deal / Contribution Title"
+            label="Deal / Contribution Title *"
             required
             value={newContrib.dealTitle}
             onChange={(e) => setNewContrib((prev) => ({ ...prev, dealTitle: e.target.value }))}
             placeholder="e.g. Diamond Sponsorship Package / Event Venue Support"
           />
           <Select
-            label="Contribution Type"
+            label="Contribution Type *"
             options={[
               { value: 'funds', label: 'Funds / Cash Sponsorship' },
               { value: 'prizes', label: 'Prizes / Giveaways' },
@@ -375,15 +500,38 @@ export const PartnersPage = () => {
             onChange={(e) => setNewContrib((prev) => ({ ...prev, valueAmount: e.target.value }))}
             placeholder="e.g. 50000"
           />
-          <Select
-            label="Linked Event (Optional)"
-            options={[
-              { value: '', label: 'Select event...' },
-              ...events.map((e) => ({ value: String(e.id), label: String(e.title) })),
-            ]}
-            value={newContrib.eventId}
-            onChange={(e) => setNewContrib((prev) => ({ ...prev, eventId: e.target.value }))}
-          />
+
+          {/* Linked Event Selector with Old (Past) vs New (Upcoming) Event Grouping */}
+          {(() => {
+            const upcomingEvents = events.filter((e) => isEventUpcoming(e));
+            const pastEvents = events.filter((e) => !isEventUpcoming(e));
+            return (
+              <div className="space-y-1">
+                <Select
+                  label="Linked Event for Sponsorship (Optional)"
+                  options={[
+                    { value: '', label: '-- None (General Partner Deal) --' },
+                    ...(upcomingEvents.length > 0 ? [{ value: '', label: '--- 🟢 NEW / UPCOMING EVENTS ---' }] : []),
+                    ...upcomingEvents.map((e) => ({
+                      value: String(e.id),
+                      label: `🟢 [NEW] ${e.title} (${e.startDate ? new Date(e.startDate).toLocaleDateString() : 'Upcoming'})`,
+                    })),
+                    ...(pastEvents.length > 0 ? [{ value: '', label: '--- 🔴 OLD / PAST EVENTS ---' }] : []),
+                    ...pastEvents.map((e) => ({
+                      value: String(e.id),
+                      label: `🔴 [PAST] ${e.title} (${e.startDate ? new Date(e.startDate).toLocaleDateString() : 'Past Event'})`,
+                    })),
+                  ]}
+                  value={newContrib.eventId}
+                  onChange={(e) => setNewContrib((prev) => ({ ...prev, eventId: e.target.value }))}
+                />
+                <p className="text-xs text-gray-500">
+                  Select an upcoming event for new sponsorships or a past event for historical records.
+                </p>
+              </div>
+            );
+          })()}
+
           <TextArea
             label="Description / Agreement Details"
             rows={4}
@@ -392,8 +540,19 @@ export const PartnersPage = () => {
             placeholder="Enter specifics about the contribution..."
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" type="button" onClick={() => setIsContribModalOpen(false)}>Cancel</Button>
-            <Button variant="primary" type="submit" isLoading={isLoading}>Save contribution</Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                setIsContribModalOpen(false);
+                setEditingContrib(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" isLoading={isLoading}>
+              {editingContrib ? 'Save Changes' : 'Save Contribution'}
+            </Button>
           </div>
         </form>
       </Modal>

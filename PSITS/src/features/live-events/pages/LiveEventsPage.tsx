@@ -306,7 +306,6 @@ export const LiveEventsPage = () => {
     const nextErrors: Partial<Record<keyof LiveSessionFormState | 'schedule', string>> = {};
     if (!formData.title.trim()) nextErrors.title = 'Session title is required.';
     if (!formData.eventId) nextErrors.eventId = 'Linked event is required.';
-    if (!formData.startDate || !formData.startTime) nextErrors.startDate = 'Start date and time are required.';
     if (!formData.privacy) nextErrors.privacy = 'Privacy is required.';
     
     if (formData.streamSource === 'external') {
@@ -317,7 +316,7 @@ export const LiveEventsPage = () => {
       }
     }
 
-    const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : '';
+    const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : new Date().toISOString().slice(0, 16);
     const endAt = formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}` : '';
     if (startAt && endAt && new Date(endAt).getTime() < new Date(startAt).getTime()) {
       nextErrors.schedule = 'End time must not be earlier than start time.';

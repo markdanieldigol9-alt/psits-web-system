@@ -349,7 +349,7 @@ export const ElectionsPage = () => {
 
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={editingElection ? 'Edit Election' : 'Create Election'} size="lg">
         <div className="space-y-4">
-          <Input label="Title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+          <Input label="Election Year" placeholder="e.g. 2026 Election" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
           <TextArea label="Description" rows={4} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Input label="Start Date" type="date" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
@@ -595,7 +595,7 @@ export const ElectionsPage = () => {
             </div>
             <h2 className="text-3xl font-bold text-gray-900">Vote Submitted Successfully!</h2>
             <p className="text-gray-600 max-w-md mx-auto font-medium">
-              Your secure ballot has been successfully received by the PSITS Hub election system. Thank you for participating.
+              Your secure ballot has been successfully received by the PSITS election system. Thank you for participating.
             </p>
             <div className="flex justify-center gap-1.5 pt-3">
               <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse"></span>
@@ -709,17 +709,28 @@ export const ElectionsPage = () => {
 
       <Modal isOpen={showAddCandidate} onClose={() => setShowAddCandidate(false)} title="Add Candidate" size="md">
         <div className="space-y-3">
+          {(() => {
+            const existingMemberIds = new Set((details?.candidates || []).map((c: any) => String(c.memberId || c.member_id)));
+            const availableMembers = activeMembers.filter((m) => !existingMemberIds.has(String(m.id)));
+            return (
+              <>
+                <p className="text-xs text-blue-800 bg-blue-50 border border-blue-200 p-2.5 rounded-lg">
+                  <strong>Candidate Rule:</strong> Each candidate can only run for <strong>one position per election</strong>.
+                </p>
+                <Select
+                  label="Approved Member *"
+                  options={[
+                    { value: '', label: availableMembers.length ? 'Select member' : 'No available members (all running)' },
+                    ...availableMembers.map((m) => ({ value: String(m.id), label: `${m.fullName || m.email} (${m.email})` })),
+                  ]}
+                  value={candidateForm.memberId}
+                  onChange={(e) => setCandidateForm((p) => ({ ...p, memberId: (e.target as HTMLSelectElement).value }))}
+                />
+              </>
+            );
+          })()}
           <Select
-            label="Approved Member"
-            options={[
-              { value: '', label: 'Select member' },
-              ...activeMembers.map((m) => ({ value: String(m.id), label: `${m.fullName || m.email} (${m.email})` })),
-            ]}
-            value={candidateForm.memberId}
-            onChange={(e) => setCandidateForm((p) => ({ ...p, memberId: (e.target as HTMLSelectElement).value }))}
-          />
-          <Select
-            label="Position"
+            label="Position *"
             options={[
               { value: '', label: 'Select position' },
               ...(details?.election?.allowedPositions || ['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']).map((pos: string) => ({
@@ -732,7 +743,7 @@ export const ElectionsPage = () => {
           />
           <TextArea label="Platform (optional)" rows={4} value={candidateForm.platform} onChange={(e) => setCandidateForm((p) => ({ ...p, platform: (e.target as HTMLTextAreaElement).value }))} />
           <div className="flex justify-end gap-2">
-            <Button variant="primary" onClick={() => void addCandidate()} isLoading={isLoading}>Add</Button>
+            <Button variant="primary" onClick={() => void addCandidate()} isLoading={isLoading}>Add Candidate</Button>
           </div>
         </div>
       </Modal>

@@ -389,6 +389,11 @@ async function migrate() {
   try { await pool.query('ALTER TABLE events ADD COLUMN esports_game VARCHAR(191) NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE events ADD COLUMN esports_bracket_format VARCHAR(191) NULL'); } catch { /* ignore */ }
 
+  // Event Design UI Customization features
+  try { await pool.query('ALTER TABLE events ADD COLUMN banner_url VARCHAR(500) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN theme_color VARCHAR(50) NULL DEFAULT "#2563eb"'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN custom_badge VARCHAR(100) NULL'); } catch { /* ignore */ }
+
   // Event registrations (member joins an event)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS event_registrations (
@@ -1130,6 +1135,7 @@ async function migrate() {
       approved_by INT UNSIGNED NULL,
       approved_at DATETIME NULL,
       rejection_reason VARCHAR(255) NULL,
+      password_hash VARCHAR(255) NULL,
       notes VARCHAR(255) NULL,
       created_by INT UNSIGNED NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1161,7 +1167,8 @@ async function migrate() {
       "status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending'",
       'approved_by INT UNSIGNED NULL',
       'approved_at DATETIME NULL',
-      'rejection_reason VARCHAR(255) NULL'
+      'rejection_reason VARCHAR(255) NULL',
+      'password_hash VARCHAR(255) NULL'
     ];
     for (const col of instColumns) {
       try {

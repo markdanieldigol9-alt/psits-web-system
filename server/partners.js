@@ -82,6 +82,9 @@ function toContributionDto(row) {
     partnerId: String(row.partner_id),
     eventId: row.event_id ? String(row.event_id) : null,
     eventTitle: row.event_title || null,
+    eventStartDate: row.event_start_date || null,
+    eventEndDate: row.event_end_date || null,
+    eventStatus: row.event_status || null,
     dealTitle: row.deal_title,
     contributionType: row.contribution_type,
     valueAmount: row.value_amount ? Number(row.value_amount) : null,
@@ -95,7 +98,7 @@ async function listPartnerContributions(req, res) {
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid partner id.' });
 
   const [rows] = await pool.execute(
-    `SELECT pc.*, e.title AS event_title
+    `SELECT pc.*, e.title AS event_title, e.start_date AS event_start_date, e.end_date AS event_end_date, e.status AS event_status
      FROM partner_contributions pc
      LEFT JOIN events e ON e.id = pc.event_id
      WHERE pc.partner_id = ?
@@ -133,7 +136,7 @@ async function createPartnerContribution(req, res) {
   );
 
   const [rows] = await pool.execute(
-    `SELECT pc.*, e.title AS event_title
+    `SELECT pc.*, e.title AS event_title, e.start_date AS event_start_date, e.end_date AS event_end_date, e.status AS event_status
      FROM partner_contributions pc
      LEFT JOIN events e ON e.id = pc.event_id
      WHERE pc.id = ? LIMIT 1`,
@@ -141,6 +144,35 @@ async function createPartnerContribution(req, res) {
   );
 
   return res.status(201).json({ success: true, contribution: toContributionDto(rows[0]) });
+}
+
+async function updatePartnerContribution(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const body = req.body || {};
+  const sets = [];
+  const params = [];
+
+  if (typeof body.dealTitle === 'string' && body.dealTitle.trim()) { sets.push('deal_title = ?'); params.push(body.dealTitle.trim()); }
+  if (typeof body.contributionType === 'string' && body.contributionType.trim()) { sets.push('contribution_type = ?'); params.push(body.contributionType.trim()); }
+  if (body.valueAmount !== undefined) { sets.push('value_amount = ?'); params.push(body.valueAmount ? Number(body.valueAmount) : null); }
+  if (body.eventId !== undefined) { sets.push('event_id = ?'); params.push(body.eventId ? Number(body.eventId) : null); }
+  if (body.description !== undefined) { sets.push('description = ?'); params.push(body.description ? String(body.description).trim() : null); }
+
+  if (!sets.length) return res.status(400).json({ success: false, message: 'No fields to update.' });
+  params.push(id);
+
+  await pool.execute(`UPDATE partner_contributions SET ${sets.join(', ')} WHERE id = ?`, params);
+  const [rows] = await pool.execute(
+    `SELECT pc.*, e.title AS event_title, e.start_date AS event_start_date, e.end_date AS event_end_date, e.status AS event_status
+     FROM partner_contributions pc
+     LEFT JOIN events e ON e.id = pc.event_id
+     WHERE pc.id = ? LIMIT 1`,
+    [id]
+  );
+  if (!rows.length) return res.status(404).json({ success: false, message: 'Contribution not found.' });
+  return res.json({ success: true, contribution: toContributionDto(rows[0]) });
 }
 
 async function deletePartnerContribution(req, res) {
@@ -159,6 +191,7 @@ module.exports = {
   deletePartner,
   listPartnerContributions,
   createPartnerContribution,
+  updatePartnerContribution,
   deletePartnerContribution,
 };
 

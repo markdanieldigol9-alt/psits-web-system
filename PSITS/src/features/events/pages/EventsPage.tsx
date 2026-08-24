@@ -5,7 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Palette, Sparkles, Image as ImageIcon, UploadCloud, X, ChevronRight, ChevronLeft, Layers, Trophy, Tag } from 'lucide-react';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -175,6 +175,8 @@ export const EventsPage = () => {
     previewUrl: '',
   });
 
+  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'schedule' | 'design' | 'guidelines' | 'esports'>('basic');
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -198,6 +200,11 @@ export const EventsPage = () => {
     isEsports: false,
     esportsGame: '',
     esportsBracketFormat: '',
+    bannerUrl: '',
+    bannerFile: null as File | null,
+    bannerPreviewUrl: '',
+    themeColor: '#2563eb',
+    customBadge: '',
   });
 
   const canManageEvents = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
@@ -409,6 +416,7 @@ export const EventsPage = () => {
 
   const openCreateModal = () => {
     setEditingEventId(null);
+    setActiveFormTab('basic');
     setFormData({
       title: '',
       description: '',
@@ -432,12 +440,18 @@ export const EventsPage = () => {
       isEsports: false,
       esportsGame: '',
       esportsBracketFormat: '',
+      bannerUrl: '',
+      bannerFile: null,
+      bannerPreviewUrl: '',
+      themeColor: '#2563eb',
+      customBadge: '',
     });
     setShowEventModal(true);
   };
 
   const openEditModal = (event: any) => {
     setEditingEventId(String(event.id));
+    setActiveFormTab('basic');
     const regStart = splitIsoToDateTime(event.registrationStartAt);
     const regEnd = splitIsoToDateTime(event.registrationEndAt);
     setFormData({
@@ -463,6 +477,11 @@ export const EventsPage = () => {
       isEsports: Boolean(event.isEsports),
       esportsGame: event.esportsGame || '',
       esportsBracketFormat: event.esportsBracketFormat || '',
+      bannerUrl: event.bannerUrl || '',
+      bannerFile: null,
+      bannerPreviewUrl: event.bannerUrl || '',
+      themeColor: event.themeColor || '#2563eb',
+      customBadge: event.customBadge || '',
     });
     setShowEventModal(true);
   };
@@ -715,37 +734,63 @@ export const EventsPage = () => {
             const statusText = memberStatusByEvent[String(event.id)] || event.status;
             const isPaidEvent = Number(event?.fee || 0) > 0;
             const regState = getRegistrationState(event);
+            const cardThemeColor = event.themeColor || '#2563eb';
             return (
-              <Card key={event.id} className="p-6 overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex min-w-0 gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                      EV
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        PSITS Hub Event
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Scheduled on {event.date} at {event.time}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {isRegistered && <Badge variant="success">Registered</Badge>}
-                    {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
-                    {event.eventType && (
-                      <Badge variant={event.eventType === 'competition' ? 'error' : 'info'}>
-                        {event.eventType === 'competition' ? 'Competition' : 'Seminar'}
-                      </Badge>
+              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all border-l-4" style={{ borderLeftColor: cardThemeColor }}>
+                {event.bannerUrl && (
+                  <div className="w-full h-44 sm:h-52 bg-gray-100 relative overflow-hidden border-b border-gray-200">
+                    <img
+                      src={event.bannerUrl}
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    {event.customBadge && (
+                      <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-white/20">
+                        <Sparkles size={12} className="text-amber-400" />
+                        {event.customBadge}
+                      </span>
                     )}
-                    {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
-                    <Badge variant={getStatusColor(event.status)}>
-                      {String(event.status).charAt(0).toUpperCase() + String(event.status).slice(1)}
-                    </Badge>
                   </div>
-                </div>
+                )}
+                <div className="p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 gap-3">
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm"
+                        style={{ backgroundColor: cardThemeColor }}
+                      >
+                        EV
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
+                        <p className="mt-1 text-sm text-gray-600">
+                          PSITS Event
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Scheduled on {event.date} at {event.time}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {event.customBadge && !event.bannerUrl && (
+                        <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-amber-200">
+                          <Sparkles size={12} /> {event.customBadge}
+                        </span>
+                      )}
+                      {isRegistered && <Badge variant="success">Registered</Badge>}
+                      {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
+                      {event.eventType && (
+                        <Badge variant={event.eventType === 'competition' ? 'error' : 'info'}>
+                          {event.eventType === 'competition' ? 'Competition' : 'Seminar'}
+                        </Badge>
+                      )}
+                      {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
+                      <Badge variant={getStatusColor(event.status)}>
+                        {String(event.status).charAt(0).toUpperCase() + String(event.status).slice(1)}
+                      </Badge>
+                    </div>
+                  </div>
 
                 {event.description && (
                   <p className="mb-4 whitespace-pre-wrap text-gray-700 text-sm">{event.description}</p>
@@ -831,7 +876,8 @@ export const EventsPage = () => {
                     )}
                   </div>
                 </div>
-              </Card>
+              </div>
+            </Card>
             );
           })}
         </div>
@@ -842,30 +888,88 @@ export const EventsPage = () => {
           </Card>
         )}
       </div>
-      <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={editingEventId ? 'Edit Event' : 'Create Event'} size="lg">
+      <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={editingEventId ? 'Edit Event' : 'Create Event Wizard'} size="lg">
+        {/* Navigation Tabs Header */}
+        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar gap-1 bg-gray-50/80 p-1.5 rounded-xl border">
+          <button
+            type="button"
+            onClick={() => setActiveFormTab('basic')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+              activeFormTab === 'basic' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+            }`}
+          >
+            <Layers size={15} /> 1. Basic Info
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFormTab('schedule')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+              activeFormTab === 'schedule' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+            }`}
+          >
+            <MapPin size={15} /> 2. Schedule & Venue
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFormTab('design')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+              activeFormTab === 'design'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm font-bold'
+                : 'text-primary hover:bg-primary/10 font-bold bg-primary/5'
+            }`}
+          >
+            <Palette size={15} /> 3. Design & UI <Sparkles size={12} className="text-amber-400 animate-pulse" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFormTab('guidelines')}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+              activeFormTab === 'guidelines' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+            }`}
+          >
+            <FileSpreadsheet size={15} /> 4. Guidelines
+          </button>
+          {formData.isEsports && (
+            <button
+              type="button"
+              onClick={() => setActiveFormTab('esports')}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+                activeFormTab === 'esports' ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-700 hover:bg-purple-100 bg-purple-50'
+              }`}
+            >
+              <Trophy size={15} /> 5. eSports
+            </button>
+          )}
+        </div>
+
         <form
-          className="space-y-4"
+          className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
             if (!formData.title.trim()) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Event title is required.', type: 'error', isRead: false });
+              setActiveFormTab('basic');
               return;
             }
             if (!formData.location.trim()) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Event location is required.', type: 'error', isRead: false });
+              setActiveFormTab('schedule');
               return;
             }
             if (Number(formData.fee) < 0) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Event fee must be 0 or greater.', type: 'error', isRead: false });
+              setActiveFormTab('schedule');
               return;
             }
             if (Number(formData.capacity) < 0) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Capacity must be 0 or greater.', type: 'error', isRead: false });
+              setActiveFormTab('schedule');
               return;
             }
             const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00` : null;
             if (!startAt) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Start date/time is required.', type: 'error', isRead: false });
+              setActiveFormTab('schedule');
               return;
             }
 
@@ -880,10 +984,12 @@ export const EventsPage = () => {
 
             if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
+              setActiveFormTab('guidelines');
               return;
             }
             if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
+              setActiveFormTab('guidelines');
               return;
             }
             if (registrationStartAt && registrationEndAt) {
@@ -891,11 +997,13 @@ export const EventsPage = () => {
               const re = new Date(registrationEndAt);
               if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
+                setActiveFormTab('guidelines');
                 return;
               }
             }
             if ((formData.endDate && !formData.endTime) || (!formData.endDate && formData.endTime)) {
               addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must include both date and time.', type: 'error', isRead: false });
+              setActiveFormTab('schedule');
               return;
             }
             const endAt =
@@ -905,6 +1013,7 @@ export const EventsPage = () => {
               const endCheck = new Date(endAt);
               if (!Number.isNaN(startCheck.getTime()) && !Number.isNaN(endCheck.getTime()) && endCheck < startCheck) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must be after start date/time.', type: 'error', isRead: false });
+                setActiveFormTab('schedule');
                 return;
               }
             }
@@ -912,127 +1021,385 @@ export const EventsPage = () => {
             if (formData.isEsports) {
               if (!formData.esportsGame) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
+                setActiveFormTab('esports');
                 return;
               }
               if (!formData.esportsBracketFormat) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
+                setActiveFormTab('esports');
                 return;
               }
             }
 
-            setPendingEventPayload({
-              title: formData.title.trim(),
-              description: formData.description.trim(),
-              guidelines: formData.guidelines.trim(),
-              registrationMode: formData.registrationMode,
-              registrationOverride: formData.registrationOverride || null,
-              ...(registrationStartAt ? { registrationStartAt } : {}),
-              ...(registrationEndAt ? { registrationEndAt } : {}),
-              location: formData.location.trim(),
-              eventType: formData.eventType,
-              startAt,
-              ...(endAt ? { endAt } : {}),
-              fee: Number(formData.fee) || 0,
-              capacity: Number(formData.capacity) || 0,
-              status: formData.status,
-              isEsports: formData.isEsports,
-              esportsGame: formData.esportsGame,
-              esportsBracketFormat: formData.esportsBracketFormat,
-            });
-            setConfirmSaveEvent(true);
+            (async () => {
+              let finalBannerUrl = formData.bannerUrl || null;
+              if (formData.bannerFile) {
+                try {
+                  const dataUrl = await readAsDataUrl(formData.bannerFile);
+                  const { data: upload } = await api.uploadEventBanner(dataUrl);
+                  if (upload?.url) {
+                    finalBannerUrl = upload.url;
+                  }
+                } catch (err) {
+                  console.error('Banner upload error:', err);
+                  addNotification({ userId: 'current', title: 'Banner Upload Warning', message: 'Failed to upload banner image. Event saved with default design.', type: 'warning', isRead: false });
+                }
+              }
+
+              setPendingEventPayload({
+                title: formData.title.trim(),
+                description: formData.description.trim(),
+                guidelines: formData.guidelines.trim(),
+                registrationMode: formData.registrationMode,
+                registrationOverride: formData.registrationOverride || null,
+                ...(registrationStartAt ? { registrationStartAt } : {}),
+                ...(registrationEndAt ? { registrationEndAt } : {}),
+                location: formData.location.trim(),
+                eventType: formData.eventType,
+                startAt,
+                ...(endAt ? { endAt } : {}),
+                fee: Number(formData.fee) || 0,
+                capacity: Number(formData.capacity) || 0,
+                status: formData.status,
+                isEsports: formData.isEsports,
+                esportsGame: formData.esportsGame,
+                esportsBracketFormat: formData.esportsBracketFormat,
+                bannerUrl: finalBannerUrl,
+                themeColor: formData.themeColor || '#2563eb',
+                customBadge: formData.customBadge.trim() || null,
+              });
+              setConfirmSaveEvent(true);
+            })();
           }}
         >
-          <Input label="Title" required value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} />
-          <TextArea label="Description" rows={4} value={formData.description} onChange={(e) => setFormData((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))} />
-
-          <div className="space-y-2">
-            <TextArea
-              label="Guidelines"
-              rows={4}
-              placeholder="Add event guidelines"
-              value={formData.guidelines}
-              onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
-            />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Guidelines File</label>
-              <input
-                type="file"
-                accept=".txt,.md,.pdf,.doc,.docx"
-                onChange={async (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0] || null;
-                  if (!file) return;
-                  setFormData((p) => ({ ...p, guidelineFileName: file.name }));
-                  if (file.type.startsWith('text/')) {
-                    const text = await file.text();
-                    setFormData((p) => ({ ...p, guidelines: text.slice(0, 5000), guidelineFileName: file.name }));
-                  }
-                }}
+          {/* TAB 1: BASIC INFO */}
+          {activeFormTab === 'basic' && (
+            <div className="space-y-4 animate-fadeIn">
+              <Input
+                label="Event Title"
+                placeholder="e.g. PSITS Regional IT Convention 2026"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
               />
-              {formData.guidelineFileName && <p className="text-xs text-gray-500 mt-1">Selected: {formData.guidelineFileName}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select
+                  label="Event Category"
+                  options={[
+                    { value: 'seminar', label: 'Seminar / Conference' },
+                    { value: 'competition', label: 'Competition / Contest' },
+                  ]}
+                  value={formData.eventType}
+                  onChange={(e) => setFormData((p) => ({ ...p, eventType: (e.target as HTMLSelectElement).value }))}
+                />
+                <Select
+                  label="Registration Mode"
+                  options={[
+                    { value: 'individual', label: 'Individual Registration' },
+                    { value: 'pair', label: 'Pair (2 Members)' },
+                    { value: 'team', label: 'Team / Group' },
+                  ]}
+                  value={formData.registrationMode}
+                  onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
+                />
+              </div>
+              <TextArea
+                label="Description"
+                rows={4}
+                placeholder="Provide a compelling overview of what participants can expect..."
+                value={formData.description}
+                onChange={(e) => setFormData((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))}
+              />
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy size={18} className="text-purple-600" />
+                  <span className="text-sm font-medium text-gray-800">Is this an eSports Event?</span>
+                </div>
+                <input
+                  type="checkbox"
+                  id="isEsportsTab"
+                  checked={formData.isEsports}
+                  onChange={(e) => setFormData((p) => ({ ...p, isEsports: e.target.checked }))}
+                  className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select
-              label="Registration Control"
-              options={[
-                { value: '', label: 'Automatic (by dates)' },
-                { value: 'open', label: 'Force Open (Manual)' },
-                { value: 'closed', label: 'Force Closed (Manual)' },
-              ]}
-              value={formData.registrationOverride}
-              onChange={(e) => setFormData((p) => ({ ...p, registrationOverride: (e.target as HTMLSelectElement).value as RegistrationOverride }))}
-            />
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Reg Start Date" type="date" value={formData.registrationStartDate} onChange={(e) => setFormData((p) => ({ ...p, registrationStartDate: e.target.value }))} />
-              <Input label="Reg Start Time" type="time" value={formData.registrationStartTime} onChange={(e) => setFormData((p) => ({ ...p, registrationStartTime: e.target.value }))} />
-              <Input label="Reg End Date" type="date" value={formData.registrationEndDate} onChange={(e) => setFormData((p) => ({ ...p, registrationEndDate: e.target.value }))} />
-              <Input label="Reg End Time" type="time" value={formData.registrationEndTime} onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))} />
+          {/* TAB 2: SCHEDULE & LOCATION */}
+          {activeFormTab === 'schedule' && (
+            <div className="space-y-4 animate-fadeIn">
+              <Input
+                label="Location / Venue"
+                placeholder="e.g. Main Auditorium / Online via Zoom"
+                required
+                value={formData.location}
+                onChange={(e) => setFormData((p) => ({ ...p, location: e.target.value }))}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+                <Input label="Start Date *" type="date" value={formData.startDate} onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))} />
+                <Input label="Start Time *" type="time" value={formData.startTime} onChange={(e) => setFormData((p) => ({ ...p, startTime: e.target.value }))} />
+                <Input label="End Date (optional)" type="date" value={formData.endDate} onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))} />
+                <Input label="End Time (optional)" type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input label="Registration Fee (₱)" type="number" min="0" value={String(formData.fee)} onChange={(e) => setFormData((p) => ({ ...p, fee: Number(e.target.value) }))} />
+                <Input label="Capacity" type="number" min="0" value={String(formData.capacity)} onChange={(e) => setFormData((p) => ({ ...p, capacity: Number(e.target.value) }))} />
+                <Select
+                  label="Event Status"
+                  options={[
+                    { value: 'upcoming', label: 'Automatic (default)' },
+                    { value: 'draft', label: 'Draft (Manual)' },
+                    { value: 'cancelled', label: 'Cancelled (Manual)' },
+                  ]}
+                  value={formData.status}
+                  onChange={(e) => setFormData((p) => ({ ...p, status: (e.target as HTMLSelectElement).value as EventStatus }))}
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                Automatic status preview: <strong>{getAutoStatusPreview()}</strong>.
+              </p>
             </div>
-          </div>
+          )}
 
-          <Select
-            label="Registration Mode"
-            options={[
-              { value: 'individual', label: 'Individual' },
-              { value: 'pair', label: 'Pair' },
-              { value: 'team', label: 'Team' },
-            ]}
-            value={formData.registrationMode}
-            onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
-          />
+          {/* TAB 3: DYNAMIC EVENT DESIGN & UI CUSTOMIZATION */}
+          {activeFormTab === 'design' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200/80">
+                <div className="flex items-center gap-2 mb-1">
+                  <Palette className="text-blue-600" size={18} />
+                  <h4 className="text-sm font-bold text-gray-900">Event Design & UI Customization</h4>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Customize the look, banner poster image, accent color, and highlight badges for this event.
+                </p>
+              </div>
 
-          <Select
-            label="Event Category"
-            options={[
-              { value: 'seminar', label: 'Seminar' },
-              { value: 'competition', label: 'Competition' },
-            ]}
-            value={formData.eventType}
-            onChange={(e) => setFormData((p) => ({ ...p, eventType: (e.target as HTMLSelectElement).value }))}
-          />
+              {/* Banner Poster Upload */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                  <ImageIcon size={16} className="text-primary" /> Event Poster / Header Banner Image
+                </label>
+                {formData.bannerPreviewUrl ? (
+                  <div className="relative rounded-xl border border-gray-200 overflow-hidden group bg-gray-100 max-h-48 flex items-center justify-center">
+                    <img
+                      src={formData.bannerPreviewUrl}
+                      alt="Banner Preview"
+                      className="w-full h-44 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <label className="cursor-pointer bg-white text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-lg shadow hover:bg-gray-100 flex items-center gap-1">
+                        <UploadCloud size={14} /> Change Poster
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setFormData((p) => ({
+                              ...p,
+                              bannerFile: file,
+                              bannerPreviewUrl: URL.createObjectURL(file),
+                            }));
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData((p) => ({ ...p, bannerUrl: '', bannerFile: null, bannerPreviewUrl: '' }))}
+                        className="bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hover:bg-red-700 flex items-center gap-1"
+                      >
+                        <X size={14} /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-gray-300 hover:border-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-gray-50 hover:bg-primary/5 transition-colors">
+                    <UploadCloud size={32} className="text-gray-400 mb-2" />
+                    <span className="text-sm font-semibold text-gray-700">Click to upload Event Banner Image</span>
+                    <span className="text-xs text-gray-500 mt-1">PNG, JPG, or WebP (Recommended 1200x500px, max 8MB)</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setFormData((p) => ({
+                          ...p,
+                          bannerFile: file,
+                          bannerPreviewUrl: URL.createObjectURL(file),
+                        }));
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
 
-          <div className="flex items-center gap-2 mb-4 mt-2">
-            <input
-              type="checkbox"
-              id="isEsports"
-              checked={formData.isEsports}
-              onChange={(e) => setFormData((p) => ({ ...p, isEsports: e.target.checked }))}
-              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-            />
-            <label htmlFor="isEsports" className="text-sm font-medium text-gray-700">
-              Is this an eSports Event?
-            </label>
-          </div>
+              {/* Theme Color Palette */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-800">Theme Accent Color</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { hex: '#2563eb', label: 'PSITS Blue' },
+                    { hex: '#059669', label: 'Emerald' },
+                    { hex: '#7c3aed', label: 'Purple' },
+                    { hex: '#e11d48', label: 'Rose' },
+                    { hex: '#d97706', label: 'Amber' },
+                    { hex: '#0891b2', label: 'Cyan' },
+                    { hex: '#1e293b', label: 'Slate' },
+                  ].map((color) => (
+                    <button
+                      key={color.hex}
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, themeColor: color.hex }))}
+                      className={`w-9 h-9 rounded-full transition-transform flex items-center justify-center border-2 ${
+                        formData.themeColor === color.hex ? 'scale-110 border-black shadow-md' : 'border-transparent hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color.hex }}
+                      title={color.label}
+                    >
+                      {formData.themeColor === color.hex && <CheckCircle size={16} className="text-white drop-shadow" />}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-2 py-1 bg-white">
+                    <span className="text-xs text-gray-500 font-mono">Custom:</span>
+                    <input
+                      type="color"
+                      value={formData.themeColor}
+                      onChange={(e) => setFormData((p) => ({ ...p, themeColor: e.target.value }))}
+                      className="w-7 h-7 rounded border-0 cursor-pointer p-0 bg-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
 
-          {formData.isEsports && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-primary/5 p-4 rounded-lg mb-4 border border-primary/20">
+              {/* Custom Tag / Badge */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                  <Tag size={16} className="text-amber-500" /> Custom Highlight Badge Tag
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {['⭐ Featured', '📜 Certificates Included', '🍔 Free Snacks', '🏆 Competition', '🔥 High Priority'].map((badge) => (
+                    <button
+                      key={badge}
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, customBadge: badge }))}
+                      className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                        formData.customBadge === badge
+                          ? 'bg-amber-500 text-white font-bold border-amber-600 shadow-sm'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                      }`}
+                    >
+                      {badge}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Or enter custom badge text (e.g. Special Guest Speaker)..."
+                  value={formData.customBadge}
+                  onChange={(e) => setFormData((p) => ({ ...p, customBadge: e.target.value }))}
+                />
+              </div>
+
+              {/* Live Card Preview */}
+              <div className="space-y-2 pt-2 border-t">
+                <span className="text-xs font-bold uppercase text-gray-500 tracking-wider">Live Member View Preview</span>
+                <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white border-l-4" style={{ borderLeftColor: formData.themeColor }}>
+                  {formData.bannerPreviewUrl ? (
+                    <div className="w-full h-36 bg-gray-100 relative overflow-hidden">
+                      <img src={formData.bannerPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      {formData.customBadge && (
+                        <span className="absolute top-2 left-2 bg-black/75 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
+                          <Sparkles size={11} className="text-amber-400" /> {formData.customBadge}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-full h-24 p-4 flex items-center justify-between text-white" style={{ backgroundColor: formData.themeColor }}>
+                      <span className="font-bold text-base">{formData.title || 'Event Title Preview'}</span>
+                      {formData.customBadge && (
+                        <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                          {formData.customBadge}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h4 className="font-bold text-gray-900 text-base">{formData.title || 'Untitled Event'}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Location: {formData.location || 'Venue TBD'}</p>
+                    <div className="mt-3 flex items-center justify-between text-xs font-semibold">
+                      <span style={{ color: formData.themeColor }}>Fee: ₱{formData.fee || 0}</span>
+                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{formData.eventType.toUpperCase()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: GUIDELINES & REGISTRATION CONTROLS */}
+          {activeFormTab === 'guidelines' && (
+            <div className="space-y-4 animate-fadeIn">
+              <Select
+                label="Registration Control"
+                options={[
+                  { value: '', label: 'Automatic (based on dates)' },
+                  { value: 'open', label: 'Force Open (Manual)' },
+                  { value: 'closed', label: 'Force Closed (Manual)' },
+                ]}
+                value={formData.registrationOverride}
+                onChange={(e) => setFormData((p) => ({ ...p, registrationOverride: (e.target as HTMLSelectElement).value as RegistrationOverride }))}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+                <Input label="Reg Start Date" type="date" value={formData.registrationStartDate} onChange={(e) => setFormData((p) => ({ ...p, registrationStartDate: e.target.value }))} />
+                <Input label="Reg Start Time" type="time" value={formData.registrationStartTime} onChange={(e) => setFormData((p) => ({ ...p, registrationStartTime: e.target.value }))} />
+                <Input label="Reg End Date" type="date" value={formData.registrationEndDate} onChange={(e) => setFormData((p) => ({ ...p, registrationEndDate: e.target.value }))} />
+                <Input label="Reg End Time" type="time" value={formData.registrationEndTime} onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))} />
+              </div>
+              <TextArea
+                label="Guidelines"
+                rows={4}
+                placeholder="Specify event rules, mechanics, requirements..."
+                value={formData.guidelines}
+                onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
+              />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">eSports Game</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Guidelines Document</label>
+                <input
+                  type="file"
+                  accept=".txt,.md,.pdf,.doc,.docx"
+                  onChange={async (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0] || null;
+                    if (!file) return;
+                    setFormData((p) => ({ ...p, guidelineFileName: file.name }));
+                    if (file.type.startsWith('text/')) {
+                      const text = await file.text();
+                      setFormData((p) => ({ ...p, guidelines: text.slice(0, 5000), guidelineFileName: file.name }));
+                    }
+                  }}
+                />
+                {formData.guidelineFileName && <p className="text-xs text-gray-500 mt-1">Selected: {formData.guidelineFileName}</p>}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: ESPORTS SETTINGS */}
+          {activeFormTab === 'esports' && formData.isEsports && (
+            <div className="space-y-4 animate-fadeIn bg-purple-50/50 p-4 rounded-xl border border-purple-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy size={20} className="text-purple-600" />
+                <h4 className="text-sm font-bold text-purple-900">eSports Tournament Settings</h4>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">eSports Game *</label>
                 <select
                   value={formData.esportsGame}
                   onChange={(e) => setFormData((p) => ({ ...p, esportsGame: e.target.value }))}
-                  className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
                   <option value="">Select Game...</option>
                   <optgroup label="Mobile Games">
@@ -1050,7 +1417,7 @@ export const EventsPage = () => {
                 </select>
               </div>
               <Select
-                label="Tournament Bracket Format"
+                label="Tournament Bracket Format *"
                 options={[
                   { value: '', label: 'Select Format...' },
                   { value: 'Single Elimination', label: 'Single Elimination' },
@@ -1063,38 +1430,42 @@ export const EventsPage = () => {
             </div>
           )}
 
-          <Input label="Location" required value={formData.location} onChange={(e) => setFormData((p) => ({ ...p, location: e.target.value }))} />
+          {/* Modal Footer Navigation Bar */}
+          <div className="border-t border-gray-200 pt-4 flex items-center justify-between gap-3">
+            <div className="flex gap-2">
+              {activeFormTab !== 'basic' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (activeFormTab === 'schedule') setActiveFormTab('basic');
+                    else if (activeFormTab === 'design') setActiveFormTab('schedule');
+                    else if (activeFormTab === 'guidelines') setActiveFormTab('design');
+                    else if (activeFormTab === 'esports') setActiveFormTab('guidelines');
+                  }}
+                >
+                  <ChevronLeft size={16} /> Back
+                </Button>
+              )}
+              {activeFormTab !== 'esports' && activeFormTab !== (formData.isEsports ? 'esports' : 'guidelines') && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    if (activeFormTab === 'basic') setActiveFormTab('schedule');
+                    else if (activeFormTab === 'schedule') setActiveFormTab('design');
+                    else if (activeFormTab === 'design') setActiveFormTab('guidelines');
+                    else if (activeFormTab === 'guidelines' && formData.isEsports) setActiveFormTab('esports');
+                  }}
+                >
+                  Next <ChevronRight size={16} />
+                </Button>
+              )}
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Start Date" type="date" value={formData.startDate} onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))} />
-            <Input label="Start Time" type="time" value={formData.startTime} onChange={(e) => setFormData((p) => ({ ...p, startTime: e.target.value }))} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="End Date (optional)" type="date" value={formData.endDate} onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))} />
-            <Input label="End Time (optional)" type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input label="Registration Fee" type="number" value={String(formData.fee)} onChange={(e) => setFormData((p) => ({ ...p, fee: Number(e.target.value) }))} />
-            <Input label="Capacity" type="number" value={String(formData.capacity)} onChange={(e) => setFormData((p) => ({ ...p, capacity: Number(e.target.value) }))} />
-            <Select
-              label="Event Status"
-              options={[
-                { value: 'upcoming', label: 'Automatic (default)' },
-                { value: 'draft', label: 'Draft (Manual)' },
-                { value: 'cancelled', label: 'Cancelled (Manual)' },
-              ]}
-              value={formData.status}
-              onChange={(e) => setFormData((p) => ({ ...p, status: (e.target as HTMLSelectElement).value as EventStatus }))}
-            />
-            <p className="text-xs text-gray-500 md:col-span-3">
-              Automatic status is based on Start Date/Time. {getAutoStatusPreview()}.
-            </p>
-          </div>
-
-          <div className="border-t border-gray-200 pt-6">
-            <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
+            <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="px-6">
               {editingEventId ? 'Update Event' : 'Create Event'}
             </Button>
           </div>

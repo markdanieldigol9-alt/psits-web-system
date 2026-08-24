@@ -86,6 +86,9 @@ export interface Event {
   isEsports?: boolean;
   esportsGame?: string;
   esportsBracketFormat?: string;
+  bannerUrl?: string;
+  themeColor?: string;
+  customBadge?: string;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

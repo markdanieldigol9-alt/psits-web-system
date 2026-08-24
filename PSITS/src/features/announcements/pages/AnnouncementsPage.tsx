@@ -431,12 +431,12 @@ export const AnnouncementsPage = () => {
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                    {getInitials(announcement.postedBy?.name || 'PSITS Hub')}
+                    {getInitials(announcement.postedBy?.name || 'PSITS')}
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold text-gray-900">{announcement.title}</h3>
                     <p className="mt-1 text-sm text-gray-600">
-                      {announcement.postedBy?.name || 'PSITS Hub'}
+                      {announcement.postedBy?.name || 'PSITS'}
                     </p>
                     <p className="text-xs text-gray-500">
                       Posted on {announcement.date}

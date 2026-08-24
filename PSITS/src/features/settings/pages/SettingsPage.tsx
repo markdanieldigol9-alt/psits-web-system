@@ -429,7 +429,7 @@ export const SettingsPage = () => {
             <div className="rounded-lg border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 p-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Appearance & Theme</h3>
               <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-                Customize how PSITS Hub looks on your device.
+                Customize how PSITS looks on your device.
               </p>
             </div>
 
@@ -1017,6 +1017,10 @@ export const SettingsPage = () => {
               setRenewalError('Amount is required.');
               return;
             }
+            if (!renewalForm.referenceNumber.trim()) {
+              setRenewalError('Reference number is required.');
+              return;
+            }
             if (!renewalForm.file) {
               setRenewalError('Transaction proof image is required.');
               return;
@@ -1088,9 +1092,11 @@ export const SettingsPage = () => {
           <PaymentInstructionsCard method={renewalForm.method} />
 
           <Input
-            label="Reference Number (Optional)"
+            label="Reference Number"
+            required
             value={renewalForm.referenceNumber}
             onChange={(e) => setRenewalForm((p) => ({ ...p, referenceNumber: e.target.value }))}
+            placeholder="Enter Reference or Receipt Number"
           />
 
           <div>
