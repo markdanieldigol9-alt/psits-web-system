@@ -50,7 +50,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
           >
             {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <Link to="/dashboard" className="flex items-center gap-2.5 group">
+          <Link to={user?.status === 'suspended' ? '/settings' : '/dashboard'} className="flex items-center gap-2.5 group">
             <img
               src={logo}
               alt="PSITS Logo"
@@ -66,7 +66,12 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
 
         {/* Right side - Badges, Notifications & Profile Dropdown */}
         <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-          {user && (
+          {user?.status === 'suspended' ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Account Suspended
+            </span>
+          ) : user && (
             <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/80 border border-blue-100 text-xs font-semibold text-blue-800 shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
               {getUserInterfaceLabel(user)}
@@ -84,18 +89,20 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
           </button>
 
           {/* Notifications Link */}
-          <Link
-            to="/notifications"
-            className="relative p-2 text-gray-600 dark:text-slate-300 hover:text-primary hover:bg-gray-100/80 dark:hover:bg-slate-800 rounded-lg transition-all"
-            title="Notifications"
-          >
-            <Bell size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs animate-scale-in">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </Link>
+          {user?.status !== 'suspended' && (
+            <Link
+              to="/notifications"
+              className="relative p-2 text-gray-600 dark:text-slate-300 hover:text-primary hover:bg-gray-100/80 dark:hover:bg-slate-800 rounded-lg transition-all"
+              title="Notifications"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs animate-scale-in">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           {/* Profile Dropdown */}
           <div className="relative" ref={menuRef}>
@@ -104,10 +111,18 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
               className="flex items-center gap-2.5 p-1.5 sm:px-2.5 sm:py-1.5 hover:bg-gray-100/80 rounded-xl transition-all border border-transparent hover:border-gray-200"
             >
               <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
-                  {initial}
-                </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName || 'User Avatar'}
+                    className="w-8 h-8 rounded-full object-cover shadow-xs border border-gray-200 dark:border-slate-700"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                    {initial}
+                  </div>
+                )}
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
               </div>
               <div className="hidden sm:flex flex-col text-left">
                 <span className="text-sm font-semibold text-gray-900 leading-tight max-w-[10rem] truncate">

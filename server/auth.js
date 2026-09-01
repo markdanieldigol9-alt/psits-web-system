@@ -112,6 +112,8 @@ function toUserDto(row) {
     website: row.website,
     membershipMode: row.membership_mode,
     status: row.status,
+    avatarUrl: row.avatar_url || null,
+    suspendedReason: row.suspended_reason || null,
     approvalEmailStatus: row.approval_email_status || null,
     approvalEmailSentAt: row.approval_email_sent_at || null,
     approvalEmailError: row.approval_email_error || null,
@@ -525,7 +527,16 @@ async function login(req, res) {
     [user.id]
   );
 
-  if (user.role === 'member' && user.status !== 'active') {
+  if (user.role === 'member' && user.status !== 'active' && user.status !== 'suspended') {
+    if (user.status === 'banned') {
+      return json(res, 403, {
+        success: false,
+        message: 'Your account has been banned and Access restricted. Please contact the officer / admin to activate your account. using Gmail',
+      });
+    }
+    if (user.status === 'rejected') {
+      return json(res, 403, { success: false, message: 'Your account registration was rejected. Please contact support.' });
+    }
     return json(res, 403, { success: false, message: 'Account pending approval. Please wait for an admin to activate your account.' });
   }
 

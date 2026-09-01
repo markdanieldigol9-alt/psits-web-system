@@ -27,10 +27,21 @@ export interface User {
   membershipStartedAt?: string | null;
   membershipExpiresAt?: string | null;
   status?: string | null;
+  suspendedReason?: string | null;
+  avatarUrl?: string | null;
   profileImage?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface OfficerContact {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  position?: string;
+  contactNumber?: string;
 }
 
 export interface AuthState {

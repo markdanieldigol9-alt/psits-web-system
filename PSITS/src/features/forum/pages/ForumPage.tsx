@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
@@ -6,9 +6,37 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
-import { Heart, MessageSquare, Plus, Pin, Pencil, Trash2 } from 'lucide-react';
+import {
+  Heart,
+  MessageSquare,
+  Plus,
+  Pin,
+  Pencil,
+  Trash2,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  Link2,
+  Code2,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Quote,
+  Eye,
+  Edit3,
+  Sparkles,
+  Check,
+  X,
+  Tag,
+  Palette,
+  Flame,
+  HelpCircle,
+  FileText,
+  Newspaper,
+} from 'lucide-react';
 
 type PostType = 'announcement' | 'news' | 'story' | 'blog' | 'discussion' | 'question';
+type AccentColor = 'blue' | 'violet' | 'emerald' | 'amber' | 'rose' | 'cyan' | 'slate';
 
 export const ForumPage = () => {
   const { user } = useAuth();
@@ -23,9 +51,10 @@ export const ForumPage = () => {
         const parsed = JSON.parse(trimmed);
         return {
           body: parsed.body || '',
-          tags: parsed.tags || [],
+          tags: Array.isArray(parsed.tags) ? parsed.tags : [],
           allowComments: parsed.allowComments !== false,
           isUrgent: !!parsed.isUrgent,
+          language: parsed.language || '',
           mood: parsed.mood || 'Inspiring',
           emoji: parsed.emoji || '🚀',
           subtitle: parsed.subtitle || '',
@@ -34,6 +63,7 @@ export const ForumPage = () => {
           priority: parsed.priority || 'Normal',
           citation: parsed.citation || '',
           audience: parsed.audience || 'All',
+          accentColor: (parsed.accentColor as AccentColor) || 'blue',
           isStructured: true,
         };
       } catch {
@@ -45,6 +75,7 @@ export const ForumPage = () => {
       tags: [],
       allowComments: true,
       isUrgent: false,
+      language: '',
       mood: 'Inspiring',
       emoji: '🚀',
       subtitle: '',
@@ -53,6 +84,7 @@ export const ForumPage = () => {
       priority: 'Normal',
       citation: '',
       audience: 'All',
+      accentColor: 'blue' as AccentColor,
       isStructured: false,
     };
   };
@@ -61,37 +93,159 @@ export const ForumPage = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | PostType>('all');
   const [posts, setPosts] = useState<any[]>([]);
 
+  // Create Post Modal State
   const [showCreate, setShowCreate] = useState(false);
-  const [postForm, setPostForm] = useState({ type: 'discussion' as PostType, title: '', content: '', videoUrl: '' });
+  const [createTab, setCreateTab] = useState<'edit' | 'preview'>('edit');
+  const [postForm, setPostForm] = useState<{
+    type: PostType;
+    title: string;
+    content: string;
+    imageUrl: string;
+    videoUrl: string;
+  }>({
+    type: 'discussion',
+    title: '',
+    content: '',
+    imageUrl: '',
+    videoUrl: '',
+  });
+
+  const [accentColor, setAccentColor] = useState<AccentColor>('blue');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string>('');
   const [confirmCreate, setConfirmCreate] = useState(false);
 
-  const [discussionTags, setDiscussionTags] = useState('');
+  // Dynamic Type-Specific Fields
+  const [discussionCategory, setDiscussionCategory] = useState('Tech Talk');
   const [discussionAllowComments, setDiscussionAllowComments] = useState(true);
 
-  const [questionTags, setQuestionTags] = useState('');
+  const [questionLanguage, setQuestionLanguage] = useState('JavaScript');
   const [questionUrgent, setQuestionUrgent] = useState(false);
 
   const [storyMood, setStoryMood] = useState('Inspiring');
   const [storyEmoji, setStoryEmoji] = useState('🚀');
 
   const [blogSubtitle, setBlogSubtitle] = useState('');
-  const [blogCategory, setBlogCategory] = useState('General');
+  const [blogCategory, setBlogCategory] = useState('Development');
   const [blogReadTime, setBlogReadTime] = useState('3 min');
 
   const [newsPriority, setNewsPriority] = useState('Normal');
   const [newsCitation, setNewsCitation] = useState('');
   const [newsAudience, setNewsAudience] = useState('All');
 
+  // Interactive Tags State
+  const [selectedTags, setSelectedTags] = useState<string[]>(['#General']);
+  const [customTagInput, setCustomTagInput] = useState<string>('');
+
+  const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const availableTagSuggestions: Record<PostType, string[]> = {
+    discussion: ['#WebDev', '#React', '#Python', '#AI', '#Career', '#OpenSource', '#Networking', '#TechTalk', '#CampusLife'],
+    question: ['#JavaScript', '#React', '#Python', '#NodeJS', '#Database', '#CSS', '#TypeScript', '#BugFix', '#API'],
+    story: ['#StudentLife', '#Internship', '#Graduation', '#Victory', '#Hackathon', '#Inspiration', '#Achievement'],
+    blog: ['#Tutorial', '#FullStack', '#Architecture', '#BestPractices', '#DevOps', '#Security', '#SystemDesign'],
+    news: ['#PSITSNews', '#EventAnnouncement', '#Workshop', '#Competition', '#CampusUpdate', '#Officers'],
+    announcement: ['#Official', '#Important', '#Update', '#Schedule', '#Deadline'],
+  };
+
+  const handleToggleTag = (tag: string) => {
+    const cleanTag = tag.startsWith('#') ? tag : `#${tag}`;
+    setSelectedTags((prev) =>
+      prev.includes(cleanTag) ? prev.filter((t) => t !== cleanTag) : [...prev, cleanTag]
+    );
+  };
+
+  const handleAddCustomTag = (e: React.KeyboardEvent | React.MouseEvent) => {
+    if (('key' in e && (e.key === 'Enter' || e.key === ',')) || e.type === 'click') {
+      e.preventDefault();
+      const raw = customTagInput.trim().replace(/^#+/, '');
+      if (raw) {
+        const clean = `#${raw}`;
+        if (!selectedTags.includes(clean)) {
+          setSelectedTags((prev) => [...prev, clean]);
+        }
+        setCustomTagInput('');
+      }
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setSelectedTags((prev) => prev.filter((t) => t !== tagToRemove));
+  };
+
+  const insertFormatting = (prefix: string, suffix: string = '', defaultPlaceholder: string = '') => {
+    const el = contentTextareaRef.current;
+    if (!el) return;
+
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const current = postForm.content;
+    const selected = current.substring(start, end) || defaultPlaceholder;
+    const replacement = `${prefix}${selected}${suffix}`;
+    const nextContent = current.substring(0, start) + replacement + current.substring(end);
+
+    setPostForm((prev) => ({ ...prev, content: nextContent }));
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    }, 0);
+  };
+
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      addNotification({
+        userId: 'current',
+        title: 'File Too Large',
+        message: 'Image size should be under 10MB.',
+        type: 'error',
+        isRead: false,
+      });
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    setPostForm((prev) => ({ ...prev, imageUrl: '' }));
+  };
+
+  const handleVideoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveVideo = () => {
+    setVideoFile(null);
+    setVideoPreview('');
+    setPostForm((prev) => ({ ...prev, videoUrl: '' }));
+  };
+
   const resetCustomFields = () => {
-    setDiscussionTags('');
+    setCreateTab('edit');
+    setAccentColor('blue');
+    setImageFile(null);
+    setImagePreview('');
+    setVideoFile(null);
+    setVideoPreview('');
+    setSelectedTags(['#General']);
+    setCustomTagInput('');
+    setDiscussionCategory('Tech Talk');
     setDiscussionAllowComments(true);
-    setQuestionTags('');
+    setQuestionLanguage('JavaScript');
     setQuestionUrgent(false);
     setStoryMood('Inspiring');
     setStoryEmoji('🚀');
     setBlogSubtitle('');
-    setBlogCategory('General');
+    setBlogCategory('Development');
     setBlogReadTime('3 min');
     setNewsPriority('Normal');
     setNewsCitation('');
@@ -206,9 +360,28 @@ export const ForumPage = () => {
   }, [typeFilter]);
 
   const createPost = async () => {
+    if (!postForm.title.trim()) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'Please enter a post title.', type: 'error', isRead: false });
+      return;
+    }
+    if (!postForm.content.trim()) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'Please enter post content.', type: 'error', isRead: false });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      let finalVideoUrl = postForm.videoUrl;
+      let finalImageUrl = postForm.imageUrl.trim();
+      if (imageFile) {
+        const imgRes = await api.uploadForumImage(imageFile);
+        if (imgRes.data?.success) {
+          finalImageUrl = imgRes.data.url;
+        } else {
+          throw new Error(imgRes.data?.message || 'Image upload failed.');
+        }
+      }
+
+      let finalVideoUrl = postForm.videoUrl.trim();
       if (videoFile) {
         const uploadRes = await api.uploadForumVideo(videoFile);
         if (uploadRes.data?.success) {
@@ -218,54 +391,35 @@ export const ForumPage = () => {
         }
       }
 
-      let structuredContent = '';
-      if (postForm.type === 'discussion') {
-        structuredContent = JSON.stringify({
-          body: postForm.content,
-          tags: discussionTags.split(',').map(t => t.trim()).filter(Boolean),
-          allowComments: discussionAllowComments
-        });
-      } else if (postForm.type === 'question') {
-        structuredContent = JSON.stringify({
-          body: postForm.content,
-          tags: questionTags.split(',').map(t => t.trim()).filter(Boolean),
-          isUrgent: questionUrgent
-        });
-      } else if (postForm.type === 'story') {
-        structuredContent = JSON.stringify({
-          body: postForm.content,
-          mood: storyMood,
-          emoji: storyEmoji
-        });
-      } else if (postForm.type === 'blog') {
-        structuredContent = JSON.stringify({
-          body: postForm.content,
-          subtitle: blogSubtitle,
-          category: blogCategory,
-          readTime: blogReadTime
-        });
-      } else if (postForm.type === 'news') {
-        structuredContent = JSON.stringify({
-          body: postForm.content,
-          priority: newsPriority,
-          citation: newsCitation,
-          audience: newsAudience
-        });
-      } else {
-        structuredContent = postForm.content;
-      }
+      const structuredContent = JSON.stringify({
+        body: postForm.content,
+        tags: selectedTags,
+        allowComments: discussionAllowComments,
+        isUrgent: questionUrgent,
+        language: questionLanguage,
+        mood: storyMood,
+        emoji: storyEmoji,
+        subtitle: blogSubtitle,
+        category: blogCategory,
+        readTime: blogReadTime,
+        priority: newsPriority,
+        citation: newsCitation,
+        audience: newsAudience,
+        accentColor: accentColor,
+      });
 
       const { data } = await api.createForumPost({
-        ...postForm,
+        type: postForm.type,
+        title: postForm.title.trim(),
         content: structuredContent,
-        videoUrl: finalVideoUrl
+        imageUrl: finalImageUrl || null,
+        videoUrl: finalVideoUrl || null,
       });
 
       if (data?.success) {
-        addNotification({ userId: 'current', title: 'Posted', message: 'Post created successfully.', type: 'success', isRead: false });
+        addNotification({ userId: 'current', title: 'Posted', message: 'Post created successfully!', type: 'success', isRead: false });
         setShowCreate(false);
-        setPostForm({ type: 'discussion', title: '', content: '', videoUrl: '' });
-        setVideoFile(null);
+        setPostForm({ type: 'discussion', title: '', content: '', imageUrl: '', videoUrl: '' });
         resetCustomFields();
         await load();
       }
@@ -324,8 +478,8 @@ export const ForumPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">Community Forum</h1>
-            <p className="mt-2 text-gray-600">News, stories, and discussions.</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">PSITS Community</h1>
+            <p className="mt-2 text-gray-600 dark:text-slate-400">News, stories, and discussions.</p>
           </div>
           <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} className="w-full sm:w-auto">
             <Plus size={18} /> Create Post
@@ -348,19 +502,26 @@ export const ForumPage = () => {
           <div className="mt-4 space-y-4">
             {filtered.map((p) => {
               const info = parsePostContent(p.content);
+              const postAccent = info.accentColor || 'blue';
+              const accentBorder =
+                postAccent === 'violet' ? 'border-l-violet-500' :
+                postAccent === 'emerald' ? 'border-l-emerald-500' :
+                postAccent === 'amber' ? 'border-l-amber-500' :
+                postAccent === 'rose' ? 'border-l-rose-500' :
+                postAccent === 'cyan' ? 'border-l-cyan-500' :
+                postAccent === 'slate' ? 'border-l-slate-600' :
+                'border-l-blue-500';
               
               // Determine card styling based on post type and urgency
-              let cardClass = "p-5 border border-gray-200 transition-all hover:shadow-md bg-white ";
+              let cardClass = `p-5 border border-gray-200 transition-all hover:shadow-md bg-white border-l-4 ${accentBorder} `;
               if (p.type === 'question' && info.isUrgent) {
-                cardClass += "border-l-4 border-l-amber-500 bg-amber-50/5 shadow-[0_0_15px_-4px_rgba(245,158,11,0.25)] ";
+                cardClass += "bg-amber-50/10 shadow-[0_0_15px_-4px_rgba(245,158,11,0.25)] ";
               } else if (p.type === 'story') {
-                cardClass += "bg-gradient-to-br from-violet-50/10 to-indigo-50/5 border-l-4 border-l-violet-500 ";
+                cardClass += "bg-gradient-to-br from-violet-50/10 to-indigo-50/5 ";
               } else if (p.type === 'news') {
-                cardClass += "border-l-4 border-l-red-600 bg-white ";
-              } else if (p.type === 'blog') {
-                cardClass += "border border-slate-200 bg-slate-50/30 ";
-              } else {
                 cardClass += "bg-white ";
+              } else if (p.type === 'blog') {
+                cardClass += "bg-slate-50/30 ";
               }
 
               return (
@@ -384,6 +545,12 @@ export const ForumPage = () => {
                         <Badge variant={badgeVariant(p.type)}>{String(p.type).toUpperCase()}</Badge>
 
                         {/* Custom Badges per post type */}
+                        {p.type === 'question' && info.language && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
+                            <Code2 size={12} /> {info.language}
+                          </span>
+                        )}
+
                         {p.type === 'question' && info.isUrgent && (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
                             <span className="h-1.5 w-1.5 rounded-full bg-red-600"></span> Urgent Help Needed
@@ -431,7 +598,18 @@ export const ForumPage = () => {
                         )}
                       </div>
 
-                      {/* Media Display */}
+                      {/* Cover Image Display */}
+                      {p.imageUrl && (
+                        <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 shadow-2xs max-h-[420px]">
+                          <img
+                            src={p.imageUrl}
+                            alt={p.title}
+                            className="w-full h-full object-cover max-h-[420px] hover:scale-[1.01] transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+
+                      {/* Media Video Display */}
                       {p.videoUrl && (
                         <div className="mt-3 overflow-hidden rounded-lg border border-gray-200">
                           {p.videoUrl.includes('youtube.com') || p.videoUrl.includes('youtu.be') ? (
@@ -448,6 +626,20 @@ export const ForumPage = () => {
                               Your browser does not support the video tag.
                             </video>
                           )}
+                        </div>
+                      )}
+
+                      {/* Tags List */}
+                      {Array.isArray(info.tags) && info.tags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                          {info.tags.map((tg: string, i: number) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900"
+                            >
+                              {tg}
+                            </span>
+                          ))}
                         </div>
                       )}
 
@@ -532,207 +724,721 @@ export const ForumPage = () => {
         </Card>
       </div>
 
+      {/* Dynamic & Customizable Create Post Modal */}
       <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Create Post" size="lg">
         <div className="space-y-4">
-          <Select
-            label="Post Type"
-            options={[
-              { value: 'discussion', label: 'Discussion' },
-              { value: 'question', label: 'Question' },
-              { value: 'story', label: 'Story' },
-              { value: 'blog', label: 'Blog' },
-              ...(canModerate ? [
-                { value: 'news', label: 'News' },
-              ] : []),
-            ]}
-            value={postForm.type}
-            onChange={(e) => setPostForm((p) => ({ ...p, type: (e.target as HTMLSelectElement).value as PostType }))}
-          />
-          <Input
-            label={
-              postForm.type === 'question' ? 'What is your question?' :
-              postForm.type === 'story' ? 'Story Title' :
-              postForm.type === 'blog' ? 'Blog Article Title' :
-              postForm.type === 'news' ? 'Headline / News Title' :
-              'Discussion Title'
-            }
-            placeholder={
-              postForm.type === 'question' ? 'e.g. How to pass ref down to child?' :
-              'Enter post title...'
-            }
-            value={postForm.title}
-            onChange={(e) => setPostForm((p) => ({ ...p, title: e.target.value }))}
-          />
-          
-          <TextArea
-            label={
-              postForm.type === 'question' ? 'Details & Context' :
-              postForm.type === 'story' ? 'Write your story...' :
-              postForm.type === 'blog' ? 'Write your blog post...' :
-              'Content'
-            }
-            rows={7}
-            value={postForm.content}
-            onChange={(e) => setPostForm((p) => ({ ...p, content: (e.target as HTMLTextAreaElement).value }))}
-          />
+          {/* Header Mode Tabs: Edit vs Preview */}
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setCreateTab('edit')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  createTab === 'edit'
+                    ? 'bg-white dark:bg-slate-900 text-primary shadow-xs'
+                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                }`}
+              >
+                <Edit3 size={14} />
+                <span>Edit Post</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateTab('preview')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  createTab === 'preview'
+                    ? 'bg-white dark:bg-slate-900 text-primary shadow-xs'
+                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                }`}
+              >
+                <Eye size={14} />
+                <span>Live Preview</span>
+              </button>
+            </div>
 
-          {/* Dynamic uniqueness inputs based on selected Post Type */}
-          {postForm.type === 'discussion' && (
-            <div className="space-y-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Discussion Settings</p>
-              <Input
-                label="Tags"
-                placeholder="Comma-separated (e.g. general, help, suggestions)"
-                value={discussionTags}
-                onChange={(e) => setDiscussionTags((e.target as HTMLInputElement).value)}
-              />
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="allowComments"
-                  checked={discussionAllowComments}
-                  onChange={(e) => setDiscussionAllowComments(e.target.checked)}
-                  className="rounded text-primary focus:ring-primary h-4 w-4"
-                />
-                <label htmlFor="allowComments" className="text-sm text-gray-700">Allow comments on this thread</label>
+            {/* Accent Theme Color Dot Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                <Palette size={13} /> Theme:
+              </span>
+              <div className="flex items-center gap-1.5">
+                {(['blue', 'violet', 'emerald', 'amber', 'rose', 'cyan', 'slate'] as AccentColor[]).map((c) => {
+                  const bgClass =
+                    c === 'blue' ? 'bg-blue-500' :
+                    c === 'violet' ? 'bg-violet-500' :
+                    c === 'emerald' ? 'bg-emerald-500' :
+                    c === 'amber' ? 'bg-amber-500' :
+                    c === 'rose' ? 'bg-rose-500' :
+                    c === 'cyan' ? 'bg-cyan-500' :
+                    'bg-slate-700';
+                  const isSelected = accentColor === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setAccentColor(c)}
+                      title={`Accent: ${c}`}
+                      className={`h-5 w-5 rounded-full ${bgClass} transition-transform flex items-center justify-center ${
+                        isSelected ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
+                      }`}
+                    >
+                      {isSelected && <Check size={10} className="text-white stroke-[3]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
-
-          {postForm.type === 'question' && (
-            <div className="space-y-3 p-3 bg-amber-50/50 border border-amber-200 rounded-lg">
-              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Question details</p>
-              <Input
-                label="Topic Tags"
-                placeholder="Comma-separated (e.g. react, javascript, node)"
-                value={questionTags}
-                onChange={(e) => setQuestionTags((e.target as HTMLInputElement).value)}
-              />
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="urgentQuestion"
-                  checked={questionUrgent}
-                  onChange={(e) => setQuestionUrgent(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500 h-4 w-4"
-                />
-                <label htmlFor="urgentQuestion" className="text-sm font-semibold text-red-600">Mark as URGENT (flashes glowing border in feed)</label>
-              </div>
-            </div>
-          )}
-
-          {postForm.type === 'story' && (
-            <div className="space-y-3 p-3 bg-violet-50/30 border border-violet-200 rounded-lg">
-              <p className="text-xs font-semibold text-violet-800 uppercase tracking-wider">Story Mood & Highlights</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                  label="Story Mood Emoji"
-                  options={[
-                    { value: '🚀', label: '🚀 Launching / Career' },
-                    { value: '✨', label: '✨ Inspiring / Spark' },
-                    { value: '🎓', label: '🎓 Student Success / Graduation' },
-                    { value: '💡', label: '💡 Great Idea / Solution' },
-                    { value: '🏆', label: '🏆 Competition Victory' },
-                    { value: '🤝', label: '🤝 Teamwork / Collaboration' },
-                  ]}
-                  value={storyEmoji}
-                  onChange={(e) => setStoryEmoji(e.target.value)}
-                />
-                <Select
-                  label="Story Mood Type"
-                  options={[
-                    { value: 'Inspiring', label: 'Inspiring' },
-                    { value: 'Joyful', label: 'Joyful' },
-                    { value: 'Success Story', label: 'Success Story' },
-                    { value: 'Technical Journey', label: 'Technical Journey' },
-                  ]}
-                  value={storyMood}
-                  onChange={(e) => setStoryMood(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          {postForm.type === 'blog' && (
-            <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Blog Settings & Stats</p>
-              <Input
-                label="Subtitle / Brief Summary"
-                placeholder="Write a catchy summary headline..."
-                value={blogSubtitle}
-                onChange={(e) => setBlogSubtitle((e.target as HTMLInputElement).value)}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Estimated Read Time"
-                  placeholder="e.g. 5 min"
-                  value={blogReadTime}
-                  onChange={(e) => setBlogReadTime((e.target as HTMLInputElement).value)}
-                />
-                <Select
-                  label="Blog Category"
-                  options={[
-                    { value: 'Development', label: 'Development' },
-                    { value: 'Design', label: 'Design' },
-                    { value: 'Networking', label: 'Networking' },
-                    { value: 'AI / Data Science', label: 'AI / Data Science' },
-                    { value: 'Career & Growth', label: 'Career & Growth' },
-                    { value: 'General', label: 'General' },
-                  ]}
-                  value={blogCategory}
-                  onChange={(e) => setBlogCategory(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          {postForm.type === 'news' && (
-            <div className="space-y-3 p-3 bg-red-50/30 border border-red-200 rounded-lg">
-              <p className="text-xs font-semibold text-red-800 uppercase tracking-wider">News metadata</p>
-              <Input
-                label="Citation / Source Link (Optional)"
-                placeholder="https://example.com/source"
-                value={newsCitation}
-                onChange={(e) => setNewsCitation((e.target as HTMLInputElement).value)}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                  label="News Priority"
-                  options={[
-                    { value: 'Normal', label: 'Normal' },
-                    { value: 'High', label: 'High Priority' },
-                    { value: 'Breaking', label: 'BREAKING NEWS (Flashing banner)' },
-                  ]}
-                  value={newsPriority}
-                  onChange={(e) => setNewsPriority(e.target.value)}
-                />
-                <Select
-                  label="Target Audience"
-                  options={[
-                    { value: 'All', label: 'All Members' },
-                    { value: 'Students', label: 'Students Only' },
-                    { value: 'Faculty', label: 'Faculty / Advisors Only' },
-                    { value: 'Alumni', label: 'Alumni Only' },
-                  ]}
-                  value={newsAudience}
-                  onChange={(e) => setNewsAudience(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Video (Optional)</label>
-            <input 
-              type="file" 
-              accept="video/*"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 border border-gray-300 rounded-lg p-2"
-              onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-            />
-            <p className="mt-2 text-xs text-gray-500 text-center">- OR -</p>
-            <Input className="mt-2" label="Video URL (e.g. YouTube)" placeholder="Paste a link here instead" value={postForm.videoUrl} onChange={(e) => setPostForm((p) => ({ ...p, videoUrl: e.target.value }))} disabled={!!videoFile} />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="primary" onClick={() => setConfirmCreate(true)} isLoading={isLoading}>Post</Button>
+
+          {createTab === 'edit' ? (
+            <div className="space-y-4">
+              {/* Dynamic Post Type Selector Cards */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 mb-2">
+                  Select Post Type
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {[
+                    { type: 'discussion' as PostType, label: 'Discussion', icon: MessageSquare, color: 'text-blue-600', activeBg: 'border-blue-500 bg-blue-50/75 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200' },
+                    { type: 'question' as PostType, label: 'Question', icon: HelpCircle, color: 'text-amber-600', activeBg: 'border-amber-500 bg-amber-50/75 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200' },
+                    { type: 'story' as PostType, label: 'Story', icon: Sparkles, color: 'text-violet-600', activeBg: 'border-violet-500 bg-violet-50/75 dark:bg-violet-950/40 text-violet-800 dark:text-violet-200' },
+                    { type: 'blog' as PostType, label: 'Blog', icon: FileText, color: 'text-emerald-600', activeBg: 'border-emerald-500 bg-emerald-50/75 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200' },
+                    ...(canModerate ? [
+                      { type: 'news' as PostType, label: 'News', icon: Newspaper, color: 'text-rose-600', activeBg: 'border-rose-500 bg-rose-50/75 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200' },
+                    ] : []),
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = postForm.type === item.type;
+                    return (
+                      <button
+                        key={item.type}
+                        type="button"
+                        onClick={() => {
+                          setPostForm((p) => ({ ...p, type: item.type }));
+                          setSelectedTags(availableTagSuggestions[item.type].slice(0, 2));
+                        }}
+                        className={`p-2.5 rounded-xl border text-center flex flex-col items-center justify-center gap-1.5 transition-all shadow-2xs ${
+                          isSelected
+                            ? `${item.activeBg} font-bold ring-2 ring-primary border-transparent`
+                            : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <Icon size={18} className={isSelected ? 'text-current' : item.color} />
+                        <span className="text-xs">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dynamic Type-Specific Settings Panel */}
+              {postForm.type === 'discussion' && (
+                <div className="p-3.5 bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/60 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquare size={14} /> Discussion Settings
+                    </p>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={discussionAllowComments}
+                        onChange={(e) => setDiscussionAllowComments(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                      />
+                      <span className="text-xs font-medium text-gray-700 dark:text-slate-300">Allow community replies</span>
+                    </label>
+                  </div>
+                  <Select
+                    label="Discussion Category"
+                    options={[
+                      { value: 'Tech Talk', label: 'Tech Talk & Code' },
+                      { value: 'General', label: 'General / Watercooler' },
+                      { value: 'Career & Jobs', label: 'Career Advice & Internships' },
+                      { value: 'Campus Life', label: 'Campus & Club Activities' },
+                      { value: 'Project Showcase', label: 'Project Ideas & Feedback' },
+                    ]}
+                    value={discussionCategory}
+                    onChange={(e) => setDiscussionCategory(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {postForm.type === 'question' && (
+                <div className="p-3.5 bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded-xl space-y-3">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <HelpCircle size={14} /> Question Details & Stack
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Select
+                      label="Programming Language / Stack"
+                      options={[
+                        { value: 'JavaScript', label: 'JavaScript' },
+                        { value: 'TypeScript', label: 'TypeScript' },
+                        { value: 'Python', label: 'Python' },
+                        { value: 'Java', label: 'Java' },
+                        { value: 'C# / .NET', label: 'C# / .NET' },
+                        { value: 'C / C++', label: 'C / C++' },
+                        { value: 'PHP', label: 'PHP' },
+                        { value: 'SQL / Database', label: 'SQL / Database' },
+                        { value: 'React / Next.js', label: 'React / Next.js' },
+                        { value: 'Mobile / Flutter', label: 'Mobile / Flutter' },
+                        { value: 'DevOps / Cloud', label: 'DevOps / Cloud' },
+                        { value: 'General Tech', label: 'General Tech' },
+                      ]}
+                      value={questionLanguage}
+                      onChange={(e) => setQuestionLanguage(e.target.value)}
+                    />
+                    <div className="flex items-center sm:pt-6">
+                      <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30 w-full">
+                        <input
+                          type="checkbox"
+                          checked={questionUrgent}
+                          onChange={(e) => setQuestionUrgent(e.target.checked)}
+                          className="rounded text-red-600 focus:ring-red-500 h-4 w-4"
+                        />
+                        <span className="text-xs font-bold text-red-700 dark:text-red-300 flex items-center gap-1">
+                          <Flame size={14} /> Mark as URGENT (Flashing badge)
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {postForm.type === 'story' && (
+                <div className="p-3.5 bg-violet-50/40 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-900/60 rounded-xl space-y-3">
+                  <p className="text-xs font-bold text-violet-800 dark:text-violet-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={14} /> Story Mood & Milestone
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Select
+                      label="Story Mood Emoji"
+                      options={[
+                        { value: '🚀', label: '🚀 Launching / Career' },
+                        { value: '✨', label: '✨ Inspiring / Spark' },
+                        { value: '🎓', label: '🎓 Student Success / Graduation' },
+                        { value: '💡', label: '💡 Great Idea / Solution' },
+                        { value: '🏆', label: '🏆 Competition Victory' },
+                        { value: '🤝', label: '🤝 Teamwork / Collaboration' },
+                        { value: '💼', label: '💼 First Job / Internship' },
+                      ]}
+                      value={storyEmoji}
+                      onChange={(e) => setStoryEmoji(e.target.value)}
+                    />
+                    <Select
+                      label="Story Mood Vibe"
+                      options={[
+                        { value: 'Inspiring', label: 'Inspiring' },
+                        { value: 'Joyful', label: 'Joyful' },
+                        { value: 'Success Story', label: 'Success Story' },
+                        { value: 'Technical Journey', label: 'Technical Journey' },
+                        { value: 'Milestone', label: 'Milestone' },
+                      ]}
+                      value={storyMood}
+                      onChange={(e) => setStoryMood(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {postForm.type === 'blog' && (
+                <div className="p-3.5 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 rounded-xl space-y-3">
+                  <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText size={14} /> Blog Article Settings
+                  </p>
+                  <Input
+                    label="Subtitle / Summary Teaser"
+                    placeholder="Write a catchy summary headline..."
+                    value={blogSubtitle}
+                    onChange={(e) => setBlogSubtitle((e.target as HTMLInputElement).value)}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Select
+                      label="Estimated Read Time"
+                      options={[
+                        { value: '1 min', label: '⚡ 1 min quick read' },
+                        { value: '3 min', label: '⏱️ 3 min standard' },
+                        { value: '5 min', label: '📖 5 min article' },
+                        { value: '10 min', label: '📚 10 min in-depth guide' },
+                      ]}
+                      value={blogReadTime}
+                      onChange={(e) => setBlogReadTime(e.target.value)}
+                    />
+                    <Select
+                      label="Blog Category"
+                      options={[
+                        { value: 'Development', label: 'Development' },
+                        { value: 'Design', label: 'Design' },
+                        { value: 'Networking', label: 'Networking' },
+                        { value: 'AI / Data Science', label: 'AI / Data Science' },
+                        { value: 'Cybersecurity', label: 'Cybersecurity' },
+                        { value: 'Career & Growth', label: 'Career & Growth' },
+                        { value: 'General', label: 'General' },
+                      ]}
+                      value={blogCategory}
+                      onChange={(e) => setBlogCategory(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {postForm.type === 'news' && (
+                <div className="p-3.5 bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/60 rounded-xl space-y-3">
+                  <p className="text-xs font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Newspaper size={14} /> Official News Metadata
+                  </p>
+                  <Input
+                    label="Citation / Source Link (Optional)"
+                    placeholder="https://example.com/official-announcement"
+                    value={newsCitation}
+                    onChange={(e) => setNewsCitation((e.target as HTMLInputElement).value)}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Select
+                      label="News Priority"
+                      options={[
+                        { value: 'Normal', label: 'Normal' },
+                        { value: 'High', label: 'High Priority' },
+                        { value: 'Breaking', label: '🚨 BREAKING NEWS (Flashing banner)' },
+                      ]}
+                      value={newsPriority}
+                      onChange={(e) => setNewsPriority(e.target.value)}
+                    />
+                    <Select
+                      label="Target Audience"
+                      options={[
+                        { value: 'All', label: 'All Members' },
+                        { value: 'Students', label: 'Students Only' },
+                        { value: 'Faculty', label: 'Faculty / Advisors Only' },
+                        { value: 'Alumni', label: 'Alumni Only' },
+                      ]}
+                      value={newsAudience}
+                      onChange={(e) => setNewsAudience(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Title Field */}
+              <Input
+                label={
+                  postForm.type === 'question' ? 'What is your question?' :
+                  postForm.type === 'story' ? 'Story Title / Headline' :
+                  postForm.type === 'blog' ? 'Blog Article Title' :
+                  postForm.type === 'news' ? 'Headline / News Title' :
+                  'Discussion Title'
+                }
+                placeholder={
+                  postForm.type === 'question' ? 'e.g. How to resolve CORS policy error with Express & React?' :
+                  postForm.type === 'story' ? 'e.g. How I built my first full-stack system and landed an internship' :
+                  postForm.type === 'blog' ? 'e.g. Mastering TailwindCSS: From zero to responsive master' :
+                  'Enter post title...'
+                }
+                value={postForm.title}
+                onChange={(e) => setPostForm((p) => ({ ...p, title: e.target.value }))}
+              />
+
+              {/* Rich Markdown Formatting Toolbar & Content Textarea */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300">
+                    Content
+                  </label>
+                  <span className="text-[11px] text-gray-400">Markdown formatting supported</span>
+                </div>
+
+                {/* Formatting Action Buttons Toolbar */}
+                <div className="flex flex-wrap items-center gap-1 p-1.5 bg-gray-100 dark:bg-slate-800 rounded-t-xl border border-b-0 border-gray-300 dark:border-slate-700">
+                  <button
+                    type="button"
+                    title="Bold"
+                    onClick={() => insertFormatting('**', '**', 'bold text')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <Bold size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Italic"
+                    onClick={() => insertFormatting('*', '*', 'italic text')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <Italic size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Code"
+                    onClick={() => insertFormatting('`', '`', 'code')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <Code2 size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Quote"
+                    onClick={() => insertFormatting('> ', '', 'quoted message')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <Quote size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Bullet List"
+                    onClick={() => insertFormatting('\n- ', '', 'List item')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <List size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Numbered List"
+                    onClick={() => insertFormatting('\n1. ', '', 'Step item')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <ListOrdered size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Link"
+                    onClick={() => insertFormatting('[', '](https://example.com)', 'link description')}
+                    className="p-1.5 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition-colors"
+                  >
+                    <Link2 size={15} />
+                  </button>
+
+                  {postForm.type === 'question' && (
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('\n```' + (questionLanguage.toLowerCase().replace(/[^a-z0-9]/g, '') || 'js') + '\n// Paste code here\n', '\n```\n')}
+                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 hover:bg-amber-200"
+                    >
+                      <Code2 size={13} /> + Insert Code Snippet
+                    </button>
+                  )}
+                </div>
+
+                <textarea
+                  ref={contentTextareaRef}
+                  rows={6}
+                  value={postForm.content}
+                  onChange={(e) => setPostForm((p) => ({ ...p, content: e.target.value }))}
+                  placeholder={
+                    postForm.type === 'question' ? 'Describe the problem context, what you have tried, and any error logs...' :
+                    postForm.type === 'story' ? 'Share your journey, milestones, and personal reflection...' :
+                    postForm.type === 'blog' ? 'Write your tutorial, deep dive, or tech article here...' :
+                    'Write your discussion content...'
+                  }
+                  className="w-full text-sm p-3 rounded-b-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none resize-y"
+                />
+              </div>
+
+              {/* Dynamic Interactive Tag Chips & Custom Tag Adder */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 flex items-center gap-1.5">
+                  <Tag size={13} /> Tags & Topics
+                </label>
+
+                {/* Selected Tag Badges */}
+                {selectedTags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 p-2 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-lg">
+                    {selectedTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 shadow-2xs"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="hover:text-red-600 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tag Quick Suggestions */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[11px] text-gray-500 font-medium">Quick suggestions:</span>
+                  {(availableTagSuggestions[postForm.type] || []).map((suggestion) => {
+                    const isSelected = selectedTags.includes(suggestion);
+                    return (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => handleToggleTag(suggestion)}
+                        className={`text-xs px-2 py-0.5 rounded-full border transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                            : 'bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-blue-400'
+                        }`}
+                      >
+                        {suggestion}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Tag Input */}
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={customTagInput}
+                    onChange={(e) => setCustomTagInput(e.target.value)}
+                    onKeyDown={handleAddCustomTag}
+                    placeholder="Add custom tag (e.g. DevOps, MySQL) and press Enter..."
+                    className="text-xs p-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 flex-1 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddCustomTag}
+                  >
+                    + Add Tag
+                  </Button>
+                </div>
+              </div>
+
+              {/* Attachments: Cover Image & Video */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-200 dark:border-slate-800">
+                {/* Image / Cover Photo Attachment */}
+                <div className="space-y-2 p-3 bg-gray-50/50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <ImageIcon size={14} /> Attach Cover Image (Optional)
+                  </label>
+
+                  {imagePreview || postForm.imageUrl ? (
+                    <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 max-h-36">
+                      <img
+                        src={imagePreview || postForm.imageUrl}
+                        alt="Preview"
+                        className="w-full h-36 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-md transition-all"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileSelect}
+                        className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 border border-gray-300 dark:border-slate-700 rounded-lg p-1.5 bg-white dark:bg-slate-800"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Or paste image URL (https://...)"
+                        value={postForm.imageUrl}
+                        onChange={(e) => setPostForm((p) => ({ ...p, imageUrl: e.target.value }))}
+                        className="w-full text-xs p-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Video Attachment */}
+                <div className="space-y-2 p-3 bg-gray-50/50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <VideoIcon size={14} /> Attach Video (Optional)
+                  </label>
+
+                  {videoPreview ? (
+                    <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 bg-black">
+                      <video controls className="w-full max-h-36">
+                        <source src={videoPreview} />
+                      </video>
+                      <button
+                        type="button"
+                        onClick={handleRemoveVideo}
+                        className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-md transition-all"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoFileSelect}
+                        className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 border border-gray-300 dark:border-slate-700 rounded-lg p-1.5 bg-white dark:bg-slate-800"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Or paste YouTube / Video URL"
+                        value={postForm.videoUrl}
+                        onChange={(e) => setPostForm((p) => ({ ...p, videoUrl: e.target.value }))}
+                        className="w-full text-xs p-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Live Post Preview Card */
+            <div className="space-y-3">
+              <div className="p-2 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-200 flex items-center justify-between">
+                <span className="font-semibold flex items-center gap-1.5">
+                  <Eye size={14} /> Feed Live Preview:
+                </span>
+                <span className="text-[11px]">This is how your post will look to the community</span>
+              </div>
+
+              {/* Rendered Preview Card */}
+              {(() => {
+                const accentBorder =
+                  accentColor === 'violet' ? 'border-l-violet-500' :
+                  accentColor === 'emerald' ? 'border-l-emerald-500' :
+                  accentColor === 'amber' ? 'border-l-amber-500' :
+                  accentColor === 'rose' ? 'border-l-rose-500' :
+                  accentColor === 'cyan' ? 'border-l-cyan-500' :
+                  accentColor === 'slate' ? 'border-l-slate-600' :
+                  'border-l-blue-500';
+
+                return (
+                  <div className={`p-5 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 border-l-4 ${accentBorder} shadow-md space-y-3`}>
+                    {/* Header Ribbon for News */}
+                    {postForm.type === 'news' && newsPriority === 'Breaking' && (
+                      <div className="bg-red-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-t-lg -mx-5 -mt-5 mb-3 uppercase tracking-widest animate-pulse flex items-center justify-between">
+                        <span>🚨 Breaking News Alert</span>
+                        <span>Audience: {newsAudience}</span>
+                      </div>
+                    )}
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={badgeVariant(postForm.type)}>{postForm.type.toUpperCase()}</Badge>
+
+                      {postForm.type === 'question' && questionLanguage && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
+                          <Code2 size={12} /> {questionLanguage}
+                        </span>
+                      )}
+
+                      {postForm.type === 'question' && questionUrgent && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600 animate-pulse">
+                          🔥 Urgent Help Needed
+                        </span>
+                      )}
+
+                      {postForm.type === 'story' && (
+                        <Badge variant="secondary">✨ {storyMood}</Badge>
+                      )}
+
+                      {postForm.type === 'blog' && (
+                        <Badge variant="info">📚 {blogCategory}</Badge>
+                      )}
+
+                      {postForm.type === 'discussion' && !discussionAllowComments && (
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                          🔒 Comments Locked
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-slate-100 flex items-center gap-2">
+                      {postForm.type === 'question' && <span>❓</span>}
+                      {postForm.type === 'story' && <span>{storyEmoji}</span>}
+                      {postForm.title || <span className="italic text-gray-400">Untitled Post</span>}
+                    </h3>
+
+                    {/* Subtitle for blog */}
+                    {postForm.type === 'blog' && blogSubtitle && (
+                      <p className="text-sm text-gray-500 italic border-l-2 border-slate-300 pl-2">
+                        {blogSubtitle}
+                      </p>
+                    )}
+
+                    {/* Content */}
+                    <div className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                      {postForm.content || <span className="italic text-gray-400">Post content will appear here...</span>}
+                    </div>
+
+                    {/* Image Preview */}
+                    {(imagePreview || postForm.imageUrl) && (
+                      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 max-h-60">
+                        <img
+                          src={imagePreview || postForm.imageUrl}
+                          alt="Attached Cover"
+                          className="w-full h-full object-cover max-h-60"
+                        />
+                      </div>
+                    )}
+
+                    {/* Video Preview */}
+                    {(videoPreview || postForm.videoUrl) && (
+                      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 bg-black">
+                        {postForm.videoUrl && (postForm.videoUrl.includes('youtube.com') || postForm.videoUrl.includes('youtu.be')) ? (
+                          <iframe
+                            className="w-full aspect-video"
+                            src={postForm.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                            title="YouTube video"
+                          />
+                        ) : (
+                          <video controls className="w-full max-h-60">
+                            <source src={videoPreview || postForm.videoUrl} />
+                          </video>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {selectedTags.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        {selectedTags.map((tg, i) => (
+                          <span
+                            key={i}
+                            className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900"
+                          >
+                            {tg}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Author & Footer */}
+                    <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-slate-800">
+                      <span>By <strong className="text-gray-700 dark:text-slate-300">{user?.fullName || 'Current User'}</strong> • Just now</span>
+                      {postForm.type === 'blog' && <span>⏱️ {blogReadTime} read</span>}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Modal Footer Controls */}
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-200 dark:border-slate-800">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreate(false);
+                resetCustomFields();
+              }}
+            >
+              Cancel
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                onClick={() => setConfirmCreate(true)}
+                isLoading={isLoading}
+                className="px-6"
+              >
+                <Plus size={16} className="mr-1.5" />
+                Publish Post
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>
@@ -740,8 +1446,8 @@ export const ForumPage = () => {
       <VerifyActionModal
         isOpen={confirmCreate}
         title="Verify Post"
-        message="Publish this post?"
-        confirmLabel="Accept"
+        message="Publish this post to the community?"
+        confirmLabel="Publish Now"
         confirmVariant="primary"
         onCancel={() => setConfirmCreate(false)}
         onVerified={async () => {

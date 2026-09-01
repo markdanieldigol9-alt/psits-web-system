@@ -95,6 +95,15 @@ class ApiService {
     return this.client.put('/me', data);
   }
 
+  uploadAvatar(file: File) {
+    return this.client.post('/uploads/avatar', file, {
+      headers: {
+        'Content-Type': file.type || 'image/jpeg',
+        'x-filename': encodeURIComponent(file.name),
+      },
+    });
+  }
+
   // Users/Members
   getMembers(filters?: any) {
     return this.client.get('/members', { params: filters });
@@ -524,11 +533,19 @@ class ApiService {
     return this.client.delete(`/elections/${electionId}/candidates/${candidateId}`);
   }
 
-  // Community Forum
   uploadForumVideo(file: File) {
     return this.client.post('/uploads/forum-video', file, {
       headers: {
         'Content-Type': file.type || 'application/octet-stream',
+        'x-filename': encodeURIComponent(file.name),
+      },
+    });
+  }
+
+  uploadForumImage(file: File) {
+    return this.client.post('/uploads/forum-image', file, {
+      headers: {
+        'Content-Type': file.type || 'image/jpeg',
         'x-filename': encodeURIComponent(file.name),
       },
     });
@@ -572,6 +589,14 @@ class ApiService {
 
   uploadQrCode(dataUrl: string) {
     return this.client.post('/uploads/qr-code', { dataUrl });
+  }
+
+  getOfficerContacts() {
+    return this.client.get('/account/officer-contacts');
+  }
+
+  requestAccountReactivation(data: { message?: string }) {
+    return this.client.post('/account/reactivation-request', data);
   }
 }
 

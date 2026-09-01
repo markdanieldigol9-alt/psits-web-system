@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Input, Button, Select, Card } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
@@ -8,8 +8,9 @@ import { useTheme } from '@/shared/context/ThemeContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2 } from 'lucide-react';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import type { OfficerContact } from '@/shared/types';
 
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -66,6 +67,16 @@ export const SettingsPage = () => {
     previewUrl: '',
   });
 
+  // Suspended Account Support & Reactivation State
+  const [officerContacts, setOfficerContacts] = useState<OfficerContact[]>([]);
+  const [isOfficerContactsLoading, setIsOfficerContactsLoading] = useState(false);
+  const [reactivationMessage, setReactivationMessage] = useState('');
+  const [isReactivationSubmitting, setIsReactivationSubmitting] = useState(false);
+  const [reactivationSuccess, setReactivationSuccess] = useState<string | null>(null);
+  const [reactivationError, setReactivationError] = useState<string | null>(null);
+
+  const isSuspended = user?.status === 'suspended';
+
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
@@ -88,7 +99,92 @@ export const SettingsPage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarUrl || null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   const isMember = user?.role === 'member';
+
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      setAvatarPreview(user.avatarUrl);
+    } else {
+      setAvatarPreview(null);
+    }
+  }, [user?.avatarUrl]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Please select a valid image file (PNG, JPG, WebP, GIF)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setAvatarError('Image size cannot exceed 10MB');
+      return;
+    }
+
+    setAvatarError(null);
+    const localUrl = URL.createObjectURL(file);
+    setAvatarPreview(localUrl);
+
+    setAvatarLoading(true);
+    try {
+      const { data } = await api.uploadAvatar(file);
+      if (data?.success && data.url) {
+        setAvatarPreview(data.url);
+        updateUser({
+          ...user,
+          avatarUrl: data.url,
+        });
+        addNotification({
+          userId: 'current',
+          title: 'Profile Picture Updated',
+          message: 'Your profile picture has been updated successfully.',
+          type: 'success',
+          isRead: false,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to upload avatar', err);
+      setAvatarError(err?.response?.data?.message || err?.message || 'Failed to upload profile picture.');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    setAvatarLoading(true);
+    setAvatarError(null);
+    try {
+      const { data } = await api.updateMe({ avatarUrl: '' });
+      if (data?.success) {
+        setAvatarPreview(null);
+        if (avatarInputRef.current) avatarInputRef.current.value = '';
+        updateUser({
+          ...user,
+          avatarUrl: null,
+        });
+        addNotification({
+          userId: 'current',
+          title: 'Profile Picture Removed',
+          message: 'Your profile picture has been reset to default.',
+          type: 'info',
+          isRead: false,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to remove avatar', err);
+      setAvatarError(err?.response?.data?.message || err?.message || 'Failed to remove profile picture.');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -138,6 +234,7 @@ export const SettingsPage = () => {
             membershipStartedAt: data.user.membershipStartedAt ?? null,
             membershipExpiresAt: data.user.membershipExpiresAt ?? null,
             status: data.user.status ?? null,
+            avatarUrl: data.user.avatarUrl ?? null,
             isActive: data.user.isActive,
             createdAt: new Date(data.user.createdAt),
             updatedAt: new Date(data.user.updatedAt),
@@ -233,6 +330,61 @@ export const SettingsPage = () => {
       setPaymentSettingsError(err instanceof Error ? err.message : 'Failed to save payment settings');
     } finally {
       setIsPaymentSettingsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isSuspended) {
+      const fetchOfficerContacts = async () => {
+        setIsOfficerContactsLoading(true);
+        try {
+          const { data } = await api.getOfficerContacts();
+          if (data?.success && Array.isArray(data.contacts)) {
+            setOfficerContacts(data.contacts);
+          }
+        } catch (err) {
+          console.error('Failed to load officer contacts', err);
+        } finally {
+          setIsOfficerContactsLoading(false);
+        }
+      };
+      fetchOfficerContacts();
+    }
+  }, [isSuspended]);
+
+  const handleSendReactivationRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsReactivationSubmitting(true);
+    setReactivationError(null);
+    setReactivationSuccess(null);
+    try {
+      const res = await api.requestAccountReactivation({ message: reactivationMessage });
+      if (res.data?.success) {
+        const msg = res.data.message || 'Account reactivation request sent successfully to Officers and Administrators.';
+        setReactivationSuccess(msg);
+        addNotification({
+          userId: 'current',
+          title: 'Reactivation Request Sent',
+          message: msg,
+          type: 'success',
+          isRead: false,
+        });
+        setReactivationMessage('');
+      } else {
+        throw new Error(res.data?.message || 'Failed to send reactivation request.');
+      }
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || err.message || 'Failed to send reactivation request.';
+      setReactivationError(errMsg);
+      addNotification({
+        userId: 'current',
+        title: 'Request Failed',
+        message: errMsg,
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsReactivationSubmitting(false);
     }
   };
 
@@ -388,6 +540,7 @@ export const SettingsPage = () => {
         membershipStartedAt: data.user.membershipStartedAt ?? null,
         membershipExpiresAt: data.user.membershipExpiresAt ?? null,
         status: data.user.status ?? null,
+        avatarUrl: data.user.avatarUrl ?? user.avatarUrl ?? null,
         isActive: data.user.isActive,
         createdAt: new Date(data.user.createdAt),
         updatedAt: new Date(data.user.updatedAt),
@@ -422,6 +575,140 @@ export const SettingsPage = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Settings</h1>
           <p className="text-gray-600 dark:text-slate-400 mt-2">Manage your account preferences, theme, and profile details.</p>
         </div>
+
+        {/* Account Suspended Banner & Reactivation Module */}
+        {isSuspended && (
+          <Card className="p-6 border-2 border-amber-400 dark:border-amber-600 bg-amber-50/75 dark:bg-amber-950/30 shadow-md">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="p-3 bg-amber-500 text-white rounded-xl shadow-md shrink-0">
+                <AlertTriangle size={30} />
+              </div>
+              <div className="space-y-4 flex-1 min-w-0">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-bold text-amber-900 dark:text-amber-200">
+                      Account Suspended
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                      Action Required
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    your Account suspended. Please contact the officer / admin to activate your account. using Gmail or Notifications
+                  </p>
+                </div>
+
+                {user.suspendedReason && (
+                  <div className="p-3 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-amber-200 dark:border-amber-800/60 text-sm shadow-2xs">
+                    <span className="font-semibold text-amber-900 dark:text-amber-200">Suspension Reason: </span>
+                    <span className="text-gray-700 dark:text-slate-300">{user.suspendedReason}</span>
+                  </div>
+                )}
+
+                {/* Contact Options: Gmail & In-App Notification */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  {/* Option 1: Gmail / Email */}
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 flex flex-col justify-between space-y-3 shadow-xs">
+                    <div>
+                      <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm mb-1">
+                        <Mail size={18} />
+                        <span>Option 1: Contact via Gmail / Email</span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-slate-400">
+                        Open your Gmail or email client to send an activation inquiry directly to the PSITS Officers and Admins.
+                      </p>
+
+                      {isOfficerContactsLoading ? (
+                        <p className="text-xs text-gray-400 mt-2">Loading contact list...</p>
+                      ) : (
+                        officerContacts.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                              Officer / Admin Contacts:
+                            </p>
+                            <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-gray-700 dark:text-slate-300 pr-1">
+                              {officerContacts.map((c) => (
+                                <div key={c.id} className="flex items-center justify-between text-[11px] py-0.5 border-b border-gray-100 dark:border-slate-800 last:border-0">
+                                  <span className="font-medium truncate">{c.fullName} ({c.role}):</span>
+                                  <span className="text-blue-600 dark:text-blue-400 font-mono text-[10px] truncate ml-2">{c.email}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+
+                    {(() => {
+                      const emails = officerContacts.map((o) => o.email).filter(Boolean).join(',');
+                      const subject = encodeURIComponent(`Account Reactivation Request - ${user?.fullName || 'Member'}`);
+                      const body = encodeURIComponent(
+                        `Dear PSITS Officers and Administrators,\n\nI am writing to request the reactivation of my account (${user?.email}).\n${user?.suspendedReason ? `\nSuspension Reason: ${user.suspendedReason}` : ''}\n\nAdditional Details / Reason for Reactivation:\n\nThank you.\n\nBest regards,\n${user?.fullName || 'Member'}`
+                      );
+                      const mailtoHref = `mailto:${emails}?subject=${subject}&body=${body}`;
+                      return (
+                        <a
+                          href={mailtoHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-xs"
+                        >
+                          <Mail size={16} />
+                          <span>Compose Message in Gmail</span>
+                        </a>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Option 2: Send In-App Reactivation Notification */}
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 flex flex-col justify-between space-y-3 shadow-xs">
+                    <div>
+                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm mb-1">
+                        <Bell size={18} />
+                        <span>Option 2: Send In-App Notification</span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-slate-400">
+                        This function is available only if your account is suspended. Dispatch an immediate notification request to Officers and Admins.
+                      </p>
+
+                      <form onSubmit={handleSendReactivationRequest} className="mt-3 space-y-2">
+                        <textarea
+                          value={reactivationMessage}
+                          onChange={(e) => setReactivationMessage(e.target.value)}
+                          rows={2}
+                          placeholder="Enter your message or appeal for account reactivation..."
+                          className="w-full text-xs p-2.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none"
+                        />
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          className="w-full !bg-amber-600 hover:!bg-amber-700 text-white text-xs font-semibold py-2"
+                          isLoading={isReactivationSubmitting}
+                        >
+                          <Send size={14} className="mr-1.5" />
+                          <span>Send Reactivation Notification</span>
+                        </Button>
+                      </form>
+                    </div>
+
+                    {reactivationSuccess && (
+                      <div className="p-2.5 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 rounded-lg text-xs flex items-center gap-1.5">
+                        <CheckCircle size={14} className="text-green-600 shrink-0" />
+                        <span>{reactivationSuccess}</span>
+                      </div>
+                    )}
+                    {reactivationError && (
+                      <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 rounded-lg text-xs flex items-center gap-1.5">
+                        <AlertTriangle size={14} className="text-red-600 shrink-0" />
+                        <span>{reactivationError}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Theme & Appearance Settings */}
         <Card className="p-6 w-full">
@@ -511,11 +798,102 @@ export const SettingsPage = () => {
 
         <Card className="p-6 w-full">
           <div className="space-y-6">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Member Profile Information</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Update your account details. Fields marked with <span className="text-red-500">*</span> are required.
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-slate-800/60 dark:border-slate-700 p-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                {isMember ? 'Member Profile Information' : 'Profile Information'}
+              </h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+                Update your account details and profile photo. Fields marked with <span className="text-red-500">*</span> are required.
               </p>
+            </div>
+
+            {/* Profile Picture Upload & Preview Card */}
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-2xl border border-blue-100 dark:border-slate-700 shadow-2xs">
+              <div className="relative group shrink-0">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt={user.fullName || 'Profile'}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-3xl font-bold border-4 border-white dark:border-slate-800 shadow-md">
+                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+
+                {avatarLoading && (
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-xs">
+                    <Loader2 className="w-7 h-7 text-white animate-spin" />
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarLoading}
+                  className="absolute bottom-0 right-0 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg border-2 border-white dark:border-slate-800 transition-transform hover:scale-110 active:scale-95"
+                  title="Upload profile picture"
+                >
+                  <Camera size={15} />
+                </button>
+              </div>
+
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
+                  <h4 className="text-base font-bold text-gray-900 dark:text-slate-100">
+                    Profile Picture
+                  </h4>
+                  <span className="inline-flex items-center self-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 capitalize">
+                    {user.role?.replace('_', ' ')}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-slate-400 max-w-md">
+                  Upload a custom profile photo to personalize your account. Supported formats: PNG, JPG, WebP, GIF (Max: 10MB).
+                </p>
+
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarLoading}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Upload size={14} />
+                    <span>{avatarPreview ? 'Change Picture' : 'Upload Picture'}</span>
+                  </Button>
+
+                  {avatarPreview && (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                      disabled={avatarLoading}
+                      className="flex items-center gap-1.5"
+                    >
+                      <Trash2 size={14} />
+                      <span>Remove</span>
+                    </Button>
+                  )}
+                </div>
+
+                {avatarError && (
+                  <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">
+                    {avatarError}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

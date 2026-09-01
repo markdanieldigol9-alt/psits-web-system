@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail } from 'lucide-react';
 
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
@@ -83,7 +83,13 @@ export const LoginPage = () => {
         isRead: false,
       });
 
-      navigate('/dashboard');
+      const stored = localStorage.getItem('user');
+      const parsed = stored ? JSON.parse(stored) : null;
+      if (parsed?.status === 'suspended') {
+        navigate('/settings');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       addNotification({
         userId: 'current',
@@ -98,7 +104,26 @@ export const LoginPage = () => {
   return (
     <AuthLayout title="Login">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <Alert type="error" message={error} />}
+        {error && (
+          <div className="space-y-3">
+            <Alert
+              type="error"
+              message={error}
+              className="text-sm sm:text-[15px] font-semibold p-4 shadow-sm"
+            />
+            {error.toLowerCase().includes('gmail') && (
+              <a
+                href={`mailto:?subject=${encodeURIComponent('Account Activation / Reactivation Inquiry')}&body=${encodeURIComponent('Dear PSITS Officers and Administrators,\n\nMy account access has been restricted. I would like to request assistance in activating/reactivating my account.\n\nRegistered Email: ' + formData.email)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2.5 w-full py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all shadow-sm hover:shadow-md"
+              >
+                <Mail size={18} />
+                <span>Contact Officer / Admin via Gmail</span>
+              </a>
+            )}
+          </div>
+        )}
 
         <Input
           label="Email Address"

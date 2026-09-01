@@ -203,10 +203,47 @@ PSITS Region XII`;
   }
 }
 
+async function sendReactivationRequestEmail({ adminEmails, memberName, memberEmail, memberId, message, suspendedReason }) {
+  if (!hasSmtpConfig() || !adminEmails || !adminEmails.length) {
+    return { sent: false, reason: 'SMTP not configured or no recipient emails' };
+  }
+
+  const subject = `Account Reactivation Request - ${memberName} (${memberEmail})`;
+  const text = `Dear PSITS Officer / Administrator,
+
+Member ${memberName} (${memberEmail}, ID: ${memberId}) has submitted a request for account reactivation.
+
+Current Status: Suspended
+${suspendedReason ? `Reason on Record: ${suspendedReason}\n` : ''}
+Member Message / Appeal:
+"${message ? message : 'No additional message provided.'}"
+
+Please log in to the PSITS Admin Portal (Membership module) to review this member's details and reactivate their account if appropriate.
+
+Thank you.
+
+Best regards,
+PSITS Region XII System`;
+
+  try {
+    await getTransporter().sendMail({
+      from: smtpFrom,
+      to: adminEmails.join(', '),
+      subject,
+      text,
+    });
+    return { sent: true };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Email send failed';
+    return { sent: false, reason: errorMsg };
+  }
+}
+
 module.exports = {
   sendRegistrationApprovedEmail,
   sendRegistrationSubmittedEmail,
   sendSmtpTestEmail,
   resendFailedApprovalEmails,
   sendMembershipExpirationEmail,
+  sendReactivationRequestEmail,
 };

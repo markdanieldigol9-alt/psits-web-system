@@ -74,41 +74,43 @@ interface AlertProps {
   type: 'success' | 'error' | 'warning' | 'info';
   message: string;
   onClose?: () => void;
+  className?: string;
+  truncate?: boolean;
 }
 
-export const Alert = ({ type, message, onClose }: AlertProps) => {
+export const Alert = ({ type, message, onClose, className = '', truncate = false }: AlertProps) => {
   const typeConfig = {
     success: {
-      bg: 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200',
-      icon: <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />,
+      bg: 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200',
+      icon: <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />,
     },
     error: {
-      bg: 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200',
-      icon: <AlertCircle size={18} className="text-rose-600 dark:text-rose-400 shrink-0" />,
+      bg: 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200',
+      icon: <AlertCircle size={18} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />,
     },
     warning: {
-      bg: 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200',
-      icon: <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />,
+      bg: 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200',
+      icon: <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />,
     },
     info: {
-      bg: 'bg-sky-50/80 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-200',
-      icon: <Info size={18} className="text-sky-600 dark:text-sky-400 shrink-0" />,
+      bg: 'bg-sky-50/90 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-200',
+      icon: <Info size={18} className="text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />,
     },
   };
 
   const config = typeConfig[type] || typeConfig.info;
 
   return (
-    <div className={`border rounded-xl p-3.5 sm:p-4 flex items-center justify-between gap-3 text-sm font-medium animate-fade-in shadow-2xs ${config.bg}`}>
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div className={`border rounded-xl p-3.5 sm:p-4 flex items-start justify-between gap-3 text-sm font-medium animate-fade-in shadow-2xs ${config.bg} ${className}`}>
+      <div className="flex items-start gap-2.5 min-w-0 flex-1">
         {config.icon}
-        <p className="truncate">{message}</p>
+        <p className={`flex-1 break-words leading-relaxed ${truncate ? 'truncate' : ''}`}>{message}</p>
       </div>
       {onClose && (
         <button
           onClick={onClose}
           aria-label="Close alert"
-          className="p-1 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 rounded transition-colors"
+          className="p-1 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 rounded transition-colors shrink-0"
         >
           <X size={16} />
         </button>

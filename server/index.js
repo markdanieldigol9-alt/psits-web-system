@@ -65,7 +65,7 @@ const { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer
 const { listInstitutionMembers, bulkCreateInstitutionMembers, approveInstitutionMember } = require('./institutionMembers');
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
 const { sendSmtpTest } = require('./emailTest');
-const { resendFailedApprovalEmails } = require('./mailer');
+const { resendFailedApprovalEmails, sendReactivationRequestEmail } = require('./mailer');
 const { checkExpiringMemberships } = require('./services/expirationService');
 const { buildRedisClient, createRateLimiter } = require('./rateLimiter');
 const { attachLiveRealtime } = require('./liveRealtime');
@@ -347,6 +347,103 @@ app.post('/api/auth/create-admin', authMiddleware, requireRole(['super_admin']),
 app.get('/api/me', authMiddleware, getMe);
 app.put('/api/me', authMiddleware, updateMe);
 
+// Suspended Account Support & Reactivation Requests
+app.get('/api/account/officer-contacts', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, full_name, email, role, position, contact_number
+       FROM users
+       WHERE role IN ('super_admin', 'admin', 'officer') AND status = 'active'
+       ORDER BY FIELD(role, 'super_admin', 'admin', 'officer'), full_name ASC`
+    );
+    res.json({
+      success: true,
+      contacts: rows.map((r) => ({
+        id: String(r.id),
+        fullName: r.full_name,
+        email: r.email,
+        role: r.role,
+        position: r.position,
+        contactNumber: r.contact_number,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch officer contacts', error: err.message });
+  }
+});
+
+app.post('/api/account/reactivation-request', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized.' });
+    }
+
+    if (user.status !== 'suspended') {
+      return res.status(400).json({
+        success: false,
+        message: 'Reactivation request is only available for accounts with suspended status.',
+      });
+    }
+
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+
+    // Fetch active officers and admins to notify
+    const [adminRows] = await pool.execute(
+      `SELECT id, full_name, email, role
+       FROM users
+       WHERE role IN ('super_admin', 'admin', 'officer') AND status = 'active'`
+    );
+
+    const adminEmails = adminRows.map((r) => r.email).filter(Boolean);
+
+    // Record in audit_logs
+    try {
+      await pool.execute(
+        `INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, meta_json)
+         VALUES (?, 'user', ?, 'REQUEST_REACTIVATION', ?)`,
+        [
+          user.id,
+          String(user.id),
+          JSON.stringify({
+            memberName: user.full_name,
+            memberEmail: user.email,
+            suspendedReason: user.suspended_reason || null,
+            message: message || null,
+            notifiedAdminsCount: adminRows.length,
+            requestedAt: new Date().toISOString(),
+          }),
+        ]
+      );
+    } catch (auditErr) {
+      console.warn('Could not write audit log for reactivation request:', auditErr.message);
+    }
+
+    // Send email notification to officers and admins if SMTP is active
+    let emailResult = { sent: false };
+    if (adminEmails.length > 0) {
+      emailResult = await sendReactivationRequestEmail({
+        adminEmails,
+        memberName: user.full_name || 'Member',
+        memberEmail: user.email,
+        memberId: user.id,
+        message,
+        suspendedReason: user.suspended_reason || null,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Your account reactivation request has been sent to the Officers and Administrators.',
+      notifiedOfficersCount: adminRows.length,
+      officerEmails: adminEmails,
+      emailSent: emailResult.sent,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to process reactivation request', error: err.message });
+  }
+});
+
 async function ensureSettingsTable(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -535,6 +632,47 @@ app.post('/api/uploads/forum-video', authMiddleware, express.raw({ type: '*/*', 
   await require('node:fs/promises').writeFile(require('node:path').join(dir, filename), buffer);
 
   return res.status(201).json({ success: true, url: `/uploads/forum-videos/${filename}` });
+});
+
+app.post('/api/uploads/forum-image', authMiddleware, express.raw({ type: '*/*', limit: '32mb' }), async (req, res) => {
+  const contentType = String(req.headers['content-type'] || 'image/jpeg').trim();
+  const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
+  
+  if (!buffer.length) {
+    return res.status(400).json({ success: false, message: 'Image upload body is empty.' });
+  }
+
+  const dir = require('node:path').join(__dirname, 'uploads', 'forum-images');
+  await require('node:fs/promises').mkdir(dir, { recursive: true });
+
+  const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : contentType.includes('gif') ? 'gif' : 'jpg';
+  const filename = `${Date.now()}-${require('node:crypto').randomBytes(8).toString('hex')}.${ext}`;
+  
+  await require('node:fs/promises').writeFile(require('node:path').join(dir, filename), buffer);
+
+  return res.status(201).json({ success: true, url: `/uploads/forum-images/${filename}` });
+});
+
+app.post('/api/uploads/avatar', authMiddleware, express.raw({ type: '*/*', limit: '16mb' }), async (req, res) => {
+  const contentType = String(req.headers['content-type'] || 'image/jpeg').trim();
+  const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
+  
+  if (!buffer.length) {
+    return res.status(400).json({ success: false, message: 'Avatar image body is empty.' });
+  }
+
+  const dir = require('node:path').join(__dirname, 'uploads', 'avatars');
+  await require('node:fs/promises').mkdir(dir, { recursive: true });
+
+  const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : contentType.includes('gif') ? 'gif' : 'jpg';
+  const filename = `${Date.now()}-${require('node:crypto').randomBytes(8).toString('hex')}.${ext}`;
+  
+  await require('node:fs/promises').writeFile(require('node:path').join(dir, filename), buffer);
+
+  const avatarUrl = `/uploads/avatars/${filename}`;
+  await pool.execute('UPDATE users SET avatar_url = ? WHERE id = ?', [avatarUrl, req.user.id]);
+
+  return res.status(201).json({ success: true, url: avatarUrl });
 });
 
 // Institutional participants upload/list

@@ -25,6 +25,7 @@ const getApiErrorMessage = (err: unknown, fallback: string) => {
   if (status === 500 && !apiMessage) {
     return 'API server not ready. Start both servers from the repo root with: npm run dev (API on http://localhost:3000), or from the PSITS folder run: npm run dev:full.';
   }
+  if (apiMessage) return apiMessage;
   if (status) return `${message} (status ${status})`;
   return message;
 };
@@ -79,6 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           membershipStartedAt: data.user.membershipStartedAt ?? null,
           membershipExpiresAt: data.user.membershipExpiresAt ?? null,
           status: data.user.status ?? null,
+          suspendedReason: data.user.suspendedReason ?? null,
+          avatarUrl: data.user.avatarUrl ?? null,
           isActive: data.user.isActive,
           createdAt: new Date(data.user.createdAt ?? Date.now()),
           updatedAt: new Date(data.user.updatedAt ?? Date.now()),
@@ -131,6 +134,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         membershipStartedAt: data.user.membershipStartedAt ?? null,
         membershipExpiresAt: data.user.membershipExpiresAt ?? null,
         status: data.user.status ?? null,
+        suspendedReason: data.user.suspendedReason ?? null,
+        avatarUrl: data.user.avatarUrl ?? null,
         isActive: data.user.isActive,
         createdAt: new Date(),
         updatedAt: new Date(),

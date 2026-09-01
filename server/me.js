@@ -43,6 +43,8 @@ function toUserDto(row) {
     membershipStartedAt: row.membership_started_at || null,
     membershipExpiresAt: row.membership_expires_at || null,
     status: row.status,
+    avatarUrl: row.avatar_url || null,
+    suspendedReason: row.suspended_reason || null,
     isActive: row.status === 'active',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -72,6 +74,7 @@ async function updateMe(req, res) {
     params.push(val);
   };
 
+  if (body.avatarUrl !== undefined) addField('avatar_url', typeof body.avatarUrl === 'string' ? body.avatarUrl.trim() || null : null);
   if (body.fullName !== undefined) addField('full_name', typeof body.fullName === 'string' ? body.fullName.trim() : null);
   if (body.contactNumber !== undefined) addField('contact_number', typeof body.contactNumber === 'string' ? body.contactNumber.trim() : null);
   if (body.sectorDetails !== undefined) addField('sector_details', typeof body.sectorDetails === 'string' ? body.sectorDetails.trim() : null);

@@ -31,6 +31,13 @@ export const ProtectedRoute = ({
     return <Navigate to="/unauthorized" replace />;
   }
 
+  // Lockout logic for suspended accounts (strictly allow Settings module only)
+  if (user?.status === 'suspended') {
+    if (!window.location.pathname.startsWith('/settings')) {
+      return <Navigate to="/settings" replace />;
+    }
+  }
+
   // Lockout logic for expired members
   if (user?.role === 'member' && !allowExpired) {
     const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;

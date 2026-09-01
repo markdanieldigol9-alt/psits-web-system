@@ -32,7 +32,7 @@ const menuItems = {
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
     { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
-    { label: 'Community Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
     { label: 'Live Events', icon: Video, href: '/live-events' },
@@ -47,7 +47,7 @@ const menuItems = {
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
     { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
-    { label: 'Community Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
     { label: 'Live Events', icon: Video, href: '/live-events' },
@@ -64,7 +64,7 @@ const menuItems = {
     { label: 'Live Events', icon: Video, href: '/live-events' },
     { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
-    { label: 'Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Reports', icon: FileText, href: '/reports' },
     { label: 'Institution Members', icon: Upload, href: '/institution-members' },
     { label: 'Notifications', icon: Bell, href: '/notifications' },
@@ -77,7 +77,7 @@ const menuItems = {
     { label: 'My Events', icon: Calendar, href: '/my-events' },
     { label: 'Live Events', icon: Video, href: '/live-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
-    { label: 'Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
     { label: 'Notifications', icon: Bell, href: '/notifications' },
@@ -91,7 +91,7 @@ const menuItems = {
     { label: 'My Events', icon: Calendar, href: '/my-events' },
     { label: 'Live Events', icon: Video, href: '/live-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
-    { label: 'Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
     { label: 'Notifications', icon: Bell, href: '/notifications' },
@@ -106,7 +106,7 @@ const menuItems = {
     { label: 'My Events', icon: Calendar, href: '/my-events' },
     { label: 'Live Events', icon: Video, href: '/live-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
-    { label: 'Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
     { label: 'Notifications', icon: Bell, href: '/notifications' },
@@ -120,7 +120,7 @@ const menuItems = {
     { label: 'My Events', icon: Calendar, href: '/my-events' },
     { label: 'Live Events', icon: Video, href: '/live-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
-    { label: 'Forum', icon: MessageSquareText, href: '/forum' },
+    { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
     { label: 'Reports', icon: FileText, href: '/reports' },
@@ -135,6 +135,9 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
 
   const itemsToDisplay = useMemo(() => {
     if (!user) return [];
+    if (user.status === 'suspended') {
+      return [{ label: 'Settings', icon: Settings, href: '/settings' }];
+    }
     const uiKey = getUserInterfaceKey(user);
     const items = menuItems[uiKey] || menuItems[user.role] || menuItems.member;
     const isMember = user.role === 'member';

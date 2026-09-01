@@ -227,6 +227,7 @@ async function migrate() {
     const membershipColumns = [
       'banned_reason VARCHAR(255) NULL',
       'suspended_reason VARCHAR(255) NULL',
+      'avatar_url VARCHAR(255) NULL',
       'archived_at DATETIME NULL',
       'status_updated_at DATETIME NULL',
       'status_updated_by INT UNSIGNED NULL',
