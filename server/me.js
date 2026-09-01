@@ -65,6 +65,13 @@ async function updateMe(req, res) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
 
+  if (req.user?.status === 'suspended') {
+    return res.status(403).json({
+      success: false,
+      message: 'Your account is suspended. Profile editing is not permitted. Please submit a reactivation request.',
+    });
+  }
+
   const body = req.body || {};
   const sets = [];
   const params = [];

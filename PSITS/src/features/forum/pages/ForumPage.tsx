@@ -33,6 +33,10 @@ import {
   HelpCircle,
   FileText,
   Newspaper,
+  CornerDownRight,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
 } from 'lucide-react';
 
 type PostType = 'announcement' | 'news' | 'story' | 'blog' | 'discussion' | 'question';
@@ -255,6 +259,8 @@ export const ForumPage = () => {
   const [activePost, setActivePost] = useState<any | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string; rootParentId: string } | null>(null);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [showComments, setShowComments] = useState(false);
 
   // Edit & Delete Post State
@@ -434,6 +440,8 @@ export const ForumPage = () => {
     setActivePost(post);
     setComments([]);
     setCommentText('');
+    setReplyingTo(null);
+    setExpandedComments({});
     setShowComments(true);
     try {
       const { data } = await api.getForumComments(String(post.id));
@@ -443,17 +451,35 @@ export const ForumPage = () => {
     }
   };
 
+  const toggleReplies = (commentId: string) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
+
+  const handleStartReply = (c: any) => {
+    const rootId = c.parentId ? c.parentId : c.id;
+    setReplyingTo({ id: c.id, authorName: c.authorName || 'User', rootParentId: rootId });
+    setExpandedComments((prev) => ({ ...prev, [rootId]: true }));
+  };
+
   const addComment = async () => {
     if (!activePost) return;
     const text = commentText.trim();
     if (!text) return;
     setIsLoading(true);
     try {
-      const { data } = await api.addForumComment(String(activePost.id), text);
+      const targetParentId = replyingTo ? (replyingTo.rootParentId || replyingTo.id) : null;
+      const { data } = await api.addForumComment(String(activePost.id), text, targetParentId);
       if (data?.success) {
         const refreshed = await api.getForumComments(String(activePost.id));
         if (refreshed.data?.success) setComments(refreshed.data.comments || []);
+        if (targetParentId) {
+          setExpandedComments((prev) => ({ ...prev, [targetParentId]: true }));
+        }
         setCommentText('');
+        setReplyingTo(null);
       }
     } catch (err) {
       addNotification({ userId: 'current', title: 'Error', message: err instanceof Error ? err.message : 'Failed to comment.', type: 'error', isRead: false });
@@ -1456,40 +1482,178 @@ export const ForumPage = () => {
         }}
       />
 
-      <Modal isOpen={showComments} onClose={() => setShowComments(false)} title="Comments" size="lg">
+      <Modal isOpen={showComments} onClose={() => { setShowComments(false); setReplyingTo(null); }} title="Comments" size="lg">
         <div className="space-y-4">
           {(() => {
             const activePostInfo = activePost ? parsePostContent(activePost.content) : null;
             const allowComments = activePostInfo ? activePostInfo.allowComments : true;
+            const topLevelComments = comments.filter((c) => !c.parentId);
+            const repliesByParent = comments.reduce((acc: Record<string, any[]>, c) => {
+              if (c.parentId) {
+                acc[c.parentId] = acc[c.parentId] || [];
+                acc[c.parentId].push(c);
+              }
+              return acc;
+            }, {});
 
             return (
               <>
                 {activePost && (
-                  <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
-                    <p className="font-semibold text-gray-900">{activePost.title}</p>
-                    <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{activePostInfo?.body || activePost.content}</p>
+                  <div className="rounded-xl border border-gray-200 dark:border-slate-800 p-3.5 bg-gray-50/80 dark:bg-slate-900/60">
+                    <p className="font-bold text-gray-900 dark:text-slate-100">{activePost.title}</p>
+                    <p className="text-sm text-gray-700 dark:text-slate-300 mt-1 whitespace-pre-wrap leading-relaxed">{activePostInfo?.body || activePost.content}</p>
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  {comments.map((c) => (
-                    <div key={c.id} className="rounded-lg border border-gray-200 p-3 bg-white">
-                      <p className="text-xs text-gray-500">{c.authorName || 'User'} • {c.createdAt ? String(c.createdAt).slice(0, 19).replace('T', ' ') : ''}</p>
-                      <p className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{c.content}</p>
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+                  {topLevelComments.map((c) => {
+                    const replies = repliesByParent[c.id] || [];
+                    return (
+                      <div key={c.id} className="space-y-2">
+                        {/* Parent Comment */}
+                        <div className="rounded-xl border border-gray-200 dark:border-slate-800 p-3.5 bg-white dark:bg-slate-900/90 shadow-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center justify-center border border-blue-200 dark:border-blue-800">
+                                {(c.authorName || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-semibold text-xs text-gray-900 dark:text-slate-100">{c.authorName || 'User'}</span>
+                            </div>
+                            <span className="text-[11px] text-gray-400">
+                              {c.createdAt ? String(c.createdAt).slice(0, 19).replace('T', ' ') : ''}
+                            </span>
+                          </div>
+
+                          <p className="text-sm text-gray-800 dark:text-slate-200 mt-2 whitespace-pre-wrap leading-relaxed pl-9">
+                            {c.content}
+                          </p>
+
+                          {/* Action Bar with Reply and Collapsible Replies Dropdown */}
+                          <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                            {replies.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleReplies(c.id)}
+                                className="text-xs font-semibold text-gray-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                              >
+                                {expandedComments[c.id] ? (
+                                  <>
+                                    <ChevronUp size={14} className="text-blue-600 dark:text-blue-400" />
+                                    <span>Hide {replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown size={14} className="text-blue-600 dark:text-blue-400" />
+                                    <span>View {replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span>
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <div />
+                            )}
+
+                            {allowComments && (
+                              <button
+                                type="button"
+                                onClick={() => handleStartReply(c)}
+                                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                              >
+                                <CornerDownRight size={13} /> Reply
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Collapsible Child Replies Thread */}
+                        {replies.length > 0 && expandedComments[c.id] && (
+                          <div className="ml-5 sm:ml-9 pl-3.5 sm:pl-4 border-l-2 border-blue-200 dark:border-blue-800/60 space-y-2 pt-0.5 animate-fadeIn">
+                            {replies.map((r) => (
+                              <div key={r.id} className="rounded-xl border border-gray-200/80 dark:border-slate-800/80 p-3 bg-gray-50/70 dark:bg-slate-900/50 shadow-xs">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                                      {(r.authorName || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                      <span className="font-bold text-gray-900 dark:text-slate-100">{r.authorName || 'User'}</span>
+                                      <ChevronRight size={13} className="text-gray-400 dark:text-slate-500 shrink-0 stroke-[2.5]" />
+                                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                        {r.parentAuthorName || c.authorName || 'User'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-gray-400 shrink-0">
+                                    {r.createdAt ? String(r.createdAt).slice(0, 19).replace('T', ' ') : ''}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs sm:text-sm text-gray-800 dark:text-slate-200 mt-1.5 whitespace-pre-wrap leading-relaxed pl-8">
+                                  {r.content}
+                                </p>
+
+                                {allowComments && (
+                                  <div className="mt-2 pt-1.5 border-t border-gray-100 dark:border-slate-800/50 flex items-center justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartReply(r)}
+                                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                    >
+                                      <CornerDownRight size={12} /> Reply
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {!comments.length && (
+                    <div className="text-sm text-gray-500 text-center py-6">
+                      No comments yet. Be the first to share your thoughts!
                     </div>
-                  ))}
-                  {!comments.length && <div className="text-sm text-gray-500 text-center py-4">No comments yet.</div>}
+                  )}
                 </div>
 
                 {allowComments ? (
-                  <div className="border-t border-gray-200 pt-3 space-y-2">
-                    <TextArea label="Add a comment" rows={3} value={commentText} onChange={(e) => setCommentText((e.target as HTMLTextAreaElement).value)} />
+                  <div className="border-t border-gray-200 dark:border-slate-800 pt-3 space-y-2">
+                    {replyingTo && (
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300 animate-fadeIn">
+                        <span className="flex items-center gap-1.5">
+                          <CornerDownRight size={14} className="text-blue-600 dark:text-blue-400" />
+                          Replying to <strong className="text-blue-950 dark:text-blue-100">@{replyingTo.authorName}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setReplyingTo(null)}
+                          className="text-gray-500 hover:text-red-600 p-0.5 rounded flex items-center gap-1 font-medium transition-colors cursor-pointer"
+                          title="Cancel reply"
+                        >
+                          <X size={14} /> Cancel
+                        </button>
+                      </div>
+                    )}
+                    <TextArea
+                      label={replyingTo ? `Replying to @${replyingTo.authorName}` : 'Add a comment'}
+                      placeholder={replyingTo ? `Write your reply to @${replyingTo.authorName}...` : 'Write a comment...'}
+                      rows={3}
+                      value={commentText}
+                      onChange={(e) => setCommentText((e.target as HTMLTextAreaElement).value)}
+                    />
                     <div className="flex justify-end gap-2">
-                      <Button variant="primary" onClick={() => void addComment()} isLoading={isLoading}>Comment</Button>
+                      {replyingTo && (
+                        <Button variant="outline" size="sm" onClick={() => setReplyingTo(null)}>
+                          Cancel
+                        </Button>
+                      )}
+                      <Button variant="primary" onClick={() => void addComment()} isLoading={isLoading}>
+                        {replyingTo ? 'Post Reply' : 'Comment'}
+                      </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="border-t border-gray-200 pt-4 text-center text-sm font-semibold text-gray-500 bg-gray-100/60 p-4 rounded-lg border border-gray-200 flex items-center justify-center gap-2">
+                  <div className="border-t border-gray-200 dark:border-slate-800 pt-4 text-center text-sm font-semibold text-gray-500 bg-gray-100/60 dark:bg-slate-900/60 p-4 rounded-lg border border-gray-200 dark:border-slate-800 flex items-center justify-center gap-2">
                     <span>🔒 Comments are disabled for this discussion.</span>
                   </div>
                 )}

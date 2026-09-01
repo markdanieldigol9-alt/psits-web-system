@@ -3,20 +3,39 @@ function toPaymentDto(row) {
   const createdAt = row.created_at ? new Date(row.created_at) : null;
   const date = createdAt ? createdAt.toISOString().slice(0, 10) : '';
 
+  let eventTitle = row.event_title || '';
+  if (!eventTitle) {
+    if (row.payment_kind === 'membership_renewal') {
+      eventTitle = 'Membership Renewal';
+    } else if (row.payment_kind === 'membership_registration' || row.payment_kind === 'membership') {
+      eventTitle = 'Membership Registration';
+    } else if (row.payment_kind === 'partner_sponsorship') {
+      eventTitle = 'Partner Sponsorship';
+    } else if (!row.event_id) {
+      eventTitle = 'Membership Fee';
+    }
+  }
+
   return {
     id: String(row.id),
     memberId: String(row.member_id),
-    memberName: row.member_name || '',
+    memberName: row.member_name || 'Member',
+    memberEmail: row.member_email || '',
     eventId: row.event_id ? String(row.event_id) : null,
-    event: row.event_title || '',
+    event: eventTitle,
     amount: Number(row.amount || 0),
-    method: row.payment_method || row.method,
-    paymentKind: row.payment_kind || 'event',
+    method: row.payment_method || row.method || 'gcash',
+    paymentMethod: row.payment_method || row.method || 'gcash',
+    paymentKind: row.payment_kind || (row.event_id ? 'event' : 'membership_registration'),
     referenceNumber: row.reference_number || null,
-    paymentStatus: row.payment_status || null,
-    processStatus: row.process_status || null,
-    verificationStatus: row.status,
-    proofUrl: row.proof_url,
+    paymentStatus: row.payment_status || (row.status === 'verified' ? 'paid' : 'pending'),
+    processStatus: row.process_status || (row.status === 'verified' ? 'verified' : 'submitted'),
+    verificationStatus: row.status || 'pending',
+    status: row.status || 'pending',
+    proofUrl: row.proof_url || null,
+    rejectionReason: row.rejection_reason || null,
+    verifiedBy: row.verified_by ? String(row.verified_by) : null,
+    verifiedAt: row.verified_at || null,
     date,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -121,9 +140,9 @@ async function listPayments(req, res) {
 
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.execute(
-    `SELECT p.*, u.full_name AS member_name, e.title AS event_title
+    `SELECT p.*, u.full_name AS member_name, u.email AS member_email, e.title AS event_title
      FROM payments p
-     JOIN users u ON u.id = p.member_id
+     LEFT JOIN users u ON u.id = p.member_id
      LEFT JOIN events e ON e.id = p.event_id
      ${sqlWhere}
      ORDER BY p.created_at DESC`,
@@ -172,6 +191,13 @@ async function createPayment(req, res) {
   const memberId = req.user?.id;
   if (!memberId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
 
+  if (req.user?.status === 'suspended') {
+    return res.status(403).json({
+      success: false,
+      message: 'Suspended accounts cannot submit payments or renewal requests. Please submit a reactivation appeal first.',
+    });
+  }
+
   if (eventId && Number.isFinite(eventId)) {
     const [paymentRows] = await pool.execute(
       "SELECT SUM(amount) AS total_paid FROM payments WHERE event_id = ? AND member_id = ? AND status = 'verified'",
@@ -188,7 +214,7 @@ async function createPayment(req, res) {
     }
   }
 
-  if (!['event', 'membership_renewal'].includes(paymentKind)) {
+  if (!['event', 'membership_renewal', 'membership_registration', 'membership', 'partner_sponsorship'].includes(paymentKind)) {
     return res.status(400).json({ success: false, message: 'Invalid payment kind.' });
   }
 
@@ -244,6 +270,56 @@ async function createPayment(req, res) {
     `INSERT INTO payments (${columnSql}) VALUES (${placeholders})`,
     values
   );
+
+  // Notify Admins and Officers about the renewal or payment submission
+  try {
+    const [adminOfficerRows] = await pool.query(
+      "SELECT id FROM users WHERE role IN ('admin', 'super_admin', 'officer') AND status = 'active'"
+    );
+
+    if (adminOfficerRows.length > 0) {
+      const isRenewal = paymentKind === 'membership_renewal';
+      const notifTitle = isRenewal
+        ? `🔄 Membership Renewal Request - ${memberName || 'Member'}`
+        : `💳 Payment Submitted - ${memberName || 'Member'}`;
+
+      const notifMsg = isRenewal
+        ? `Member ${memberName || 'Member'} (${req.user?.email || 'N/A'}) submitted a membership renewal request of ₱${Number(amount).toLocaleString()} (${method ? method.toUpperCase() : 'GCash'}, Ref: ${referenceNumber || 'N/A'}). Please review and verify.`
+        : `Member ${memberName || 'Member'} submitted a payment of ₱${Number(amount).toLocaleString()} for ${eventTitle || 'Event / Membership'} (Ref: ${referenceNumber || 'N/A'}).`;
+
+      const notifMeta = JSON.stringify({
+        kind: isRenewal ? 'renewal_request' : 'payment_submission',
+        paymentId: String(result.insertId),
+        memberId: String(memberId),
+        memberName: memberName || 'Member',
+        memberEmail: req.user?.email || null,
+        amount: Number(amount),
+        method,
+        referenceNumber,
+        proofUrl,
+        url: '/payments',
+      });
+
+      const values = adminOfficerRows.map((a) => [
+        a.id,
+        notifTitle,
+        notifMsg,
+        'warning',
+        0,
+        notifMeta,
+      ]);
+
+      const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+      const flatParams = values.flat();
+      await pool.execute(
+        `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+         VALUES ${placeholders}`,
+        flatParams
+      );
+    }
+  } catch (notifErr) {
+    console.warn('[Payments] Could not insert admin renewal notification:', notifErr.message);
+  }
 
   const [rows] = await pool.execute(
     `SELECT p.*, u.full_name AS member_name, e.title AS event_title
@@ -302,37 +378,35 @@ async function verifyPayment(req, res) {
     params
   );
 
-  // If this is a verified membership renewal payment, extend membership expiry by 1 year for eligible member types.
-  if (status === 'verified' && paymentKind === 'membership_renewal' && memberId && Number.isFinite(memberId)) {
+  // If this is a verified membership payment (registration, renewal, or membership fee), activate member & extend validity.
+  if (status === 'verified' && ['membership_renewal', 'membership_registration', 'membership'].includes(paymentKind) && memberId && Number.isFinite(memberId)) {
     try {
       const [uRows] = await pool.execute(
-        `SELECT member_type, membership_started_at, membership_expires_at
+        `SELECT id, status, member_type, membership_started_at, membership_expires_at
          FROM users
          WHERE id = ? AND role = 'member'
          LIMIT 1`,
         [memberId]
       );
       if (uRows.length) {
-        const memberType = String(uRows[0].member_type || '');
-        const eligible = true;
-        if (eligible) {
-          // If expiry is in the future, extend from expiry; else extend from now.
-          await pool.execute(
-            `UPDATE users
-             SET membership_started_at = COALESCE(membership_started_at, NOW()),
-                 membership_expires_at =
-                   CASE
-                     WHEN membership_expires_at IS NULL THEN DATE_ADD(NOW(), INTERVAL 1 YEAR)
-                     WHEN membership_expires_at > NOW() THEN DATE_ADD(membership_expires_at, INTERVAL 1 YEAR)
-                     ELSE DATE_ADD(NOW(), INTERVAL 1 YEAR)
-                   END
-             WHERE id = ? AND role = 'member'`,
-            [memberId]
-          );
-        }
+        await pool.execute(
+          `UPDATE users
+           SET status = 'active',
+               status_updated_at = NOW(),
+               status_updated_by = ?,
+               membership_started_at = COALESCE(membership_started_at, NOW()),
+               membership_expires_at =
+                 CASE
+                   WHEN membership_expires_at IS NULL THEN DATE_ADD(NOW(), INTERVAL 1 YEAR)
+                   WHEN membership_expires_at > NOW() THEN DATE_ADD(membership_expires_at, INTERVAL 1 YEAR)
+                   ELSE DATE_ADD(NOW(), INTERVAL 1 YEAR)
+                 END
+           WHERE id = ? AND role = 'member'`,
+          [req.user?.id || null, memberId]
+        );
       }
-    } catch {
-      // ignore renewal update errors
+    } catch (memErr) {
+      console.error('Membership payment verification user update error:', memErr);
     }
   }
 

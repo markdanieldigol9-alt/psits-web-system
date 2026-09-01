@@ -15,6 +15,7 @@ interface AddOfficerModalProps {
   initialMember?: MemberOption | null;
   initialStartDate?: string;
   initialEndDate?: string;
+  initialStatus?: 'active' | 'inactive' | 'past';
 }
 
 type MemberOption = {
@@ -23,6 +24,7 @@ type MemberOption = {
   email: string;
   sector?: string;
   status?: string;
+  officerStatus?: string;
 };
 
 const formatDateForInput = (dateStr?: string | null) => {
@@ -46,11 +48,13 @@ export const AddOfficerModal = ({
   initialMember = null,
   initialStartDate,
   initialEndDate,
+  initialStatus = 'active',
 }: AddOfficerModalProps) => {
   const [formData, setFormData] = useState({
     position: '',
     startDate: '',
     endDate: '',
+    status: 'active',
   });
   const [errors, setErrors] = useState<Record<string,string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export const AddOfficerModal = ({
 
   useEffect(() => {
     if (!isOpen) {
-      setFormData({ position: '', startDate: '', endDate: '' });
+      setFormData({ position: '', startDate: '', endDate: '', status: 'active' });
       setSelectedMember(null);
       setMemberQuery('');
       setMemberResults([]);
@@ -78,17 +82,19 @@ export const AddOfficerModal = ({
       setError(null);
       return;
     }
+    const resolvedStatus = initialStatus || (initialMember?.officerStatus as any) || (initialMember?.status as any) || 'active';
     setFormData({
       position: initialPosition || '',
       startDate: formatDateForInput(initialStartDate),
       endDate: formatDateForInput(initialEndDate),
+      status: resolvedStatus === 'past' ? 'inactive' : resolvedStatus,
     });
     setSelectedMember(initialMember || null);
     setMemberQuery('');
     setMemberResults([]);
     setErrors({});
     setError(null);
-  }, [isOpen, initialPosition, initialStartDate, initialEndDate, initialMember]);
+  }, [isOpen, initialPosition, initialStartDate, initialEndDate, initialMember, initialStatus]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -135,9 +141,6 @@ export const AddOfficerModal = ({
     'Secretary',
     'Member',
   ]);
-  const [isCreatingPosition, setIsCreatingPosition] = useState(false);
-  const [newPositionInput, setNewPositionInput] = useState('');
-  const [isAddingPosLoading, setIsAddingPosLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -170,29 +173,6 @@ export const AddOfficerModal = ({
     };
   }, [isOpen]);
 
-  const handleQuickAddPosition = async () => {
-    const title = newPositionInput.trim();
-    if (!title) return;
-    setIsAddingPosLoading(true);
-    try {
-      const { data } = await api.createOfficerPosition({ name: title });
-      if (data?.success) {
-        const createdName = data.position.name;
-        if (!availablePositions.includes(createdName)) {
-          setAvailablePositions((prev) => [...prev, createdName]);
-        }
-        setFormData((prev) => ({ ...prev, position: createdName }));
-        setNewPositionInput('');
-        setIsCreatingPosition(false);
-        setErrors((prev) => ({ ...prev, position: '' }));
-      }
-    } catch (err: any) {
-      setErrors((prev) => ({ ...prev, position: err.message || 'Failed to create position.' }));
-    } finally {
-      setIsAddingPosLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -203,9 +183,11 @@ export const AddOfficerModal = ({
         position: formData.position,
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
+        status: formData.status,
+        officerStatus: formData.status,
       });
       // reset
-      setFormData({ position: '', startDate: '', endDate: '' });
+      setFormData({ position: '', startDate: '', endDate: '', status: 'active' });
       setErrors({});
       setMemberQuery('');
       setMemberResults([]);
@@ -223,7 +205,7 @@ export const AddOfficerModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">{title || 'Assign Officer Position'}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{title || (initialMember ? 'Edit Officer Details' : 'Assign Officer Position')}</h2>
           <button
             onClick={onClose}
             aria-label="Close modal"
@@ -237,7 +219,7 @@ export const AddOfficerModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="w-full md:col-span-2 relative">
               <Input
-                label="Member (Search)"
+                label={initialMember ? 'Officer Name' : 'Member (Search)'}
                 placeholder="Search by full name or email..."
                 value={selectedMember ? `${selectedMember.fullName} (${selectedMember.email})` : memberQuery}
                 onChange={(e) => {
@@ -247,16 +229,15 @@ export const AddOfficerModal = ({
                 }}
                 onFocus={() => {
                   if (!selectedMember && memberQuery.trim().length >= 2) {
-                    // keep dropdown visible when focused
                     setMemberResults((prev) => prev);
                   }
                 }}
                 readOnly={!!selectedMember}
                 error={errors.member}
-                helperText={selectedMember ? 'Selected member will be promoted to officer.' : 'Type at least 2 characters.'}
+                helperText={!initialMember ? (selectedMember ? 'Selected member will be promoted to officer.' : 'Type at least 2 characters.') : undefined}
               />
 
-              {selectedMember && (
+              {!initialMember && selectedMember && (
                 <button
                   type="button"
                   className="mt-2 text-sm text-primary hover:underline"
@@ -300,21 +281,16 @@ export const AddOfficerModal = ({
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-sm font-semibold text-gray-700">Position</label>
-                {!lockPosition && !isCreatingPosition && (
-                  <button
-                    type="button"
-                    onClick={() => setIsCreatingPosition(true)}
-                    className="text-xs text-primary hover:underline font-medium"
-                  >
-                    + Create Position
-                  </button>
-                )}
-              </div>
-
-              {!isCreatingPosition ? (
+              {lockPosition || initialMember ? (
+                <Input
+                  label="Position"
+                  value={formData.position}
+                  readOnly
+                  className="bg-gray-50 font-semibold text-gray-900 cursor-not-allowed"
+                />
+              ) : (
                 <Select
+                  label="Position"
                   options={[
                     { value: '', label: 'Select an option' },
                     ...availablePositions.map((pos) => ({
@@ -324,7 +300,6 @@ export const AddOfficerModal = ({
                   ]}
                   value={formData.position}
                   onChange={(e) => {
-                    if (lockPosition) return;
                     if (takenPositions.has(e.target.value)) {
                       setErrors((prev) => ({ ...prev, position: 'Position already assigned.' }));
                       return;
@@ -332,48 +307,23 @@ export const AddOfficerModal = ({
                     setErrors((prev) => ({ ...prev, position: '' }));
                     setFormData({ ...formData, position: e.target.value });
                   }}
-                  disabled={lockPosition}
                   error={errors.position}
                 />
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Enter position title..."
-                      value={newPositionInput}
-                      onChange={(e) => setNewPositionInput(e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      onClick={handleQuickAddPosition}
-                      isLoading={isAddingPosLoading}
-                    >
-                      Add
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsCreatingPosition(false);
-                        setNewPositionInput('');
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
               )}
             </div>
-            {takenPositions.size > 0 && (
+
+            <Select
+              label="Officer Status"
+              options={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ]}
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: (e.target as HTMLSelectElement).value })}
+            />
+
+            {!initialMember && takenPositions.size > 0 && (
               <p className="text-xs text-gray-500 md:col-span-2">Positions marked as assigned are unavailable until cleared.</p>
-            )}
-            {lockPosition && (
-              <p className="text-xs text-gray-500 md:col-span-2">Position is locked for this change.</p>
             )}
 
             <Input
@@ -392,17 +342,22 @@ export const AddOfficerModal = ({
               helperText="Optional. Leave blank to auto-calculate (5 years)."
             />
 
-            <Input
-              label="Email"
-              placeholder="Select a member first"
-              value={selectedMember?.email || ''}
-              readOnly
-              className="bg-gray-50"
-            />
+            <div className="md:col-span-2">
+              <Input
+                label="Email"
+                placeholder="Select a member first"
+                value={selectedMember?.email || ''}
+                readOnly
+                className="bg-gray-50"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancel
+            </Button>
             <Button variant="primary" size="lg" type="submit" disabled={isLoading}>
-              {isLoading ? (initialMember ? 'Updating...' : 'Assigning...') : (initialMember ? 'Update Officer' : 'Assign Officer')}
+              {isLoading ? (initialMember ? 'Saving...' : 'Assigning...') : (initialMember ? 'Update Officer' : 'Assign Officer')}
             </Button>
           </div>
         </form>

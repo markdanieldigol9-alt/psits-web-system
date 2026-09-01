@@ -154,6 +154,7 @@ export interface Notification {
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
   isRead: boolean;
+  meta?: Record<string, any> | null;
   createdAt: Date;
 }
 

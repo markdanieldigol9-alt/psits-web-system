@@ -313,6 +313,7 @@ async function register(req, res) {
 
     const insertedId = result.insertId;
 
+    let proofUrl = null;
     if (paymentProof) {
       const match = paymentProof.match(/^data:(image\/(png|jpeg|jpg|webp));base64,(.+)$/);
       if (match) {
@@ -328,43 +329,110 @@ async function register(req, res) {
             await fs.mkdir(dir, { recursive: true });
             const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
             await fs.writeFile(path.join(dir, filename), buffer);
-
-            const [payColumnRows] = await pool.execute('SHOW COLUMNS FROM payments');
-            const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
-
-            const payCols = ['member_id', 'amount', 'method', 'proof_url', 'status'];
-            const payVals = [insertedId, 0, paymentMethod, `/uploads/payment-proofs/${filename}`, 'pending'];
-
-            if (payColumnSet.has('reference_number')) {
-              payCols.push('reference_number');
-              payVals.push(referenceNumber);
-            }
-            if (payColumnSet.has('payment_kind')) {
-              payCols.push('payment_kind');
-              payVals.push('membership_renewal');
-            }
-            if (payColumnSet.has('payment_method')) {
-              payCols.push('payment_method');
-              payVals.push(paymentMethod);
-            }
-
-            const payPlaceholders = payCols.map(() => '?').join(', ');
-            const payColumnSql = payCols.map((c) => `\`${c}\``).join(', ');
-
-            await pool.execute(
-              `INSERT INTO payments (${payColumnSql}) VALUES (${payPlaceholders})`,
-              payVals
-            );
+            proofUrl = `/uploads/payment-proofs/${filename}`;
           } catch (err) {
-            // Don't block registration if optional payment proof storage fails.
-            // eslint-disable-next-line no-console
             console.error('Payment proof save failed:', err);
           }
         }
+      } else if (typeof paymentProof === 'string' && (paymentProof.startsWith('/uploads/') || paymentProof.startsWith('http'))) {
+        proofUrl = paymentProof;
       }
     }
 
+    // Always create a payment transaction record for registration / renewals
+    try {
+      const [payColumnRows] = await pool.execute('SHOW COLUMNS FROM payments');
+      const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
+
+      const methodVal = ['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'paymongo', 'paypal', 'card'].includes(paymentMethod)
+        ? paymentMethod
+        : 'gcash';
+
+      const paymentKindVal = membershipMode === 'renew' ? 'membership_renewal' : 'membership_registration';
+      const registrationAmount = Number(body.amount || body.paymentAmount || 500);
+
+      const payCols = [];
+      const payVals = [];
+      const addPay = (col, val) => {
+        if (payColumnSet.has(col)) {
+          payCols.push(`\`${col}\``);
+          payVals.push(val);
+        }
+      };
+
+      addPay('member_id', insertedId);
+      addPay('amount', registrationAmount);
+      addPay('method', methodVal);
+      addPay('payment_method', methodVal);
+      addPay('payment_kind', paymentKindVal);
+      addPay('reference_number', referenceNumber || `REG-${String(insertedId).padStart(5, '0')}`);
+      addPay('proof_url', proofUrl);
+      addPay('status', 'pending');
+      addPay('payment_status', 'pending');
+      addPay('process_status', 'submitted');
+      if (payColumnSet.has('date')) {
+        addPay('date', new Date().toISOString().slice(0, 10));
+      }
+
+      if (payCols.length) {
+        await pool.execute(
+          `INSERT INTO payments (${payCols.join(', ')}) VALUES (${payCols.map(() => '?').join(', ')})`,
+          payVals
+        );
+      }
+    } catch (payErr) {
+      console.error('Registration payment record creation error:', payErr);
+    }
+
     const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [insertedId]);
+
+    // Notify active Admins and Officers
+    try {
+      const [adminOfficerRows] = await pool.query(
+        "SELECT id FROM users WHERE role IN ('admin', 'super_admin', 'officer') AND status = 'active'"
+      );
+      if (adminOfficerRows.length > 0) {
+        const regName = rows[0]?.full_name || 'Member';
+        const isRenew = membershipMode === 'renew';
+        const notifTitle = isRenew
+          ? `🔄 Membership Renewal Request - ${regName}`
+          : `👤 New Member Registration - ${regName}`;
+
+        const notifMsg = isRenew
+          ? `Member ${regName} (${rows[0]?.email || 'N/A'}) submitted a membership renewal request of ₱${registrationAmount.toLocaleString()} (${methodVal.toUpperCase()}, Ref: ${referenceNumber || 'N/A'}).`
+          : `A new member ${regName} (${rows[0]?.email || 'N/A'}) registered and is pending approval.`;
+
+        const notifMeta = JSON.stringify({
+          kind: isRenew ? 'renewal_request' : 'new_registration',
+          memberId: String(insertedId),
+          memberName: regName,
+          memberEmail: rows[0]?.email || null,
+          amount: registrationAmount,
+          method: methodVal,
+          referenceNumber: referenceNumber || null,
+          proofUrl: proofUrl || null,
+          url: isRenew ? '/payments' : '/members',
+        });
+
+        const values = adminOfficerRows.map((a) => [
+          a.id,
+          notifTitle,
+          notifMsg,
+          'warning',
+          0,
+          notifMeta,
+        ]);
+        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+        await pool.execute(
+          `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+           VALUES ${placeholders}`,
+          values.flat()
+        );
+      }
+    } catch (notifErr) {
+      console.warn('[Auth] Could not insert admin registration/renewal notification:', notifErr.message);
+    }
+
     if (rows[0]?.email) {
       await sendRegistrationSubmittedEmail({
         to: rows[0].email,

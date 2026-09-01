@@ -142,8 +142,8 @@ async function createEvent(req, res) {
   const allowedModes = ['individual', 'pair', 'team'];
   const safeMode = allowedModes.includes(registrationMode) ? registrationMode : 'individual';
 
-  const eventType = body.eventType ? String(body.eventType).trim() : 'seminar';
-  const allowedEventTypes = ['competition', 'seminar'];
+  const eventType = body.eventType ? String(body.eventType).trim().toLowerCase() : 'seminar';
+  const allowedEventTypes = ['seminar', 'conference', 'workshop', 'competition', 'contest', 'hackathon', 'webinar', 'training', 'assembly', 'meeting', 'other'];
   const safeEventType = allowedEventTypes.includes(eventType) ? eventType : 'seminar';
 
   const safeOverride = ['open', 'closed'].includes(registrationOverride) ? registrationOverride : null;
@@ -189,6 +189,46 @@ async function createEvent(req, res) {
     ]
   );
 
+async function broadcastNewEventNotification(eventId, eventData) {
+  try {
+    const [users] = await pool.query(
+      `SELECT id FROM users WHERE status = 'active'`
+    );
+    if (!users.length) return;
+
+    const startDateStr = eventData.startAt ? new Date(eventData.startAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'Soon';
+    const locStr = eventData.location ? ` at ${eventData.location}` : '';
+    const feeStr = Number(eventData.fee || 0) > 0 ? ` (Fee: PHP ${Number(eventData.fee).toLocaleString()})` : ' (Free)';
+    const title = `📅 New Event: ${eventData.title}`;
+    const message = `A new event "${eventData.title}" is scheduled for ${startDateStr}${locStr}${feeStr}. View details and register now!`;
+    const metaJson = JSON.stringify({
+      eventId: String(eventId),
+      title: eventData.title,
+      eventType: eventData.eventType,
+      url: '/events',
+    });
+
+    const values = users.map((u) => [
+      u.id,
+      title,
+      message,
+      'info',
+      0,
+      metaJson,
+    ]);
+
+    const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+    const flatParams = values.flat();
+    await pool.execute(
+      `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+       VALUES ${placeholders}`,
+      flatParams
+    );
+  } catch (err) {
+    console.warn('[Events] Failed to broadcast new event notification:', err.message);
+  }
+}
+
   const [rows] = await pool.execute(
     `SELECT
        e.*,
@@ -198,7 +238,13 @@ async function createEvent(req, res) {
      LIMIT 1`,
     [result.insertId]
   );
-  return res.status(201).json({ success: true, event: toEventDto(rows[0]) });
+
+  const createdEvent = toEventDto(rows[0]);
+  if (['upcoming', 'ongoing'].includes(safeStatus)) {
+    void broadcastNewEventNotification(result.insertId, createdEvent);
+  }
+
+  return res.status(201).json({ success: true, event: createdEvent });
 }
 
 async function updateEvent(req, res) {
@@ -218,7 +264,7 @@ async function updateEvent(req, res) {
   const body = req.body || {};
   const allowedStatus = ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'];
   const allowedModes = ['individual', 'pair', 'team'];
-  const allowedTypes = ['seminar', 'workshop', 'training', 'competition', 'conference', 'meeting', 'livestream', 'other'];
+  const allowedTypes = ['seminar', 'conference', 'workshop', 'competition', 'contest', 'hackathon', 'webinar', 'training', 'assembly', 'meeting', 'other'];
 
   const sets = [];
   const params = [];
@@ -235,8 +281,8 @@ async function updateEvent(req, res) {
   if (typeof body.guidelines === 'string') { sets.push('guidelines = ?'); params.push(body.guidelines.trim()); }
   if (typeof body.registrationMode === 'string' && allowedModes.includes(body.registrationMode)) { sets.push('registration_mode = ?'); params.push(body.registrationMode); }
   if (typeof body.eventType === 'string') {
-    const et = String(body.eventType).trim();
-    if (!['competition', 'seminar'].includes(et)) {
+    const et = String(body.eventType).trim().toLowerCase();
+    if (!allowedTypes.includes(et)) {
       return res.status(400).json({ success: false, message: 'Invalid eventType.' });
     }
     sets.push('event_type = ?'); params.push(et);
@@ -363,7 +409,11 @@ async function updateEvent(req, res) {
     [id]
   );
   if (!rows.length) return res.status(404).json({ success: false, message: 'Event not found.' });
-  return res.json({ success: true, event: toEventDto(rows[0]) });
+  const updatedDto = toEventDto(rows[0]);
+  if (current.status === 'draft' && ['upcoming', 'ongoing'].includes(updatedDto.status)) {
+    void broadcastNewEventNotification(id, updatedDto);
+  }
+  return res.json({ success: true, event: updatedDto });
 }
 
 async function deleteEvent(req, res) {

@@ -394,6 +394,12 @@ async function migrate() {
   try { await pool.query('ALTER TABLE events ADD COLUMN banner_url VARCHAR(500) NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE events ADD COLUMN theme_color VARCHAR(50) NULL DEFAULT "#2563eb"'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE events ADD COLUMN custom_badge VARCHAR(100) NULL'); } catch { /* ignore */ }
+  try { await pool.query("ALTER TABLE events MODIFY event_type VARCHAR(50) NOT NULL DEFAULT 'seminar'"); } catch { /* ignore */ }
+
+  // Event Reminder flags
+  try { await pool.query('ALTER TABLE events ADD COLUMN reminder_24h_sent TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN reminder_1h_sent TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN reminder_reg_closing_sent TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
 
   // Event registrations (member joins an event)
   await pool.query(`
@@ -673,17 +679,107 @@ async function migrate() {
   // Backwards compatible column add for legacy payments tables.
   try { await pool.query('ALTER TABLE payments ADD COLUMN event_id INT UNSIGNED NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE payments ADD COLUMN verified_at DATETIME NULL'); } catch { /* ignore */ }
-  try { await pool.query("ALTER TABLE payments ADD COLUMN payment_kind ENUM('event','membership_renewal') NOT NULL DEFAULT 'event'"); } catch { /* ignore */ }
-  try { await pool.query("ALTER TABLE payments ADD COLUMN payment_method ENUM('gcash','paymaya','bank_transfer','cash_officer','paymongo') NOT NULL DEFAULT 'gcash'"); } catch { /* ignore */ }
+  try { await pool.query("ALTER TABLE payments ADD COLUMN payment_kind ENUM('event','membership_renewal','membership_registration','membership','partner_sponsorship') NOT NULL DEFAULT 'membership_registration'"); } catch { /* ignore */ }
+  try { await pool.query("ALTER TABLE payments ADD COLUMN payment_method ENUM('gcash','paymaya','bank_transfer','cash_officer','paymongo','paypal','card') NOT NULL DEFAULT 'gcash'"); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE payments ADD COLUMN reference_number VARCHAR(64) NULL'); } catch { /* ignore */ }
   try { await pool.query("ALTER TABLE payments ADD COLUMN payment_status ENUM('unpaid','pending','paid','rejected','refunded') NOT NULL DEFAULT 'pending'"); } catch { /* ignore */ }
   try { await pool.query("ALTER TABLE payments ADD COLUMN process_status ENUM('submitted','under_review','verified','rejected','completed') NOT NULL DEFAULT 'submitted'"); } catch { /* ignore */ }
 
-  // Expand legacy method enum if present (best-effort).
+  // Drop legacy foreign key constraint referencing legacy 'members' table if still present
   try {
-    await pool.query("ALTER TABLE payments MODIFY method ENUM('gcash','paypal','paymaya','card','bank_transfer','cash_officer','paymongo') NOT NULL");
+    await pool.query('ALTER TABLE payments DROP FOREIGN KEY fk_payments_member');
+  } catch {
+    // ignore if doesn't exist
+  }
+
+  // Ensure fk_payments_member_id references users(id)
+  try {
+    await pool.query(`
+      ALTER TABLE payments
+      ADD CONSTRAINT fk_payments_member_id
+      FOREIGN KEY (member_id) REFERENCES users(id)
+      ON DELETE CASCADE
+    `);
+  } catch {
+    // ignore if already exists
+  }
+
+  // Expand payment enums if table exists
+  try {
+    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_kind ENUM('event','membership_renewal','membership_registration','membership','partner_sponsorship') NOT NULL DEFAULT 'membership_registration'");
+  } catch { /* ignore */ }
+  try {
+    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_method ENUM('gcash','paymaya','bank_transfer','cash_officer','paymongo','paypal','card') NOT NULL DEFAULT 'gcash'");
+  } catch { /* ignore */ }
+  try {
+    await pool.query("ALTER TABLE payments MODIFY COLUMN method ENUM('gcash','paypal','paymaya','card','bank_transfer','cash_officer','paymongo') NOT NULL DEFAULT 'gcash'");
+  } catch { /* ignore */ }
+
+  // Fix any legacy payments with 0/null amounts to default 500 fee for membership
+  try {
+    await pool.query(`
+      UPDATE payments
+      SET amount = 500.00
+      WHERE (amount = 0 OR amount IS NULL)
+        AND (event_id IS NULL OR payment_kind IN ('membership_registration', 'membership_renewal', 'membership'))
+    `);
+  } catch { /* ignore */ }
+
+  // Sync legacy members table rows if legacy members table exists in database
+  try {
+    const [legacyTables] = await pool.query("SHOW TABLES LIKE 'members'");
+    if (legacyTables.length) {
+      await pool.query(`
+        INSERT IGNORE INTO members (id, full_name, username, email, password, member_type, sector, role, status, join_date)
+        SELECT id, full_name, COALESCE(username, CONCAT('member', id)), COALESCE(email, CONCAT('member', id, '@example.com')), password_hash, IF(member_type='school','student',COALESCE(member_type,'individual')), COALESCE(sector,'institution'), 'member', status, COALESCE(DATE(created_at), CURDATE())
+        FROM users
+        WHERE role = 'member'
+      `);
+    }
   } catch {
     // ignore
+  }
+
+  // Self-healing sync: For every registered member who does not have a payment record, create one so all payments are visible!
+  try {
+    const [missingMembers] = await pool.query(`
+      SELECT u.id, u.full_name, u.status, u.membership_mode, u.created_at
+      FROM users u
+      LEFT JOIN payments p ON p.member_id = u.id AND (p.payment_kind IN ('membership_registration', 'membership_renewal', 'membership') OR p.event_id IS NULL)
+      WHERE u.role = 'member' AND p.id IS NULL
+    `);
+
+    if (Array.isArray(missingMembers) && missingMembers.length) {
+      for (const m of missingMembers) {
+        const isVerified = m.status === 'active';
+        const kind = m.membership_mode === 'renew' ? 'membership_renewal' : 'membership_registration';
+        const statusVal = isVerified ? 'verified' : 'pending';
+        const payStatus = isVerified ? 'paid' : 'pending';
+        const procStatus = isVerified ? 'verified' : 'submitted';
+
+        try {
+          await pool.query(`
+            INSERT INTO payments (
+              member_id, amount, payment_kind, payment_method, method, reference_number,
+              status, payment_status, process_status, created_at, updated_at
+            ) VALUES (?, 500.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?)
+          `, [
+            m.id,
+            kind,
+            `REG-${String(m.id).padStart(5, '0')}`,
+            statusVal,
+            payStatus,
+            procStatus,
+            m.created_at || new Date(),
+            m.created_at || new Date(),
+          ]);
+        } catch (singleInsertErr) {
+          console.warn(`Could not sync payment for member ${m.id}:`, singleInsertErr.message);
+        }
+      }
+    }
+  } catch (syncErr) {
+    console.error('Self-healing payment sync notice:', syncErr);
   }
 
   // Payment status change history (verification/rejection)
@@ -1086,12 +1182,14 @@ async function migrate() {
       id INT UNSIGNED NOT NULL AUTO_INCREMENT,
       post_id INT UNSIGNED NOT NULL,
       author_id INT UNSIGNED NOT NULL,
+      parent_id INT UNSIGNED NULL,
       content TEXT NOT NULL,
       status ENUM('published','hidden','archived') NOT NULL DEFAULT 'published',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       KEY idx_forum_comments_post_id (post_id),
+      KEY idx_forum_comments_parent_id (parent_id),
       KEY idx_forum_comments_created_at (created_at),
       CONSTRAINT fk_forum_comments_post
         FOREIGN KEY (post_id) REFERENCES forum_posts(id)
@@ -1101,6 +1199,9 @@ async function migrate() {
         ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+
+  try { await pool.query('ALTER TABLE forum_comments ADD COLUMN parent_id INT UNSIGNED NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_parent FOREIGN KEY (parent_id) REFERENCES forum_comments(id) ON DELETE CASCADE'); } catch { /* ignore */ }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS forum_likes (
@@ -1188,6 +1289,23 @@ async function migrate() {
       key_name VARCHAR(191) NOT NULL,
       value_text TEXT NULL,
       PRIMARY KEY (key_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
+  // Create notifications table for system alerts and in-app member/admin communications
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT UNSIGNED NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      type ENUM('info', 'success', 'warning', 'error') NOT NULL DEFAULT 'info',
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      meta_json JSON NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_notif_user (user_id),
+      INDEX idx_notif_read (is_read),
+      INDEX idx_notif_created (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 

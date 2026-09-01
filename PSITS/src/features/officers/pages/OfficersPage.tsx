@@ -32,6 +32,8 @@ export const OfficersPage = () => {
   const [changeTarget, setChangeTarget] = useState<any | null>(null);
   const [isManagePositionsOpen, setIsManagePositionsOpen] = useState(false);
 
+  const [confirmToggleStatus, setConfirmToggleStatus] = useState<{ id: string; name: string; currentStatus: string; newStatus: 'active' | 'inactive' } | null>(null);
+
   const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin';
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export const OfficersPage = () => {
             </h1>
             <p className="text-gray-600 mt-2">
               {canManageOfficers
-                ? 'Manage organization officers and their roles'
+                ? 'Manage organization officers, their positions, and active/inactive status'
                 : 'View-only list of active organization officers.'}
             </p>
           </div>
@@ -134,9 +136,33 @@ export const OfficersPage = () => {
                       {formatYear(officer.termStart)}{officer.termEnd ? ` - ${formatYear(officer.termEnd)}` : ''}
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant={officer.officerStatus === 'active' ? 'success' : officer.officerStatus === 'past' ? 'warning' : 'error'}>
-                        {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
-                      </Badge>
+                      {canManageOfficers && officer.officerStatus !== 'past' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextStatus = officer.officerStatus === 'active' ? 'inactive' : 'active';
+                            setConfirmToggleStatus({
+                              id: String(officer.id),
+                              name: officer.fullName || officer.email || 'this officer',
+                              currentStatus: officer.officerStatus,
+                              newStatus: nextStatus,
+                            });
+                          }}
+                          className="inline-flex items-center gap-1.5 cursor-pointer group"
+                          title={`Click to set status to ${officer.officerStatus === 'active' ? 'Inactive' : 'Active'}`}
+                        >
+                          <Badge variant={officer.officerStatus === 'active' ? 'success' : 'error'}>
+                            {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
+                          </Badge>
+                          <span className="text-[11px] text-blue-600 underline opacity-0 group-hover:opacity-100 transition-opacity">
+                            (Set {officer.officerStatus === 'active' ? 'Inactive' : 'Active'})
+                          </span>
+                        </button>
+                      ) : (
+                        <Badge variant={officer.officerStatus === 'active' ? 'success' : officer.officerStatus === 'past' ? 'warning' : 'error'}>
+                          {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
+                        </Badge>
+                      )}
                     </td>
                     {canManageOfficers && (
                       <td className="px-6 py-4">
@@ -156,12 +182,12 @@ export const OfficersPage = () => {
                         </button>
                         <button
                           type="button"
-                          className="ml-2 px-2 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+                          className="ml-2 px-2.5 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium"
                           onClick={() => setChangeTarget(officer)}
-                          aria-label="Change officer"
-                          title="Change officer"
+                          aria-label="Edit officer"
+                          title="Edit officer details or status"
                         >
-                          Change
+                          Edit
                         </button>
                       </td>
                     )}
@@ -213,10 +239,12 @@ export const OfficersPage = () => {
           isOpen={!!changeTarget}
           onClose={() => setChangeTarget(null)}
           isLoading={isLoading}
-          title="Change Officer"
+          title="Edit Officer Details"
+          lockPosition={true}
           initialPosition={changeTarget?.position}
           initialStartDate={changeTarget?.termStart}
           initialEndDate={changeTarget?.termEnd}
+          initialStatus={changeTarget?.officerStatus || changeTarget?.status || 'active'}
           initialMember={
             changeTarget
               ? {
@@ -225,27 +253,12 @@ export const OfficersPage = () => {
                   email: changeTarget.email || '',
                   sector: changeTarget.sector,
                   status: changeTarget.officerStatus === 'active' ? 'active' : 'inactive',
+                  officerStatus: changeTarget.officerStatus,
                 }
               : null
           }
           onSubmit={async (data) => {
             if (!changeTarget) return;
-            const isPositionTaken = officers.some(
-              (o) =>
-                o.officerStatus === 'active' &&
-                o.position?.toLowerCase() === data.position?.toLowerCase() &&
-                String(o.id) !== String(changeTarget.id)
-            );
-            if (isPositionTaken) {
-              addNotification({
-                userId: 'current',
-                title: 'Assignment Failed',
-                message: `The position of ${data.position} is already assigned to another active officer.`,
-                type: 'error',
-                isRead: false,
-              });
-              return;
-            }
             setPendingAssign({
               ...data,
               replaceOfficerId: changeTarget.id,
@@ -259,12 +272,10 @@ export const OfficersPage = () => {
 
       <VerifyActionModal
         isOpen={confirmAssign}
-        title="Verify Officer Assignment"
+        title={(pendingAssign as any)?.replaceOfficerId ? "Update Officer Details" : "Verify Officer Assignment"}
         message={
           (pendingAssign as any)?.replaceOfficerId
-            ? String(pendingAssign?.userId) === String((pendingAssign as any).replaceOfficerId)
-              ? `This will update the details of ${(pendingAssign as any).replaceOfficerName || 'the officer'}. Continue?`
-              : `This will replace ${(pendingAssign as any).replaceOfficerName || 'the officer'} with a new member. Continue?`
+            ? `Update details and status for ${(pendingAssign as any).replaceOfficerName || 'the officer'}?`
             : 'Are you sure you want to assign this officer?'
         }
         confirmLabel="Accept"
@@ -281,11 +292,13 @@ export const OfficersPage = () => {
             const replaceOfficerId = (pendingAssign as any).replaceOfficerId;
             if (replaceOfficerId) {
               if (String(pendingAssign.userId) === String(replaceOfficerId)) {
-                // Update same officer's details
+                // Update same officer's details (including status!)
                 await api.updateOfficer(String(replaceOfficerId), {
                   position: pendingAssign.position,
                   startDate: pendingAssign.startDate,
                   endDate: pendingAssign.endDate,
+                  status: (pendingAssign as any).status,
+                  officerStatus: (pendingAssign as any).officerStatus,
                 });
               } else {
                 // Replace with a different member
@@ -303,7 +316,7 @@ export const OfficersPage = () => {
             addNotification({
               userId: 'current',
               title: isUpdate ? 'Officer Details Updated' : 'Officer Assigned',
-              message: isUpdate ? 'Officer details updated successfully.' : 'Officer role assigned successfully.',
+              message: isUpdate ? 'Officer details and status updated successfully.' : 'Officer role assigned successfully.',
               type: 'success',
               isRead: false,
             });
@@ -314,6 +327,52 @@ export const OfficersPage = () => {
               userId: 'current',
               title: 'Error',
               message: err instanceof Error ? err.message : 'Failed to update/assign officer.',
+              type: 'error',
+              isRead: false,
+            });
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+      />
+
+      <VerifyActionModal
+        isOpen={!!confirmToggleStatus}
+        title="Change Officer Status"
+        message={
+          confirmToggleStatus
+            ? `Change the status of ${confirmToggleStatus.name} from ${confirmToggleStatus.currentStatus.toUpperCase()} to ${confirmToggleStatus.newStatus.toUpperCase()}?`
+            : ''
+        }
+        confirmLabel={`Set ${confirmToggleStatus?.newStatus === 'active' ? 'Active' : 'Inactive'}`}
+        confirmVariant={confirmToggleStatus?.newStatus === 'active' ? 'primary' : 'danger'}
+        onCancel={() => {
+          if (isLoading) return;
+          setConfirmToggleStatus(null);
+        }}
+        onVerified={async () => {
+          if (!confirmToggleStatus) return;
+          setIsLoading(true);
+          try {
+            await api.updateOfficer(confirmToggleStatus.id, {
+              status: confirmToggleStatus.newStatus,
+              officerStatus: confirmToggleStatus.newStatus,
+            });
+            const { data: resp } = await api.getOfficers(filterStatus);
+            if (resp?.success) setOfficers(resp.officers || []);
+            addNotification({
+              userId: 'current',
+              title: 'Officer Status Updated',
+              message: `${confirmToggleStatus.name} is now marked as ${confirmToggleStatus.newStatus}.`,
+              type: 'success',
+              isRead: false,
+            });
+            setConfirmToggleStatus(null);
+          } catch (err) {
+            addNotification({
+              userId: 'current',
+              title: 'Error',
+              message: err instanceof Error ? err.message : 'Failed to update status.',
               type: 'error',
               isRead: false,
             });

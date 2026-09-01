@@ -85,9 +85,23 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   options: Array<{ value: string | number; label: string }>;
+  placeholder?: string;
+  hidePlaceholder?: boolean;
 }
 
-export const Select = ({ label, error, options, className = '', required, ...props }: SelectProps) => {
+export const Select = ({
+  label,
+  error,
+  options,
+  className = '',
+  required,
+  placeholder = 'Select an option',
+  hidePlaceholder = false,
+  ...props
+}: SelectProps) => {
+  const hasEmptyOption = options.some((o) => o.value === '');
+  const filteredOptions = hasEmptyOption ? options.filter((o) => o.value !== '') : options;
+
   return (
     <div className="w-full space-y-1.5">
       {label && (
@@ -104,8 +118,12 @@ export const Select = ({ label, error, options, className = '', required, ...pro
         } ${className}`}
         {...props}
       >
-        <option value="" className="dark:bg-slate-900 dark:text-slate-200">Select an option</option>
-        {options.map((option) => (
+        {!hidePlaceholder && (
+          <option value="" className="dark:bg-slate-900 dark:text-slate-200">
+            {placeholder}
+          </option>
+        )}
+        {filteredOptions.map((option) => (
           <option key={option.value} value={option.value} className="dark:bg-slate-900 dark:text-slate-200">
             {option.label}
           </option>
@@ -149,12 +167,14 @@ interface CardProps {
   title?: string;
   subtitle?: string;
   style?: React.CSSProperties;
+  onClick?: () => void;
 }
 
-export const Card = ({ children, className = '', title, subtitle, style }: CardProps) => {
+export const Card = ({ children, className = '', title, subtitle, style, onClick }: CardProps) => {
   return (
     <div
       style={style}
+      onClick={onClick}
       className={`bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-xs transition-all duration-200 hover:shadow-md hover:border-gray-300/80 dark:hover:border-slate-700 text-gray-900 dark:text-slate-100 ${className}`}
     >
       {(title || subtitle) && (

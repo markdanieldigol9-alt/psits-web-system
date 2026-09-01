@@ -38,6 +38,7 @@ const { listPartners, createPartner, updatePartner, deletePartner, listPartnerCo
 const { listPayments, createPayment, verifyPayment, getPaymentStatusLogs } = require('./payments');
 const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
+const { startReminderService } = require('./reminders');
 const {
   listLiveEvents,
   listLiveEventsByEvent,
@@ -222,28 +223,38 @@ app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member']), 
 app.post('/api/uploads/team-profile', authMiddleware, requireRole(['member']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
+  const originalFileName = String(body.fileName || '').trim();
 
-  const match = dataUrl.match(/^data:(image\/(png|jpeg|jpg|webp)|application\/pdf);base64,(.+)$/);
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {
-    return res.status(400).json({ success: false, message: 'Invalid file format. Use PNG/JPG/WebP/PDF data URL.' });
+    return res.status(400).json({ success: false, message: 'Invalid file format. Use PDF, Excel (.xlsx/.xls), or Word (.docx/.doc) document.' });
   }
 
-  const mime = match[1];
-  const base64 = match[3];
+  const mime = match[1].toLowerCase();
+  const base64 = match[2];
   const buffer = Buffer.from(base64, 'base64');
 
-  const maxBytes = 8 * 1024 * 1024; // 8MB
+  const maxBytes = 15 * 1024 * 1024; // 15MB
   if (!buffer.length || buffer.length > maxBytes) {
-    return res.status(400).json({ success: false, message: 'File is required and must be <= 8MB.' });
+    return res.status(400).json({ success: false, message: 'File is required and must be <= 15MB.' });
   }
 
-  const ext = mime === 'image/png'
-    ? 'png'
-    : mime === 'image/webp'
-      ? 'webp'
-      : mime === 'application/pdf'
-        ? 'pdf'
-        : 'jpg';
+  let ext = 'pdf';
+  if (mime.includes('pdf')) {
+    ext = 'pdf';
+  } else if (mime.includes('spreadsheet') || mime.includes('excel') || originalFileName.endsWith('.xlsx') || originalFileName.endsWith('.xls')) {
+    ext = originalFileName.endsWith('.xls') ? 'xls' : 'xlsx';
+  } else if (mime.includes('word') || mime.includes('document') || originalFileName.endsWith('.docx') || originalFileName.endsWith('.doc')) {
+    ext = originalFileName.endsWith('.doc') ? 'doc' : 'docx';
+  } else {
+    const fileExt = path.extname(originalFileName).toLowerCase().replace('.', '');
+    if (['pdf', 'xlsx', 'xls', 'docx', 'doc'].includes(fileExt)) {
+      ext = fileExt;
+    } else {
+      return res.status(400).json({ success: false, message: 'Only PDF, Excel (.xlsx, .xls), and Word (.docx, .doc) documents are allowed.' });
+    }
+  }
+
   const dir = path.join(__dirname, 'uploads', 'team-profiles');
   await fs.mkdir(dir, { recursive: true });
 
@@ -372,6 +383,95 @@ app.get('/api/account/officer-contacts', requireMigrationReady, authMiddleware, 
   }
 });
 
+// In-App Notifications API
+app.get('/api/notifications', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, user_id, title, message, type, is_read, meta_json, created_at
+       FROM notifications
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT 150`,
+      [req.user.id]
+    );
+
+    const list = rows.map((r) => {
+      let meta = null;
+      if (r.meta_json) {
+        try {
+          meta = typeof r.meta_json === 'string' ? JSON.parse(r.meta_json) : r.meta_json;
+        } catch {
+          meta = r.meta_json;
+        }
+      }
+      return {
+        id: String(r.id),
+        userId: String(r.user_id),
+        title: r.title,
+        message: r.message,
+        type: r.type,
+        isRead: Boolean(r.is_read),
+        meta,
+        createdAt: r.created_at,
+      };
+    });
+
+    res.json({ success: true, notifications: list });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch notifications', error: err.message });
+  }
+});
+
+app.patch('/api/notifications/:id/read', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    const notifId = req.params.id;
+    await pool.execute(
+      'UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?',
+      [notifId, req.user.id]
+    );
+    res.json({ success: true, message: 'Notification marked as read' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to update notification', error: err.message });
+  }
+});
+
+app.patch('/api/notifications/mark-all-read', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    await pool.execute(
+      'UPDATE notifications SET is_read = TRUE WHERE user_id = ?',
+      [req.user.id]
+    );
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to mark notifications read', error: err.message });
+  }
+});
+
+app.delete('/api/notifications/:id', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    const notifId = req.params.id;
+    await pool.execute(
+      'DELETE FROM notifications WHERE id = ? AND user_id = ?',
+      [notifId, req.user.id]
+    );
+    res.json({ success: true, message: 'Notification removed' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to delete notification', error: err.message });
+  }
+});
+
+app.delete('/api/notifications', requireMigrationReady, authMiddleware, async (req, res) => {
+  try {
+    await pool.execute(
+      'DELETE FROM notifications WHERE user_id = ?',
+      [req.user.id]
+    );
+    res.json({ success: true, message: 'All notifications cleared' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to clear notifications', error: err.message });
+  }
+});
+
 app.post('/api/account/reactivation-request', requireMigrationReady, authMiddleware, async (req, res) => {
   try {
     const user = req.user;
@@ -392,10 +492,19 @@ app.post('/api/account/reactivation-request', requireMigrationReady, authMiddlew
     const [adminRows] = await pool.execute(
       `SELECT id, full_name, email, role
        FROM users
-       WHERE role IN ('super_admin', 'admin', 'officer') AND status = 'active'`
+       WHERE role IN ('super_admin', 'admin', 'officer')`
     );
 
     const adminEmails = adminRows.map((r) => r.email).filter(Boolean);
+    const metaPayload = JSON.stringify({
+      kind: 'reactivation_request',
+      memberId: user.id,
+      memberName: user.full_name || 'Member',
+      memberEmail: user.email,
+      suspendedReason: user.suspended_reason || null,
+      appealMessage: message || null,
+      requestedAt: new Date().toISOString(),
+    });
 
     // Record in audit_logs
     try {
@@ -405,18 +514,47 @@ app.post('/api/account/reactivation-request', requireMigrationReady, authMiddlew
         [
           user.id,
           String(user.id),
-          JSON.stringify({
-            memberName: user.full_name,
-            memberEmail: user.email,
-            suspendedReason: user.suspended_reason || null,
-            message: message || null,
-            notifiedAdminsCount: adminRows.length,
-            requestedAt: new Date().toISOString(),
-          }),
+          metaPayload,
         ]
       );
     } catch (auditErr) {
       console.warn('Could not write audit log for reactivation request:', auditErr.message);
+    }
+
+    // Insert real-time database notification for every active Admin and Officer
+    for (const admin of adminRows) {
+      try {
+        await pool.execute(
+          `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+           VALUES (?, ?, ?, 'warning', FALSE, ?)`,
+          [
+            admin.id,
+            `Account Reactivation Request - ${user.full_name || 'Member'}`,
+            message
+              ? `Member ${user.full_name} (${user.email}) requested account reactivation: "${message}"`
+              : `Member ${user.full_name} (${user.email}) requested account reactivation.`,
+            metaPayload,
+          ]
+        );
+      } catch (notifErr) {
+        console.warn('Could not insert admin notification:', notifErr.message);
+      }
+    }
+
+    // Also insert confirmation notification for the member
+    try {
+      await pool.execute(
+        `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+         VALUES (?, ?, ?, 'info', FALSE, ?)`,
+        [
+          user.id,
+          'Reactivation Request Submitted',
+          'Your account reactivation request has been sent to the Officers and Administrators.',
+          metaPayload,
+        ]
+      );
+    } catch (mErr) {
+      console.warn('Could not insert member notification:', mErr.message);
     }
 
     // Send email notification to officers and admins if SMTP is active
@@ -823,6 +961,7 @@ setInterval(async () => {
 migrate()
   .then(() => {
     migrationReady = true;
+    startReminderService();
   })
   .catch((err) => {
     migrationReady = false;

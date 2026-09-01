@@ -808,6 +808,18 @@ export const SettingsPage = () => {
             </div>
 
             {/* Profile Picture Upload & Preview Card */}
+            {isSuspended && (
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-3 shadow-xs">
+                <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <div>
+                  <p className="font-bold">Profile Editing Locked (Account Suspended)</p>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 font-normal mt-0.5">
+                    Modifying profile details and profile photos is disabled while your account is suspended. Please use the appeal form above to request reactivation.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row items-center gap-6 p-5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-2xl border border-blue-100 dark:border-slate-700 shadow-2xs">
               <div className="relative group shrink-0">
                 {avatarPreview ? (
@@ -828,15 +840,17 @@ export const SettingsPage = () => {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={avatarLoading}
-                  className="absolute bottom-0 right-0 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg border-2 border-white dark:border-slate-800 transition-transform hover:scale-110 active:scale-95"
-                  title="Upload profile picture"
-                >
-                  <Camera size={15} />
-                </button>
+                {!isSuspended && (
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarLoading || isSuspended}
+                    className="absolute bottom-0 right-0 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg border-2 border-white dark:border-slate-800 transition-transform hover:scale-110 active:scale-95"
+                    title="Upload profile picture"
+                  >
+                    <Camera size={15} />
+                  </button>
+                )}
               </div>
 
               <div className="flex-1 text-center sm:text-left space-y-2">
@@ -866,7 +880,7 @@ export const SettingsPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => avatarInputRef.current?.click()}
-                    disabled={avatarLoading}
+                    disabled={avatarLoading || isSuspended}
                     className="flex items-center gap-1.5"
                   >
                     <Upload size={14} />
@@ -879,7 +893,7 @@ export const SettingsPage = () => {
                       variant="danger"
                       size="sm"
                       onClick={handleRemoveAvatar}
-                      disabled={avatarLoading}
+                      disabled={avatarLoading || isSuspended}
                       className="flex items-center gap-1.5"
                     >
                       <Trash2 size={14} />
@@ -923,6 +937,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Full Name"
                   required
+                  disabled={isSuspended}
                   value={formData.fullName}
                   onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
                   error={errors.fullName}
@@ -930,6 +945,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Contact Number"
                   required
+                  disabled={isSuspended}
                   value={formData.contactNumber}
                   onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
                   error={errors.contactNumber}
@@ -943,6 +959,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Full Name"
                   required
+                  disabled={isSuspended}
                   value={formData.fullName}
                   onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
                   error={errors.fullName}
@@ -950,6 +967,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Birthdate"
                   required
+                  disabled={isSuspended}
                   type="date"
                   value={formData.birthDate || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, birthDate: e.target.value }))}
@@ -959,6 +977,7 @@ export const SettingsPage = () => {
                 <Select
                   label="Gender"
                   required
+                  disabled={isSuspended}
                   options={[
                     { value: 'Male', label: 'Male' },
                     { value: 'Female', label: 'Female' },
@@ -971,6 +990,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Contact Number"
                   required
+                  disabled={isSuspended}
                   value={formData.contactNumber}
                   onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
                   error={errors.contactNumber}
@@ -978,6 +998,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Address"
                   required
+                  disabled={isSuspended}
                   value={formData.address || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
                   error={errors.address}
@@ -992,6 +1013,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Institution Name"
                   required
+                  disabled={isSuspended}
                   value={formData.sectorDetails || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))}
                   error={errors.sectorDetails}
@@ -999,6 +1021,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Institution Address"
                   required
+                  disabled={isSuspended}
                   value={formData.address || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
                   error={errors.address}
@@ -1006,6 +1029,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Institution Email"
                   required
+                  disabled={isSuspended}
                   type="email"
                   value={formData.companyEmail || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value }))}
@@ -1014,6 +1038,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Institution Contact Number"
                   required
+                  disabled={isSuspended}
                   value={formData.contactNumber || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
                   error={errors.contactNumber}
@@ -1021,6 +1046,7 @@ export const SettingsPage = () => {
                 <Input
                   label="1st Institution Representative Name"
                   required
+                  disabled={isSuspended}
                   value={formData.representativeName || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value }))}
                   error={errors.representativeName}
@@ -1028,6 +1054,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Representative 1 Position"
                   required
+                  disabled={isSuspended}
                   value={formData.position || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))}
                   error={errors.position}
@@ -1035,6 +1062,7 @@ export const SettingsPage = () => {
                 <Input
                   label="2nd Institution Representative Name"
                   required
+                  disabled={isSuspended}
                   value={formData.representativeName2 || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, representativeName2: e.target.value }))}
                   error={errors.representativeName2}
@@ -1042,6 +1070,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Representative 2 Position"
                   required
+                  disabled={isSuspended}
                   value={formData.representativePosition2 || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, representativePosition2: e.target.value }))}
                   error={errors.representativePosition2}
@@ -1055,6 +1084,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Company Name"
                   required
+                  disabled={isSuspended}
                   value={formData.sectorDetails || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))}
                   error={errors.sectorDetails}
@@ -1062,6 +1092,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Company Address"
                   required
+                  disabled={isSuspended}
                   value={formData.address || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
                   error={errors.address}
@@ -1069,6 +1100,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Representative Name"
                   required
+                  disabled={isSuspended}
                   value={formData.representativeName || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value }))}
                   error={errors.representativeName}
@@ -1076,6 +1108,7 @@ export const SettingsPage = () => {
                 <Select
                   label="Gender"
                   required
+                  disabled={isSuspended}
                   options={[
                     { value: 'Male', label: 'Male' },
                     { value: 'Female', label: 'Female' },
@@ -1088,6 +1121,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Contact Number"
                   required
+                  disabled={isSuspended}
                   value={formData.contactNumber || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, contactNumber: e.target.value }))}
                   error={errors.contactNumber}
@@ -1095,6 +1129,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Position"
                   required
+                  disabled={isSuspended}
                   value={formData.position || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))}
                   error={errors.position}
@@ -1102,6 +1137,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Company Email"
                   required
+                  disabled={isSuspended}
                   type="email"
                   value={formData.companyEmail || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, companyEmail: e.target.value }))}
@@ -1109,6 +1145,7 @@ export const SettingsPage = () => {
                 />
                 <Input
                   label="Company Website (Optional)"
+                  disabled={isSuspended}
                   value={formData.website || ''}
                   onChange={(e) => setFormData((p) => ({ ...p, website: e.target.value }))}
                   error={errors.website}
@@ -1124,6 +1161,7 @@ export const SettingsPage = () => {
                 <Input
                   label="New Password"
                   type="password"
+                  disabled={isSuspended}
                   value={formData.password}
                   onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
                   error={errors.password}
@@ -1132,6 +1170,7 @@ export const SettingsPage = () => {
                 <Input
                   label="Confirm New Password"
                   type="password"
+                  disabled={isSuspended}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))}
                   error={errors.confirmPassword}
@@ -1143,7 +1182,10 @@ export const SettingsPage = () => {
           <div className="flex justify-end mt-6">
             <Button
               variant="primary"
+              disabled={isSuspended || isLoading}
+              title={isSuspended ? 'Profile saving is disabled while account is suspended' : 'Save Changes'}
               onClick={() => {
+                if (isSuspended) return;
                 if (validateForm()) {
                   setConfirmSave(true);
                 }
@@ -1334,9 +1376,24 @@ export const SettingsPage = () => {
                 <h2 className="text-lg font-bold text-gray-900">Membership Validity</h2>
                 <p className="text-sm text-gray-600">Memberships require renewal every year.</p>
               </div>
-              <Button variant="outline" onClick={() => setIsRenewalOpen(true)}>
-                Request Renewal
-              </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                {isSuspended && (
+                  <span className="text-xs text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
+                    Renewal locked while suspended
+                  </span>
+                )}
+                <Button
+                  variant="outline"
+                  disabled={isSuspended}
+                  title={isSuspended ? 'Membership renewal is unavailable while account is suspended' : 'Request Renewal'}
+                  onClick={() => {
+                    if (isSuspended) return;
+                    setIsRenewalOpen(true);
+                  }}
+                >
+                  Request Renewal
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 text-sm">
@@ -1391,6 +1448,10 @@ export const SettingsPage = () => {
           onSubmit={(e) => {
             e.preventDefault();
             setRenewalError(null);
+            if (isSuspended) {
+              setRenewalError('Account is suspended. Membership renewal cannot be requested.');
+              return;
+            }
             if (!renewalForm.amount || Number(renewalForm.amount) <= 0) {
               setRenewalError('Amount is required.');
               return;

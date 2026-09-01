@@ -28,6 +28,8 @@ function toCommentDto(row) {
     postId: String(row.post_id),
     authorId: String(row.author_id),
     authorName: row.author_name || '',
+    parentId: row.parent_id ? String(row.parent_id) : null,
+    parentAuthorName: row.parent_author_name || null,
     content: row.content,
     status: row.status,
     createdAt: row.created_at,
@@ -166,12 +168,14 @@ async function listComments(req, res) {
   }
 
   const [rows] = await pool.execute(
-    `SELECT c.*, u.full_name AS author_name
+    `SELECT c.*, u.full_name AS author_name, pu.full_name AS parent_author_name
      FROM forum_comments c
      JOIN users u ON u.id = c.author_id
+     LEFT JOIN forum_comments pc ON pc.id = c.parent_id
+     LEFT JOIN users pu ON pu.id = pc.author_id
      WHERE ${where.join(' AND ')}
      ORDER BY c.created_at ASC
-     LIMIT 300`,
+     LIMIT 500`,
     params
   );
   return json(res, 200, { success: true, comments: rows.map(toCommentDto) });
@@ -182,13 +186,45 @@ async function addComment(req, res) {
   if (!Number.isFinite(postId)) return json(res, 400, { success: false, message: 'Invalid post id.' });
   const body = req.body || {};
   const content = String(body.content || '').trim();
+  const parentId = body.parentId && Number.isFinite(Number(body.parentId)) ? Number(body.parentId) : null;
   if (!content) return json(res, 400, { success: false, message: 'Content is required.' });
 
   const [result] = await pool.execute(
-    `INSERT INTO forum_comments (post_id, author_id, content, status)
-     VALUES (?, ?, ?, 'published')`,
-    [postId, req.user?.id || null, content]
+    `INSERT INTO forum_comments (post_id, author_id, parent_id, content, status)
+     VALUES (?, ?, ?, ?, 'published')`,
+    [postId, req.user?.id || null, parentId, content]
   );
+
+  // Notify parent comment author if this is a reply
+  if (parentId) {
+    try {
+      const [pRows] = await pool.execute(
+        `SELECT c.author_id, p.title AS post_title
+         FROM forum_comments c
+         JOIN forum_posts p ON p.id = c.post_id
+         WHERE c.id = ? LIMIT 1`,
+        [parentId]
+      );
+      if (pRows.length && Number(pRows[0].author_id) !== Number(req.user?.id)) {
+        const parentAuthorId = pRows[0].author_id;
+        const postTitle = pRows[0].post_title || 'Community Post';
+        const preview = content.length > 80 ? `${content.slice(0, 77)}...` : content;
+        const metaJson = JSON.stringify({ postId: String(postId), parentId: String(parentId), url: '/community' });
+        await pool.execute(
+          `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+           VALUES (?, ?, ?, 'info', 0, ?)`,
+          [
+            parentAuthorId,
+            `💬 Reply to your comment`,
+            `${req.user?.full_name || 'A user'} replied to your comment in "${postTitle}": "${preview}"`,
+            metaJson,
+          ]
+        );
+      }
+    } catch (notifErr) {
+      console.warn('[Forum] Failed to send reply notification:', notifErr.message);
+    }
+  }
 
   return json(res, 201, { success: true, id: String(result.insertId) });
 }

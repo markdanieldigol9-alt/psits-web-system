@@ -54,6 +54,15 @@ function toCandidateDto(row) {
 }
 
 async function listElections(req, res) {
+  // Automatically close any open election whose end date has passed
+  try {
+    await pool.execute(
+      "UPDATE elections SET status = 'closed' WHERE status = 'open' AND end_date < CURDATE()"
+    );
+  } catch {
+    // best-effort
+  }
+
   const status = req.query.status ? String(req.query.status) : null;
   const where = [];
   const params = [];
@@ -84,6 +93,20 @@ async function getElectionDetails(req, res) {
 
   const [rows] = await pool.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [id]);
   if (!rows.length) return json(res, 404, { success: false, message: 'Election not found.' });
+
+  // Auto-close if open but end date has passed
+  if (rows[0].status === 'open' && rows[0].end_date) {
+    const today = new Date().toISOString().slice(0, 10);
+    const endStr = formatDateOnly(rows[0].end_date);
+    if (endStr && endStr < today) {
+      try {
+        await pool.execute("UPDATE elections SET status = 'closed' WHERE id = ?", [id]);
+        rows[0].status = 'closed';
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   // For members, allow open, closed, and archived elections.
   if (req.user?.role === 'member' && !['open', 'closed', 'archived'].includes(String(rows[0].status))) {
@@ -132,7 +155,29 @@ async function createElection(req, res) {
     [title, description, startDate, endDate, status, allowedPositions, req.user?.id || null]
   );
 
-  const [rows] = await pool.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [result.insertId]);
+  const newElectionId = result.insertId;
+
+  // If initial candidates were submitted along with election creation, insert them in batch
+  if (Array.isArray(body.candidates) && body.candidates.length > 0) {
+    for (const c of body.candidates) {
+      const mId = Number(c.memberId || c.member_id);
+      const pos = String(c.position || '').trim();
+      const plat = c.platform ? String(c.platform).trim() : null;
+      if (Number.isFinite(mId) && pos) {
+        try {
+          await pool.execute(
+            `INSERT INTO election_candidates (election_id, member_id, position, platform, status)
+             VALUES (?, ?, ?, ?, 'pending')`,
+            [newElectionId, mId, pos, plat]
+          );
+        } catch {
+          // ignore duplicate or individual candidate error
+        }
+      }
+    }
+  }
+
+  const [rows] = await pool.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [newElectionId]);
   return json(res, 201, { success: true, election: toElectionDto(rows[0]) });
 }
 
@@ -169,10 +214,36 @@ async function updateElection(req, res) {
     params.push(JSON.stringify(body.allowedPositions));
   }
 
-  if (!sets.length) return json(res, 400, { success: false, message: 'No fields to update.' });
+  if (sets.length) {
+    params.push(id);
+    await pool.execute(`UPDATE elections SET ${sets.join(', ')} WHERE id = ?`, params);
+  }
 
-  params.push(id);
-  await pool.execute(`UPDATE elections SET ${sets.join(', ')} WHERE id = ?`, params);
+  // If updated candidates are provided in body.candidates, sync/add any new ones
+  if (Array.isArray(body.candidates)) {
+    for (const c of body.candidates) {
+      const mId = Number(c.memberId || c.member_id);
+      const pos = String(c.position || '').trim();
+      const plat = c.platform ? String(c.platform).trim() : null;
+      if (Number.isFinite(mId) && pos) {
+        try {
+          const [exists] = await pool.execute(
+            'SELECT id FROM election_candidates WHERE election_id = ? AND member_id = ? LIMIT 1',
+            [id, mId]
+          );
+          if (!exists.length) {
+            await pool.execute(
+              `INSERT INTO election_candidates (election_id, member_id, position, platform, status)
+               VALUES (?, ?, ?, ?, 'pending')`,
+              [id, mId, pos, plat]
+            );
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
 
   const [rows] = await pool.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [id]);
   if (!rows.length) return json(res, 404, { success: false, message: 'Election not found.' });
@@ -184,44 +255,71 @@ async function addCandidate(req, res) {
   const electionId = Number(req.params.id);
   if (!Number.isFinite(electionId)) return json(res, 400, { success: false, message: 'Invalid election id.' });
   const body = req.body || {};
-  const memberId = Number(body.memberId);
-  const position = String(body.position || '').trim();
-  const platform = body.platform ? String(body.platform).trim() : null;
 
-  if (!Number.isFinite(memberId) || !position) {
-    return json(res, 400, { success: false, message: 'memberId and position are required.' });
+  let candidateList = [];
+  if (Array.isArray(body.candidates) && body.candidates.length > 0) {
+    candidateList = body.candidates.map((c) => ({
+      memberId: Number(c.memberId || c.member_id),
+      position: String(c.position || body.position || '').trim(),
+      platform: String(c.platform || '').trim(),
+    })).filter((c) => Number.isFinite(c.memberId) && c.position);
+  } else {
+    const memberIds = Array.isArray(body.memberIds)
+      ? body.memberIds.map(Number).filter(Number.isFinite)
+      : Number.isFinite(Number(body.memberId))
+      ? [Number(body.memberId)]
+      : [];
+    const position = String(body.position || '').trim();
+    const platform = body.platform ? String(body.platform).trim() : '';
+    candidateList = memberIds.map((id) => ({ memberId: id, position, platform }));
   }
 
-  // Enforce one position per candidate per election
-  const [alreadyRunning] = await pool.execute(
-    `SELECT position FROM election_candidates WHERE election_id = ? AND member_id = ? LIMIT 1`,
-    [electionId, memberId]
-  );
-  if (alreadyRunning.length) {
-    return json(res, 400, {
-      success: false,
-      message: `This candidate is already running for ${alreadyRunning[0].position} in this election. Candidates can only run for one position per election.`
-    });
+  if (!candidateList.length) {
+    return json(res, 400, { success: false, message: 'At least one candidate with a position is required.' });
   }
 
-  // Only approved members can be candidates
-  const [mrows] = await pool.execute(
-    `SELECT id FROM users WHERE id = ? AND role = 'member' AND status = 'active' LIMIT 1`,
-    [memberId]
-  );
-  if (!mrows.length) return json(res, 400, { success: false, message: 'Candidate must be an approved (active) member.' });
+  const inserted = [];
+  const errors = [];
 
-  try {
-    const [result] = await pool.execute(
-      `INSERT INTO election_candidates (election_id, member_id, position, platform, status)
-       VALUES (?, ?, ?, ?, 'pending')`,
-      [electionId, memberId, position, platform]
+  for (const c of candidateList) {
+    const memberId = c.memberId;
+    const position = c.position;
+    const platform = c.platform || null;
+
+    // Enforce one position per candidate per election
+    const [alreadyRunning] = await pool.execute(
+      `SELECT position FROM election_candidates WHERE election_id = ? AND member_id = ? LIMIT 1`,
+      [electionId, memberId]
     );
-  } catch (err) {
-    const message = err && err.code === 'ER_DUP_ENTRY'
-      ? 'Candidate already added for this position.'
-      : 'Failed to add candidate.';
-    return json(res, 400, { success: false, message });
+    if (alreadyRunning.length) {
+      errors.push(`Member ID ${memberId} is already running for ${alreadyRunning[0].position}.`);
+      continue;
+    }
+
+    // Only approved members can be candidates
+    const [mrows] = await pool.execute(
+      `SELECT id FROM users WHERE id = ? AND role = 'member' AND status = 'active' LIMIT 1`,
+      [memberId]
+    );
+    if (!mrows.length) {
+      errors.push(`Member ID ${memberId} is not an active approved member.`);
+      continue;
+    }
+
+    try {
+      await pool.execute(
+        `INSERT INTO election_candidates (election_id, member_id, position, platform, status)
+         VALUES (?, ?, ?, ?, 'pending')`,
+        [electionId, memberId, position, platform]
+      );
+      inserted.push(memberId);
+    } catch (err) {
+      errors.push(`Failed to add member ID ${memberId}: ${err.message}`);
+    }
+  }
+
+  if (inserted.length === 0 && errors.length > 0) {
+    return json(res, 400, { success: false, message: errors.join(' ') });
   }
 
   const [candRows] = await pool.execute(
@@ -432,9 +530,23 @@ async function castVote(req, res) {
     }
 
     const election = eRows[0];
-    if (election.status !== 'open') {
+    const today = new Date().toISOString().slice(0, 10);
+    const endStr = formatDateOnly(election.end_date);
+    const isPastEnd = endStr && endStr < today;
+
+    if (election.status !== 'open' || isPastEnd) {
+      if (election.status === 'open' && isPastEnd) {
+        try {
+          await conn.execute("UPDATE elections SET status = 'closed' WHERE id = ?", [electionId]);
+        } catch {
+          // ignore
+        }
+      }
       await conn.rollback();
-      return json(res, 400, { success: false, message: 'Voting is only allowed for open elections.' });
+      return json(res, 400, {
+        success: false,
+        message: 'This election has ended and is now closed. Members cannot cast votes anymore.',
+      });
     }
 
     // Verify user is a member

@@ -89,7 +89,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
           </button>
 
           {/* Notifications Link */}
-          {user?.status !== 'suspended' && (
+          {user && (
             <Link
               to="/notifications"
               className="relative p-2 text-gray-600 dark:text-slate-300 hover:text-primary hover:bg-gray-100/80 dark:hover:bg-slate-800 rounded-lg transition-all"

@@ -358,8 +358,8 @@ class ApiService {
     return this.client.post('/uploads/payment-proof', { dataUrl });
   }
 
-  uploadTeamProfile(dataUrl: string) {
-    return this.client.post('/uploads/team-profile', { dataUrl });
+  uploadTeamProfile(dataUrl: string, fileName?: string) {
+    return this.client.post('/uploads/team-profile', { dataUrl, fileName });
   }
 
   uploadAnnouncementImage(dataUrl: string) {
@@ -571,8 +571,8 @@ class ApiService {
     return this.client.get(`/forum/posts/${postId}/comments`);
   }
 
-  addForumComment(postId: string, content: string) {
-    return this.client.post(`/forum/posts/${postId}/comments`, { content });
+  addForumComment(postId: string, content: string, parentId?: string | null) {
+    return this.client.post(`/forum/posts/${postId}/comments`, { content, parentId: parentId || null });
   }
 
   setForumLike(postId: string, liked: boolean) {
@@ -597,6 +597,26 @@ class ApiService {
 
   requestAccountReactivation(data: { message?: string }) {
     return this.client.post('/account/reactivation-request', data);
+  }
+
+  getNotifications() {
+    return this.client.get('/notifications');
+  }
+
+  markNotificationRead(id: string) {
+    return this.client.patch(`/notifications/${id}/read`);
+  }
+
+  markAllNotificationsRead() {
+    return this.client.patch('/notifications/mark-all-read');
+  }
+
+  deleteNotification(id: string) {
+    return this.client.delete(`/notifications/${id}`);
+  }
+
+  clearAllNotifications() {
+    return this.client.delete('/notifications');
   }
 }
 

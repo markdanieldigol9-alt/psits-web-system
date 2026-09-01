@@ -115,6 +115,44 @@ async function listAnnouncements(req, res) {
   return res.json({ success: true, announcements });
 }
 
+async function broadcastAnnouncementNotification(announcementId, title, content, audience) {
+  try {
+    const [users] = await pool.query(
+      `SELECT id, role, member_type FROM users WHERE status = 'active'`
+    );
+    if (!users.length) return;
+
+    const targetUsers = users.filter((u) => canMemberSee(audience, u.member_type) || u.role === 'super_admin' || u.role === 'admin' || u.role === 'officer');
+    if (!targetUsers.length) return;
+
+    const previewMessage = content.length > 140 ? `${content.slice(0, 137)}...` : content;
+    const metaJson = JSON.stringify({
+      announcementId: String(announcementId),
+      title,
+      url: '/announcements',
+    });
+
+    const values = targetUsers.map((u) => [
+      u.id,
+      `📢 New Announcement: ${title}`,
+      previewMessage,
+      'info',
+      0,
+      metaJson,
+    ]);
+
+    const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+    const flatParams = values.flat();
+    await pool.execute(
+      `INSERT INTO notifications (user_id, title, message, type, is_read, meta_json)
+       VALUES ${placeholders}`,
+      flatParams
+    );
+  } catch (err) {
+    console.warn('[Announcements] Failed to broadcast notification:', err.message);
+  }
+}
+
 async function createAnnouncement(req, res) {
   const body = req.body || {};
   const title = String(body.title || '').trim();
@@ -133,6 +171,10 @@ async function createAnnouncement(req, res) {
      VALUES (?, ?, ?, ?, ?, ?)`,
     [title, content, audienceJson, status, req.user?.id || null, imageUrl]
   );
+
+  if (status === 'published') {
+    void broadcastAnnouncementNotification(result.insertId, title, content, audience);
+  }
 
   const [rows] = await pool.execute(
     `SELECT
@@ -195,7 +237,14 @@ async function updateAnnouncement(req, res) {
     [id]
   );
   if (!rows.length) return res.status(404).json({ success: false, message: 'Announcement not found.' });
-  return res.json({ success: true, announcement: toAnnouncementDto(rows[0]) });
+
+  const updatedAnnouncement = rows[0];
+  if (body.status === 'published') {
+    const aud = parseAudience(updatedAnnouncement.audience_json);
+    void broadcastAnnouncementNotification(id, updatedAnnouncement.title, updatedAnnouncement.content, aud);
+  }
+
+  return res.json({ success: true, announcement: toAnnouncementDto(updatedAnnouncement) });
 }
 
 async function deleteAnnouncement(req, res) {

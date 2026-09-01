@@ -1,11 +1,11 @@
 
 // Author: Mark Daniel Digol
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Palette, Sparkles, Image as ImageIcon, UploadCloud, X, ChevronRight, ChevronLeft, Layers, Trophy, Tag } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Palette, Sparkles, Image as ImageIcon, UploadCloud, X, ChevronRight, ChevronLeft, Layers, Trophy, Tag, FileText, Trash2 } from 'lucide-react';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -14,6 +14,20 @@ import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructions
 type EventStatus = 'draft' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type LiveSessionStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 type RegistrationOverride = '' | 'open' | 'closed';
+
+export const EVENT_CATEGORIES = [
+  { value: 'competition', label: 'Competition' },
+  { value: 'contest', label: 'Contest' },
+  { value: 'seminar', label: 'Seminar' },
+  { value: 'conference', label: 'Conference' },
+  { value: 'other', label: 'Other' },
+];
+
+export const getCategoryLabel = (val?: string) => {
+  if (!val) return 'Seminar';
+  const found = EVENT_CATEGORIES.find((c) => c.value.toLowerCase() === val.toLowerCase());
+  return found ? found.label : (val.charAt(0).toUpperCase() + val.slice(1));
+};
 
 type LiveSession = {
   id: string;
@@ -142,6 +156,7 @@ export const EventsPage = () => {
   const [teamProfileFile, setTeamProfileFile] = useState<File | null>(null);
   const [teamProfilePreview, setTeamProfilePreview] = useState('');
   const [teamProfileError, setTeamProfileError] = useState<string | null>(null);
+  const teamProfileInputRef = useRef<HTMLInputElement>(null);
 
   const [participantFileName, setParticipantFileName] = useState('');
   const [participantUploadCount, setParticipantUploadCount] = useState(0);
@@ -182,13 +197,13 @@ export const EventsPage = () => {
     description: '',
     guidelines: '',
     guidelineFileName: '',
-    registrationMode: 'individual',
+    registrationMode: '',
     registrationOverride: '' as RegistrationOverride,
     registrationStartDate: '',
     registrationStartTime: '',
     registrationEndDate: '',
     registrationEndTime: '',
-    eventType: 'seminar',
+    eventType: '',
     location: '',
     startDate: '',
     startTime: '',
@@ -196,7 +211,7 @@ export const EventsPage = () => {
     endTime: '',
     fee: 0,
     capacity: 0,
-    status: 'draft' as EventStatus,
+    status: '' as EventStatus,
     isEsports: false,
     esportsGame: '',
     esportsBracketFormat: '',
@@ -422,13 +437,13 @@ export const EventsPage = () => {
       description: '',
       guidelines: '',
       guidelineFileName: '',
-      registrationMode: 'individual',
+      registrationMode: '',
       registrationOverride: '' as RegistrationOverride,
       registrationStartDate: '',
       registrationStartTime: '',
       registrationEndDate: '',
       registrationEndTime: '',
-      eventType: 'seminar',
+      eventType: '',
       location: '',
       startDate: '',
       startTime: '',
@@ -436,7 +451,7 @@ export const EventsPage = () => {
       endTime: '',
       fee: 0,
       capacity: 0,
-      status: 'upcoming',
+      status: '' as EventStatus,
       isEsports: false,
       esportsGame: '',
       esportsBracketFormat: '',
@@ -495,6 +510,98 @@ export const EventsPage = () => {
     const now = new Date();
     if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) return 'Auto: Completed';
     return startAt.getTime() > now.getTime() ? 'Auto: Upcoming' : 'Auto: Ongoing';
+  };
+
+  const isFinalFormStep = formData.isEsports ? activeFormTab === 'esports' : activeFormTab === 'guidelines';
+
+  const validateCurrentFormStep = (tab: typeof activeFormTab) => {
+    if (tab === 'basic') {
+      if (!formData.title.trim()) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Event title is required.', type: 'error', isRead: false });
+        return false;
+      }
+      return true;
+    }
+    if (tab === 'schedule') {
+      if (!formData.location.trim()) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Location / venue is required.', type: 'error', isRead: false });
+        return false;
+      }
+      if (Number(formData.fee) < 0) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Event fee must be 0 or greater.', type: 'error', isRead: false });
+        return false;
+      }
+      if (Number(formData.capacity) < 0) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Capacity must be 0 or greater.', type: 'error', isRead: false });
+        return false;
+      }
+      if (!formData.startDate || !formData.startTime) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Start date and start time are required.', type: 'error', isRead: false });
+        return false;
+      }
+      if ((formData.endDate && !formData.endTime) || (!formData.endDate && formData.endTime)) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must include both date and time.', type: 'error', isRead: false });
+        return false;
+      }
+      if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
+        const startCheck = new Date(`${formData.startDate}T${formData.startTime}:00`);
+        const endCheck = new Date(`${formData.endDate}T${formData.endTime}:00`);
+        if (!Number.isNaN(startCheck.getTime()) && !Number.isNaN(endCheck.getTime()) && endCheck < startCheck) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must be after start date/time.', type: 'error', isRead: false });
+          return false;
+        }
+      }
+      return true;
+    }
+    if (tab === 'guidelines') {
+      if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
+        return false;
+      }
+      if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
+        return false;
+      }
+      if (formData.registrationStartDate && formData.registrationStartTime && formData.registrationEndDate && formData.registrationEndTime) {
+        const rs = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`);
+        const re = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}:00`);
+        if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
+          return false;
+        }
+      }
+      return true;
+    }
+    if (tab === 'esports') {
+      if (formData.isEsports) {
+        if (!formData.esportsGame) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
+          return false;
+        }
+        if (!formData.esportsBracketFormat) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
+          return false;
+        }
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const handleNextFormStep = () => {
+    if (!validateCurrentFormStep(activeFormTab)) return;
+
+    if (activeFormTab === 'basic') setActiveFormTab('schedule');
+    else if (activeFormTab === 'schedule') setActiveFormTab('design');
+    else if (activeFormTab === 'design') setActiveFormTab('guidelines');
+    else if (activeFormTab === 'guidelines' && formData.isEsports) setActiveFormTab('esports');
+  };
+
+  const handlePrevFormStep = () => {
+    if (activeFormTab === 'schedule') setActiveFormTab('basic');
+    else if (activeFormTab === 'design') setActiveFormTab('schedule');
+    else if (activeFormTab === 'guidelines') setActiveFormTab('design');
+    else if (activeFormTab === 'esports') setActiveFormTab('guidelines');
   };
 
   const allTemplates = useMemo(() => {
@@ -583,7 +690,7 @@ export const EventsPage = () => {
       let teamProfileUrl: string | null = null;
       if (teamProfileFile) {
         const dataUrl = await readAsDataUrl(teamProfileFile);
-        const { data: upload } = await api.uploadTeamProfile(dataUrl);
+        const { data: upload } = await api.uploadTeamProfile(dataUrl, teamProfileFile.name);
         teamProfileUrl = upload?.url || null;
       }
 
@@ -781,8 +888,8 @@ export const EventsPage = () => {
                       {isRegistered && <Badge variant="success">Registered</Badge>}
                       {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
                       {event.eventType && (
-                        <Badge variant={event.eventType === 'competition' ? 'error' : 'info'}>
-                          {event.eventType === 'competition' ? 'Competition' : 'Seminar'}
+                        <Badge variant={['competition', 'contest', 'hackathon'].includes(event.eventType) ? 'error' : 'info'}>
+                          {getCategoryLabel(event.eventType)}
                         </Badge>
                       )}
                       {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
@@ -946,26 +1053,16 @@ export const EventsPage = () => {
           className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!formData.title.trim()) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Event title is required.', type: 'error', isRead: false });
-              setActiveFormTab('basic');
+            if (!isFinalFormStep) {
+              handleNextFormStep();
               return;
             }
-            if (!formData.location.trim()) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Event location is required.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
-            }
-            if (Number(formData.fee) < 0) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Event fee must be 0 or greater.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
-            }
-            if (Number(formData.capacity) < 0) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Capacity must be 0 or greater.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
-            }
+
+            if (!validateCurrentFormStep('basic')) { setActiveFormTab('basic'); return; }
+            if (!validateCurrentFormStep('schedule')) { setActiveFormTab('schedule'); return; }
+            if (!validateCurrentFormStep('guidelines')) { setActiveFormTab('guidelines'); return; }
+            if (formData.isEsports && !validateCurrentFormStep('esports')) { setActiveFormTab('esports'); return; }
+
             const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00` : null;
             if (!startAt) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Start date/time is required.', type: 'error', isRead: false });
@@ -1050,17 +1147,17 @@ export const EventsPage = () => {
                 title: formData.title.trim(),
                 description: formData.description.trim(),
                 guidelines: formData.guidelines.trim(),
-                registrationMode: formData.registrationMode,
+                registrationMode: formData.registrationMode || 'individual',
                 registrationOverride: formData.registrationOverride || null,
                 ...(registrationStartAt ? { registrationStartAt } : {}),
                 ...(registrationEndAt ? { registrationEndAt } : {}),
                 location: formData.location.trim(),
-                eventType: formData.eventType,
+                eventType: formData.eventType || 'seminar',
                 startAt,
                 ...(endAt ? { endAt } : {}),
                 fee: Number(formData.fee) || 0,
                 capacity: Number(formData.capacity) || 0,
-                status: formData.status,
+                status: formData.status || 'upcoming',
                 isEsports: formData.isEsports,
                 esportsGame: formData.esportsGame,
                 esportsBracketFormat: formData.esportsBracketFormat,
@@ -1086,8 +1183,8 @@ export const EventsPage = () => {
                 <Select
                   label="Event Category"
                   options={[
-                    { value: 'seminar', label: 'Seminar / Conference' },
-                    { value: 'competition', label: 'Competition / Contest' },
+                    { value: '', label: 'Select an option' },
+                    ...EVENT_CATEGORIES,
                   ]}
                   value={formData.eventType}
                   onChange={(e) => setFormData((p) => ({ ...p, eventType: (e.target as HTMLSelectElement).value }))}
@@ -1152,7 +1249,6 @@ export const EventsPage = () => {
                   options={[
                     { value: 'upcoming', label: 'Automatic (default)' },
                     { value: 'draft', label: 'Draft (Manual)' },
-                    { value: 'cancelled', label: 'Cancelled (Manual)' },
                   ]}
                   value={formData.status}
                   onChange={(e) => setFormData((p) => ({ ...p, status: (e.target as HTMLSelectElement).value as EventStatus }))}
@@ -1179,9 +1275,17 @@ export const EventsPage = () => {
 
               {/* Banner Poster Upload */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-800 flex items-center gap-1.5">
-                  <ImageIcon size={16} className="text-primary" /> Event Poster / Header Banner Image
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <label className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                    <ImageIcon size={16} className="text-primary" /> Event Poster / Header Banner Image
+                  </label>
+                  <span className="text-xs text-blue-700 font-semibold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                    Recommended: 1200 × 500 px (Landscape) or 800 × 1000 px (Portrait)
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Upload an event header banner or promotional poster. <strong>Recommended size:</strong> 1200 &times; 500 pixels (wide banner, 16:9 or 3:1 ratio) or 800 &times; 1000 pixels (portrait poster, 4:5 ratio). Accepted formats: <strong>PNG, JPG, WebP</strong> (Max 8MB).
+                </p>
                 {formData.bannerPreviewUrl ? (
                   <div className="relative rounded-xl border border-gray-200 overflow-hidden group bg-gray-100 max-h-48 flex items-center justify-center">
                     <img
@@ -1219,8 +1323,8 @@ export const EventsPage = () => {
                 ) : (
                   <label className="border-2 border-dashed border-gray-300 hover:border-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-gray-50 hover:bg-primary/5 transition-colors">
                     <UploadCloud size={32} className="text-gray-400 mb-2" />
-                    <span className="text-sm font-semibold text-gray-700">Click to upload Event Banner Image</span>
-                    <span className="text-xs text-gray-500 mt-1">PNG, JPG, or WebP (Recommended 1200x500px, max 8MB)</span>
+                    <span className="text-sm font-semibold text-gray-700">Click to upload Event Banner / Poster Image</span>
+                    <span className="text-xs text-gray-500 mt-1">PNG, JPG, or WebP (Recommended 1200x500px or 800x1000px, max 8MB)</span>
                     <input
                       type="file"
                       accept="image/png, image/jpeg, image/webp"
@@ -1247,17 +1351,17 @@ export const EventsPage = () => {
                     { hex: '#2563eb', label: 'PSITS Blue' },
                     { hex: '#059669', label: 'Emerald' },
                     { hex: '#7c3aed', label: 'Purple' },
-                    { hex: '#e11d48', label: 'Rose' },
+                    { hex: '#db2777', label: 'Pink' },
                     { hex: '#d97706', label: 'Amber' },
                     { hex: '#0891b2', label: 'Cyan' },
-                    { hex: '#1e293b', label: 'Slate' },
+                    { hex: '#1e293b', label: 'Slate Dark' },
                   ].map((color) => (
                     <button
                       key={color.hex}
                       type="button"
                       onClick={() => setFormData((p) => ({ ...p, themeColor: color.hex }))}
-                      className={`w-9 h-9 rounded-full transition-transform flex items-center justify-center border-2 ${
-                        formData.themeColor === color.hex ? 'scale-110 border-black shadow-md' : 'border-transparent hover:scale-105'
+                      className={`w-9 h-9 rounded-full transition-transform flex items-center justify-center ${
+                        formData.themeColor === color.hex ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105'
                       }`}
                       style={{ backgroundColor: color.hex }}
                       title={color.label}
@@ -1265,19 +1369,19 @@ export const EventsPage = () => {
                       {formData.themeColor === color.hex && <CheckCircle size={16} className="text-white drop-shadow" />}
                     </button>
                   ))}
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-2 py-1 bg-white">
-                    <span className="text-xs text-gray-500 font-mono">Custom:</span>
+                  <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                    <span className="text-xs text-gray-500 font-medium">Custom:</span>
                     <input
                       type="color"
                       value={formData.themeColor}
                       onChange={(e) => setFormData((p) => ({ ...p, themeColor: e.target.value }))}
-                      className="w-7 h-7 rounded border-0 cursor-pointer p-0 bg-transparent"
+                      className="w-8 h-8 rounded-lg cursor-pointer border border-gray-300 p-0.5"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Custom Tag / Badge */}
+              {/* Custom Badge Tag */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-800 flex items-center gap-1.5">
                   <Tag size={16} className="text-amber-500" /> Custom Highlight Badge Tag
@@ -1287,11 +1391,11 @@ export const EventsPage = () => {
                     <button
                       key={badge}
                       type="button"
-                      onClick={() => setFormData((p) => ({ ...p, customBadge: badge }))}
-                      className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                      onClick={() => setFormData((p) => ({ ...p, customBadge: formData.customBadge === badge ? '' : badge }))}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                         formData.customBadge === badge
-                          ? 'bg-amber-500 text-white font-bold border-amber-600 shadow-sm'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                          ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold'
+                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                       }`}
                     >
                       {badge}
@@ -1333,7 +1437,7 @@ export const EventsPage = () => {
                     <p className="text-xs text-gray-500 mt-0.5">Location: {formData.location || 'Venue TBD'}</p>
                     <div className="mt-3 flex items-center justify-between text-xs font-semibold">
                       <span style={{ color: formData.themeColor }}>Fee: ₱{formData.fee || 0}</span>
-                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{formData.eventType.toUpperCase()}</span>
+                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded uppercase">{getCategoryLabel(formData.eventType)}</span>
                     </div>
                   </div>
                 </div>
@@ -1367,22 +1471,70 @@ export const EventsPage = () => {
                 value={formData.guidelines}
                 onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
               />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Guidelines Document</label>
+              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">
+                    Upload Guidelines Document
+                  </label>
+                  <span className="text-[11px] text-gray-500 font-medium">Documents only (No image/video)</span>
+                </div>
                 <input
                   type="file"
-                  accept=".txt,.md,.pdf,.doc,.docx"
+                  accept=".pdf,.doc,.docx,.txt,.md,.rtf,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
                   onChange={async (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0] || null;
+                    const input = e.target as HTMLInputElement;
+                    const file = input.files?.[0] || null;
                     if (!file) return;
+
+                    // Strictly reject any image, video, audio, or media file
+                    const forbiddenTypes = ['image/', 'video/', 'audio/'];
+                    const isForbiddenType = forbiddenTypes.some((t) => file.type.startsWith(t));
+                    const forbiddenExts = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp', '.mp4', '.mov', '.avi', '.mkv', '.webm', '.wmv', '.flv', '.mp3', '.wav'];
+                    const lowerName = file.name.toLowerCase();
+                    const hasForbiddenExt = forbiddenExts.some((ext) => lowerName.endsWith(ext));
+
+                    if (isForbiddenType || hasForbiddenExt) {
+                      input.value = '';
+                      setFormData((p) => ({ ...p, guidelineFileName: '' }));
+                      addNotification({
+                        userId: 'current',
+                        title: 'Invalid File Type',
+                        message: 'Only document files (PDF, DOC, DOCX, TXT, MD) are accepted for guidelines. Images and videos are not allowed.',
+                        type: 'error',
+                        isRead: false,
+                      });
+                      return;
+                    }
+
                     setFormData((p) => ({ ...p, guidelineFileName: file.name }));
-                    if (file.type.startsWith('text/')) {
-                      const text = await file.text();
-                      setFormData((p) => ({ ...p, guidelines: text.slice(0, 5000), guidelineFileName: file.name }));
+                    if (file.type.startsWith('text/') || lowerName.endsWith('.txt') || lowerName.endsWith('.md')) {
+                      try {
+                        const text = await file.text();
+                        setFormData((p) => ({ ...p, guidelines: text.slice(0, 5000), guidelineFileName: file.name }));
+                      } catch {
+                        // ignore text parse error
+                      }
                     }
                   }}
+                  className="block w-full text-xs text-gray-700 dark:text-slate-300 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                 />
-                {formData.guidelineFileName && <p className="text-xs text-gray-500 mt-1">Selected: {formData.guidelineFileName}</p>}
+                <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
+                  <span>Accepted formats: <strong>.pdf, .doc, .docx, .txt, .md</strong></span>
+                  {formData.guidelineFileName && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, guidelineFileName: '' }))}
+                      className="text-red-500 hover:underline text-[11px]"
+                    >
+                      Clear File
+                    </button>
+                  )}
+                </div>
+                {formData.guidelineFileName && (
+                  <p className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+                    ✓ Selected document: {formData.guidelineFileName}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1432,42 +1584,43 @@ export const EventsPage = () => {
 
           {/* Modal Footer Navigation Bar */}
           <div className="border-t border-gray-200 pt-4 flex items-center justify-between gap-3">
-            <div className="flex gap-2">
+            <div>
               {activeFormTab !== 'basic' && (
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (activeFormTab === 'schedule') setActiveFormTab('basic');
-                    else if (activeFormTab === 'design') setActiveFormTab('schedule');
-                    else if (activeFormTab === 'guidelines') setActiveFormTab('design');
-                    else if (activeFormTab === 'esports') setActiveFormTab('guidelines');
-                  }}
+                  size="md"
+                  onClick={handlePrevFormStep}
+                  className="flex items-center gap-1.5 px-4"
                 >
                   <ChevronLeft size={16} /> Back
                 </Button>
               )}
-              {activeFormTab !== 'esports' && activeFormTab !== (formData.isEsports ? 'esports' : 'guidelines') && (
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!isFinalFormStep ? (
                 <Button
                   type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    if (activeFormTab === 'basic') setActiveFormTab('schedule');
-                    else if (activeFormTab === 'schedule') setActiveFormTab('design');
-                    else if (activeFormTab === 'design') setActiveFormTab('guidelines');
-                    else if (activeFormTab === 'guidelines' && formData.isEsports) setActiveFormTab('esports');
-                  }}
+                  variant="primary"
+                  size="md"
+                  onClick={handleNextFormStep}
+                  className="flex items-center gap-1.5 px-6 font-semibold"
                 >
                   Next <ChevronRight size={16} />
                 </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  isLoading={isLoading}
+                  className="px-6 font-bold"
+                >
+                  {editingEventId ? 'Update Event' : 'Create Event'}
+                </Button>
               )}
             </div>
-
-            <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="px-6">
-              {editingEventId ? 'Update Event' : 'Create Event'}
-            </Button>
           </div>
         </form>
       </Modal>
@@ -1890,11 +2043,21 @@ export const EventsPage = () => {
                 )}
 
                 {isTeamRegistration && (
-                  <div className="rounded-lg border border-gray-200 p-3 space-y-2">
-                    <p className="text-sm font-semibold text-gray-900">Team Profile (required for team/pair)</p>
+                  <div className="rounded-lg border border-gray-200 p-3.5 space-y-2.5 bg-gray-50/50">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <p className="text-sm font-semibold text-gray-900">Team Profile (required for team/pair)</p>
+                      <span className="text-xs text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        PDF, Excel (.xlsx/.xls), or Word (.docx/.doc)
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Upload your official team/pair roster file. Only documents are accepted (No images/videos).
+                    </p>
                     <input
+                      ref={teamProfileInputRef}
                       type="file"
-                      accept="image/png, image/jpeg, image/webp, application/pdf"
+                      accept=".pdf,.xlsx,.xls,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         setTeamProfileError(null);
@@ -1902,8 +2065,18 @@ export const EventsPage = () => {
                           setTeamProfileFile(null);
                           return;
                         }
-                        if (file.size > 8 * 1024 * 1024) {
-                          setTeamProfileError('File must be 8MB or below.');
+                        const allowedExtensions = ['.pdf', '.xlsx', '.xls', '.docx', '.doc'];
+                        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                        if (!allowedExtensions.includes(ext)) {
+                          setTeamProfileError('Invalid file format. Team profile only accepts PDF, Excel (.xlsx, .xls), or Word (.docx, .doc) files.');
+                          setTeamProfileFile(null);
+                          if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
+                          return;
+                        }
+                        if (file.size > 15 * 1024 * 1024) {
+                          setTeamProfileError('File must be 15MB or below.');
+                          setTeamProfileFile(null);
+                          if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
                           return;
                         }
                         if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
@@ -1911,8 +2084,32 @@ export const EventsPage = () => {
                         setTeamProfileFile(file);
                       }}
                     />
-                    {teamProfileError && <p className="text-sm text-red-600">{teamProfileError}</p>}
-                    {teamProfileFile && <p className="text-xs text-gray-600">Selected: {teamProfileFile.name}</p>}
+                    {teamProfileError && <p className="text-xs text-red-600 font-semibold">{teamProfileError}</p>}
+                    {teamProfileFile && (
+                      <div className="flex items-center justify-between p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-xs mt-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText size={16} className="text-blue-600 shrink-0" />
+                          <div className="min-w-0 truncate">
+                            <p className="font-semibold text-gray-900 truncate">{teamProfileFile.name}</p>
+                            <p className="text-[11px] text-gray-500">{(teamProfileFile.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
+                            setTeamProfilePreview('');
+                            setTeamProfileFile(null);
+                            setTeamProfileError(null);
+                            if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
+                          }}
+                          className="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 flex items-center gap-1 font-semibold transition-colors shrink-0 ml-2"
+                          title="Delete/remove this file"
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

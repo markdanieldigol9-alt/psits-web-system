@@ -99,7 +99,9 @@ export const PaymentsPage = () => {
     const term = searchTerm.toLowerCase().trim();
     const matchesSearch =
       (payment.memberName && String(payment.memberName).toLowerCase().includes(term)) ||
+      (payment.memberEmail && String(payment.memberEmail).toLowerCase().includes(term)) ||
       (payment.event && String(payment.event).toLowerCase().includes(term)) ||
+      (payment.paymentKind && String(payment.paymentKind).toLowerCase().includes(term)) ||
       (payment.referenceNumber && String(payment.referenceNumber).toLowerCase().includes(term)) ||
       (payment.method && String(payment.method).toLowerCase().includes(term)) ||
       (payment.paymentMethod && String(payment.paymentMethod).toLowerCase().includes(term)) ||
@@ -117,13 +119,15 @@ export const PaymentsPage = () => {
   const handleExportCSV = () => {
     const dataToExport = filteredPayments.map(p => ({
       'Member Name': p.memberName || 'N/A',
-      'Event/Type': p.event || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : 'Membership Fee'),
+      'Member Email': p.memberEmail || 'N/A',
+      'Payment Type / Event': p.event || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : p.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee'),
       'Amount': p.amount || 0,
       'Payment Method': String(p.method || p.paymentMethod || '').toUpperCase() || '-',
+      'Reference Number': p.referenceNumber || '-',
       'Status': getVerificationStatus(p),
       'Date Submitted': p.date || 'N/A',
     }));
-    exportToCSV('Financial_Report_Export', dataToExport);
+    exportToCSV('Payment_Transactions_Export', dataToExport);
   };
 
   const getStatusIcon = (status: string) => {
@@ -244,7 +248,7 @@ export const PaymentsPage = () => {
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                    Event
+                    Payment Type / Event
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
                     Amount
@@ -268,7 +272,7 @@ export const PaymentsPage = () => {
                   const status = getVerificationStatus(payment);
                   const formattedMethod = formatPaymentMethod(payment.method || payment.paymentMethod || '');
                   const renderPaymentKindBadge = () => {
-                    if (payment.event) {
+                    if (payment.eventId && payment.event) {
                       return (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
                           Event: {payment.event}
@@ -282,9 +286,23 @@ export const PaymentsPage = () => {
                         </span>
                       );
                     }
+                    if (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership') {
+                      return (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
+                          Membership Registration
+                        </span>
+                      );
+                    }
+                    if (payment.paymentKind === 'partner_sponsorship') {
+                      return (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          Partner Sponsorship
+                        </span>
+                      );
+                    }
                     return (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
-                        Membership Fee
+                        {payment.event || 'Membership Fee'}
                       </span>
                     );
                   };
@@ -293,7 +311,10 @@ export const PaymentsPage = () => {
                     <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                     {!isMember && (
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-100">
-                        {payment.memberName}
+                        <div className="font-semibold">{payment.memberName || 'Member'}</div>
+                        {payment.memberEmail && (
+                          <div className="text-xs text-gray-500 font-normal">{payment.memberEmail}</div>
+                        )}
                       </td>
                     )}
                     <td className="px-6 py-4 text-sm">{renderPaymentKindBadge()}</td>
@@ -367,22 +388,37 @@ export const PaymentsPage = () => {
         {viewing && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              {!isMember && <div><span className="font-semibold">Member:</span> {viewing.memberName}</div>}
-              <div><span className="font-semibold">Event:</span> {viewing.event || '-'}</div>
+              {!isMember && (
+                <div>
+                  <span className="font-semibold">Member:</span> {viewing.memberName}
+                  {viewing.memberEmail && <span className="text-gray-500 text-xs block">{viewing.memberEmail}</span>}
+                </div>
+              )}
+              <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
               <div><span className="font-semibold">Amount:</span> ₱{Number(viewing.amount || 0).toLocaleString()}</div>
               <div><span className="font-semibold">Method:</span> {formatPaymentMethod(viewing.method || viewing.paymentMethod)}</div>
               <div><span className="font-semibold">Reference Number:</span> <span className="font-mono">{viewing.referenceNumber || 'N/A'}</span></div>
               <div><span className="font-semibold">Status:</span> {getVerificationStatus(viewing)}</div>
-              <div><span className="font-semibold">Date:</span> {viewing.date}</div>
+              <div><span className="font-semibold">Date Submitted:</span> {viewing.date}</div>
             </div>
 
             {viewing.proofUrl ? (
-              <div className="rounded-lg border border-gray-200 p-3">
-                <div className="text-sm font-semibold text-gray-900 mb-2">Transaction Proof</div>
+              <div className="rounded-lg border border-gray-200 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-gray-900">Transaction Proof</div>
+                  <a
+                    href={viewing.proofUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Open Full Size ↗
+                  </a>
+                </div>
                 <img
                   src={viewing.proofUrl}
                   alt="Transaction proof"
-                  className="w-full max-h-96 object-contain rounded border"
+                  className="w-full max-h-96 object-contain rounded border bg-gray-50"
                 />
               </div>
             ) : (

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail } from 'lucide-react';
+import { Eye, EyeOff, Mail, ExternalLink } from 'lucide-react';
 
 import { useAuth } from '@/shared/context/AuthContext';
-import { useNotification } from '@/shared/context/NotificationContext';
 import { AuthLayout } from '@/shared/layouts';
 import { Input, Button } from '@/shared/components/Form';
 import { Alert } from '@/shared/components/Common';
@@ -12,7 +11,6 @@ import { validateEmail } from '@/shared/utils/helpers';
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { login, isLoading, error } = useAuth();
-  const { addNotification } = useNotification();
 
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -75,14 +73,6 @@ export const LoginPage = () => {
         localStorage.removeItem('remembered_email');
       }
 
-      addNotification({
-        userId: 'current',
-        title: 'Login Successful',
-        message: 'Welcome back!',
-        type: 'success',
-        isRead: false,
-      });
-
       const stored = localStorage.getItem('user');
       const parsed = stored ? JSON.parse(stored) : null;
       if (parsed?.status === 'suspended') {
@@ -90,14 +80,8 @@ export const LoginPage = () => {
       } else {
         navigate('/dashboard');
       }
-    } catch (err) {
-      addNotification({
-        userId: 'current',
-        title: 'Login Failed',
-        message: err instanceof Error ? err.message : 'Invalid email or password',
-        type: 'error',
-        isRead: false,
-      });
+    } catch {
+      // Error is already captured in useAuth and displayed via the inline Alert component
     }
   };
 
@@ -113,13 +97,16 @@ export const LoginPage = () => {
             />
             {error.toLowerCase().includes('gmail') && (
               <a
-                href={`mailto:?subject=${encodeURIComponent('Account Activation / Reactivation Inquiry')}&body=${encodeURIComponent('Dear PSITS Officers and Administrators,\n\nMy account access has been restricted. I would like to request assistance in activating/reactivating my account.\n\nRegistered Email: ' + formData.email)}`}
+                href={`https://mail.google.com/mail/?view=cm&fs=1&to=psits.official@gmail.com&su=${encodeURIComponent('Account Activation / Reactivation Inquiry')}&body=${encodeURIComponent(
+                  `Dear PSITS Officers and Administrators,\n\nMy account access has been restricted. I would like to request assistance in activating/reactivating my account.\n\nRegistered Email: ${formData.email.trim() || '[Your Email]'}\n\nThank you.`
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2.5 w-full py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all shadow-sm hover:shadow-md"
+                className="inline-flex items-center justify-center gap-2.5 w-full py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-sm transition-all shadow-sm hover:shadow-md cursor-pointer"
               >
                 <Mail size={18} />
                 <span>Contact Officer / Admin via Gmail</span>
+                <ExternalLink size={15} className="opacity-80" />
               </a>
             )}
           </div>

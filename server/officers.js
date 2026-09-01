@@ -65,7 +65,8 @@ async function positionInUse(conn, position, excludeUserId = null) {
     JOIN users u ON u.id = o.user_id
     WHERE o.position = ?
       AND u.role = 'officer'
-      AND u.status = 'active'`;
+      AND u.status = 'active'
+      AND (o.officer_status = 'active' OR o.officer_status IS NULL)`;
   if (excludeUserId) {
     sql += ' AND o.user_id <> ?';
     params.push(excludeUserId);
@@ -76,7 +77,7 @@ async function positionInUse(conn, position, excludeUserId = null) {
 
 /**
  * Controller: GET /api/officers
- * Purpose: List organization officers filtered by status (active, past, all).
+ * Purpose: List organization officers filtered by status (active, inactive, past, all).
  * Debugging: Logs filter query params and respects caller permissions (members see active only).
  */
 async function listOfficers(req, res) {
@@ -88,7 +89,9 @@ async function listOfficers(req, res) {
   const params = [];
 
   if (status === 'active') {
-    where.push("u.role = 'officer' AND o.officer_status = 'active'");
+    where.push("u.role = 'officer' AND (o.officer_status = 'active' OR (o.officer_status IS NULL AND u.status = 'active'))");
+  } else if (status === 'inactive') {
+    where.push("u.role = 'officer' AND (o.officer_status = 'inactive' OR (o.officer_status IS NULL AND u.status = 'inactive'))");
   } else if (status === 'past') {
     where.push("o.officer_status = 'past'");
   } else {
@@ -380,7 +383,6 @@ async function updateOfficer(req, res) {
   if (typeof body.contactNumber === 'string') { userSets.push('contact_number = ?'); userParams.push(body.contactNumber.trim()); }
   if (typeof body.sector === 'string' && ['school', 'industry', 'institution'].includes(body.sector)) { userSets.push('sector = ?'); userParams.push(body.sector); }
   if (typeof body.sectorDetails === 'string') { userSets.push('sector_details = ?'); userParams.push(body.sectorDetails.trim() || null); }
-  if (typeof body.status === 'string' && ['active', 'inactive'].includes(body.status)) { userSets.push('status = ?'); userParams.push(body.status); }
 
   const officerSets = [];
   const officerParams = [];
@@ -388,13 +390,26 @@ async function updateOfficer(req, res) {
   if (body.startDate !== undefined) { officerSets.push('start_date = ?'); officerParams.push(body.startDate ? String(body.startDate).trim() : null); }
   if (body.endDate !== undefined) { officerSets.push('end_date = ?'); officerParams.push(body.endDate ? String(body.endDate).trim() : null); }
 
-  if (!userSets.length && !officerSets.length) {
-    return res.status(400).json({ success: false, message: 'No fields to update.' });
-  }
-
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    const officerColumnSet = await getOfficerColumnSet(conn);
+
+    const statusInput = body.officerStatus || body.status;
+    if (typeof statusInput === 'string' && ['active', 'inactive', 'past'].includes(statusInput.toLowerCase())) {
+      const s = statusInput.toLowerCase();
+      userSets.push('status = ?');
+      userParams.push(s === 'past' ? 'active' : s);
+      if (officerColumnSet.has('officer_status')) {
+        officerSets.push('officer_status = ?');
+        officerParams.push(s);
+      }
+    }
+
+    if (!userSets.length && !officerSets.length) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: 'No fields to update.' });
+    }
 
     const [exists] = await conn.execute("SELECT id FROM users WHERE id = ? AND role = 'officer' LIMIT 1", [userId]);
     if (!exists.length) {
