@@ -29,6 +29,13 @@ export const getCategoryLabel = (val?: string) => {
   return found ? found.label : (val.charAt(0).toUpperCase() + val.slice(1));
 };
 
+export const getParticipantCapacityLabel = (mode?: string) => {
+  const m = String(mode || '').toLowerCase();
+  if (m === 'pair') return 'Pair Participant';
+  if (m === 'team') return 'Team Participant';
+  return 'Participant';
+};
+
 type LiveSession = {
   id: string;
   eventId?: string | null;
@@ -532,7 +539,7 @@ export const EventsPage = () => {
         return false;
       }
       if (Number(formData.capacity) < 0) {
-        addNotification({ userId: 'current', title: 'Validation', message: 'Capacity must be 0 or greater.', type: 'error', isRead: false });
+        addNotification({ userId: 'current', title: 'Validation', message: `${getParticipantCapacityLabel(formData.registrationMode)} must be 0 or greater.`, type: 'error', isRead: false });
         return false;
       }
       if (!formData.startDate || !formData.startTime) {
@@ -905,7 +912,7 @@ export const EventsPage = () => {
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 rounded-lg bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">
                   <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400" /> <span><strong>Location:</strong> {event.location}</span></div>
-                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>Capacity:</strong> {event.registrations} / {event.capacity} participants</span></div>
+                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.registrations} / {event.capacity}</span></div>
                   <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400" /> <span><strong>Mode:</strong> {String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
                   {isMember && (event.registrationStartAt || event.registrationEndAt) && (
                     <div className="sm:col-span-2 md:col-span-3 text-xs text-gray-500 border-t border-gray-200/60 pt-2 mt-1">
@@ -1243,7 +1250,7 @@ export const EventsPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input label="Registration Fee (₱)" type="number" min="0" value={String(formData.fee)} onChange={(e) => setFormData((p) => ({ ...p, fee: Number(e.target.value) }))} />
-                <Input label="Capacity" type="number" min="0" value={String(formData.capacity)} onChange={(e) => setFormData((p) => ({ ...p, capacity: Number(e.target.value) }))} />
+                <Input label={getParticipantCapacityLabel(formData.registrationMode)} type="number" min="0" value={String(formData.capacity)} onChange={(e) => setFormData((p) => ({ ...p, capacity: Number(e.target.value) }))} />
                 <Select
                   label="Event Status"
                   options={[

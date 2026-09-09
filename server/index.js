@@ -34,7 +34,7 @@ const {
   getAnnouncementLikes,
   setAnnouncementLike,
 } = require('./announcementInteractions');
-const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, updatePartnerContribution, deletePartnerContribution } = require('./partners');
+const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, updatePartnerContribution, deletePartnerContribution, requirePartnerManager } = require('./partners');
 const { listPayments, createPayment, verifyPayment, getPaymentStatusLogs } = require('./payments');
 const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
@@ -716,13 +716,13 @@ app.post('/api/announcements/:id/likes', authMiddleware, setAnnouncementLike);
 
 // Partners
 app.get('/api/partners', requireMigrationReady, authMiddleware, listPartners);
-app.post('/api/partners', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), createPartner);
-app.put('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), updatePartner);
-app.delete('/api/partners/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), deletePartner);
+app.post('/api/partners', requireMigrationReady, authMiddleware, requirePartnerManager, createPartner);
+app.put('/api/partners/:id', requireMigrationReady, authMiddleware, requirePartnerManager, updatePartner);
+app.delete('/api/partners/:id', requireMigrationReady, authMiddleware, requirePartnerManager, deletePartner);
 app.get('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, listPartnerContributions);
-app.post('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), createPartnerContribution);
-app.put('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), updatePartnerContribution);
-app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), deletePartnerContribution);
+app.post('/api/partners/:id/contributions', requireMigrationReady, authMiddleware, requirePartnerManager, createPartnerContribution);
+app.put('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requirePartnerManager, updatePartnerContribution);
+app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requirePartnerManager, deletePartnerContribution);
 
 // Payments
 app.get('/api/payments', requireMigrationReady, authMiddleware, listPayments);

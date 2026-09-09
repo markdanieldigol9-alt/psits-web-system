@@ -36,7 +36,15 @@ export const PartnersPage = () => {
   const { addNotification } = useNotification();
   const { user } = useAuth();
 
-  const canManagePartners = Boolean(user);
+  const canManagePartners = Boolean(
+    user &&
+    (
+      user.role === 'admin' ||
+      user.role === 'super_admin' ||
+      user.role === 'officer' ||
+      (user.role === 'member' && (user.memberType === 'industry' || user.sector === 'industry'))
+    )
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +99,7 @@ export const PartnersPage = () => {
   };
 
   const handleOpenEditContrib = (contrib: any, partnerId: string) => {
+    if (!canManagePartners) return;
     setEditingContrib(contrib);
     setContribPartnerId(partnerId);
     setNewContrib({
@@ -105,6 +114,10 @@ export const PartnersPage = () => {
 
   const handleSaveContrib = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManagePartners) {
+      addNotification({ userId: 'current', title: 'Forbidden', message: 'You are not allowed to modify partner contributions.', type: 'error', isRead: false });
+      return;
+    }
     if (!contribPartnerId) return;
 
     if (!newContrib.dealTitle.trim()) {
@@ -156,6 +169,10 @@ export const PartnersPage = () => {
   };
 
   const handleDeleteContrib = async (contribId: string, partnerId: string) => {
+    if (!canManagePartners) {
+      addNotification({ userId: 'current', title: 'Forbidden', message: 'You are not allowed to delete partner contributions.', type: 'error', isRead: false });
+      return;
+    }
     try {
       const { data } = await api.deletePartnerContribution(contribId);
       if (data?.success) {
@@ -198,8 +215,19 @@ export const PartnersPage = () => {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-3xl font-bold">Industry Partners</h1>
-            <p className="text-gray-600 mt-1">Manage partner companies, sponsorship deals, and resources</p>
+            <p className="text-gray-600 mt-1">
+              {canManagePartners
+                ? 'Manage partner companies, sponsorship deals, and resources'
+                : 'Explore industry partner companies, sponsorship deals, and resources'}
+            </p>
           </div>
+          {!canManagePartners && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700">
+                Read-Only Access
+              </span>
+            </div>
+          )}
         </div>
         {canManagePartners && (
           <div className="flex justify-end">
@@ -384,7 +412,7 @@ export const PartnersPage = () => {
           setConfirmDelete(null);
         }}
         onVerified={async () => {
-          if (!confirmDelete) return;
+          if (!confirmDelete || !canManagePartners) return;
           setIsLoading(true);
           try {
             await api.deletePartner(confirmDelete.id);
@@ -409,6 +437,7 @@ export const PartnersPage = () => {
           }}
           isLoading={isLoading}
           onSubmit={async (data) => {
+            if (!canManagePartners) return;
             if (editingPartner) {
               setIsLoading(true);
               try {
@@ -433,45 +462,48 @@ export const PartnersPage = () => {
         />
       )}
 
-      <VerifyActionModal
-        isOpen={confirmCreate}
-        title="Verify Partner Creation"
-        message="Are you sure you want to add this partner?"
-        confirmLabel="Accept"
-        confirmVariant="primary"
-        onCancel={() => {
-          if (isLoading) return;
-          setConfirmCreate(false);
-          setPendingPartnerData(null);
-        }}
-        onVerified={async () => {
-          if (!pendingPartnerData) return;
-          setIsLoading(true);
-          try {
-            const resp = await api.createPartner(pendingPartnerData);
-            const newPartner = resp.data?.partner;
-            if (newPartner) setPartners((prev) => [newPartner, ...prev]);
-            addNotification({ userId: 'current', title: 'Partner Added', message: `${pendingPartnerData.company} added`, type: 'success', isRead: false });
-            setIsModalOpen(false);
+      {canManagePartners && (
+        <VerifyActionModal
+          isOpen={confirmCreate}
+          title="Verify Partner Creation"
+          message="Are you sure you want to add this partner?"
+          confirmLabel="Accept"
+          confirmVariant="primary"
+          onCancel={() => {
+            if (isLoading) return;
             setConfirmCreate(false);
             setPendingPartnerData(null);
-          } catch (err: any) {
-            addNotification({ userId: 'current', title: 'Error', message: err.message || 'Unable to add partner', type: 'error', isRead: false });
-          } finally {
-            setIsLoading(false);
-          }
-        }}
-      />
+          }}
+          onVerified={async () => {
+            if (!pendingPartnerData || !canManagePartners) return;
+            setIsLoading(true);
+            try {
+              const resp = await api.createPartner(pendingPartnerData);
+              const newPartner = resp.data?.partner;
+              if (newPartner) setPartners((prev) => [newPartner, ...prev]);
+              addNotification({ userId: 'current', title: 'Partner Added', message: `${pendingPartnerData.company} added`, type: 'success', isRead: false });
+              setIsModalOpen(false);
+              setConfirmCreate(false);
+              setPendingPartnerData(null);
+            } catch (err: any) {
+              addNotification({ userId: 'current', title: 'Error', message: err.message || 'Unable to add partner', type: 'error', isRead: false });
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+        />
+      )}
 
-      <Modal
-        isOpen={isContribModalOpen}
-        onClose={() => {
-          setIsContribModalOpen(false);
-          setEditingContrib(null);
-        }}
-        title={editingContrib ? 'Edit Partner Contribution' : 'Log Partner Contribution'}
-        size="lg"
-      >
+      {canManagePartners && (
+        <Modal
+          isOpen={isContribModalOpen}
+          onClose={() => {
+            setIsContribModalOpen(false);
+            setEditingContrib(null);
+          }}
+          title={editingContrib ? 'Edit Partner Contribution' : 'Log Partner Contribution'}
+          size="lg"
+        >
         <form onSubmit={handleSaveContrib} className="space-y-4">
           <Input
             label="Deal / Contribution Title *"
@@ -556,6 +588,7 @@ export const PartnersPage = () => {
           </div>
         </form>
       </Modal>
+      )}
     </MainLayout>
   );
 };

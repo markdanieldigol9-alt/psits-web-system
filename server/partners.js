@@ -1,5 +1,25 @@
 const { pool } = require('./db');
 
+function canManagePartners(user) {
+  if (!user) return false;
+  const role = user.role;
+  const memberType = user.member_type;
+  const sector = user.sector;
+  if (['super_admin', 'admin', 'officer'].includes(role)) return true;
+  if (role === 'member' && (memberType === 'industry' || sector === 'industry')) return true;
+  return false;
+}
+
+function requirePartnerManager(req, res, next) {
+  if (canManagePartners(req.user)) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden: Only administrators, officers, and industry members are permitted to modify partners and deals.',
+  });
+}
+
 function toPartnerDto(row) {
   return {
     id: String(row.id),
@@ -21,6 +41,10 @@ async function listPartners(_req, res) {
 }
 
 async function createPartner(req, res) {
+  if (!canManagePartners(req.user)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can create partners.' });
+  }
+
   const body = req.body || {};
   const company = String(body.company || '').trim();
   if (!company) return res.status(400).json({ success: false, message: 'Company name is required.' });
@@ -43,6 +67,10 @@ async function createPartner(req, res) {
 }
 
 async function updatePartner(req, res) {
+  if (!canManagePartners(req.user)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can update partners.' });
+  }
+
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -68,6 +96,10 @@ async function updatePartner(req, res) {
 }
 
 async function deletePartner(req, res) {
+  if (!canManagePartners(req.user)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can delete partners.' });
+  }
+
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -109,6 +141,10 @@ async function listPartnerContributions(req, res) {
 }
 
 async function createPartnerContribution(req, res) {
+  if (!canManagePartners(req.user)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can create partner contributions.' });
+  }
+
   const partnerId = Number(req.params.id);
   if (!Number.isFinite(partnerId)) return res.status(400).json({ success: false, message: 'Invalid partner id.' });
 
@@ -147,6 +183,10 @@ async function createPartnerContribution(req, res) {
 }
 
 async function updatePartnerContribution(req, res) {
+  if (!canManagePartners(req.user)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can update partner contributions.' });
+  }
+
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -176,6 +216,10 @@ async function updatePartnerContribution(req, res) {
 }
 
 async function deletePartnerContribution(req, res) {
+  if (!canManagePartners(req.user)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can delete partner contributions.' });
+  }
+
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
 
@@ -185,6 +229,8 @@ async function deletePartnerContribution(req, res) {
 }
 
 module.exports = {
+  canManagePartners,
+  requirePartnerManager,
   listPartners,
   createPartner,
   updatePartner,
