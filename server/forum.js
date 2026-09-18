@@ -15,6 +15,7 @@ function toPostDto(row) {
     videoUrl: row.video_url || null,
     isPinned: Boolean(row.is_pinned),
     status: row.status,
+    archivedAt: row.archived_at || null,
     likesCount: Number(row.likes_count || 0),
     commentsCount: Number(row.comments_count || 0),
     createdAt: row.created_at,
@@ -32,6 +33,7 @@ function toCommentDto(row) {
     parentAuthorName: row.parent_author_name || null,
     content: row.content,
     status: row.status,
+    archivedAt: row.archived_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -46,6 +48,7 @@ function canCreateType(user, type) {
 
 async function listPosts(req, res) {
   const type = req.query.type ? String(req.query.type) : null;
+  const status = req.query.status ? String(req.query.status) : null;
   const where = ["p.status <> 'hidden'"];
   const params = [];
 
@@ -57,6 +60,13 @@ async function listPosts(req, res) {
   // Members cannot see archived posts by default.
   if (req.user?.role === 'member') {
     where.push("p.status = 'published'");
+  } else if (status === 'archived') {
+    where.push("p.status = 'archived'");
+  } else if (status === 'published') {
+    where.push("p.status = 'published'");
+  } else if (status !== 'all_with_archived') {
+    // Default for admins: show published posts, excluding archived
+    where.push("p.status <> 'archived'");
   }
 
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -128,6 +138,11 @@ async function updatePost(req, res) {
     const s = body.status.trim();
     if (!['published', 'hidden', 'archived'].includes(s)) return json(res, 400, { success: false, message: 'Invalid status.' });
     sets.push('status = ?'); params.push(s);
+    if (s === 'archived') {
+      sets.push('archived_at = NOW()');
+    } else if (s === 'published') {
+      sets.push('archived_at = NULL');
+    }
   }
   if (canModerate && body.isPinned !== undefined) {
     sets.push('is_pinned = ?'); params.push(body.isPinned ? 1 : 0);

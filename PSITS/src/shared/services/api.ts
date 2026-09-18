@@ -396,8 +396,8 @@ class ApiService {
   }
 
   // Announcements
-  getAnnouncements() {
-    return this.client.get('/announcements');
+  getAnnouncements(filters?: any) {
+    return this.client.get('/announcements', { params: filters });
   }
 
   createAnnouncement(data: any) {
@@ -586,6 +586,19 @@ class ApiService {
 
   setForumLike(postId: string, liked: boolean) {
     return this.client.post(`/forum/posts/${postId}/like`, { liked });
+  }
+
+  // Archival & Content Lifecycle
+  triggerArchiveCleanup() {
+    return this.client.post('/archive/trigger');
+  }
+
+  purgeArchivedAnnouncements(ids?: string[]) {
+    return this.client.delete('/archive/announcements', { data: { ids } });
+  }
+
+  purgeArchivedForumPosts(ids?: string[]) {
+    return this.client.delete('/archive/forum-posts', { data: { ids } });
   }
 
   getPublicSettings() {

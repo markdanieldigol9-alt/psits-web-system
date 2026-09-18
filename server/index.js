@@ -70,6 +70,7 @@ const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEv
 const { sendSmtpTest } = require('./emailTest');
 const { resendFailedApprovalEmails, sendReactivationRequestEmail } = require('./mailer');
 const { checkExpiringMemberships } = require('./services/expirationService');
+const { archiveExpiredContent, purgeArchivedAnnouncements, purgeArchivedForumPosts } = require('./services/archiveService');
 const { buildRedisClient, createRateLimiter } = require('./rateLimiter');
 const { attachLiveRealtime } = require('./liveRealtime');
 const app = express();
@@ -754,6 +755,24 @@ app.get('/api/forum/posts/:id/comments', requireMigrationReady, authMiddleware, 
 app.post('/api/forum/posts/:id/comments', requireMigrationReady, authMiddleware, addComment);
 app.post('/api/forum/posts/:id/like', requireMigrationReady, authMiddleware, setLike);
 
+// Content Lifecycle & Archival (3-Month Retention)
+app.post('/api/archive/trigger', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+  const result = await archiveExpiredContent();
+  return res.json(result);
+});
+
+app.delete('/api/archive/announcements', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
+  const result = await purgeArchivedAnnouncements(ids);
+  return res.json(result);
+});
+
+app.delete('/api/archive/forum-posts', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
+  const result = await purgeArchivedForumPosts(ids);
+  return res.json(result);
+});
+
 app.post('/api/uploads/forum-video', authMiddleware, express.raw({ type: '*/*', limit: '1024mb' }), async (req, res) => {
   const contentType = String(req.headers['content-type'] || 'application/octet-stream').trim();
   const originalFilename = req.headers['x-filename'] || 'video.mp4';
@@ -947,6 +966,26 @@ setTimeout(async () => {
     console.error('Initial membership expiration check failed:', err);
   }
 }, 10 * 1000);
+
+// Run initial 3-month post & comment auto-archive check 12 seconds after startup
+setTimeout(async () => {
+  try {
+    await archiveExpiredContent();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Initial content archive check failed:', err);
+  }
+}, 12 * 1000);
+
+// Run 3-month content auto-archive check every 12 hours
+setInterval(async () => {
+  try {
+    await archiveExpiredContent();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Scheduled content archive check failed:', err);
+  }
+}, 12 * 60 * 60 * 1000);
 
 // Cleanup expired Stream Event video clips (1-month retention after upload)
 setInterval(async () => {

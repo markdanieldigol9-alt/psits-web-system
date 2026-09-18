@@ -1757,10 +1757,10 @@ export const EventsPage = () => {
                     variant="outline"
                     onClick={() => {
                       localStorage.setItem('psits_live_event_manage_event', String(detailsEvent.id));
-                      window.location.href = '/live-events';
+                      window.location.href = '/stream-events';
                     }}
                   >
-                    Manage in Live Events
+                    Manage in Stream Events
                   </Button>
                 )}
               </div>

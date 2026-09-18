@@ -3,7 +3,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, TextArea, Select } from '@/shared/components/Form';
 import { Badge, Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Plus, Edit2, Trash2, Eye, Heart, Send, MessageCircle, ImagePlus, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Heart, Send, MessageCircle, ImagePlus, X, Archive, RotateCcw } from 'lucide-react';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -23,7 +23,7 @@ export const AnnouncementsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'published' | 'draft'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
   const [announcements, setAnnouncements] = useState<any[]>(mockAnnouncements);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,39 +50,90 @@ export const AnnouncementsPage = () => {
     title: '',
     content: '',
     audience: 'all',
-    status: 'published' as 'published' | 'draft',
+    status: 'published' as 'published' | 'draft' | 'archived',
     imageUrl: '',
   });
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const { data } = await api.getAnnouncements();
-        if (!cancelled && data?.success) {
-          setAnnouncements(data.announcements || []);
-        }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setIsLoading(false);
+  const loadAnnouncements = async (status = selectedStatus) => {
+    setIsLoading(true);
+    try {
+      const { data } = await api.getAnnouncements({ status });
+      if (data?.success) {
+        setAnnouncements(data.announcements || []);
       }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    } catch {
+      // ignore
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadAnnouncements(selectedStatus);
+  }, [selectedStatus]);
+
+  const handleTriggerArchive = async () => {
+    setIsLoading(true);
+    try {
+      const { data } = await api.triggerArchiveCleanup();
+      if (data?.success) {
+        const stats = data.stats || {};
+        addNotification({
+          userId: 'current',
+          title: '3-Month Archive Check Completed',
+          message: `Archived ${stats.archivedAnnouncements || 0} announcement(s), ${stats.archivedAnnouncementComments || 0} comment(s), and ${stats.archivedForumPosts || 0} forum post(s) older than 3 months.`,
+          type: 'success',
+          isRead: false,
+        });
+        await loadAnnouncements(selectedStatus);
+      }
+    } catch (err) {
+      addNotification({
+        userId: 'current',
+        title: 'Archive Check Failed',
+        message: err instanceof Error ? err.message : 'Failed to run archive check.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRestoreAnnouncement = async (announcementId: string) => {
+    try {
+      setIsLoading(true);
+      await api.updateAnnouncement(announcementId, { status: 'published' });
+      addNotification({
+        userId: 'current',
+        title: 'Announcement Restored',
+        message: 'Announcement restored to published feed.',
+        type: 'success',
+        isRead: false,
+      });
+      await loadAnnouncements(selectedStatus);
+    } catch (err) {
+      addNotification({
+        userId: 'current',
+        title: 'Restore Failed',
+        message: err instanceof Error ? err.message : 'Failed to restore announcement.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => () => {
     if (createImagePreview) URL.revokeObjectURL(createImagePreview);
     if (editImagePreview) URL.revokeObjectURL(editImagePreview);
   }, [createImagePreview, editImagePreview]);
 
-  const filteredAnnouncements = announcements.filter(
-    (ann) => selectedStatus === 'all' || ann.status === selectedStatus
-  );
+  const filteredAnnouncements = announcements.filter((ann) => {
+    if (selectedStatus === 'all') return ann.status !== 'archived';
+    return ann.status === selectedStatus;
+  });
 
   const canCreateAnnouncements = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const isMember = user?.role === 'member';
@@ -408,21 +459,37 @@ export const AnnouncementsPage = () => {
         </div>
 
         {/* Filter */}
-        {isMember ? (
-          <div className="inline-flex rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
-            Showing: Published announcements for members
-          </div>
-        ) : (
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value as any)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Announcements</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-          </select>
-        )}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {isMember ? (
+            <div className="inline-flex rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
+              Showing: Published announcements for members
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as any)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value="all">Active Announcements</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived (3+ Months)</option>
+              </select>
+
+              {canCreateAnnouncements && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleTriggerArchive()}
+                  title="Scan and auto-archive announcements and forum posts older than 3 months"
+                >
+                  <Archive size={16} /> Run 3-Month Archive Check
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Announcements List */}
         <div className="space-y-4">
@@ -443,8 +510,8 @@ export const AnnouncementsPage = () => {
                     </p>
                   </div>
                 </div>
-                <Badge variant={announcement.status === 'published' ? 'success' : 'warning'}>
-                  {announcement.status.charAt(0).toUpperCase() + announcement.status.slice(1)}
+                <Badge variant={announcement.status === 'published' ? 'success' : announcement.status === 'archived' ? 'warning' : 'info'}>
+                  {announcement.status === 'archived' ? 'Archived (3+ Mos)' : (announcement.status.charAt(0).toUpperCase() + announcement.status.slice(1))}
                 </Badge>
               </div>
 
@@ -518,6 +585,17 @@ export const AnnouncementsPage = () => {
 
                   {canCreateAnnouncements && (
                     <>
+                      {announcement.status === 'archived' && (
+                        <button
+                          type="button"
+                          className={iconButtonClassName}
+                          onClick={() => void handleRestoreAnnouncement(String(announcement.id))}
+                          aria-label="Restore announcement"
+                          title="Restore to Published Feed"
+                        >
+                          <RotateCcw size={16} className="text-emerald-600" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         className={iconButtonClassName}
@@ -528,7 +606,7 @@ export const AnnouncementsPage = () => {
                             title: announcement.title || '',
                             content: announcement.content || '',
                             audience: audienceArrayToValue(announcement.audience),
-                            status: announcement.status === 'draft' ? 'draft' : 'published',
+                            status: announcement.status === 'draft' ? 'draft' : announcement.status === 'archived' ? 'archived' : 'published',
                             imageUrl: announcement.imageUrl || '',
                           });
                           setShowEditModal(true);
@@ -547,7 +625,7 @@ export const AnnouncementsPage = () => {
                           setVerifyAction('delete');
                         }}
                         aria-label="Delete announcement"
-                        title="Delete"
+                        title={announcement.status === 'archived' ? 'Permanently Delete' : 'Delete'}
                       >
                         <Trash2 size={16} className="text-red-600" />
                       </button>
@@ -945,14 +1023,7 @@ export const AnnouncementsPage = () => {
                 resetEditAnnouncementForm();
               } else if (verifyAction === 'delete') {
                 await api.deleteAnnouncement(pendingId!);
-                // Refresh from DB to ensure the record is truly gone (avoids UI-only deletes)
-                try {
-                  const { data } = await api.getAnnouncements();
-                  if (data?.success) setAnnouncements(data.announcements || []);
-                  else setAnnouncements((prev) => prev.filter((x) => String(x.id) !== String(pendingId)));
-                } catch {
-                  setAnnouncements((prev) => prev.filter((x) => String(x.id) !== String(pendingId)));
-                }
+                await loadAnnouncements(selectedStatus);
                 addNotification({ userId: 'current', title: 'Announcement Deleted', message: 'Announcement deleted successfully.', type: 'success', isRead: false });
               }
               setVerifyAction(null);

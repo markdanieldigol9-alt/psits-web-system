@@ -27,7 +27,7 @@ const adminLinks = [
   { label: 'Payments', path: '/payments' },
   { label: 'Announcements', path: '/announcements' },
   { label: 'Partners', path: '/partners' },
-  { label: 'Live Events', path: '/live-events' },
+  { label: 'Stream Events', path: '/stream-events' },
   { label: 'Reports', path: '/reports' },
   { label: 'Institution Members', path: '/institution-members' },
   { label: 'Notifications', path: '/notifications' },

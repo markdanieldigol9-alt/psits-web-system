@@ -9,7 +9,7 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { LiveSessionModal } from '@/features/live-events/components/LiveSessionModal';
 import type { LiveSession, LiveSessionFormState, LiveSessionStatus } from '@/features/live-events/types/liveSessions';
-import { AlertCircle, Calendar, Clock, Copy, Download, ExternalLink, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Users, Video } from 'lucide-react';
+import { Calendar, Clock, Copy, Download, ExternalLink, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Users, Video } from 'lucide-react';
 
 function toMysqlDatetime(value: string) {
   const v = String(value || '').trim();

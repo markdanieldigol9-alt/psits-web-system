@@ -37,6 +37,8 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 
 type PostType = 'announcement' | 'news' | 'story' | 'blog' | 'discussion' | 'question';

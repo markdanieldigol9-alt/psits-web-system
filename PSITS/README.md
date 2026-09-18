@@ -1,4 +1,4 @@
-﻿# PSITS Web System
+# PSITS Web System
 
 A comprehensive web-based management system for PSITS Region XII built with React, TypeScript, Vite, and Tailwind CSS.
 
@@ -20,7 +20,7 @@ The PSITS Management System provides role-based access and management capabiliti
 4. **Event Management** - Event creation, scheduling, and registration
 5. **Payment Tracking** - Payment submission + verification/rejection with status logs
 6. **Announcements** - Create, schedule, and target announcements
-7. **Live Events** - livestream sessions for PSITS activities
+7. **Stream Events** - Stream sessions, video broadcasts, and video clips for PSITS activities
 8. **Reports & Analytics** - Membership, event, and financial reports
 9. **Live Streaming** - Built-in meeting platform support
 10. **Industry Partners** - Partner management and collaboration tracking

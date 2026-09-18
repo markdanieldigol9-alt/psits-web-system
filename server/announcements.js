@@ -46,6 +46,7 @@ function toAnnouncementDto(row) {
           role: row.created_by_role || null,
         }
       : null,
+    archivedAt: row.archived_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -74,9 +75,14 @@ async function listAnnouncements(req, res) {
 
   if (req.user?.role === 'member') {
     where.push("a.status = 'published'");
-  } else if (status && status !== 'all' && ['draft', 'published'].includes(status)) {
+  } else if (status === 'archived') {
+    where.push("a.status = 'archived'");
+  } else if (status === 'published' || status === 'draft') {
     where.push('a.status = ?');
     params.push(status);
+  } else {
+    // Default or "all" for admins: show active (published + draft), excluding archived
+    where.push("a.status <> 'archived'");
   }
 
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -203,7 +209,15 @@ async function updateAnnouncement(req, res) {
 
   if (typeof body.title === 'string' && body.title.trim()) { sets.push('title = ?'); params.push(body.title.trim()); }
   if (typeof body.content === 'string') { sets.push('content = ?'); params.push(body.content.trim()); }
-  if (typeof body.status === 'string' && ['draft', 'published'].includes(body.status)) { sets.push('status = ?'); params.push(body.status); }
+  if (typeof body.status === 'string' && ['draft', 'published', 'archived'].includes(body.status)) {
+    sets.push('status = ?');
+    params.push(body.status);
+    if (body.status === 'archived') {
+      sets.push('archived_at = NOW()');
+    } else if (body.status === 'published') {
+      sets.push('archived_at = NULL');
+    }
+  }
   if (body.audience !== undefined) { sets.push('audience_json = ?'); params.push(JSON.stringify(Array.isArray(body.audience) ? body.audience : [])); }
   if (body.imageUrl !== undefined) { sets.push('image_url = ?'); params.push(body.imageUrl ? String(body.imageUrl).trim() : null); }
 
