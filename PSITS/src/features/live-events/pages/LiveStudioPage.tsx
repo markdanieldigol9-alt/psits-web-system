@@ -431,7 +431,7 @@ export const LiveStudioPage = () => {
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-bold text-gray-900">Connection Error</h2>
             <p className="text-gray-600">{error}</p>
-            <Button onClick={() => navigate('/live-events')}>Back to Live Events</Button>
+            <Button onClick={() => navigate('/stream-events')}>Back to Stream Events</Button>
           </div>
         </div>
       </MainLayout>
@@ -665,7 +665,7 @@ export const LiveStudioPage = () => {
               <button
                 onClick={() => {
                   socket?.disconnect();
-                  navigate('/live-events');
+                  navigate('/stream-events');
                 }}
                 className="p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition flex items-center gap-2 pr-6"
               >

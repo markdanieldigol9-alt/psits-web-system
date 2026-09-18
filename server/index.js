@@ -60,6 +60,8 @@ const {
   getLiveEventCounts,
   uploadLiveEventRecording,
   downloadLiveEventRecording,
+  deleteLiveEventRecording,
+  streamLiveEventRecording,
   cleanupExpiredLiveEventRecordings,
 } = require('./liveEvents');
 const { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer, listOfficerPositions, createOfficerPosition, deleteOfficerPosition } = require('./officers');
@@ -825,13 +827,16 @@ app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['s
 // SMTP test (admin/super_admin only)
 app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin']), sendSmtpTest);
 
-// Live Events
+// Stream Events (formerly Live Events)
 app.get('/api/live-events', authMiddleware, listLiveEvents);
 app.get('/api/live-sessions', authMiddleware, listLiveEvents);
+app.get('/api/stream-events', authMiddleware, listLiveEvents);
 app.post('/api/live-events/validate-room-code', authMiddleware, validateLiveEventRoomCode);
 app.post('/api/live-sessions/validate-room-code', authMiddleware, validateLiveEventRoomCode);
+app.post('/api/stream-events/validate-room-code', authMiddleware, validateLiveEventRoomCode);
 app.get('/api/live-events/:id', authMiddleware, getLiveEventById);
 app.get('/api/live-sessions/:id', authMiddleware, getLiveEventById);
+app.get('/api/stream-events/:id', authMiddleware, getLiveEventById);
 app.put(
   '/api/live-events/:id/recording',
   authMiddleware,
@@ -839,7 +844,19 @@ app.put(
   express.raw({ type: '*/*', limit: '1024mb' }),
   uploadLiveEventRecording
 );
+app.put(
+  '/api/stream-events/:id/recording',
+  authMiddleware,
+  requireRole(['super_admin', 'admin', 'officer']),
+  express.raw({ type: '*/*', limit: '1024mb' }),
+  uploadLiveEventRecording
+);
 app.get('/api/live-events/:id/recording/download', authMiddleware, downloadLiveEventRecording);
+app.get('/api/stream-events/:id/recording/download', authMiddleware, downloadLiveEventRecording);
+app.get('/api/live-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
+app.get('/api/stream-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
+app.delete('/api/live-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteLiveEventRecording);
+app.delete('/api/stream-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteLiveEventRecording);
 app.post('/api/live-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createLiveEvent);
 app.post('/api/live-sessions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createLiveEvent);
 app.put('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEvent);
@@ -931,7 +948,7 @@ setTimeout(async () => {
   }
 }, 10 * 1000);
 
-// Cleanup expired live session recordings (15-day retention after upload)
+// Cleanup expired Stream Event video clips (1-month retention after upload)
 setInterval(async () => {
   try {
     await cleanupExpiredLiveEventRecordings();

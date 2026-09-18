@@ -768,11 +768,11 @@ export const EventsPage = () => {
       addNotification({
         userId: 'current',
         title: 'Livestream Ready',
-        message: `${session.title} is ready in the Live Events module.`,
+        message: `${session.title} is ready in the Stream Events module.`,
         type: 'success',
         isRead: false,
       });
-      window.location.href = `/live-events?session=${encodeURIComponent(session.id)}`;
+      window.location.href = `/stream-events?session=${encodeURIComponent(session.id)}`;
     } catch (err) {
       addNotification({
         userId: 'current',

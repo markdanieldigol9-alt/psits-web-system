@@ -220,6 +220,22 @@ export const App = () => {
                 }
               />
               <Route
+                path="/stream-events"
+                element={
+                  <ProtectedRoute>
+                    <LiveEventsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/stream-events/studio/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <LiveStudioPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/live-events"
                 element={
                   <ProtectedRoute>

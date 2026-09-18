@@ -52,7 +52,7 @@ export function LiveSessionModal({
 
   return (
     <Modal
-      title={editing ? 'Edit Live Session' : 'Create Live Session'}
+      title={editing ? 'Edit Stream Session' : 'Create Stream Session'}
       isOpen={isOpen}
       onClose={onClose}
       size="lg"
@@ -192,14 +192,13 @@ export function LiveSessionModal({
 
             <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
               <div>
-                <h4 className="text-base font-semibold text-gray-900">Optional Recording</h4>
+                <h4 className="text-base font-semibold text-gray-900">Video Clip / Recording</h4>
                 <p className="mt-1 text-sm text-gray-600">
-                  Upload a session recording after the stream ends. Recordings are stored for <span className="font-semibold">15 days</span>, then auto-deleted.
-                  You can download it anytime within the retention window.
+                  Upload a video clip or session recording. Uploaded video clips are stored for <span className="font-semibold">1 month</span>, after which they are deleted permanently.
                 </p>
               </div>
 
-              <ToggleRow label="Enable Recording (15-day retention)" checked={formData.recordingEnabled} onToggle={() => onChange({ recordingEnabled: !formData.recordingEnabled })} />
+              <ToggleRow label="Enable Video Clip / Recording (1-Month Retention)" checked={formData.recordingEnabled} onToggle={() => onChange({ recordingEnabled: !formData.recordingEnabled })} />
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">Recording Visibility</label>

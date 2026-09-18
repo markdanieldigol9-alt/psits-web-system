@@ -332,6 +332,15 @@ class ApiService {
     return this.client.get(`/live-events/${id}/recording/download`, { responseType: 'blob' });
   }
 
+  deleteLiveEventRecording(id: string) {
+    return this.client.delete(`/live-events/${id}/recording`);
+  }
+
+  getLiveEventRecordingStreamUrl(id: string) {
+    const base = this.client.defaults.baseURL || '/api';
+    return `${base}/live-events/${id}/recording/stream`;
+  }
+
   // Event Registration
   registerForEvent(eventId: string, data: any) {
     return this.client.post(`/events/${eventId}/register`, data);

@@ -1,13 +1,14 @@
 const crypto = require('node:crypto');
 const path = require('node:path');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const { pool } = require('./db');
 
 const SESSION_STATUSES = ['scheduled', 'live', 'ended', 'cancelled'];
 const SESSION_TYPES = ['livestream'];
 const SESSION_PRIVACY = ['public', 'private', 'event_registered_only'];
 const MODERATOR_ROLES = new Set(['super_admin', 'admin', 'officer']);
-const RECORDING_RETENTION_DAYS = 15;
+const RECORDING_RETENTION_DAYS = 30; // 1 month retention
 
 function json(res, status, body) {
   res.status(status).json(body);
@@ -1219,10 +1220,30 @@ async function uploadLiveEventRecording(req, res) {
 
   const contentType = String(req.headers['content-type'] || 'application/octet-stream').trim();
   const originalFilename = safeFilename(req.headers['x-filename'] || req.query.filename);
-  const ext = guessExtensionFromMime(contentType);
+
+  const VALID_VIDEO_EXTS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv', '.avi', '.ogg', '.ogv']);
+  const fileExt = path.extname(originalFilename || '').toLowerCase();
+  const isVideo = contentType.toLowerCase().startsWith('video/') || VALID_VIDEO_EXTS.has(fileExt);
+  if (!isVideo) {
+    return json(res, 400, { success: false, message: 'Only video clips (.mp4, .webm, .mov, etc.) are allowed.' });
+  }
+
+  const ext = guessExtensionFromMime(contentType) !== 'bin' ? guessExtensionFromMime(contentType) : (fileExt ? fileExt.replace('.', '') : 'mp4');
 
   const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
   if (!buffer.length) return json(res, 400, { success: false, message: 'Recording upload body is empty.' });
+
+  // If there was an existing recording, delete it before writing the new one
+  if (existing.recording_path) {
+    const oldPath = resolveUploadPath(existing.recording_path);
+    if (oldPath) {
+      try {
+        await fs.unlink(oldPath);
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   const uploadsDir = path.join(__dirname, 'uploads', 'live-recordings');
   await fs.mkdir(uploadsDir, { recursive: true });
@@ -1295,6 +1316,112 @@ async function downloadLiveEventRecording(req, res) {
   res.sendFile(fullPath);
 }
 
+async function deleteLiveEventRecording(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid live session id.' });
+
+  const existing = await getLiveEventRowById(id);
+  if (!existing || existing.session_type !== 'livestream') return json(res, 404, { success: false, message: 'Live session not found.' });
+  if (!(isModerator(req.user) || String(existing.created_by || '') === String(req.user?.id || ''))) {
+    return json(res, 403, { success: false, message: 'You do not have permission to delete recording for this session.' });
+  }
+
+  if (existing.recording_path) {
+    const fullPath = resolveUploadPath(existing.recording_path);
+    if (fullPath) {
+      try {
+        await fs.unlink(fullPath);
+      } catch {
+        // ignore if file already unlinked
+      }
+    }
+  }
+
+  await pool.execute(
+    `UPDATE live_events
+     SET recording_enabled = 0,
+         recording_url = NULL,
+         recording_path = NULL,
+         recording_expires_at = NULL
+     WHERE id = ?`,
+    [id]
+  );
+
+  await pool.execute(
+    `DELETE FROM live_session_recordings
+     WHERE live_event_id = ?`,
+    [id]
+  );
+
+  const updated = await getLiveEventRowById(id);
+  return json(res, 200, { success: true, message: 'Video clip deleted permanently.', liveEvent: toLiveEventDto(updated) });
+}
+
+async function streamLiveEventRecording(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid live session id.' });
+
+  const row = await getLiveEventRowById(id);
+  if (!row || row.session_type !== 'livestream') return json(res, 404, { success: false, message: 'Live session not found.' });
+
+  const access = await assertSessionAccess(row, req.user);
+  if (!access.ok) return json(res, access.status, { success: false, message: access.message });
+
+  if (!row.recording_path) return json(res, 404, { success: false, message: 'Video clip not available.' });
+  if (row.recording_expires_at && new Date(row.recording_expires_at).getTime() <= Date.now()) {
+    return json(res, 410, { success: false, message: 'Video clip has expired and was permanently deleted.' });
+  }
+
+  const fullPath = resolveUploadPath(row.recording_path);
+  if (!fullPath) return json(res, 404, { success: false, message: 'Video file not found.' });
+
+  try {
+    const stat = await fs.stat(fullPath);
+    const fileSize = stat.size;
+    const ext = path.extname(fullPath).toLowerCase();
+    const mimeMap = {
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.mov': 'video/quicktime',
+      '.mkv': 'video/x-matroska',
+      '.avi': 'video/x-msvideo',
+      '.ogv': 'video/ogg',
+      '.ogg': 'video/ogg',
+      '.m4v': 'video/mp4',
+    };
+    const mimeType = mimeMap[ext] || 'video/mp4';
+
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      if (start >= fileSize || end >= fileSize) {
+        res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end();
+        return;
+      }
+      const chunkSize = end - start + 1;
+      const fileStream = fsSync.createReadStream(fullPath, { start, end });
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': mimeType,
+      });
+      fileStream.pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': mimeType,
+        'Accept-Ranges': 'bytes',
+      });
+      fsSync.createReadStream(fullPath).pipe(res);
+    }
+  } catch {
+    return json(res, 404, { success: false, message: 'Video clip not available.' });
+  }
+}
+
 async function cleanupExpiredLiveEventRecordings() {
   const [rows] = await pool.execute(
     `SELECT id, recording_path
@@ -1358,6 +1485,8 @@ module.exports = {
   getLiveEventCounts,
   uploadLiveEventRecording,
   downloadLiveEventRecording,
+  deleteLiveEventRecording,
+  streamLiveEventRecording,
   cleanupExpiredLiveEventRecordings,
   getLiveEventRowById,
   assertSessionAccess,

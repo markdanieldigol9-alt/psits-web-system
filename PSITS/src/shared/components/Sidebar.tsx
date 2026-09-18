@@ -35,7 +35,7 @@ const menuItems = {
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Reports', icon: FileText, href: '/reports' },
     { label: 'Institution Members', icon: Upload, href: '/institution-members' },
     { label: 'Notifications', icon: Bell, href: '/notifications' },
@@ -50,7 +50,7 @@ const menuItems = {
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'Partners', icon: Briefcase, href: '/partners' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Reports', icon: FileText, href: '/reports' },
     { label: 'Institution Members', icon: Upload, href: '/institution-members' },
     { label: 'Notifications', icon: Bell, href: '/notifications' },
@@ -61,7 +61,7 @@ const menuItems = {
     { label: 'Membership', icon: Users, href: '/members' },
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
@@ -75,7 +75,7 @@ const menuItems = {
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
     { label: 'My Events', icon: Calendar, href: '/my-events' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
@@ -89,7 +89,7 @@ const menuItems = {
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
     { label: 'My Events', icon: Calendar, href: '/my-events' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
@@ -104,7 +104,7 @@ const menuItems = {
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
     { label: 'My Events', icon: Calendar, href: '/my-events' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
@@ -118,7 +118,7 @@ const menuItems = {
     { label: 'Officer Elections', icon: Vote, href: '/elections' },
     { label: 'Events', icon: Calendar, href: '/events' },
     { label: 'My Events', icon: Calendar, href: '/my-events' },
-    { label: 'Live Events', icon: Video, href: '/live-events' },
+    { label: 'Stream Events', icon: Video, href: '/stream-events' },
     { label: 'Payment History & Tracking', icon: DollarSign, href: '/payments' },
     { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
     { label: 'Announcements', icon: Megaphone, href: '/announcements' },
@@ -181,23 +181,28 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
 
         {/* Navigation */}
         <nav className="p-4 space-y-1.5">
-          {itemsToDisplay.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              onClick={onClose}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                location.pathname === item.href
-                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                  : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100/80 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <item.icon size={19} />
-                <span className="text-sm font-medium">{item.label}</span>
-              </div>
-            </Link>
-          ))}
+          {itemsToDisplay.map((item) => {
+            const isStreamActive = (item.href === '/stream-events' || item.href === '/live-events') &&
+              (location.pathname.startsWith('/stream-events') || location.pathname.startsWith('/live-events'));
+            const isActive = location.pathname === item.href || isStreamActive;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={onClose}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                  isActive
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100/80 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon size={19} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </div>
+              </Link>
+            );
+          })}
         </nav>
       </aside>
     </>

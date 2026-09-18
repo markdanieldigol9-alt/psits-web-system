@@ -496,8 +496,9 @@ async function migrate() {
       content TEXT NOT NULL,
       image_url VARCHAR(255) NULL,
       audience_json TEXT NOT NULL,
-      status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+      status ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
       schedule_at DATETIME NULL,
+      archived_at DATETIME NULL,
       created_by INT UNSIGNED NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -556,6 +557,11 @@ async function migrate() {
   try { await pool.query('ALTER TABLE announcements ADD COLUMN schedule_at DATETIME NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE announcements ADD COLUMN created_by INT UNSIGNED NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE announcements ADD COLUMN image_url VARCHAR(255) NULL'); } catch { /* ignore */ }
+  try {
+    await pool.query("ALTER TABLE announcements MODIFY status ENUM('draft','published','archived') NOT NULL DEFAULT 'draft'");
+  } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE announcements ADD COLUMN archived_at DATETIME NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE announcement_comments ADD COLUMN archived_at DATETIME NULL'); } catch { /* ignore */ }
 
   // Backfill audience_json from legacy "audience" column if needed.
   try {
@@ -1176,6 +1182,7 @@ async function migrate() {
   } catch {
     // ignore
   }
+  try { await pool.query('ALTER TABLE forum_posts ADD COLUMN archived_at DATETIME NULL'); } catch { /* ignore */ }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS forum_comments (
@@ -1202,6 +1209,7 @@ async function migrate() {
 
   try { await pool.query('ALTER TABLE forum_comments ADD COLUMN parent_id INT UNSIGNED NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_parent FOREIGN KEY (parent_id) REFERENCES forum_comments(id) ON DELETE CASCADE'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE forum_comments ADD COLUMN archived_at DATETIME NULL'); } catch { /* ignore */ }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS forum_likes (
