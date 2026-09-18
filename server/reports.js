@@ -178,7 +178,7 @@ async function getPartnerContributionsReport(req, res) {
   try {
     const [contributionRows] = await pool.execute(
       `SELECT pc.id, pc.deal_title, pc.contribution_type, pc.value_amount, pc.description, pc.created_at,
-              p.name AS partner_name, e.title AS event_title
+              p.company AS partner_name, e.title AS event_title
        FROM partner_contributions pc
        JOIN partners p ON p.id = pc.partner_id
        LEFT JOIN events e ON e.id = pc.event_id
