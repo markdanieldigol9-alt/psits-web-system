@@ -559,45 +559,32 @@ async function createLiveEvent(req, res) {
   const durationMinutes = Math.max(15, Number(body.durationMinutes || 60));
   const sessionType = 'livestream';
   const privacy = SESSION_PRIVACY.includes(String(body.privacy)) ? String(body.privacy) : 'public';
-  const status = SESSION_STATUSES.includes(String(body.status)) ? String(body.status) : 'scheduled';
-  const startAt = normalizeDateTime(body.startAt);
-  const endAt = normalizeDateTime(body.endAt);
+  const status = SESSION_STATUSES.includes(String(body.status)) ? String(body.status) : 'ended';
+  const now = new Date();
+  const startAt = normalizeDateTime(body.startAt) || toMysqlDatetime(now);
+  const endAt = normalizeDateTime(body.endAt) || null;
   const roomCode = normalizeRoomCode(body.roomCode || generateRoomCode(title));
   const sessionIdentifier = safeString(body.sessionId || body.sessionIdentifier, 64) || generateSessionIdentifier(title);
   const sessionToken = safeString(body.sessionToken, 96) || generateSessionToken();
   const joinLink = safeString(body.joinLink, 255) || buildInternalJoinLink(sessionIdentifier);
-  const streamSource = ['external', 'built_in'].includes(body.streamSource) ? String(body.streamSource) : 'external';
-  let streamUrl = safeString(body.streamUrl || body.meetingUrl, 255) || null;
-  let meetingUrl = safeString(body.meetingUrl, 255) || streamUrl;
+  const streamSource = ['external', 'built_in'].includes(body.streamSource) ? String(body.streamSource) : 'built_in';
+  let streamUrl = safeString(body.streamUrl || body.meetingUrl, 255) || joinLink;
+  let meetingUrl = safeString(body.meetingUrl, 255) || streamUrl || joinLink;
 
-  if (streamSource === 'external') {
-    if (!streamUrl) return json(res, 400, { success: false, message: 'Stream URL is required for external streams.' });
-    meetingUrl = meetingUrl || streamUrl;
-  } else {
-    streamUrl = streamUrl || joinLink;
-    meetingUrl = meetingUrl || joinLink;
-  }
-
-  const recordingEnabled = toFlag(body.recordingEnabled, 0);
+  const recordingEnabled = 1;
   const recordingVisibility = ['host_only', 'registered_members', 'public_replay'].includes(String(body.recordingVisibility))
     ? String(body.recordingVisibility)
-    : 'host_only';
-  const recordingUrl = recordingEnabled ? (safeString(body.recordingUrl, 255) || null) : null;
+    : 'registered_members';
+  const recordingUrl = safeString(body.recordingUrl, 255) || null;
   const recordingPath = safeString(body.recordingPath, 255) || null;
   const recordingExpiresAt = null;
   const waitingRoomEnabled = toFlag(body.waitingRoomEnabled, 0);
 
-  if (!title) return json(res, 400, { success: false, message: 'Session title is required.' });
-  if (!Number.isFinite(eventId)) return json(res, 400, { success: false, message: 'Linked event is required.' });
-  if (startAt === 'invalid') return json(res, 400, { success: false, message: 'Invalid scheduled date/time.' });
-  if (endAt === 'invalid') return json(res, 400, { success: false, message: 'Invalid end date/time.' });
-  if (!startAt) return json(res, 400, { success: false, message: 'Start date/time is required.' });
-  if (endAt && endAt < startAt) return json(res, 400, { success: false, message: 'End time must not be earlier than start time.' });
-  if (!Number.isFinite(durationMinutes) || durationMinutes < 15) {
-    return json(res, 400, { success: false, message: 'Duration must be at least 15 minutes.' });
+  if (!title) return json(res, 400, { success: false, message: 'Video title is required.' });
+  if (eventId) {
+    const event = await ensureEventExists(eventId);
+    if (!event) return json(res, 404, { success: false, message: 'Linked event not found.' });
   }
-  const event = await ensureEventExists(eventId);
-  if (!event) return json(res, 404, { success: false, message: 'Linked event not found.' });
 
   const [result] = await pool.execute(
       `INSERT INTO live_events

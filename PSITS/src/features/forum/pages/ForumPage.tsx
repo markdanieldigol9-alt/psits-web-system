@@ -97,6 +97,7 @@ export const ForumPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<'all' | PostType>('all');
+  const [statusFilter, setStatusFilter] = useState<'published' | 'archived'>('published');
   const [posts, setPosts] = useState<any[]>([]);
 
   // Create Post Modal State
@@ -353,7 +354,10 @@ export const ForumPage = () => {
   const load = async () => {
     setIsLoading(true);
     try {
-      const { data } = await api.getForumPosts({ type: typeFilter });
+      const { data } = await api.getForumPosts({
+        type: typeFilter,
+        status: canModerate ? statusFilter : 'published',
+      });
       if (data?.success) setPosts(data.posts || []);
     } catch (err) {
       addNotification({ userId: 'current', title: 'Error', message: err instanceof Error ? err.message : 'Failed to load forum.', type: 'error', isRead: false });
@@ -365,7 +369,60 @@ export const ForumPage = () => {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeFilter]);
+  }, [typeFilter, statusFilter]);
+
+  const handleTriggerArchive = async () => {
+    setIsLoading(true);
+    try {
+      const { data } = await api.triggerArchiveCleanup();
+      if (data?.success) {
+        const stats = data.stats || {};
+        addNotification({
+          userId: 'current',
+          title: '3-Month Archive Check Completed',
+          message: `Archived ${stats.archivedAnnouncements || 0} announcement(s), ${stats.archivedAnnouncementComments || 0} comment(s), and ${stats.archivedForumPosts || 0} forum post(s) older than 3 months.`,
+          type: 'success',
+          isRead: false,
+        });
+        await load();
+      }
+    } catch (err) {
+      addNotification({
+        userId: 'current',
+        title: 'Archive Check Failed',
+        message: err instanceof Error ? err.message : 'Failed to run archive check.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRestorePost = async (postId: string) => {
+    try {
+      setIsLoading(true);
+      await api.updateForumPost(postId, { status: 'published' });
+      addNotification({
+        userId: 'current',
+        title: 'Post Restored',
+        message: 'Forum post restored to active feed.',
+        type: 'success',
+        isRead: false,
+      });
+      await load();
+    } catch (err) {
+      addNotification({
+        userId: 'current',
+        title: 'Error',
+        message: err instanceof Error ? err.message : 'Failed to restore post.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const createPost = async () => {
     if (!postForm.title.trim()) {
@@ -516,14 +573,38 @@ export const ForumPage = () => {
 
         <Card className="p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as any)} className="rounded-lg border border-gray-300 px-3 py-2">
-              <option value="all">All</option>
-              <option value="news">News</option>
-              <option value="story">Stories</option>
-              <option value="blog">Blogs</option>
-              <option value="discussion">Discussions</option>
-              <option value="question">Questions</option>
-            </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as any)} className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-800 dark:text-slate-200">
+                <option value="all">All Categories</option>
+                <option value="news">News</option>
+                <option value="story">Stories</option>
+                <option value="blog">Blogs</option>
+                <option value="discussion">Discussions</option>
+                <option value="question">Questions</option>
+              </select>
+
+              {canModerate && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-800 dark:text-slate-200"
+                >
+                  <option value="published">Active Posts</option>
+                  <option value="archived">Archived (3+ Months)</option>
+                </select>
+              )}
+
+              {canModerate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleTriggerArchive()}
+                  title="Scan and auto-archive announcements and forum posts older than 3 months"
+                >
+                  <Archive size={16} /> Run 3-Month Archive Check
+                </Button>
+              )}
+            </div>
             <Button variant="outline" onClick={() => void load()} isLoading={isLoading}>Refresh</Button>
           </div>
 
@@ -571,6 +652,11 @@ export const ForumPage = () => {
                           </span>
                         )}
                         <Badge variant={badgeVariant(p.type)}>{String(p.type).toUpperCase()}</Badge>
+                        {p.status === 'archived' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                            <Archive size={12} /> Archived (3+ Mos)
+                          </span>
+                        )}
 
                         {/* Custom Badges per post type */}
                         {p.type === 'question' && info.language && (
@@ -721,6 +807,17 @@ export const ForumPage = () => {
                         <Pin size={15} /> {p.isPinned ? 'Unpin' : 'Pin'}
                       </Button>
                     )}
+                    {canModerate && p.status === 'archived' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleRestorePost(String(p.id))}
+                        className="hover:text-emerald-600 hover:border-emerald-200 transition-colors text-emerald-700 dark:text-emerald-400"
+                        title="Restore post to active feed"
+                      >
+                        <RotateCcw size={15} /> Restore
+                      </Button>
+                    )}
                     {(canModerate || String(p.authorId) === String(user?.id)) && (
                       <>
                         <Button
@@ -736,8 +833,9 @@ export const ForumPage = () => {
                           size="sm"
                           onClick={() => openDeletePost(p)}
                           className="hover:text-red-600 hover:border-red-200 transition-colors text-red-600"
+                          title={p.status === 'archived' ? 'Permanently Delete' : 'Delete'}
                         >
-                          <Trash2 size={15} /> Delete
+                          <Trash2 size={15} /> {p.status === 'archived' ? 'Delete' : 'Delete'}
                         </Button>
                       </>
                     )}
@@ -1520,6 +1618,11 @@ export const ForumPage = () => {
                                 {(c.authorName || 'U').charAt(0).toUpperCase()}
                               </div>
                               <span className="font-semibold text-xs text-gray-900 dark:text-slate-100">{c.authorName || 'User'}</span>
+                              {c.status === 'archived' && (
+                                <span className="inline-flex items-center gap-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-semibold px-1.5 py-0.5 border border-amber-300 dark:border-amber-800">
+                                  <Archive size={10} /> Archived
+                                </span>
+                              )}
                             </div>
                             <span className="text-[11px] text-gray-400">
                               {c.createdAt ? String(c.createdAt).slice(0, 19).replace('T', ' ') : ''}
@@ -1582,6 +1685,11 @@ export const ForumPage = () => {
                                       <span className="font-semibold text-blue-600 dark:text-blue-400">
                                         {r.parentAuthorName || c.authorName || 'User'}
                                       </span>
+                                      {r.status === 'archived' && (
+                                        <span className="inline-flex items-center gap-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-semibold px-1.5 py-0.5 border border-amber-300 dark:border-amber-800">
+                                          <Archive size={10} /> Archived
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                   <span className="text-[10px] text-gray-400 shrink-0">

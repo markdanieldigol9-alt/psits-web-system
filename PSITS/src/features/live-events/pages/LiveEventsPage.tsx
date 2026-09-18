@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button } from '@/shared/components/Form';
 import { Badge, Modal } from '@/shared/components/Common';
@@ -8,78 +8,8 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { LiveSessionModal } from '@/features/live-events/components/LiveSessionModal';
-import type { LiveSession, LiveSessionFormState, LiveSessionStatus } from '@/features/live-events/types/liveSessions';
-import { Calendar, Clock, Copy, Download, ExternalLink, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Users, Video } from 'lucide-react';
-
-function toMysqlDatetime(value: string) {
-  const v = String(value || '').trim();
-  if (!v) return null;
-  if (v.includes('T')) {
-    const [d, t] = v.split('T');
-    const tt = t.length === 5 ? `${t}:00` : t;
-    return `${d} ${tt}`;
-  }
-  return v;
-}
-
-function toDatetimeLocal(value?: string | null) {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function toSafeRoomName(value: string) {
-  return String(value || '')
-    .trim()
-    .replace(/[^a-zA-Z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
-}
-
-function toJoinLink(sessionId: string) {
-  return `/stream-events?session=${encodeURIComponent(sessionId)}`;
-}
-
-function safeUrl(value?: string | null) {
-  const raw = String(value || '').trim();
-  if (!raw) return null;
-  try {
-    return new URL(raw).toString();
-  } catch {
-    return null;
-  }
-}
-
-function toYouTubeEmbedUrl(url?: string | null) {
-  const u = String(url || '').trim();
-  if (!u) return null;
-  try {
-    const parsed = new URL(u);
-    if (parsed.hostname === 'youtu.be') {
-      const id = parsed.pathname.replace('/', '').trim();
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-    if (parsed.hostname.includes('youtube.com')) {
-      const id = parsed.searchParams.get('v');
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function generateSessionIdentifier(title: string) {
-  const prefix = toSafeRoomName(title).replace(/-/g, '').toUpperCase().slice(0, 6) || 'PSITS';
-  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `LS-${prefix}-${suffix}`;
-}
-
-function generateSessionToken() {
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-}
+import type { LiveSession, LiveSessionFormState } from '@/features/live-events/types/liveSessions';
+import { Download, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Video } from 'lucide-react';
 
 function createEmptySessionFormState(hostLabel: string): LiveSessionFormState {
   return {
@@ -91,7 +21,7 @@ function createEmptySessionFormState(hostLabel: string): LiveSessionFormState {
     startTime: '',
     endDate: '',
     endTime: '',
-    status: 'scheduled',
+    status: 'ended',
     privacy: 'public',
     allowChat: true,
     streamSource: 'built_in',
@@ -100,14 +30,13 @@ function createEmptySessionFormState(hostLabel: string): LiveSessionFormState {
     sessionId: '',
     joinLink: '',
     sessionToken: '',
-    recordingEnabled: false,
-    recordingVisibility: 'host_only',
+    recordingEnabled: true,
+    recordingVisibility: 'public_replay',
     saveMode: 'create',
   };
 }
 
 export const LiveEventsPage = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const location = useLocation();
@@ -121,10 +50,11 @@ export const LiveEventsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<LiveSession | null>(null);
   const [formData, setFormData] = useState<LiveSessionFormState>(() => createEmptySessionFormState(user?.fullName || ''));
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof LiveSessionFormState | 'schedule', string>>>({});
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof LiveSessionFormState | 'videoFile', string>>>({});
 
   const [confirmDelete, setConfirmDelete] = useState<LiveSession | null>(null);
   const [confirmDeleteRecording, setConfirmDeleteRecording] = useState<LiveSession | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
 
   const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
@@ -133,21 +63,6 @@ export const LiveEventsPage = () => {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [isUploadingRecording, setIsUploadingRecording] = useState(false);
   const [recordingUploadPct, setRecordingUploadPct] = useState(0);
-
-  const getStatusVariant = (status: LiveSessionStatus) => {
-    switch (status) {
-      case 'live':
-        return 'error';
-      case 'scheduled':
-        return 'info';
-      case 'ended':
-        return 'warning';
-      case 'cancelled':
-        return 'warning';
-      default:
-        return 'info';
-    }
-  };
 
   const refresh = async () => {
     const { data } = await api.getLiveSessions();
@@ -194,32 +109,6 @@ export const LiveEventsPage = () => {
   }, []);
 
   useEffect(() => {
-    setFormData((prev) => {
-      const nextRoomCode = toSafeRoomName(prev.title || prev.roomCode || 'psits-live-session').toUpperCase();
-      const nextSessionId = prev.sessionId || generateSessionIdentifier(prev.title);
-      const nextJoinLink = toJoinLink(nextSessionId);
-      const nextToken = prev.sessionToken || generateSessionToken();
-
-      if (
-        prev.roomCode === nextRoomCode &&
-        prev.sessionId === nextSessionId &&
-        prev.joinLink === nextJoinLink &&
-        prev.sessionToken === nextToken
-      ) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        roomCode: nextRoomCode,
-        sessionId: nextSessionId,
-        joinLink: nextJoinLink,
-        sessionToken: nextToken,
-      };
-    });
-  }, [formData.title]);
-
-  useEffect(() => {
     if (!activeSession?.id) return;
 
     let cancelled = false;
@@ -254,11 +143,8 @@ export const LiveEventsPage = () => {
   const sorted = useMemo(() => {
     const copy = [...liveEvents];
     copy.sort((a, b) => {
-      const s = (x: LiveSession) => (x.status === 'live' ? 0 : x.status === 'scheduled' ? 1 : x.status === 'ended' ? 2 : 3);
-      const ds = s(a) - s(b);
-      if (ds) return ds;
-      const at = a.startAt ? new Date(a.startAt).getTime() : 0;
-      const bt = b.startAt ? new Date(b.startAt).getTime() : 0;
+      const at = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : a.startAt ? new Date(a.startAt).getTime() : 0;
+      const bt = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : b.startAt ? new Date(b.startAt).getTime() : 0;
       return bt - at;
     });
     return copy;
@@ -267,6 +153,7 @@ export const LiveEventsPage = () => {
   const openCreate = () => {
     setEditing(null);
     setFormErrors({});
+    setVideoFile(null);
     setFormData(createEmptySessionFormState(user?.fullName || ''));
     setShowModal(true);
   };
@@ -274,107 +161,87 @@ export const LiveEventsPage = () => {
   const openEdit = (e: LiveSession) => {
     setEditing(e);
     setFormErrors({});
-    const startLocal = toDatetimeLocal(e.startAt || null);
-    const endLocal = toDatetimeLocal(e.endAt || null);
-    const [startDate = '', startTime = ''] = startLocal ? startLocal.split('T') : ['', ''];
-    const [endDate = '', endTime = ''] = endLocal ? endLocal.split('T') : ['', ''];
+    setVideoFile(null);
     setFormData({
+      ...createEmptySessionFormState(e.hostLabel || user?.fullName || ''),
       title: e.title || '',
       description: e.description || '',
       eventId: String(e.eventId || ''),
       hostLabel: e.hostLabel || '',
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      status: e.status || 'scheduled',
       privacy: e.privacy || 'public',
       allowChat: Boolean(e.chatEnabled),
-      streamSource: e.streamSource === 'external' ? 'external' : 'built_in',
-      streamUrl: String(e.streamUrl || e.meetingUrl || ''),
-      roomCode: String(e.roomCode || ''),
-      sessionId: String(e.sessionId || e.id),
-      joinLink: String(e.joinLink || toJoinLink(String(e.sessionId || e.id))),
-      sessionToken: String(e.sessionToken || generateSessionToken()),
-      recordingEnabled: Boolean(e.recordingEnabled),
-      recordingVisibility: e.recordingVisibility || 'host_only',
+      recordingEnabled: true,
       saveMode: 'create',
     });
     setShowModal(true);
   };
 
   const submit = async () => {
-    const nextErrors: Partial<Record<keyof LiveSessionFormState | 'schedule', string>> = {};
-    if (!formData.title.trim()) nextErrors.title = 'Session title is required.';
-    if (!formData.eventId) nextErrors.eventId = 'Linked event is required.';
-    if (!formData.privacy) nextErrors.privacy = 'Privacy is required.';
-    
-    if (formData.streamSource === 'external') {
-      if (!formData.streamUrl.trim()) {
-        nextErrors.streamUrl = 'Stream URL is required for external streams.';
-      } else if (!safeUrl(formData.streamUrl)) {
-        nextErrors.streamUrl = 'Please provide a valid stream URL.';
-      }
+    const nextErrors: Partial<Record<keyof LiveSessionFormState | 'videoFile', string>> = {};
+    if (!formData.title.trim()) nextErrors.title = 'Video title is required.';
+    if (!editing && !videoFile) {
+      nextErrors.videoFile = 'Please select a video clip to upload.';
     }
 
-    const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : new Date().toISOString().slice(0, 16);
-    const endAt = formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}` : '';
-    if (startAt && endAt && new Date(endAt).getTime() < new Date(startAt).getTime()) {
-      nextErrors.schedule = 'End time must not be earlier than start time.';
-    }
+    setFormErrors(nextErrors as any);
+    if (Object.keys(nextErrors).length > 0) return;
 
-    setFormErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) throw new Error('Please fix the live session form errors.');
-
-    const streamUrl = safeUrl(formData.streamUrl);
     const payload = {
       title: formData.title.trim(),
       description: formData.description.trim() || null,
-      eventId: formData.eventId,
-      sessionId: formData.sessionId,
-      hostLabel: formData.hostLabel.trim(),
-      startAt: toMysqlDatetime(startAt),
-      endAt: endAt ? toMysqlDatetime(endAt) : null,
-      status: formData.saveMode === 'draft' ? 'scheduled' : formData.status,
-      meetingUrl: streamUrl,
-      streamUrl,
-      streamSource: formData.streamSource,
-      joinLink: formData.joinLink,
-      roomCode: formData.roomCode,
-      sessionToken: formData.sessionToken,
-      sessionType: 'livestream',
-      privacy: formData.privacy,
+      eventId: formData.eventId || null,
+      hostLabel: formData.hostLabel.trim() || user?.fullName || 'PSITS Officer',
+      privacy: formData.privacy || 'public',
       chatEnabled: formData.allowChat,
-      recordingEnabled: formData.recordingEnabled,
-      recordingVisibility: formData.recordingVisibility,
+      recordingEnabled: true,
+      status: 'ended',
+      sessionType: 'livestream',
     };
 
-    if (editing) {
-      await api.updateLiveSession(editing.id, payload);
-      addNotification({ userId: 'current', title: 'Updated', message: 'Live session updated.', type: 'success', isRead: false });
-    } else {
-      await api.createLiveSession(payload);
+    setIsUploadingRecording(true);
+    setRecordingUploadPct(0);
+    try {
+      if (editing) {
+        await api.updateLiveSession(editing.id, payload);
+        if (videoFile) {
+          await api.uploadLiveEventRecording(editing.id, videoFile, setRecordingUploadPct);
+        }
+        addNotification({
+          userId: 'current',
+          title: 'Video Event Updated',
+          message: 'Video event details updated successfully.',
+          type: 'success',
+          isRead: false,
+        });
+      } else {
+        const res = await api.createLiveSession(payload);
+        const newId = res.data?.liveEvent?.id;
+        if (newId && videoFile) {
+          await api.uploadLiveEventRecording(newId, videoFile, setRecordingUploadPct);
+        }
+        addNotification({
+          userId: 'current',
+          title: 'Video Event Uploaded',
+          message: 'Video clip uploaded. It will be stored for 1 month, then deleted permanently.',
+          type: 'success',
+          isRead: false,
+        });
+      }
+
+      setShowModal(false);
+      setEditing(null);
+      setVideoFile(null);
+      await refresh();
+    } catch (err) {
       addNotification({
         userId: 'current',
-        title: formData.saveMode === 'draft' ? 'Draft Saved' : 'Session Created',
-        message: formData.saveMode === 'draft' ? 'Live session draft saved.' : 'Live session created.',
-        type: 'success',
+        title: editing ? 'Update Failed' : 'Upload Failed',
+        message: err instanceof Error ? err.message : 'Unable to save video event.',
+        type: 'error',
         isRead: false,
       });
-    }
-
-    setShowModal(false);
-    setEditing(null);
-    await refresh();
-  };
-
-  const copyInvite = async (session: LiveSession) => {
-    const inviteText = `${session.title}\nSession ID: ${session.sessionId || session.id}\nRoom Code: ${session.roomCode || 'N/A'}\nJoin Link: ${session.joinLink || ''}\nStream URL: ${session.streamUrl || session.meetingUrl || ''}`;
-    try {
-      await navigator.clipboard.writeText(inviteText);
-      addNotification({ userId: 'current', title: 'Invite Copied', message: 'Session invite details copied to clipboard.', type: 'success', isRead: false });
-    } catch {
-      addNotification({ userId: 'current', title: 'Copy Failed', message: 'Unable to copy invite details.', type: 'error', isRead: false });
+    } finally {
+      setIsUploadingRecording(false);
     }
   };
 
@@ -410,7 +277,7 @@ export const LiveEventsPage = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${String(session.title || 'live-session').replace(/[/\\\\?%*:|\"<>]/g, '_')}.mp4`;
+      a.download = `${String(session.title || 'video-event').replace(/[/\\?%*:|"<>]/g, '_')}.mp4`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -426,20 +293,20 @@ export const LiveEventsPage = () => {
     }
   };
 
-  const activeEmbed = useMemo(() => toYouTubeEmbedUrl(activeSession?.streamUrl || activeSession?.meetingUrl || null), [activeSession?.id]);
-
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Stream Events</h1>
-            <p className="mt-2 text-gray-600">Stream sessions, video broadcasts, and video clips for PSITS activities.</p>
+            <h1 className="text-3xl font-bold text-gray-900">Recorded Video Events</h1>
+            <p className="mt-2 text-gray-600">
+              Upload and watch recorded activity clips and event videos. All uploaded videos are retained for 1 month and then permanently deleted.
+            </p>
           </div>
           {canManage && (
             <Button variant="primary" onClick={openCreate} className="inline-flex items-center gap-2">
               <Plus size={18} />
-              Create Stream Session
+              Upload Video Event
             </Button>
           )}
         </div>
@@ -450,25 +317,27 @@ export const LiveEventsPage = () => {
               <div className="flex flex-col gap-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={getStatusVariant(e.status)}>{e.status}</Badge>
                     {e.eventTitle && <Badge variant="info">{e.eventTitle}</Badge>}
-                    {e.recordingUrl && (
+                    {e.recordingUrl ? (
                       <Badge variant="success" className="inline-flex items-center gap-1">
                         <Film size={12} />
-                        Video Clip
+                        Video Clip Ready
                       </Badge>
+                    ) : (
+                      <Badge variant="warning">No Video File</Badge>
                     )}
                   </div>
                   <div className="text-xl font-bold text-gray-900">{e.title}</div>
                   <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                    <div className="inline-flex items-center gap-1">
-                      <Video size={16} />
-                      Stream Broadcast
+                    <div className="inline-flex items-center gap-1 font-medium text-gray-700">
+                      <Video size={16} className="text-primary" />
+                      Uploaded by {e.hostLabel || 'PSITS'}
                     </div>
-                    <div className="inline-flex items-center gap-1">
-                      <Users size={16} />
-                      {Number(e.viewersCount || 0)} viewers
-                    </div>
+                    {((e as any).createdAt || e.startAt) && (
+                      <span className="text-xs text-gray-500">
+                        Date: {new Date(((e as any).createdAt || e.startAt)!).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -486,91 +355,44 @@ export const LiveEventsPage = () => {
                 )}
               </div>
 
-              <div className="space-y-5 px-6 py-5">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {e.startAt && (
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        <Calendar size={14} />
-                        Schedule
-                      </div>
-                      <div className="mt-2 text-sm font-medium text-gray-900">{new Date(e.startAt).toLocaleString()}</div>
-                    </div>
-                  )}
+              <div className="space-y-4 px-6 py-5">
+                {e.description && (
+                  <p className="text-sm text-gray-600 leading-relaxed">{e.description}</p>
+                )}
 
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <Clock size={14} />
-                      Session ID
-                    </div>
-                    <div className="mt-2 text-sm font-medium text-gray-900">{e.sessionId || e.id}</div>
-                  </div>
-
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <Users size={14} />
-                      Room Code
-                    </div>
-                    <div className="mt-2 text-sm font-medium text-gray-900">{e.roomCode || 'Pending'}</div>
-                  </div>
-                </div>
-
-                {e.recordingUrl && e.recordingExpiresAt && (
+                {e.recordingUrl && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2 font-medium text-amber-900">
                       <Film size={14} className="text-amber-700" />
                       <span>Video clip stored for 1 month</span>
                     </div>
-                    <span className="text-amber-800">
-                      Expires: {new Date(e.recordingExpiresAt).toLocaleDateString()} (Permanent deletion)
-                    </span>
+                    {e.recordingExpiresAt && (
+                      <span className="text-amber-800 font-medium">
+                        Expires: {new Date(e.recordingExpiresAt).toLocaleDateString()} ({Math.max(0, Math.ceil((new Date(e.recordingExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days remaining before permanent deletion)
+                      </span>
+                    )}
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (e.recordingUrl || e.streamSource !== 'built_in') {
-                        setActiveSession(e);
-                      } else {
-                        navigate(`/stream-events/studio/${e.id}`);
-                      }
-                    }}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:opacity-95"
+                    onClick={() => setActiveSession(e)}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95"
                   >
                     <MonitorPlay size={18} />
-                    {e.recordingUrl ? 'Watch Clip' : 'Watch'}
+                    Watch Video
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => void copyInvite(e)}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                  >
-                    <Copy size={18} />
-                    Copy Invite
-                  </button>
-
-                  {e.streamSource === 'built_in' ? (
+                  {e.recordingUrl && (
                     <button
                       type="button"
-                      onClick={() => navigate(`/stream-events/studio/${e.id}`)}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      onClick={() => void downloadRecording(e)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                     >
-                      <Video size={18} />
-                      Enter Studio
+                      <Download size={18} />
+                      Download
                     </button>
-                  ) : (
-                    <a
-                      href={e.streamUrl || e.meetingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                    >
-                      <ExternalLink size={18} />
-                      Open Link
-                    </a>
                   )}
                 </div>
               </div>
@@ -579,8 +401,8 @@ export const LiveEventsPage = () => {
 
           {!isLoading && sorted.length === 0 && (
             <Card className="p-10 text-center text-gray-600">
-              No stream sessions yet.
-              {canManage ? ' Create one to get started.' : ' Please check back later.'}
+              No recorded video events yet.
+              {canManage ? ' Click "Upload Video Event" to get started.' : ' Please check back later.'}
             </Card>
           )}
         </div>
@@ -595,8 +417,15 @@ export const LiveEventsPage = () => {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={getStatusVariant(activeSession.status)}>{activeSession.status}</Badge>
                   {activeSession.eventTitle && <Badge variant="info">{activeSession.eventTitle}</Badge>}
+                  {activeSession.recordingUrl ? (
+                    <Badge variant="success" className="inline-flex items-center gap-1">
+                      <Film size={12} />
+                      Video Clip
+                    </Badge>
+                  ) : (
+                    <Badge variant="warning">No Video File</Badge>
+                  )}
                 </div>
 
                 {activeSession.recordingUrl ? (
@@ -604,6 +433,7 @@ export const LiveEventsPage = () => {
                     <video
                       key={activeSession.recordingUrl}
                       controls
+                      autoPlay
                       playsInline
                       className="h-full w-full object-contain"
                       src={api.getLiveEventRecordingStreamUrl(activeSession.id)}
@@ -611,25 +441,21 @@ export const LiveEventsPage = () => {
                       Your browser does not support HTML5 video streaming.
                     </video>
                   </div>
-                ) : activeEmbed ? (
-                  <div className="aspect-video w-full overflow-hidden rounded-xl border border-gray-200 bg-black">
-                    <iframe
-                      title="Stream Broadcast"
-                      className="h-full w-full"
-                      src={activeEmbed}
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
                 ) : (
-                  <Card className="p-6 text-sm text-gray-700">
-                    This stream link cannot be embedded. Open it in a new tab:
-                    <div className="mt-3">
-                      <a className="text-primary hover:underline" href={activeSession.streamUrl || activeSession.meetingUrl} target="_blank" rel="noreferrer">
-                        {activeSession.streamUrl || activeSession.meetingUrl}
-                      </a>
-                    </div>
-                  </Card>
+                  <div className="flex aspect-video w-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
+                    <Film size={40} className="text-gray-400 mb-2" />
+                    <p className="text-sm font-medium text-gray-700">No video clip uploaded yet</p>
+                    {canManage && (
+                      <p className="text-xs text-gray-500 mt-1">Upload a video clip using the panel on the right.</p>
+                    )}
+                  </div>
+                )}
+
+                {activeSession.description && (
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Description</div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{activeSession.description}</p>
+                  </div>
                 )}
               </div>
 
@@ -638,7 +464,7 @@ export const LiveEventsPage = () => {
                   <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Film size={16} className="text-primary" />
-                      Video Clip
+                      Video Clip Info
                     </span>
                     <span className="text-xs font-normal text-gray-500">1-month retention</span>
                   </div>
@@ -758,12 +584,12 @@ export const LiveEventsPage = () => {
                 </div>
 
                 <div className="rounded-xl border border-gray-200 bg-white">
-                  <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">Chat</div>
-                  <div className="max-h-[420px] space-y-3 overflow-y-auto px-4 py-4 text-sm">
+                  <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">Comments & Chat</div>
+                  <div className="max-h-[380px] space-y-3 overflow-y-auto px-4 py-4 text-sm">
                     {isLoadingChat ? (
                       <div className="text-gray-500">Loading chat…</div>
                     ) : chatMessages.length === 0 ? (
-                      <div className="text-gray-500">No messages yet.</div>
+                      <div className="text-gray-500">No comments yet.</div>
                     ) : (
                       chatMessages.map((m: any) => (
                         <div key={m.id} className="rounded-lg bg-gray-50 px-3 py-2">
@@ -781,7 +607,7 @@ export const LiveEventsPage = () => {
                       <input
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Type a message…"
+                        placeholder="Type a comment…"
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') void sendChatMessage();
@@ -799,30 +625,6 @@ export const LiveEventsPage = () => {
                     </div>
                   </div>
                 </div>
-
-                {activeSession.streamSource === 'built_in' ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSession(null);
-                      navigate(`/stream-events/studio/${activeSession.id}`);
-                    }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                  >
-                    <Video size={18} />
-                    Enter Studio
-                  </button>
-                ) : (
-                  <a
-                    href={activeSession.streamUrl || activeSession.meetingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                  >
-                    <ExternalLink size={18} />
-                    Open Stream
-                  </a>
-                )}
               </div>
             </div>
           </Modal>
@@ -835,20 +637,13 @@ export const LiveEventsPage = () => {
             formData={formData}
             formErrors={formErrors}
             eventOptions={eventOptions}
+            videoFile={videoFile}
+            onVideoFileChange={setVideoFile}
+            isUploading={isUploadingRecording}
+            uploadProgress={recordingUploadPct}
             onClose={() => setShowModal(false)}
             onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
-            onSaveDraft={() => {
-              setFormData((prev) => ({ ...prev, saveMode: 'draft' }));
-              void submit().catch((err) => {
-                addNotification({ userId: 'current', title: 'Save Failed', message: err instanceof Error ? err.message : 'Unable to save draft.', type: 'error', isRead: false });
-              });
-            }}
-            onCreate={() => {
-              setFormData((prev) => ({ ...prev, saveMode: 'create' }));
-              void submit().catch((err) => {
-                addNotification({ userId: 'current', title: 'Create Failed', message: err instanceof Error ? err.message : 'Unable to create session.', type: 'error', isRead: false });
-              });
-            }}
+            onSubmit={() => void submit()}
           />
         )}
 
