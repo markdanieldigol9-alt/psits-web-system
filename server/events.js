@@ -370,20 +370,21 @@ async function updateEvent(req, res) {
   const hasExplicitStatus = typeof body.status === 'string' && allowedStatus.includes(body.status);
   let statusMode = 'none';
   if (hasExplicitStatus) {
-    if (body.status === 'draft' || body.status === 'cancelled') {
+    if (body.status === 'draft' || body.status === 'cancelled' || body.status === 'ongoing' || body.status === 'completed') {
       statusMode = body.status;
-    } else if (body.status === 'upcoming' && String(current.status) === 'cancelled') {
-      statusMode = 'restore';
+    } else if (body.status === 'upcoming') {
+      statusMode = 'upcoming';
     }
   }
 
-  if (statusMode === 'draft' || statusMode === 'cancelled') {
+  if (statusMode !== 'none') {
     sets.push('status = ?');
     params.push(statusMode);
-  } else if (statusMode === 'restore') {
-    const computed = computeAutoStatus(nextStartAt, nextEndAt);
-    sets.push('status = ?');
-    params.push(computed);
+    // If starting event (phase 2: ongoing), automatically close registration if not explicitly overridden
+    if (statusMode === 'ongoing' && body.registrationOverride === undefined && !sets.some((s) => s.startsWith('registration_override'))) {
+      sets.push('registration_override = ?');
+      params.push('closed');
+    }
   }
 
   if (!sets.length) return res.status(400).json({ success: false, message: 'No fields to update.' });

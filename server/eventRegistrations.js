@@ -49,6 +49,10 @@ async function registerForEvent(req, res) {
     return json(res, 400, { success: false, message: 'Event finished. Registration is closed.' });
   }
 
+  if (event.status === 'ongoing' || event.status === 'completed' || event.status === 'cancelled') {
+    return json(res, 400, { success: false, message: 'Event has already started or concluded. Registration is closed.' });
+  }
+
   const override = event.registration_override ? String(event.registration_override) : null;
   if (override === 'closed') {
     return json(res, 400, { success: false, message: 'Registration is closed for this event.' });

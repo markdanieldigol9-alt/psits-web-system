@@ -2,8 +2,11 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { pool } = require('./db');
-const { isDbError } = require('./isDbError');
-const { sendRegistrationSubmittedEmail } = require('./mailer');
+const {
+  sendRegistrationSubmittedEmail,
+  sendPasswordResetEmail,
+  sendPasswordResetSuccessEmail,
+} = require('./mailer');
 
 const PASSWORD_RULES = {
   minLength: 10,
@@ -794,6 +797,225 @@ async function logout(req, res) {
   return json(res, 200, { success: true });
 }
 
+async function forgotPassword(req, res) {
+  const email = normalizeEmail(req.body?.email);
+  if (!email) {
+    return json(res, 400, { success: false, message: 'Email address is required.' });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return json(res, 400, { success: false, message: 'Please enter a valid email address.' });
+  }
+
+  try {
+    const [users] = await pool.execute(
+      'SELECT id, email, full_name, status FROM users WHERE email = ? LIMIT 1',
+      [email]
+    );
+
+    // If no user found or user is archived, return generic message for security
+    if (!users.length || users[0].status === 'archived') {
+      return json(res, 200, {
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been sent.',
+      });
+    }
+
+    const user = users[0];
+
+    // Generate secure 32-byte hex token (64 chars)
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Invalidate prior unused tokens for this user
+    await pool.execute(
+      'UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL',
+      [user.id]
+    );
+
+    // Insert reset token expiring in 1 hour
+    await pool.execute(
+      `INSERT INTO password_resets (user_id, token, expires_at)
+       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))`,
+      [user.id, token]
+    );
+
+    // Determine client reset URL
+    const origin = req.get('origin') || req.get('referer');
+    let baseUrl = process.env.CLIENT_URL || (origin ? new URL(origin).origin : 'http://localhost:5173');
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+
+    // Send reset email via nodemailer
+    await sendPasswordResetEmail({
+      to: user.email,
+      fullName: user.full_name || 'Member',
+      resetUrl,
+      resetToken: token,
+    });
+
+    const isProd = process.env.NODE_ENV === 'production';
+    return json(res, 200, {
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been sent.',
+      resetUrl: !isProd ? resetUrl : undefined,
+    });
+  } catch (err) {
+    console.error('forgotPassword error:', err);
+    return json(res, 500, {
+      success: false,
+      message: 'Failed to process password reset request. Please try again later.',
+    });
+  }
+}
+
+async function verifyResetToken(req, res) {
+  const token = String(req.body?.token || req.query?.token || '').trim();
+  if (!token || token.length !== 64 || !/^[0-9a-fA-F]+$/.test(token)) {
+    return json(res, 400, {
+      success: false,
+      message: 'Invalid or missing password reset link.',
+    });
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT pr.id, pr.user_id, pr.expires_at, pr.used_at, u.email, u.full_name
+       FROM password_resets pr
+       JOIN users u ON u.id = pr.user_id
+       WHERE pr.token = ?
+       LIMIT 1`,
+      [token]
+    );
+
+    if (!rows.length) {
+      return json(res, 400, {
+        success: false,
+        message: 'Invalid password reset token. It may have expired or been replaced.',
+      });
+    }
+
+    const reset = rows[0];
+    if (reset.used_at) {
+      return json(res, 400, {
+        success: false,
+        message: 'This password reset link has already been used.',
+      });
+    }
+
+    if (new Date(reset.expires_at).getTime() < Date.now()) {
+      return json(res, 400, {
+        success: false,
+        message: 'This password reset link has expired. Please request a new one.',
+      });
+    }
+
+    return json(res, 200, {
+      success: true,
+      email: reset.email,
+      fullName: reset.full_name,
+    });
+  } catch (err) {
+    console.error('verifyResetToken error:', err);
+    return json(res, 500, {
+      success: false,
+      message: 'Failed to verify password reset token.',
+    });
+  }
+}
+
+async function resetPassword(req, res) {
+  const token = String(req.body?.token || '').trim();
+  const password = String(req.body?.password || '');
+
+  if (!token || token.length !== 64 || !/^[0-9a-fA-F]+$/.test(token)) {
+    return json(res, 400, {
+      success: false,
+      message: 'Invalid or missing password reset token.',
+    });
+  }
+
+  const ruleError = validatePasswordRules(password);
+  if (ruleError) {
+    return json(res, 400, { success: false, message: ruleError });
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT pr.id, pr.user_id, pr.expires_at, pr.used_at, u.email, u.full_name
+       FROM password_resets pr
+       JOIN users u ON u.id = pr.user_id
+       WHERE pr.token = ?
+       LIMIT 1`,
+      [token]
+    );
+
+    if (!rows.length) {
+      return json(res, 400, {
+        success: false,
+        message: 'Invalid password reset token. It may have expired or been replaced.',
+      });
+    }
+
+    const reset = rows[0];
+    if (reset.used_at) {
+      return json(res, 400, {
+        success: false,
+        message: 'This password reset link has already been used.',
+      });
+    }
+
+    if (new Date(reset.expires_at).getTime() < Date.now()) {
+      return json(res, 400, {
+        success: false,
+        message: 'This password reset link has expired. Please request a new one.',
+      });
+    }
+
+    const newHash = hashPassword(password);
+
+    // Update user password and clear any failed login count / lockout
+    await pool.execute(
+      `UPDATE users
+       SET password_hash = ?, failed_login_count = 0, lock_until = NULL
+       WHERE id = ?`,
+      [newHash, reset.user_id]
+    );
+
+    // Mark reset token as used
+    await pool.execute(
+      'UPDATE password_resets SET used_at = NOW() WHERE id = ?',
+      [reset.id]
+    );
+
+    // Revoke all active sessions so any previous sessions cannot be reused
+    await pool.execute(
+      'DELETE FROM sessions WHERE user_id = ?',
+      [reset.user_id]
+    );
+
+    // Send confirmation email (best effort)
+    try {
+      await sendPasswordResetSuccessEmail({
+        to: reset.email,
+        fullName: reset.full_name || 'Member',
+      });
+    } catch (emailErr) {
+      console.error('Failed to send password reset confirmation email:', emailErr);
+    }
+
+    return json(res, 200, {
+      success: true,
+      message: 'Your password has been successfully reset. You can now log in.',
+    });
+  } catch (err) {
+    console.error('resetPassword error:', err);
+    return json(res, 500, {
+      success: false,
+      message: 'Failed to reset password. Please try again later.',
+    });
+  }
+}
+
 module.exports = {
   authMiddleware,
   requireRole,
@@ -803,6 +1025,9 @@ module.exports = {
   verifyCurrentPassword,
   logout,
   renewLookup,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword,
 };
 
 

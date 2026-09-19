@@ -11,7 +11,19 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const { migrate } = require('./migrate');
 const { pool } = require('./db');
 const { isDbError, getDbUnavailableMessage } = require('./isDbError');
-const { authMiddleware, requireRole, register, login, logout, createAdmin, verifyCurrentPassword, renewLookup } = require('./auth');
+const {
+  authMiddleware,
+  requireRole,
+  register,
+  login,
+  logout,
+  createAdmin,
+  verifyCurrentPassword,
+  renewLookup,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword,
+} = require('./auth');
 const {
   listMembers,
   listMemberStatusLogs,
@@ -123,6 +135,19 @@ const verifyLimiter = createRateLimiter({
   max: 20,
   message: 'Too many password checks. Please try again later.',
   name: 'verify',
+  redis,
+});
+
+const forgotPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many password reset attempts. Please try again later.',
+  name: 'forgot_password',
+  getKey: (req) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return email ? `${ip}:${email}` : ip;
+  },
   redis,
 });
 
@@ -245,16 +270,18 @@ app.post('/api/uploads/team-profile', authMiddleware, requireRole(['member']), a
   let ext = 'pdf';
   if (mime.includes('pdf')) {
     ext = 'pdf';
-  } else if (mime.includes('spreadsheet') || mime.includes('excel') || originalFileName.endsWith('.xlsx') || originalFileName.endsWith('.xls')) {
-    ext = originalFileName.endsWith('.xls') ? 'xls' : 'xlsx';
-  } else if (mime.includes('word') || mime.includes('document') || originalFileName.endsWith('.docx') || originalFileName.endsWith('.doc')) {
-    ext = originalFileName.endsWith('.doc') ? 'doc' : 'docx';
+  } else if (mime.includes('csv') || mime.includes('text/csv') || originalFileName.toLowerCase().endsWith('.csv')) {
+    ext = 'csv';
+  } else if (mime.includes('spreadsheet') || mime.includes('excel') || originalFileName.toLowerCase().endsWith('.xlsx') || originalFileName.toLowerCase().endsWith('.xls')) {
+    ext = originalFileName.toLowerCase().endsWith('.xls') ? 'xls' : 'xlsx';
+  } else if (mime.includes('word') || mime.includes('document') || originalFileName.toLowerCase().endsWith('.docx') || originalFileName.toLowerCase().endsWith('.doc')) {
+    ext = originalFileName.toLowerCase().endsWith('.doc') ? 'doc' : 'docx';
   } else {
     const fileExt = path.extname(originalFileName).toLowerCase().replace('.', '');
-    if (['pdf', 'xlsx', 'xls', 'docx', 'doc'].includes(fileExt)) {
+    if (['pdf', 'csv', 'xlsx', 'xls', 'docx', 'doc'].includes(fileExt)) {
       ext = fileExt;
     } else {
-      return res.status(400).json({ success: false, message: 'Only PDF, Excel (.xlsx, .xls), and Word (.docx, .doc) documents are allowed.' });
+      return res.status(400).json({ success: false, message: 'Only CSV (.csv), Excel (.xlsx, .xls), PDF, or Word documents are allowed.' });
     }
   }
 
@@ -357,6 +384,9 @@ app.post('/api/auth/verify-password', requireMigrationReady, verifyLimiter, auth
 app.post('/api/auth/logout', authMiddleware, logout);
 app.post('/api/auth/renew-lookup', requireMigrationReady, registerLimiter, renewLookup);
 app.post('/api/auth/create-admin', authMiddleware, requireRole(['super_admin']), createAdmin);
+app.post('/api/auth/forgot-password', requireMigrationReady, forgotPasswordLimiter, forgotPassword);
+app.post('/api/auth/verify-reset-token', requireMigrationReady, verifyResetToken);
+app.post('/api/auth/reset-password', requireMigrationReady, forgotPasswordLimiter, resetPassword);
 
 app.get('/api/me', authMiddleware, getMe);
 app.put('/api/me', authMiddleware, updateMe);

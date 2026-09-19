@@ -121,28 +121,32 @@ export const LoginPage = () => {
           error={errors.email}
         />
 
-        <div className="relative">
-          <Input
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Enter your password"
-            value={formData.password}
-            onChange={handlePasswordChange}
-            error={errors.password}
-          />
-
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-10 text-gray-600 hover:text-gray-900"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-gray-700">Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handlePasswordChange}
+              className={`w-full px-3.5 py-2.5 pr-10 rounded-[10px] text-sm text-gray-900 placeholder-gray-400 bg-white border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 ${
+                errors.password ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+          {errors.password && <p className="text-red-500 text-xs font-medium">{errors.password}</p>}
         </div>
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.rememberMe}
@@ -152,7 +156,7 @@ export const LoginPage = () => {
             <span className="text-sm text-gray-600">Remember me</span>
           </label>
 
-          <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+          <Link to="/forgot-password" className="text-sm text-primary hover:underline font-medium">
             Forgot password?
           </Link>
         </div>
@@ -167,7 +171,7 @@ export const LoginPage = () => {
           Login
         </Button>
 
-        <p className="text-center text-gray-600 text-sm">
+        <p className="text-center text-gray-600 text-sm border-t border-gray-100 pt-4">
           Don&apos;t have an account?{' '}
           <Link to="/register" className="text-primary hover:underline font-medium">
             Register here

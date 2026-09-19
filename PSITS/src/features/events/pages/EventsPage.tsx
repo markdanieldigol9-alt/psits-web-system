@@ -5,7 +5,8 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Palette, Sparkles, Image as ImageIcon, UploadCloud, X, ChevronRight, ChevronLeft, Layers, Trophy, Tag, FileText, Trash2 } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -82,51 +83,38 @@ const readAsDataUrl = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-const splitCsvLine = (line: string) => {
-  const values: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (ch === ',' && !inQuotes) {
-      values.push(current.trim());
-      current = '';
-    } else {
-      current += ch;
-    }
-  }
-  values.push(current.trim());
-  return values;
-};
 
-const parseCsvParticipants = (text: string) => {
-  const rows = text
-    .split(/\r?\n/)
-    .map((x) => x.trim())
-    .filter(Boolean);
-  if (rows.length < 2) return [];
-  const normalizeHeader = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  const headers = splitCsvLine(rows[0]).map((h) => normalizeHeader(h));
-  const idx = (name: string) => headers.indexOf(normalizeHeader(name));
-  return rows.slice(1).map((row) => {
-    const cols = splitCsvLine(row);
-    return {
-      fullName: idx('fullname') >= 0 ? cols[idx('fullname')] : cols[0] || '',
-      email: idx('email') >= 0 ? cols[idx('email')] : '',
-      contactNumber: idx('contactnumber') >= 0 ? cols[idx('contactnumber')] : '',
-      gender: idx('gender') >= 0 ? cols[idx('gender')] : '',
-      position: idx('position') >= 0 ? cols[idx('position')] : '',
-      eventTitle: idx('eventtitle') >= 0 ? cols[idx('eventtitle')] : '',
-      notes: idx('notes') >= 0 ? cols[idx('notes')] : '',
+const parseSpreadsheetFile = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
+  const worksheet = workbook.Sheets[sheetName];
+  const rawData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+  return rawData.map((row) => {
+    const findField = (...names: string[]) => {
+      for (const k of Object.keys(row)) {
+        const norm = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        for (const n of names) {
+          if (norm === n.toLowerCase().replace(/[^a-z0-9]/g, '')) {
+            return String(row[k] ?? '').trim();
+          }
+        }
+      }
+      return '';
     };
-  });
+
+    return {
+      fullName: findField('fullname', 'name', 'participantname', 'membername'),
+      email: findField('email', 'emailaddress'),
+      contactNumber: findField('contactnumber', 'contact', 'phone', 'phonenumber'),
+      gender: findField('gender', 'sex'),
+      position: findField('position', 'role'),
+      eventTitle: findField('eventtitle', 'event'),
+      notes: findField('notes', 'remarks'),
+    };
+  }).filter((x) => Boolean(x.fullName));
 };
 
 const formatCurrency = (value: number) => `PHP ${Number(value || 0).toLocaleString()}`;
@@ -153,6 +141,8 @@ export const EventsPage = () => {
   const [confirmSaveEvent, setConfirmSaveEvent] = useState(false);
   const [pendingEventPayload, setPendingEventPayload] = useState<any | null>(null);
   const [confirmToggle, setConfirmToggle] = useState<{ eventId: string; nextStatus: EventStatus; title: string } | null>(null);
+  const [confirmStartEvent, setConfirmStartEvent] = useState<{ eventId: string; title: string } | null>(null);
+  const [confirmCompleteEvent, setConfirmCompleteEvent] = useState<{ eventId: string; title: string } | null>(null);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [confirmPaymentSubmit, setConfirmPaymentSubmit] = useState(false);
@@ -168,6 +158,12 @@ export const EventsPage = () => {
   const [participantFileName, setParticipantFileName] = useState('');
   const [participantUploadCount, setParticipantUploadCount] = useState(0);
   const [isUploadingParticipants, setIsUploadingParticipants] = useState(false);
+  const [institutionRoster, setInstitutionRoster] = useState<any[]>([]);
+  const [isLoadingInstitutionRoster, setIsLoadingInstitutionRoster] = useState(false);
+  const [selectedInstitutionMemberIds, setSelectedInstitutionMemberIds] = useState<string[]>([]);
+  const [registrationSource, setRegistrationSource] = useState<'select' | 'upload'>('select');
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [pendingInstitutionParticipants, setPendingInstitutionParticipants] = useState<any[]>([]);
   const [registeredEventIds, setRegisteredEventIds] = useState<Record<string, boolean>>({});
   const [memberStatusByEvent, setMemberStatusByEvent] = useState<Record<string, string>>({});
   const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
@@ -197,7 +193,7 @@ export const EventsPage = () => {
     previewUrl: '',
   });
 
-  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'schedule' | 'design' | 'guidelines' | 'esports'>('basic');
+  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'schedule' | 'guidelines'>('basic');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -231,6 +227,37 @@ export const EventsPage = () => {
 
   const canManageEvents = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const isMember = user?.role === 'member';
+  const isInstitution = isMember && user?.memberType === 'institution';
+
+  const uniqueInstitutionMembers = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const m of institutionRoster) {
+      const key = (m.email || m.fullName || '').trim().toLowerCase();
+      if (key && !map.has(key)) {
+        map.set(key, m);
+      }
+    }
+    return Array.from(map.values());
+  }, [institutionRoster]);
+
+  const filteredInstitutionMembers = useMemo(() => {
+    const q = memberSearchQuery.trim().toLowerCase();
+    if (!q) return uniqueInstitutionMembers;
+    return uniqueInstitutionMembers.filter((m) =>
+      [m.fullName, m.email, m.contactNumber, m.position].filter(Boolean).join(' ').toLowerCase().includes(q)
+    );
+  }, [uniqueInstitutionMembers, memberSearchQuery]);
+
+  const selectedMembers = useMemo(() => {
+    return uniqueInstitutionMembers.filter((m) => selectedInstitutionMemberIds.includes(String(m.id)));
+  }, [uniqueInstitutionMembers, selectedInstitutionMemberIds]);
+
+  const toggleSelectMember = (id: string) => {
+    setSelectedInstitutionMemberIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    setTeamProfileError(null);
+  };
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
   const [showTemplateUploadModal, setShowTemplateUploadModal] = useState(false);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('default');
@@ -385,6 +412,73 @@ export const EventsPage = () => {
     };
   }, [detailsEvent]);
 
+  useEffect(() => {
+    if (!detailsEvent || !isInstitution) {
+      if (!detailsEvent) {
+        setInstitutionRoster([]);
+        setSelectedInstitutionMemberIds([]);
+        setMemberSearchQuery('');
+        setRegistrationSource('select');
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const loadInstitutionMembers = async () => {
+      setIsLoadingInstitutionRoster(true);
+      try {
+        const { data } = await api.getInstitutionMembers();
+        if (!cancelled && data?.success) {
+          setInstitutionRoster(data.members || []);
+        }
+      } catch {
+        if (!cancelled) setInstitutionRoster([]);
+      } finally {
+        if (!cancelled) setIsLoadingInstitutionRoster(false);
+      }
+    };
+
+    void loadInstitutionMembers();
+    return () => {
+      cancelled = true;
+    };
+  }, [detailsEvent, isInstitution]);
+
+  useEffect(() => {
+    if (!isInstitution || registrationSource !== 'select' || !detailsEvent) return;
+
+    if (selectedMembers.length === 0) {
+      if (participantFileName.startsWith('Selected_')) {
+        setParticipantFileName('');
+        setTeamProfileFile(null);
+        setParticipantUploadCount(0);
+        if (teamProfilePreview) {
+          URL.revokeObjectURL(teamProfilePreview);
+          setTeamProfilePreview('');
+        }
+      }
+      return;
+    }
+
+    setParticipantUploadCount(selectedMembers.length);
+    const csvRows = [
+      'fullName,email,contactNumber,gender,position,eventTitle',
+      ...selectedMembers.map((m) =>
+        `"${(m.fullName || '').replace(/"/g, '""')}","${(m.email || '').replace(/"/g, '""')}","${(m.contactNumber || '').replace(/"/g, '""')}","${(m.gender || '').replace(/"/g, '""')}","${(m.position || 'Participant').replace(/"/g, '""')}","${(detailsEvent.title || '').replace(/"/g, '""')}"`
+      ),
+    ];
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const sanitizedTitle = (detailsEvent.title || 'Event').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
+    const fileName = `Selected_${sanitizedTitle}_Members.csv`;
+    const file = new File([blob], fileName, { type: 'text/csv' });
+    setParticipantFileName(fileName);
+    setTeamProfileFile(file);
+    setTeamProfileError(null);
+    if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
+    setTeamProfilePreview(URL.createObjectURL(file));
+  }, [selectedMembers, registrationSource, isInstitution, detailsEvent]);
+
+
   const filteredEvents = useMemo(
     () => events.filter((event) => filterStatus === 'all' || event.status === filterStatus),
     [events, filterStatus]
@@ -414,26 +508,39 @@ export const EventsPage = () => {
 
   const getRegistrationState = (event: any): { key: 'not_yet_open' | 'open' | 'closed' | 'finished'; label: string; variant: 'info' | 'success' | 'warning' | 'error' } => {
     const now = new Date();
+    const status = String(event?.status || '').toLowerCase();
+
+    if (status === 'completed') {
+      return { key: 'finished', label: 'Event Finished', variant: 'error' };
+    }
+    if (status === 'cancelled') {
+      return { key: 'closed', label: 'Event Cancelled', variant: 'error' };
+    }
+    // Phase 2: If event has started (ongoing), registration is closed!
+    if (status === 'ongoing') {
+      return { key: 'closed', label: 'Registration Closed (Event Started)', variant: 'warning' };
+    }
+
     const override = String(event?.registrationOverride || '').toLowerCase();
+    if (override === 'closed') return { key: 'closed', label: 'Registration Closed', variant: 'warning' };
+    if (override === 'open') return { key: 'open', label: 'Open for Registration', variant: 'success' };
+
     const regStart = event?.registrationStartAt ? new Date(String(event.registrationStartAt)) : null;
     const regEnd = event?.registrationEndAt ? new Date(String(event.registrationEndAt)) : null;
-    const endAt = event?.endDate && event?.endTime ? new Date(`${event.endDate}T${event.endTime}:00`) : null;
+    const endAt = event?.endDate && event?.endTime ? new Date(`${event.endDate}T${event.endTime}:00`) : (event?.endAt ? new Date(String(event.endAt)) : null);
 
     if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) {
       return { key: 'finished', label: 'Event Finished', variant: 'error' };
     }
 
-    if (override === 'closed') return { key: 'closed', label: 'Closed', variant: 'warning' };
-    if (override === 'open') return { key: 'open', label: 'Open', variant: 'success' };
-
     if (regStart && !Number.isNaN(regStart.getTime()) && now < regStart) return { key: 'not_yet_open', label: 'Not Yet Open', variant: 'info' };
-    if (regEnd && !Number.isNaN(regEnd.getTime()) && now > regEnd) return { key: 'closed', label: 'Closed', variant: 'warning' };
+    if (regEnd && !Number.isNaN(regEnd.getTime()) && now > regEnd) return { key: 'closed', label: 'Registration Closed', variant: 'warning' };
 
     // Default: open until event starts
-    const startAt = event?.date && event?.time ? new Date(`${event.date}T${event.time}:00`) : null;
-    if (startAt && !Number.isNaN(startAt.getTime()) && now > startAt) return { key: 'closed', label: 'Closed', variant: 'warning' };
+    const startAt = event?.date && event?.time ? new Date(`${event.date}T${event.time}:00`) : (event?.startAt ? new Date(String(event.startAt)) : null);
+    if (startAt && !Number.isNaN(startAt.getTime()) && now >= startAt) return { key: 'closed', label: 'Registration Closed (Event Started)', variant: 'warning' };
 
-    return { key: 'open', label: 'Open', variant: 'success' };
+    return { key: 'open', label: 'Open for Registration', variant: 'success' };
   };
 
   const openCreateModal = () => {
@@ -519,13 +626,23 @@ export const EventsPage = () => {
     return startAt.getTime() > now.getTime() ? 'Auto: Upcoming' : 'Auto: Ongoing';
   };
 
-  const isFinalFormStep = formData.isEsports ? activeFormTab === 'esports' : activeFormTab === 'guidelines';
+  const isFinalFormStep = activeFormTab === 'guidelines';
 
   const validateCurrentFormStep = (tab: typeof activeFormTab) => {
     if (tab === 'basic') {
       if (!formData.title.trim()) {
         addNotification({ userId: 'current', title: 'Validation', message: 'Event title is required.', type: 'error', isRead: false });
         return false;
+      }
+      if (formData.isEsports) {
+        if (!formData.esportsGame) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
+          return false;
+        }
+        if (!formData.esportsBracketFormat) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
+          return false;
+        }
       }
       return true;
     }
@@ -579,19 +696,6 @@ export const EventsPage = () => {
       }
       return true;
     }
-    if (tab === 'esports') {
-      if (formData.isEsports) {
-        if (!formData.esportsGame) {
-          addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
-          return false;
-        }
-        if (!formData.esportsBracketFormat) {
-          addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
-          return false;
-        }
-      }
-      return true;
-    }
     return true;
   };
 
@@ -599,16 +703,12 @@ export const EventsPage = () => {
     if (!validateCurrentFormStep(activeFormTab)) return;
 
     if (activeFormTab === 'basic') setActiveFormTab('schedule');
-    else if (activeFormTab === 'schedule') setActiveFormTab('design');
-    else if (activeFormTab === 'design') setActiveFormTab('guidelines');
-    else if (activeFormTab === 'guidelines' && formData.isEsports) setActiveFormTab('esports');
+    else if (activeFormTab === 'schedule') setActiveFormTab('guidelines');
   };
 
   const handlePrevFormStep = () => {
     if (activeFormTab === 'schedule') setActiveFormTab('basic');
-    else if (activeFormTab === 'design') setActiveFormTab('schedule');
-    else if (activeFormTab === 'guidelines') setActiveFormTab('design');
-    else if (activeFormTab === 'esports') setActiveFormTab('guidelines');
+    else if (activeFormTab === 'guidelines') setActiveFormTab('schedule');
   };
 
   const allTemplates = useMemo(() => {
@@ -682,16 +782,41 @@ export const EventsPage = () => {
   const registerForEvent = async (event: any, silent = false) => {
     try {
       const mode = String(event?.registrationMode || 'individual');
-      if (['team', 'pair'].includes(mode) && !teamProfileFile) {
-        setTeamProfileError('Team profile file is required for this registration mode.');
+      if (!isInstitution && ['team', 'pair'].includes(mode) && !teamProfileFile) {
+        const modeLabel = mode === 'pair' ? 'Pair / Duo' : 'Team';
+        setTeamProfileError(`${modeLabel} batch upload file is required for this registration mode.`);
         addNotification({
           userId: 'current',
           title: 'Validation',
-          message: 'Please upload a team profile before registering.',
+          message: `Please batch upload ${modeLabel.toLowerCase()} members before registering.`,
           type: 'error',
           isRead: false,
         });
         return;
+      }
+
+      const participantsToUpload =
+        pendingInstitutionParticipants.length > 0
+          ? pendingInstitutionParticipants
+          : isInstitution && registrationSource === 'select' && selectedMembers.length > 0
+          ? selectedMembers.map((m) => ({
+              eventId: event.id,
+              eventTitle: event.title,
+              fullName: m.fullName,
+              email: m.email,
+              contactNumber: m.contactNumber,
+              gender: m.gender,
+              position: m.position,
+              notes: m.notes || 'Selected from Institution Members',
+            }))
+          : [];
+
+      if (participantsToUpload.length > 0) {
+        try {
+          await api.bulkUploadInstitutionMembers(participantsToUpload);
+        } catch {
+          // ignore
+        }
       }
 
       let teamProfileUrl: string | null = null;
@@ -701,8 +826,13 @@ export const EventsPage = () => {
         teamProfileUrl = upload?.url || null;
       }
 
+      const countToSubmit = Math.max(
+        1,
+        Number(participantUploadCount || participantsToUpload.length || selectedMembers.length || 1)
+      );
+
       const { data } = await api.registerForEvent(String(event.id), {
-        participantCount: Math.max(1, Number(participantUploadCount || 1)),
+        participantCount: countToSubmit,
         teamProfileUrl: teamProfileUrl || undefined,
       });
       const registration = data?.registration;
@@ -714,12 +844,19 @@ export const EventsPage = () => {
         addNotification({
           userId: 'current',
           title: 'Registration Submitted',
-          message: Number(event?.fee || 0) > 0 ? `You are now registered for ${event.title}.` : `You are now registered for ${event.title}. Waiting for approval.`,
+          message:
+            isInstitution && countToSubmit > 1
+              ? `${countToSubmit} institution members registered for ${event.title}.`
+              : Number(event?.fee || 0) > 0
+              ? `You are now registered for ${event.title}.`
+              : `You are now registered for ${event.title}. Waiting for approval.`,
           type: 'success',
           isRead: false,
         });
       }
 
+      setPendingInstitutionParticipants([]);
+      setSelectedInstitutionMemberIds([]);
       setTeamProfileFile(null);
       if (teamProfilePreview) {
         URL.revokeObjectURL(teamProfilePreview);
@@ -748,11 +885,48 @@ export const EventsPage = () => {
 
   const handleRegister = async (event: any) => {
     const mode = String(event?.registrationMode || 'individual');
-    if (['team', 'pair'].includes(mode) && !teamProfileFile) {
+
+    if (isInstitution) {
+      if (registrationSource === 'select') {
+        if (selectedMembers.length === 0) {
+          setTeamProfileError('Please select at least one institution member to register.');
+          return;
+        }
+        if (mode === 'pair' && selectedMembers.length !== 2) {
+          setTeamProfileError(`Pair / Duo registration requires exactly 2 members (currently selected: ${selectedMembers.length}).`);
+          return;
+        }
+        if (mode === 'team' && selectedMembers.length < 2) {
+          setTeamProfileError(`Team registration requires at least 2 members (currently selected: ${selectedMembers.length}).`);
+          return;
+        }
+      } else {
+        if (['team', 'pair'].includes(mode) && !teamProfileFile) {
+          setTeamProfileError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
+          return;
+        }
+      }
+    } else if (['team', 'pair'].includes(mode) && !teamProfileFile) {
       setDetailsEvent(event);
-      setTeamProfileError('Team profile file is required for this registration mode.');
+      setTeamProfileError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
       return;
     }
+
+    if (isInstitution && registrationSource === 'select' && selectedMembers.length > 0) {
+      setPendingInstitutionParticipants(
+        selectedMembers.map((m) => ({
+          eventId: event.id,
+          eventTitle: event.title,
+          fullName: m.fullName,
+          email: m.email,
+          contactNumber: m.contactNumber,
+          gender: m.gender,
+          position: m.position,
+          notes: m.notes || 'Selected from Institution Members',
+        }))
+      );
+    }
+
     const isPaidEvent = Number(event?.fee || 0) > 0;
     if (isPaidEvent) {
       if (detailsEvent && String(detailsEvent.id) === String(event.id)) setDetailsEvent(null);
@@ -899,10 +1073,27 @@ export const EventsPage = () => {
                           {getCategoryLabel(event.eventType)}
                         </Badge>
                       )}
+                      {/* 2-Phase Lifecycle Badge */}
+                      {event.status === 'upcoming' && (
+                        <Badge variant="info" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Phase 1: Open for Registration
+                        </Badge>
+                      )}
+                      {event.status === 'ongoing' && (
+                        <Badge variant="success" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
+                          Phase 2: Event Started (Registration Closed)
+                        </Badge>
+                      )}
+                      {event.status === 'completed' && (
+                        <Badge variant="secondary">Completed</Badge>
+                      )}
+                      {event.status === 'cancelled' && (
+                        <Badge variant="error">Cancelled</Badge>
+                      )}
+                      {event.status === 'draft' && (
+                        <Badge variant="warning">Draft</Badge>
+                      )}
                       {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
-                      <Badge variant={getStatusColor(event.status)}>
-                        {String(event.status).charAt(0).toUpperCase() + String(event.status).slice(1)}
-                      </Badge>
                     </div>
                   </div>
 
@@ -958,6 +1149,36 @@ export const EventsPage = () => {
 
                     {canManageEvents && (
                       <>
+                        {event.status === 'upcoming' && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() =>
+                              setConfirmStartEvent({
+                                eventId: String(event.id),
+                                title: event.title,
+                              })
+                            }
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Play size={15} /> Start Event
+                          </Button>
+                        )}
+                        {event.status === 'ongoing' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setConfirmCompleteEvent({
+                                eventId: String(event.id),
+                                title: event.title,
+                              })
+                            }
+                            className="text-indigo-700 border-indigo-300 hover:bg-indigo-50 font-semibold flex items-center gap-1.5"
+                          >
+                            <CheckCircle size={15} /> Complete Event
+                          </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => openEditModal(event)}>
                           <Pencil size={16} /> Edit / Update
                         </Button>
@@ -985,7 +1206,7 @@ export const EventsPage = () => {
                         disabled={isRegistered || regState.key !== 'open'}
                         className="min-w-[140px]"
                       >
-                        <CheckCircle size={16} /> {isRegistered ? 'Registered' : (isPaidEvent ? 'Register & Upload Proof' : 'Register for Event')}
+                        <CheckCircle size={16} /> {isRegistered ? 'Registered (Ready)' : (isPaidEvent ? 'Register & Upload Proof' : 'Register for Event')}
                       </Button>
                     )}
                   </div>
@@ -1025,35 +1246,13 @@ export const EventsPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveFormTab('design')}
-            className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeFormTab === 'design'
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm font-bold'
-                : 'text-primary hover:bg-primary/10 font-bold bg-primary/5'
-            }`}
-          >
-            <Palette size={15} /> 3. Design & UI <Sparkles size={12} className="text-amber-400 animate-pulse" />
-          </button>
-          <button
-            type="button"
             onClick={() => setActiveFormTab('guidelines')}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
               activeFormTab === 'guidelines' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
             }`}
           >
-            <FileSpreadsheet size={15} /> 4. Guidelines
+            <FileSpreadsheet size={15} /> 3. Guidelines
           </button>
-          {formData.isEsports && (
-            <button
-              type="button"
-              onClick={() => setActiveFormTab('esports')}
-              className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-                activeFormTab === 'esports' ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-700 hover:bg-purple-100 bg-purple-50'
-              }`}
-            >
-              <Trophy size={15} /> 5. eSports
-            </button>
-          )}
         </div>
 
         <form
@@ -1068,7 +1267,6 @@ export const EventsPage = () => {
             if (!validateCurrentFormStep('basic')) { setActiveFormTab('basic'); return; }
             if (!validateCurrentFormStep('schedule')) { setActiveFormTab('schedule'); return; }
             if (!validateCurrentFormStep('guidelines')) { setActiveFormTab('guidelines'); return; }
-            if (formData.isEsports && !validateCurrentFormStep('esports')) { setActiveFormTab('esports'); return; }
 
             const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00` : null;
             if (!startAt) {
@@ -1125,12 +1323,12 @@ export const EventsPage = () => {
             if (formData.isEsports) {
               if (!formData.esportsGame) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
-                setActiveFormTab('esports');
+                setActiveFormTab('basic');
                 return;
               }
               if (!formData.esportsBracketFormat) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
-                setActiveFormTab('esports');
+                setActiveFormTab('basic');
                 return;
               }
             }
@@ -1214,10 +1412,10 @@ export const EventsPage = () => {
                 value={formData.description}
                 onChange={(e) => setFormData((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))}
               />
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Trophy size={18} className="text-purple-600" />
-                  <span className="text-sm font-medium text-gray-800">Is this an eSports Event?</span>
+                  <span className="text-sm font-medium text-gray-800">This is for Esports Events</span>
                 </div>
                 <input
                   type="checkbox"
@@ -1227,6 +1425,50 @@ export const EventsPage = () => {
                   className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
                 />
               </div>
+
+              {formData.isEsports && (
+                <div className="space-y-4 animate-fadeIn bg-purple-50/60 p-4 rounded-xl border border-purple-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Trophy size={18} className="text-purple-600" />
+                    <h4 className="text-sm font-bold text-purple-900">eSports Tournament Settings</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">eSports Game *</label>
+                      <select
+                        value={formData.esportsGame}
+                        onChange={(e) => setFormData((p) => ({ ...p, esportsGame: e.target.value }))}
+                        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="">Select Game...</option>
+                        <optgroup label="Mobile Games">
+                          <option value="Mobile Legends: Bang Bang">Mobile Legends: Bang Bang</option>
+                          <option value="PUBG Mobile">PUBG Mobile</option>
+                          <option value="Arena of Valor">Arena of Valor</option>
+                          <option value="Call of Duty: Mobile">Call of Duty: Mobile</option>
+                        </optgroup>
+                        <optgroup label="PC Games">
+                          <option value="VALORANT">VALORANT</option>
+                          <option value="Dota 2">Dota 2</option>
+                          <option value="League of Legends">League of Legends</option>
+                          <option value="CrossFire">CrossFire</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <Select
+                      label="Tournament Bracket Format *"
+                      options={[
+                        { value: '', label: 'Select Format...' },
+                        { value: 'Single Elimination', label: 'Single Elimination' },
+                        { value: 'Double Elimination', label: 'Double Elimination' },
+                        { value: 'Swiss System', label: 'Swiss System' },
+                      ]}
+                      value={formData.esportsBracketFormat}
+                      onChange={(e) => setFormData((p) => ({ ...p, esportsBracketFormat: (e.target as HTMLSelectElement).value }))}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1244,8 +1486,8 @@ export const EventsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
                 <Input label="Start Date *" type="date" value={formData.startDate} onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))} />
                 <Input label="Start Time *" type="time" value={formData.startTime} onChange={(e) => setFormData((p) => ({ ...p, startTime: e.target.value }))} />
-                <Input label="End Date (optional)" type="date" value={formData.endDate} onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))} />
-                <Input label="End Time (optional)" type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} />
+                <Input label="End Date" type="date" value={formData.endDate} onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))} />
+                <Input label="End Time" type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1267,325 +1509,130 @@ export const EventsPage = () => {
             </div>
           )}
 
-          {/* TAB 3: DYNAMIC EVENT DESIGN & UI CUSTOMIZATION */}
-          {activeFormTab === 'design' && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200/80">
-                <div className="flex items-center gap-2 mb-1">
-                  <Palette className="text-blue-600" size={18} />
-                  <h4 className="text-sm font-bold text-gray-900">Event Design & UI Customization</h4>
-                </div>
-                <p className="text-xs text-gray-600">
-                  Customize the look, banner poster image, accent color, and highlight badges for this event.
-                </p>
-              </div>
-
-              {/* Banner Poster Upload */}
-              <div className="space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                  <label className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
-                    <ImageIcon size={16} className="text-primary" /> Event Poster / Header Banner Image
-                  </label>
-                  <span className="text-xs text-blue-700 font-semibold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                    Recommended: 1200 × 500 px (Landscape) or 800 × 1000 px (Portrait)
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Upload an event header banner or promotional poster. <strong>Recommended size:</strong> 1200 &times; 500 pixels (wide banner, 16:9 or 3:1 ratio) or 800 &times; 1000 pixels (portrait poster, 4:5 ratio). Accepted formats: <strong>PNG, JPG, WebP</strong> (Max 8MB).
-                </p>
-                {formData.bannerPreviewUrl ? (
-                  <div className="relative rounded-xl border border-gray-200 overflow-hidden group bg-gray-100 max-h-48 flex items-center justify-center">
-                    <img
-                      src={formData.bannerPreviewUrl}
-                      alt="Banner Preview"
-                      className="w-full h-44 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <label className="cursor-pointer bg-white text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-lg shadow hover:bg-gray-100 flex items-center gap-1">
-                        <UploadCloud size={14} /> Change Poster
-                        <input
-                          type="file"
-                          accept="image/png, image/jpeg, image/webp"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setFormData((p) => ({
-                              ...p,
-                              bannerFile: file,
-                              bannerPreviewUrl: URL.createObjectURL(file),
-                            }));
-                          }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setFormData((p) => ({ ...p, bannerUrl: '', bannerFile: null, bannerPreviewUrl: '' }))}
-                        className="bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hover:bg-red-700 flex items-center gap-1"
-                      >
-                        <X size={14} /> Remove
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="border-2 border-dashed border-gray-300 hover:border-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-gray-50 hover:bg-primary/5 transition-colors">
-                    <UploadCloud size={32} className="text-gray-400 mb-2" />
-                    <span className="text-sm font-semibold text-gray-700">Click to upload Event Banner / Poster Image</span>
-                    <span className="text-xs text-gray-500 mt-1">PNG, JPG, or WebP (Recommended 1200x500px or 800x1000px, max 8MB)</span>
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setFormData((p) => ({
-                          ...p,
-                          bannerFile: file,
-                          bannerPreviewUrl: URL.createObjectURL(file),
-                        }));
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* Theme Color Palette */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-800">Theme Accent Color</label>
-                <div className="flex flex-wrap items-center gap-3">
-                  {[
-                    { hex: '#2563eb', label: 'PSITS Blue' },
-                    { hex: '#059669', label: 'Emerald' },
-                    { hex: '#7c3aed', label: 'Purple' },
-                    { hex: '#db2777', label: 'Pink' },
-                    { hex: '#d97706', label: 'Amber' },
-                    { hex: '#0891b2', label: 'Cyan' },
-                    { hex: '#1e293b', label: 'Slate Dark' },
-                  ].map((color) => (
-                    <button
-                      key={color.hex}
-                      type="button"
-                      onClick={() => setFormData((p) => ({ ...p, themeColor: color.hex }))}
-                      className={`w-9 h-9 rounded-full transition-transform flex items-center justify-center ${
-                        formData.themeColor === color.hex ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.label}
-                    >
-                      {formData.themeColor === color.hex && <CheckCircle size={16} className="text-white drop-shadow" />}
-                    </button>
-                  ))}
-                  <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-                    <span className="text-xs text-gray-500 font-medium">Custom:</span>
-                    <input
-                      type="color"
-                      value={formData.themeColor}
-                      onChange={(e) => setFormData((p) => ({ ...p, themeColor: e.target.value }))}
-                      className="w-8 h-8 rounded-lg cursor-pointer border border-gray-300 p-0.5"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Custom Badge Tag */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-800 flex items-center gap-1.5">
-                  <Tag size={16} className="text-amber-500" /> Custom Highlight Badge Tag
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {['⭐ Featured', '📜 Certificates Included', '🍔 Free Snacks', '🏆 Competition', '🔥 High Priority'].map((badge) => (
-                    <button
-                      key={badge}
-                      type="button"
-                      onClick={() => setFormData((p) => ({ ...p, customBadge: formData.customBadge === badge ? '' : badge }))}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        formData.customBadge === badge
-                          ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold'
-                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {badge}
-                    </button>
-                  ))}
-                </div>
-                <Input
-                  placeholder="Or enter custom badge text (e.g. Special Guest Speaker)..."
-                  value={formData.customBadge}
-                  onChange={(e) => setFormData((p) => ({ ...p, customBadge: e.target.value }))}
-                />
-              </div>
-
-              {/* Live Card Preview */}
-              <div className="space-y-2 pt-2 border-t">
-                <span className="text-xs font-bold uppercase text-gray-500 tracking-wider">Live Member View Preview</span>
-                <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white border-l-4" style={{ borderLeftColor: formData.themeColor }}>
-                  {formData.bannerPreviewUrl ? (
-                    <div className="w-full h-36 bg-gray-100 relative overflow-hidden">
-                      <img src={formData.bannerPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                      {formData.customBadge && (
-                        <span className="absolute top-2 left-2 bg-black/75 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
-                          <Sparkles size={11} className="text-amber-400" /> {formData.customBadge}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="w-full h-24 p-4 flex items-center justify-between text-white" style={{ backgroundColor: formData.themeColor }}>
-                      <span className="font-bold text-base">{formData.title || 'Event Title Preview'}</span>
-                      {formData.customBadge && (
-                        <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                          {formData.customBadge}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h4 className="font-bold text-gray-900 text-base">{formData.title || 'Untitled Event'}</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">Location: {formData.location || 'Venue TBD'}</p>
-                    <div className="mt-3 flex items-center justify-between text-xs font-semibold">
-                      <span style={{ color: formData.themeColor }}>Fee: ₱{formData.fee || 0}</span>
-                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded uppercase">{getCategoryLabel(formData.eventType)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: GUIDELINES & REGISTRATION CONTROLS */}
+          {/* TAB 3: GUIDELINES */}
           {activeFormTab === 'guidelines' && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-5 animate-fadeIn">
+
+              {/* Registration Window */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Registration Window (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+                  <Input
+                    label="Registration Start Date"
+                    type="date"
+                    value={formData.registrationStartDate}
+                    onChange={(e) => setFormData((p) => ({ ...p, registrationStartDate: e.target.value }))}
+                  />
+                  <Input
+                    label="Registration Start Time"
+                    type="time"
+                    value={formData.registrationStartTime}
+                    onChange={(e) => setFormData((p) => ({ ...p, registrationStartTime: e.target.value }))}
+                  />
+                  <Input
+                    label="Registration End Date"
+                    type="date"
+                    value={formData.registrationEndDate}
+                    onChange={(e) => setFormData((p) => ({ ...p, registrationEndDate: e.target.value }))}
+                  />
+                  <Input
+                    label="Registration End Time"
+                    type="time"
+                    value={formData.registrationEndTime}
+                    onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">Leave blank to keep registration open based on event status.</p>
+              </div>
+
+              {/* Registration Override */}
               <Select
-                label="Registration Control"
+                label="Registration Override"
                 options={[
-                  { value: '', label: 'Automatic (based on dates)' },
-                  { value: 'open', label: 'Force Open (Manual)' },
-                  { value: 'closed', label: 'Force Closed (Manual)' },
+                  { value: '', label: 'Auto (based on schedule)' },
+                  { value: 'open', label: 'Force Open' },
+                  { value: 'closed', label: 'Force Closed' },
                 ]}
                 value={formData.registrationOverride}
                 onChange={(e) => setFormData((p) => ({ ...p, registrationOverride: (e.target as HTMLSelectElement).value as RegistrationOverride }))}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
-                <Input label="Reg Start Date" type="date" value={formData.registrationStartDate} onChange={(e) => setFormData((p) => ({ ...p, registrationStartDate: e.target.value }))} />
-                <Input label="Reg Start Time" type="time" value={formData.registrationStartTime} onChange={(e) => setFormData((p) => ({ ...p, registrationStartTime: e.target.value }))} />
-                <Input label="Reg End Date" type="date" value={formData.registrationEndDate} onChange={(e) => setFormData((p) => ({ ...p, registrationEndDate: e.target.value }))} />
-                <Input label="Reg End Time" type="time" value={formData.registrationEndTime} onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))} />
-              </div>
-              <TextArea
-                label="Guidelines"
-                rows={4}
-                placeholder="Specify event rules, mechanics, requirements..."
-                value={formData.guidelines}
-                onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
-              />
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">
-                    Upload Guidelines Document
-                  </label>
-                  <span className="text-[11px] text-gray-500 font-medium">Documents only (No image/video)</span>
-                </div>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt,.md,.rtf,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
-                  onChange={async (e) => {
-                    const input = e.target as HTMLInputElement;
-                    const file = input.files?.[0] || null;
-                    if (!file) return;
 
-                    // Strictly reject any image, video, audio, or media file
-                    const forbiddenTypes = ['image/', 'video/', 'audio/'];
-                    const isForbiddenType = forbiddenTypes.some((t) => file.type.startsWith(t));
-                    const forbiddenExts = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp', '.mp4', '.mov', '.avi', '.mkv', '.webm', '.wmv', '.flv', '.mp3', '.wav'];
-                    const lowerName = file.name.toLowerCase();
-                    const hasForbiddenExt = forbiddenExts.some((ext) => lowerName.endsWith(ext));
-
-                    if (isForbiddenType || hasForbiddenExt) {
-                      input.value = '';
-                      setFormData((p) => ({ ...p, guidelineFileName: '' }));
-                      addNotification({
-                        userId: 'current',
-                        title: 'Invalid File Type',
-                        message: 'Only document files (PDF, DOC, DOCX, TXT, MD) are accepted for guidelines. Images and videos are not allowed.',
-                        type: 'error',
-                        isRead: false,
-                      });
-                      return;
-                    }
-
-                    setFormData((p) => ({ ...p, guidelineFileName: file.name }));
-                    if (file.type.startsWith('text/') || lowerName.endsWith('.txt') || lowerName.endsWith('.md')) {
-                      try {
-                        const text = await file.text();
-                        setFormData((p) => ({ ...p, guidelines: text.slice(0, 5000), guidelineFileName: file.name }));
-                      } catch {
-                        // ignore text parse error
-                      }
-                    }
-                  }}
-                  className="block w-full text-xs text-gray-700 dark:text-slate-300 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+              {/* Guidelines */}
+              <div className="space-y-2">
+                <TextArea
+                  label="Guidelines"
+                  rows={5}
+                  placeholder="Enter event rules, mechanics, and important reminders for participants..."
+                  value={formData.guidelines}
+                  onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
                 />
-                <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-                  <span>Accepted formats: <strong>.pdf, .doc, .docx, .txt, .md</strong></span>
-                  {formData.guidelineFileName && (
+                <p className="text-xs text-gray-500">
+                  Provide clear rules and mechanics that participants must follow.
+                </p>
+              </div>
+
+              {/* Event Banner */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Event Banner (Optional)</label>
+                {formData.bannerPreviewUrl && (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-100">
+                    <img
+                      src={formData.bannerPreviewUrl}
+                      alt="Banner preview"
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       type="button"
-                      onClick={() => setFormData((p) => ({ ...p, guidelineFileName: '' }))}
-                      className="text-red-500 hover:underline text-[11px]"
+                      onClick={() => setFormData((p) => ({ ...p, bannerFile: null, bannerPreviewUrl: '', bannerUrl: '' }))}
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 shadow text-xs"
+                      title="Remove banner"
                     >
-                      Clear File
+                      <Trash2 size={14} />
                     </button>
-                  )}
-                </div>
-                {formData.guidelineFileName && (
-                  <p className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
-                    ✓ Selected document: {formData.guidelineFileName}
-                  </p>
+                  </div>
                 )}
+                <label className="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 hover:border-primary rounded-lg px-4 py-3 text-sm text-gray-600 hover:text-primary transition-colors">
+                  <Upload size={16} />
+                  <span>{formData.bannerPreviewUrl ? 'Change Banner Image' : 'Upload Banner Image'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setFormData((p) => ({
+                        ...p,
+                        bannerFile: file,
+                        bannerPreviewUrl: URL.createObjectURL(file),
+                      }));
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
               </div>
-            </div>
-          )}
 
-          {/* TAB 5: ESPORTS SETTINGS */}
-          {activeFormTab === 'esports' && formData.isEsports && (
-            <div className="space-y-4 animate-fadeIn bg-purple-50/50 p-4 rounded-xl border border-purple-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Trophy size={20} className="text-purple-600" />
-                <h4 className="text-sm font-bold text-purple-900">eSports Tournament Settings</h4>
+              {/* Theme Color & Custom Badge */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Theme Color</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={formData.themeColor}
+                      onChange={(e) => setFormData((p) => ({ ...p, themeColor: e.target.value }))}
+                      className="h-10 w-16 rounded-lg border border-gray-300 cursor-pointer p-1"
+                    />
+                    <span className="text-sm text-gray-500 font-mono">{formData.themeColor}</span>
+                  </div>
+                </div>
+                <Input
+                  label="Custom Badge (Optional)"
+                  placeholder="e.g. #NatlQuals2026"
+                  value={formData.customBadge}
+                  onChange={(e) => setFormData((p) => ({ ...p, customBadge: e.target.value }))}
+                />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">eSports Game *</label>
-                <select
-                  value={formData.esportsGame}
-                  onChange={(e) => setFormData((p) => ({ ...p, esportsGame: e.target.value }))}
-                  className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                >
-                  <option value="">Select Game...</option>
-                  <optgroup label="Mobile Games">
-                    <option value="Mobile Legends: Bang Bang">Mobile Legends: Bang Bang</option>
-                    <option value="PUBG Mobile">PUBG Mobile</option>
-                    <option value="Arena of Valor">Arena of Valor</option>
-                    <option value="Call of Duty: Mobile">Call of Duty: Mobile</option>
-                  </optgroup>
-                  <optgroup label="PC Games">
-                    <option value="VALORANT">VALORANT</option>
-                    <option value="Dota 2">Dota 2</option>
-                    <option value="League of Legends">League of Legends</option>
-                    <option value="CrossFire">CrossFire</option>
-                  </optgroup>
-                </select>
-              </div>
-              <Select
-                label="Tournament Bracket Format *"
-                options={[
-                  { value: '', label: 'Select Format...' },
-                  { value: 'Single Elimination', label: 'Single Elimination' },
-                  { value: 'Double Elimination', label: 'Double Elimination' },
-                  { value: 'Swiss System', label: 'Swiss System' },
-                ]}
-                value={formData.esportsBracketFormat}
-                onChange={(e) => setFormData((p) => ({ ...p, esportsBracketFormat: (e.target as HTMLSelectElement).value }))}
-              />
             </div>
           )}
 
@@ -1690,6 +1737,82 @@ export const EventsPage = () => {
           }
         }}
       />
+
+      <VerifyActionModal
+        isOpen={!!confirmStartEvent}
+        title="Start Event"
+        message={confirmStartEvent ? `Are you ready to start "${confirmStartEvent.title}"? This will advance the event to Phase 2 (Event Started). All participants are assumed ready, and registration will be immediately closed.` : ''}
+        confirmLabel="Start Event"
+        confirmVariant="primary"
+        onCancel={() => setConfirmStartEvent(null)}
+        onVerified={async () => {
+          if (!confirmStartEvent) return;
+          try {
+            const { data } = await api.updateEvent(confirmStartEvent.eventId, { status: 'ongoing', registrationOverride: 'closed' });
+            const updated = data?.event;
+            if (updated) {
+              setEvents((prev) => prev.map((e) => (String(e.id) === String(updated.id) ? updated : e)));
+              if (detailsEvent && String(detailsEvent.id) === String(updated.id)) {
+                setDetailsEvent(updated);
+              }
+            }
+            addNotification({
+              userId: 'current',
+              title: 'Event Started',
+              message: `Event "${confirmStartEvent.title}" has started! Registration is now closed.`,
+              type: 'success',
+              isRead: false,
+            });
+            setConfirmStartEvent(null);
+          } catch (err) {
+            addNotification({
+              userId: 'current',
+              title: 'Error',
+              message: err instanceof Error ? err.message : 'Failed to start event.',
+              type: 'error',
+              isRead: false,
+            });
+          }
+        }}
+      />
+
+      <VerifyActionModal
+        isOpen={!!confirmCompleteEvent}
+        title="Complete Event"
+        message={confirmCompleteEvent ? `Are you sure you want to mark "${confirmCompleteEvent.title}" as completed?` : ''}
+        confirmLabel="Complete Event"
+        confirmVariant="primary"
+        onCancel={() => setConfirmCompleteEvent(null)}
+        onVerified={async () => {
+          if (!confirmCompleteEvent) return;
+          try {
+            const { data } = await api.updateEvent(confirmCompleteEvent.eventId, { status: 'completed' });
+            const updated = data?.event;
+            if (updated) {
+              setEvents((prev) => prev.map((e) => (String(e.id) === String(updated.id) ? updated : e)));
+              if (detailsEvent && String(detailsEvent.id) === String(updated.id)) {
+                setDetailsEvent(updated);
+              }
+            }
+            addNotification({
+              userId: 'current',
+              title: 'Event Completed',
+              message: `Event "${confirmCompleteEvent.title}" has been marked as completed.`,
+              type: 'success',
+              isRead: false,
+            });
+            setConfirmCompleteEvent(null);
+          } catch (err) {
+            addNotification({
+              userId: 'current',
+              title: 'Error',
+              message: err instanceof Error ? err.message : 'Failed to complete event.',
+              type: 'error',
+              isRead: false,
+            });
+          }
+        }}
+      />
       <Modal
         isOpen={!!detailsEvent}
         onClose={() => setDetailsEvent(null)}
@@ -1719,6 +1842,32 @@ export const EventsPage = () => {
               <Badge variant={getStatusColor(detailsEvent.status)}>
                 {String((memberStatusByEvent[String(detailsEvent.id)] || detailsEvent.status) || '').replace(/^./, (x: string) => x.toUpperCase())}
               </Badge>
+            </div>
+
+            {/* 2-Phase Lifecycle Process Stepper */}
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 space-y-2.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center justify-between">
+                <span>Event Process Lifecycle</span>
+                <Badge variant={detailsEvent.status === 'ongoing' ? 'success' : detailsEvent.status === 'upcoming' ? 'info' : 'secondary'}>
+                  {detailsEvent.status === 'ongoing' ? 'Phase 2: Event Started' : detailsEvent.status === 'upcoming' ? 'Phase 1: Registration Open' : (String(detailsEvent.status).charAt(0).toUpperCase() + String(detailsEvent.status).slice(1))}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className={`p-3 rounded-lg border transition-all ${detailsEvent.status === 'upcoming' ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20 shadow-sm' : 'bg-white border-gray-200 opacity-60'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${detailsEvent.status === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>1</span>
+                    <span className="font-semibold text-sm text-gray-900">Phase 1: Open for Registration</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1 pl-8">Registration is active. Preparing participants and rosters.</p>
+                </div>
+                <div className={`p-3 rounded-lg border transition-all ${detailsEvent.status === 'ongoing' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20 shadow-sm' : 'bg-white border-gray-200 opacity-60'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${detailsEvent.status === 'ongoing' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-600'}`}>2</span>
+                    <span className="font-semibold text-sm text-gray-900">Phase 2: Event Started</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1 pl-8">All participants are ready. Registration is closed.</p>
+                </div>
+              </div>
             </div>
 
             <div className="text-sm text-gray-700">
@@ -1816,6 +1965,34 @@ export const EventsPage = () => {
               <div className="rounded-lg border border-gray-200 p-4 space-y-3">
                 <p className="text-sm font-semibold text-gray-900">Admin/Officer Tools</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {detailsEvent.status === 'upcoming' && (
+                    <Button
+                      variant="primary"
+                      onClick={() =>
+                        setConfirmStartEvent({
+                          eventId: String(detailsEvent.id),
+                          title: detailsEvent.title,
+                        })
+                      }
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Play size={16} /> Start Event (Close Registration & Begin)
+                    </Button>
+                  )}
+                  {detailsEvent.status === 'ongoing' && (
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        setConfirmCompleteEvent({
+                          eventId: String(detailsEvent.id),
+                          title: detailsEvent.title,
+                        })
+                      }
+                      className="text-indigo-700 border-indigo-300 hover:bg-indigo-50 font-semibold flex items-center gap-1.5"
+                    >
+                      <CheckCircle size={16} /> Complete Event
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={() => downloadTemplate(detailsEvent.title)}>
                     <FileSpreadsheet size={16} /> Generate registration spreadsheet format
                   </Button>
@@ -1885,7 +2062,7 @@ export const EventsPage = () => {
                                   rel="noreferrer"
                                   className="text-xs text-primary underline"
                                 >
-                                  View Team Profile
+                                  View Attached File (Team / Pair)
                                 </a>
                               )}
                               <div className="mt-2 flex gap-2">
@@ -1994,129 +2171,385 @@ export const EventsPage = () => {
                   )}
                 </div>
 
-                {['team', 'pair'].includes(String(detailsEvent.registrationMode || 'individual')) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={() => openTemplateUpload(detailsEvent.title)}>
-                      <FileSpreadsheet size={16} /> Use Spreadsheet Template
-                    </Button>
-
-                    {user?.memberType === 'institution' && (
-                      <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-primary px-4 py-2 text-primary hover:bg-blue-50">
-                        <Upload size={16} /> Upload Participants (CSV)
-                        <input
-                          type="file"
-                          accept=".csv"
-                          className="hidden"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setParticipantFileName(file.name);
-                            setIsUploadingParticipants(true);
-                            try {
-                              const text = await file.text();
-                              const parsed = parseCsvParticipants(text)
-                                .map((x) => ({ ...x, eventId: detailsEvent.id, eventTitle: x.eventTitle || detailsEvent.title }))
-                                .filter((x) => String(x.fullName || '').trim());
-                              setParticipantUploadCount(parsed.length);
-
-                              if (parsed.length > 0) {
-                                await api.bulkUploadInstitutionMembers(parsed);
-                              }
-
-                              addNotification({
-                                userId: 'current',
-                                title: 'Participants Uploaded',
-                                message: `${parsed.length} participants uploaded from ${file.name}.`,
-                                type: 'success',
-                                isRead: false,
-                              });
-                            } catch (err) {
-                              addNotification({
-                                userId: 'current',
-                                title: 'Upload Error',
-                                message: err instanceof Error ? err.message : 'Failed to upload participants file.',
-                                type: 'error',
-                                isRead: false,
-                              });
-                            } finally {
-                              setIsUploadingParticipants(false);
-                              e.currentTarget.value = '';
-                            }
-                          }}
-                        />
-                      </label>
-                    )}
-                  </div>
-                )}
-
-                {isTeamRegistration && (
-                  <div className="rounded-lg border border-gray-200 p-3.5 space-y-2.5 bg-gray-50/50">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                      <p className="text-sm font-semibold text-gray-900">Team Profile (required for team/pair)</p>
-                      <span className="text-xs text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                        PDF, Excel (.xlsx/.xls), or Word (.docx/.doc)
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Upload your official team/pair roster file. Only documents are accepted (No images/videos).
-                    </p>
-                    <input
-                      ref={teamProfileInputRef}
-                      type="file"
-                      accept=".pdf,.xlsx,.xls,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setTeamProfileError(null);
-                        if (!file) {
-                          setTeamProfileFile(null);
-                          return;
-                        }
-                        const allowedExtensions = ['.pdf', '.xlsx', '.xls', '.docx', '.doc'];
-                        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-                        if (!allowedExtensions.includes(ext)) {
-                          setTeamProfileError('Invalid file format. Team profile only accepts PDF, Excel (.xlsx, .xls), or Word (.docx, .doc) files.');
-                          setTeamProfileFile(null);
-                          if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
-                          return;
-                        }
-                        if (file.size > 15 * 1024 * 1024) {
-                          setTeamProfileError('File must be 15MB or below.');
-                          setTeamProfileFile(null);
-                          if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
-                          return;
-                        }
-                        if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
-                        setTeamProfilePreview(URL.createObjectURL(file));
-                        setTeamProfileFile(file);
-                      }}
-                    />
-                    {teamProfileError && <p className="text-xs text-red-600 font-semibold">{teamProfileError}</p>}
-                    {teamProfileFile && (
-                      <div className="flex items-center justify-between p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-xs mt-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText size={16} className="text-blue-600 shrink-0" />
-                          <div className="min-w-0 truncate">
-                            <p className="font-semibold text-gray-900 truncate">{teamProfileFile.name}</p>
-                            <p className="text-[11px] text-gray-500">{(teamProfileFile.size / 1024).toFixed(1)} KB</p>
-                          </div>
+                {(isTeamRegistration || isInstitution) && (
+                  <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                            {isInstitution && registrationSource === 'select' ? (
+                              <Users size={16} className="text-primary" />
+                            ) : (
+                              <FileSpreadsheet size={16} className="text-primary" />
+                            )}
+                            {detailsEvent.registrationMode === 'pair'
+                              ? 'Pair / Duo Registration'
+                              : detailsEvent.registrationMode === 'team'
+                              ? 'Team Registration'
+                              : 'Institution Member Registration'}
+                          </p>
+                          <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                            {detailsEvent.registrationMode === 'pair'
+                              ? 'Required for Pair / Duo'
+                              : detailsEvent.registrationMode === 'team'
+                              ? 'Required for Team'
+                              : 'Institution Entry'}
+                          </span>
                         </div>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {isInstitution
+                            ? 'Select participating members from your institution or upload a spreadsheet file.'
+                            : `Upload your ${detailsEvent.registrationMode === 'pair' ? 'pair / duo' : 'team'} members in CSV, Excel, or spreadsheet format only (.csv, .xlsx, .xls).`}
+                        </p>
+                      </div>
+                      {(!isInstitution || registrationSource === 'upload') && (
+                        <button
+                          type="button"
+                          onClick={() => downloadTemplate(detailsEvent.title, 'default')}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline self-start sm:self-auto cursor-pointer"
+                          title="Download sample spreadsheet template"
+                        >
+                          <Download size={13} />
+                          Download Template
+                        </button>
+                      )}
+                    </div>
+
+                    {isInstitution && (
+                      <div className="flex flex-wrap items-center gap-2 border-b border-blue-200/80 pb-2.5">
                         <button
                           type="button"
                           onClick={() => {
-                            if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
-                            setTeamProfilePreview('');
-                            setTeamProfileFile(null);
+                            setRegistrationSource('select');
                             setTeamProfileError(null);
-                            if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
                           }}
-                          className="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 flex items-center gap-1 font-semibold transition-colors shrink-0 ml-2"
-                          title="Delete/remove this file"
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                            registrationSource === 'select'
+                              ? 'bg-primary text-white shadow-xs'
+                              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                          }`}
                         >
-                          <Trash2 size={13} /> Remove
+                          <Users size={14} />
+                          Select from Institution Members
+                          {uniqueInstitutionMembers.length > 0 && (
+                            <span
+                              className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                                registrationSource === 'select' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {uniqueInstitutionMembers.length}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRegistrationSource('upload');
+                            setTeamProfileError(null);
+                          }}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                            registrationSource === 'upload'
+                              ? 'bg-primary text-white shadow-xs'
+                              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <FileSpreadsheet size={14} />
+                          Upload Spreadsheet (CSV / Excel)
                         </button>
                       </div>
                     )}
+
+                    {isInstitution && registrationSource === 'select' ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="relative flex-1">
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Search members by name, email, or role..."
+                              value={memberSearchQuery}
+                              onChange={(e) => setMemberSearchQuery(e.target.value)}
+                              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary"
+                            />
+                          </div>
+                          {filteredInstitutionMembers.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const allFilteredIds = filteredInstitutionMembers.map((m) => String(m.id));
+                                const isAllSelected = allFilteredIds.every((id) => selectedInstitutionMemberIds.includes(id));
+                                if (isAllSelected) {
+                                  setSelectedInstitutionMemberIds((prev) => prev.filter((id) => !allFilteredIds.includes(id)));
+                                } else {
+                                  setSelectedInstitutionMemberIds((prev) => Array.from(new Set([...prev, ...allFilteredIds])));
+                                }
+                                setTeamProfileError(null);
+                              }}
+                              className="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer shrink-0"
+                            >
+                              {filteredInstitutionMembers.every((m) => selectedInstitutionMemberIds.includes(String(m.id)))
+                                ? 'Deselect All'
+                                : 'Select All'}
+                            </button>
+                          )}
+                        </div>
+
+                        {isLoadingInstitutionRoster ? (
+                          <div className="py-6 text-center text-xs text-gray-500">Loading institution members...</div>
+                        ) : filteredInstitutionMembers.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-gray-500 rounded-lg border border-dashed border-gray-300 bg-white p-4 space-y-2">
+                            <Users size={28} className="mx-auto text-gray-400 mb-1" />
+                            <p className="font-semibold text-gray-700">
+                              {memberSearchQuery ? 'No members match your search.' : 'No institution members registered yet.'}
+                            </p>
+                            {!memberSearchQuery && (
+                              <p className="text-[11px] text-gray-500">
+                                You can register members under your institution in{' '}
+                                <a href="/institution-members" target="_blank" rel="noreferrer" className="text-primary underline font-medium">
+                                  Institution Members
+                                </a>{' '}
+                                or use the "Upload Spreadsheet" tab.
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="max-h-56 overflow-y-auto space-y-1.5 rounded-lg border border-gray-200 bg-white p-2">
+                            {filteredInstitutionMembers.map((member) => {
+                              const isSelected = selectedInstitutionMemberIds.includes(String(member.id));
+                              return (
+                                <div
+                                  key={member.id}
+                                  onClick={() => toggleSelectMember(String(member.id))}
+                                  className={`flex items-center justify-between gap-3 p-2 rounded-md border text-xs cursor-pointer transition-colors ${
+                                    isSelected
+                                      ? 'border-primary/50 bg-blue-50/60 font-medium text-gray-900'
+                                      : 'border-transparent hover:bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleSelectMember(String(member.id))}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                                    />
+                                    <div className="min-w-0 truncate">
+                                      <p className="font-semibold text-gray-900 truncate">{member.fullName}</p>
+                                      <p className="text-[11px] text-gray-500 truncate">
+                                        {member.email || 'No email'} {member.contactNumber ? `• ${member.contactNumber}` : ''}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <span className="shrink-0 text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                    {member.position || 'Member'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {selectedInstitutionMemberIds.length > 0 && (
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-xs text-green-900">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <CheckCircle size={18} className="text-green-600 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900 truncate">
+                                  {selectedInstitutionMemberIds.length} member{selectedInstitutionMemberIds.length === 1 ? '' : 's'} selected for this event
+                                </p>
+                                <p className="text-[11px] text-green-700">
+                                  {detailsEvent.registrationMode === 'pair' ? (
+                                    selectedInstitutionMemberIds.length === 2 ? (
+                                      '✓ Ready for Pair / Duo event'
+                                    ) : (
+                                      `⚠️ Exactly 2 members required for Pair / Duo (currently ${selectedInstitutionMemberIds.length})`
+                                    )
+                                  ) : detailsEvent.registrationMode === 'team' ? (
+                                    selectedInstitutionMemberIds.length >= 2 ? (
+                                      `✓ Ready for Team event (${selectedInstitutionMemberIds.length} members)`
+                                    ) : (
+                                      `⚠️ Minimum 2 members required for Team (currently ${selectedInstitutionMemberIds.length})`
+                                    )
+                                  ) : (
+                                    '✓ Ready to register'
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedInstitutionMemberIds([]);
+                                setTeamProfileError(null);
+                              }}
+                              className="text-red-600 hover:text-red-800 text-xs font-semibold underline self-start sm:self-auto cursor-pointer shrink-0"
+                            >
+                              Clear Selection
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {!teamProfileFile && !participantFileName ? (
+                          <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-primary bg-white px-4 py-3 text-sm font-semibold text-primary shadow-xs transition-all hover:bg-blue-50">
+                            <Upload size={16} />
+                            {isUploadingParticipants
+                              ? 'Processing Spreadsheet...'
+                              : `Batch Upload ${detailsEvent.registrationMode === 'pair' ? 'Pair / Duo' : 'Team'} (CSV / Excel / Spreadsheet)`}
+                            <input
+                              ref={teamProfileInputRef}
+                              type="file"
+                              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                              className="hidden"
+                              disabled={isUploadingParticipants}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                setTeamProfileError(null);
+                                if (!file) return;
+
+                                const allowedExts = ['.csv', '.xlsx', '.xls'];
+                                const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                                if (!allowedExts.includes(fileExt)) {
+                                  setTeamProfileError('Invalid file format. Please upload CSV (.csv) or Excel / Spreadsheet (.xlsx, .xls) file.');
+                                  e.currentTarget.value = '';
+                                  return;
+                                }
+                                if (file.size > 15 * 1024 * 1024) {
+                                  setTeamProfileError('File must be 15MB or below.');
+                                  e.currentTarget.value = '';
+                                  return;
+                                }
+
+                                setParticipantFileName(file.name);
+                                setTeamProfileFile(file);
+                                if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
+                                setTeamProfilePreview(URL.createObjectURL(file));
+
+                                setIsUploadingParticipants(true);
+                                try {
+                                  const parsed = (await parseSpreadsheetFile(file))
+                                    .map((x) => ({ ...x, eventId: detailsEvent.id, eventTitle: x.eventTitle || detailsEvent.title }))
+                                    .filter((x) => String(x.fullName || '').trim());
+                                  setParticipantUploadCount(parsed.length);
+
+                                  if (parsed.length > 0) {
+                                    await api.bulkUploadInstitutionMembers(parsed);
+                                  }
+
+                                  addNotification({
+                                    userId: 'current',
+                                    title: 'Batch Upload Successful',
+                                    message: `${parsed.length > 0 ? `${parsed.length} participants registered from ` : ''}${file.name}.`,
+                                    type: 'success',
+                                    isRead: false,
+                                  });
+                                } catch (err) {
+                                  addNotification({
+                                    userId: 'current',
+                                    title: 'Upload Notice',
+                                    message: err instanceof Error ? err.message : `Spreadsheet attached for ${detailsEvent.registrationMode === 'pair' ? 'pair / duo' : 'team'} registration.`,
+                                    type: 'info',
+                                    isRead: false,
+                                  });
+                                } finally {
+                                  setIsUploadingParticipants(false);
+                                  e.currentTarget.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                        ) : (
+                          <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 p-3 text-xs text-green-900">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <FileSpreadsheet size={20} className="text-green-700 shrink-0" />
+                              <div className="min-w-0 truncate">
+                                <p className="font-bold text-gray-900 truncate">
+                                  {teamProfileFile?.name || participantFileName}
+                                </p>
+                                <p className="text-[11px] text-green-700">
+                                  ✓ {detailsEvent.registrationMode === 'pair' ? 'Pair / Duo' : 'Team'} file attached {participantUploadCount > 0 ? `• ${participantUploadCount} participant${participantUploadCount === 1 ? '' : 's'} registered` : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-3">
+                              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                <Upload size={13} />
+                                Change
+                                <input
+                                  type="file"
+                                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                                  className="hidden"
+                                  disabled={isUploadingParticipants}
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    setTeamProfileError(null);
+                                    if (!file) return;
+
+                                    const allowedExts = ['.csv', '.xlsx', '.xls'];
+                                    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                                    if (!allowedExts.includes(fileExt)) {
+                                      setTeamProfileError('Invalid file format. Please upload CSV (.csv) or Excel / Spreadsheet (.xlsx, .xls) file.');
+                                      e.currentTarget.value = '';
+                                      return;
+                                    }
+
+                                    setParticipantFileName(file.name);
+                                    setTeamProfileFile(file);
+                                    if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
+                                    setTeamProfilePreview(URL.createObjectURL(file));
+
+                                    setIsUploadingParticipants(true);
+                                    try {
+                                      const parsed = (await parseSpreadsheetFile(file))
+                                        .map((x) => ({ ...x, eventId: detailsEvent.id, eventTitle: x.eventTitle || detailsEvent.title }))
+                                        .filter((x) => String(x.fullName || '').trim());
+                                      setParticipantUploadCount(parsed.length);
+
+                                      if (parsed.length > 0) {
+                                        await api.bulkUploadInstitutionMembers(parsed);
+                                      }
+
+                                      addNotification({
+                                        userId: 'current',
+                                        title: 'Batch Upload Updated',
+                                        message: `${parsed.length > 0 ? `${parsed.length} participants registered from ` : ''}${file.name}.`,
+                                        type: 'success',
+                                        isRead: false,
+                                      });
+                                    } catch (err) {
+                                      // ignore
+                                    } finally {
+                                      setIsUploadingParticipants(false);
+                                      e.currentTarget.value = '';
+                                    }
+                                  }}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (teamProfilePreview) URL.revokeObjectURL(teamProfilePreview);
+                                  setTeamProfilePreview('');
+                                  setTeamProfileFile(null);
+                                  setParticipantFileName('');
+                                  setParticipantUploadCount(0);
+                                  setTeamProfileError(null);
+                                  if (teamProfileInputRef.current) teamProfileInputRef.current.value = '';
+                                }}
+                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                                title="Remove attached file"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {teamProfileError && <p className="text-xs text-red-600 font-semibold">{teamProfileError}</p>}
                   </div>
                 )}
 
@@ -2139,9 +2572,6 @@ export const EventsPage = () => {
                       </p>
                     )}
                   </div>
-                )}
-                {participantFileName && (
-                  <div className="text-xs text-gray-600">Uploaded file: {participantFileName} ({participantUploadCount} rows){isUploadingParticipants ? ' - Processing...' : ''}</div>
                 )}
 
               </div>

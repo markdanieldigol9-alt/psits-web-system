@@ -200,6 +200,24 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_id INT UNSIGNED NOT NULL,
+      token CHAR(64) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used_at DATETIME NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_password_resets_token (token),
+      KEY idx_password_resets_user_id (user_id),
+      KEY idx_password_resets_expires_at (expires_at),
+      CONSTRAINT fk_password_resets_user_id
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
   // If the table already existed, ensure the enum includes 'student' (keep 'school' for backwards compatibility).
   try {
     await pool.query(

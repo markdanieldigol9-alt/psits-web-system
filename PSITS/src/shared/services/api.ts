@@ -68,6 +68,18 @@ class ApiService {
     return this.client.post('/auth/renew-lookup', data);
   }
 
+  forgotPassword(email: string) {
+    return this.client.post<{ success: boolean; message: string; resetUrl?: string }>('/auth/forgot-password', { email });
+  }
+
+  verifyResetToken(token: string) {
+    return this.client.post<{ success: boolean; email?: string; fullName?: string; message?: string }>('/auth/verify-reset-token', { token });
+  }
+
+  resetPassword(data: { token: string; password: string }) {
+    return this.client.post<{ success: boolean; message: string }>('/auth/reset-password', data);
+  }
+
   logout() {
     return this.client.post('/auth/logout');
   }
@@ -642,4 +654,6 @@ class ApiService {
   }
 }
 
-export default new ApiService();
+const api = new ApiService();
+export { api };
+export default api;

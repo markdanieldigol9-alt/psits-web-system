@@ -90,12 +90,55 @@ export const PartnersPage = () => {
 
   const isEventUpcoming = (evt?: any) => {
     if (!evt) return false;
-    const d = evt.startDate || evt.date || evt.eventStartDate;
-    if (!d) return true;
+    const d = evt.date || evt.startDate || evt.eventStartDate;
+    if (!d) return evt.status === 'upcoming' || evt.eventStatus === 'upcoming';
     const eventDate = new Date(d);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return eventDate >= today || evt.status === 'upcoming' || evt.status === 'published' || evt.eventStatus === 'upcoming';
+    return eventDate >= today || evt.status === 'upcoming' || evt.eventStatus === 'upcoming';
+  };
+
+  const isEventCurrentAndOpen = (evt?: any): boolean => {
+    if (!evt) return false;
+    const status = String(evt.status || '').toLowerCase();
+    
+    // Disallow cancelled or draft events
+    if (status === 'cancelled' || status === 'draft') return false;
+
+    const now = new Date();
+    const startAt = evt.date && evt.time ? new Date(`${evt.date}T${evt.time}:00`) : (evt.date ? new Date(evt.date) : null);
+    const endAt = evt.endDate && evt.endTime ? new Date(`${evt.endDate}T${evt.endTime}:00`) : (evt.endDate ? new Date(evt.endDate) : null);
+
+    // If event has an end time and it already passed, or is marked completed
+    if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) {
+      return false;
+    }
+    if (status === 'completed') {
+      return false;
+    }
+
+    // Check registration override
+    const override = String(evt.registrationOverride || '').toLowerCase();
+    if (override === 'closed') return false;
+    if (override === 'open') return true;
+
+    // Check registration dates window
+    const regStart = evt.registrationStartAt ? new Date(String(evt.registrationStartAt)) : null;
+    const regEnd = evt.registrationEndAt ? new Date(String(evt.registrationEndAt)) : null;
+
+    if (regStart && !Number.isNaN(regStart.getTime()) && now < regStart) {
+      return false;
+    }
+    if (regEnd && !Number.isNaN(regEnd.getTime()) && now > regEnd) {
+      return false;
+    }
+
+    // Default: registration closes when event starts
+    if (startAt && !Number.isNaN(startAt.getTime()) && now > startAt) {
+      return false;
+    }
+
+    return true;
   };
 
   const handleOpenEditContrib = (contrib: any, partnerId: string) => {
@@ -533,32 +576,38 @@ export const PartnersPage = () => {
             placeholder="e.g. 50000"
           />
 
-          {/* Linked Event Selector with Old (Past) vs New (Upcoming) Event Grouping */}
+          {/* Linked Event Selector - Current and Open for Registration Events Only */}
           {(() => {
-            const upcomingEvents = events.filter((e) => isEventUpcoming(e));
-            const pastEvents = events.filter((e) => !isEventUpcoming(e));
+            const availableEvents = events.filter((e) => {
+              const isAvailable = isEventCurrentAndOpen(e);
+              const isCurrentlySelected = editingContrib && String(e.id) === String(newContrib.eventId);
+              return isAvailable || isCurrentlySelected;
+            });
+
             return (
               <div className="space-y-1">
                 <Select
                   label="Linked Event for Sponsorship (Optional)"
                   options={[
                     { value: '', label: '-- None (General Partner Deal) --' },
-                    ...(upcomingEvents.length > 0 ? [{ value: '', label: '--- 🟢 NEW / UPCOMING EVENTS ---' }] : []),
-                    ...upcomingEvents.map((e) => ({
-                      value: String(e.id),
-                      label: `🟢 [NEW] ${e.title} (${e.startDate ? new Date(e.startDate).toLocaleDateString() : 'Upcoming'})`,
-                    })),
-                    ...(pastEvents.length > 0 ? [{ value: '', label: '--- 🔴 OLD / PAST EVENTS ---' }] : []),
-                    ...pastEvents.map((e) => ({
-                      value: String(e.id),
-                      label: `🔴 [PAST] ${e.title} (${e.startDate ? new Date(e.startDate).toLocaleDateString() : 'Past Event'})`,
-                    })),
+                    ...availableEvents.map((e) => {
+                      const isOpen = isEventCurrentAndOpen(e);
+                      const dateStr = e.date || 'Upcoming';
+                      const labelPrefix = isOpen ? '🟢 [Open for Registration]' : 'ℹ️ [Linked Event]';
+                      return {
+                        value: String(e.id),
+                        label: `${labelPrefix} ${e.title} (${dateStr})`,
+                      };
+                    }),
+                    ...(availableEvents.length === 0
+                      ? [{ value: '', label: 'ℹ️ No current events open for registration' }]
+                      : []),
                   ]}
                   value={newContrib.eventId}
                   onChange={(e) => setNewContrib((prev) => ({ ...prev, eventId: e.target.value }))}
                 />
                 <p className="text-xs text-gray-500">
-                  Select an upcoming event for new sponsorships or a past event for historical records.
+                  Select a current event open for registration to link this sponsorship.
                 </p>
               </div>
             );
