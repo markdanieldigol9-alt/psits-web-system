@@ -8,6 +8,8 @@
     "api:watch": "nodemon server/index.js",
     "api:migrate": "node server/migrate.js",
     "smoke:login": "node scripts/smoke-login.mjs",
+    "test:api": "node scripts/test-api-suite.mjs",
+    "test": "npm --prefix PSITS test",
     "web:dev": "npm --prefix PSITS run dev",
     "lint": "eslint server/",
     "dev": "concurrently -k -n API,WEB -c cyan,green \"npm run api:watch\" \"npm run web:dev\""
