@@ -50,13 +50,15 @@ export const AuthLayout = ({ title, subtitle, children }: AuthLayoutProps) => {
       <div className="relative z-10 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl animate-fade-in-up">
 
         {/* Logo + brand */}
-        <div className="flex flex-col items-center mb-6 sm:mb-8">
+        <div className="flex flex-col items-center mb-6 sm:mb-8 text-center px-2">
           {/* Glow orb */}
           <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_0_40px_12px_rgba(255,255,255,0.12)] flex items-center justify-center mb-4">
             <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full bg-white/25 shadow-[0_0_16px_6px_rgba(255,255,255,0.2)]" />
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">PSITS</h1>
-          <p className="text-blue-200 text-sm sm:text-base font-medium mt-1">Web System</p>
+          <p className="text-blue-100 text-sm sm:text-base font-medium mt-1 tracking-wide max-w-md">
+            Philippine Society of Information Technology Students
+          </p>
         </div>
 
         {/* Form card — solid white, responsive padding */}
