@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /settings
+Disallow: /live-studio
+
+Sitemap: https://psits-web-system.vercel.app/sitemap.xml
