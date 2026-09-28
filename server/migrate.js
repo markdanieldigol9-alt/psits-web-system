@@ -1296,7 +1296,9 @@ async function migrate() {
       'approved_by INT UNSIGNED NULL',
       'approved_at DATETIME NULL',
       'rejection_reason VARCHAR(255) NULL',
-      'password_hash VARCHAR(255) NULL'
+      'password_hash VARCHAR(255) NULL',
+      'notes VARCHAR(255) NULL',
+      'created_by INT UNSIGNED NULL',
     ];
     for (const col of instColumns) {
       try {
@@ -1345,6 +1347,18 @@ async function migrate() {
       'INSERT INTO settings (key_name, value_text) VALUES (?, ?)',
       ['gcash_qr_code', '']
     );
+  }
+
+  // Ensure institutional provisioned participants have member_type = 'individual' so they can log in as individual members
+  try {
+    await pool.query(`
+      UPDATE users 
+      SET member_type = 'individual' 
+      WHERE member_type = 'student' 
+         OR (institution_owner_id IS NOT NULL AND (member_type IS NULL OR member_type != 'individual'))
+    `);
+  } catch {
+    // ignore
   }
 
   // Seed initial Super Admin if missing (matches credentials in PSITS/README)

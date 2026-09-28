@@ -214,6 +214,28 @@ async function runAllTests() {
     assert(Array.isArray(notifications), `Expected array of notifications`);
   });
 
+  await test('GET /institution-members returns list of institution participants', async () => {
+    const res = await sendRequest('GET', `${BASE_URL}/institution-members`, null, authHeaders());
+    assert(res.status === 200, `Expected 200, got ${res.status}`);
+    assert(res.data && res.data.success === true, `Expected success: true`);
+    assert(Array.isArray(res.data.members), `Expected array of members`);
+  });
+
+  await test('POST /institution-members/bulk accepts participant upload from authorized user', async () => {
+    const testMember = {
+      fullName: `Test Participant ${Date.now()}`,
+      email: `test_part_${Date.now()}@example.com`,
+      contactNumber: '09123456789',
+      gender: 'Male',
+      position: 'Student',
+      eventTitle: 'Automated Test Assembly',
+      notes: 'Automated Suite Verification',
+    };
+    const res = await sendRequest('POST', `${BASE_URL}/institution-members/bulk`, { members: [testMember] }, authHeaders());
+    assert(res.status === 201 || res.status === 200, `Expected 201/200, got ${res.status} (${JSON.stringify(res.data)})`);
+    assert(res.data && res.data.success === true, `Expected success: true`);
+  });
+
   console.log(`\n[Suite 4: Reporting & Analytical Insights]`);
 
   await test('GET /reports/dashboard returns aggregate KPI data', async () => {

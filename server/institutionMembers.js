@@ -52,22 +52,38 @@ async function ensureInstitutionParticipantUser({ email, fullName, contactNumber
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return null;
 
-  const [existing] = await pool.execute('SELECT id, password_hash FROM users WHERE email = ? LIMIT 1', [normalizedEmail]);
+  const [existing] = await pool.execute('SELECT id, password_hash, member_type, institution_owner_id FROM users WHERE email = ? LIMIT 1', [normalizedEmail]);
   if (existing.length) {
-    if (passwordHash && existing[0].password_hash !== passwordHash) {
-      await pool.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, existing[0].id]);
+    const existingUser = existing[0];
+    const updates = [];
+    const updateParams = [];
+    if (passwordHash && existingUser.password_hash !== passwordHash) {
+      updates.push('password_hash = ?');
+      updateParams.push(passwordHash);
     }
-    return String(existing[0].id);
+    if (existingUser.member_type !== 'individual') {
+      updates.push('member_type = ?');
+      updateParams.push('individual');
+    }
+    if (!existingUser.institution_owner_id && institutionUserId) {
+      updates.push('institution_owner_id = ?');
+      updateParams.push(institutionUserId);
+    }
+    if (updates.length > 0) {
+      updateParams.push(existingUser.id);
+      await pool.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, updateParams);
+    }
+    return String(existingUser.id);
   }
 
   const [instRows] = await pool.execute(
     'SELECT password_hash, sector_details FROM users WHERE id = ? LIMIT 1',
     [institutionUserId]
   );
-  if (!instRows.length) return null;
 
-  const finalPasswordHash = passwordHash || instRows[0].password_hash;
-  const institutionName = instRows[0].sector_details || null;
+  const fallbackHash = hashPassword('Password123!');
+  const finalPasswordHash = passwordHash || (instRows.length && instRows[0].password_hash ? instRows[0].password_hash : fallbackHash);
+  const institutionName = (instRows.length ? instRows[0].sector_details : null) || null;
 
   const base = safeUsernameFromEmail(normalizedEmail);
   let createdId = null;
@@ -79,7 +95,7 @@ async function ensureInstitutionParticipantUser({ email, fullName, contactNumber
         `INSERT INTO users
           (email, username, full_name, password_hash, role, status, contact_number, sector, sector_details, member_type, institution_owner_id, terms_accepted)
          VALUES
-          (?, ?, ?, ?, 'member', 'active', ?, 'institution', ?, 'student', ?, 1)`,
+          (?, ?, ?, ?, 'member', 'active', ?, 'institution', ?, 'individual', ?, 1)`,
         [
           normalizedEmail,
           username,
@@ -170,93 +186,98 @@ async function listInstitutionMembers(req, res) {
 }
 
 async function bulkCreateInstitutionMembers(req, res) {
-  const role = req.user?.role;
-  const memberType = req.user?.member_type;
-  const body = req.body || {};
-  const incoming = Array.isArray(body.members) ? body.members : [];
+  try {
+    const role = req.user?.role;
+    const memberType = req.user?.member_type;
+    const body = req.body || {};
+    const incoming = Array.isArray(body.members) ? body.members : [];
 
-  if (!(role === 'member' && memberType === 'institution') && !canViewAll(role)) {
-    return json(res, 403, { success: false, message: 'Only institutional members and officers/admins can upload participants.' });
-  }
+    if (!(role === 'member' && memberType === 'institution') && !canViewAll(role)) {
+      return json(res, 403, { success: false, message: 'Only institutional members and officers/admins can upload participants.' });
+    }
 
-  if (!incoming.length) {
-    return json(res, 400, { success: false, message: 'At least one participant is required.' });
-  }
+    if (!incoming.length) {
+      return json(res, 400, { success: false, message: 'At least one participant is required.' });
+    }
 
-  if (incoming.length > 500) {
-    return json(res, 400, { success: false, message: 'You can upload up to 500 participants per request.' });
-  }
+    if (incoming.length > 500) {
+      return json(res, 400, { success: false, message: 'You can upload up to 500 participants per request.' });
+    }
 
-  const cleanRows = incoming
-    .map((row) => {
-      const rawPw = row.password ? String(row.password).trim() : '';
-      const pwHash = rawPw ? hashPassword(rawPw) : (row.passwordHash ? String(row.passwordHash).trim() : null);
-      return {
-        eventId: row.eventId ? Number(row.eventId) : null,
-        fullName: String(row.fullName || '').trim(),
-        email: row.email ? String(row.email).trim().toLowerCase() : null,
-        contactNumber: row.contactNumber ? String(row.contactNumber).trim() : null,
-        gender: row.gender ? String(row.gender).trim() : null,
-        position: row.position ? String(row.position).trim() : null,
-        eventTitle: row.eventTitle ? String(row.eventTitle).trim() : null,
-        notes: row.notes ? String(row.notes).trim() : null,
-        passwordHash: pwHash,
-      };
-    })
-    .filter((row) => row.fullName);
+    const cleanRows = incoming
+      .map((row) => {
+        const rawPw = row.password ? String(row.password).trim() : '';
+        const pwHash = rawPw ? hashPassword(rawPw) : (row.passwordHash ? String(row.passwordHash).trim() : null);
+        return {
+          eventId: row.eventId ? Number(row.eventId) : null,
+          fullName: String(row.fullName || '').trim(),
+          email: row.email ? String(row.email).trim().toLowerCase() : null,
+          contactNumber: row.contactNumber ? String(row.contactNumber).trim() : null,
+          gender: row.gender ? String(row.gender).trim() : null,
+          position: row.position ? String(row.position).trim() : null,
+          eventTitle: row.eventTitle ? String(row.eventTitle).trim() : null,
+          notes: row.notes ? String(row.notes).trim() : null,
+          passwordHash: pwHash,
+        };
+      })
+      .filter((row) => row.fullName);
 
-  if (!cleanRows.length) {
-    return json(res, 400, { success: false, message: 'No valid participants found. Each row needs at least fullName.' });
-  }
+    if (!cleanRows.length) {
+      return json(res, 400, { success: false, message: 'No valid participants found. Each row needs at least fullName.' });
+    }
 
-  const institutionUserId = req.user.id;
-  const createdBy = req.user.id;
+    const institutionUserId = (canViewAll(role) && body.institutionUserId) ? Number(body.institutionUserId) : req.user.id;
+    const createdBy = req.user.id;
 
-  const values = cleanRows.map((row) => [
-    institutionUserId,
-    Number.isFinite(row.eventId) ? row.eventId : null,
-    row.fullName,
-    row.email,
-    row.contactNumber,
-    row.gender,
-    row.position,
-    row.eventTitle,
-    'approved',
-    createdBy,
-    new Date(),
-    null,
-    row.passwordHash,
-    row.notes,
-    createdBy,
-  ]);
+    const values = cleanRows.map((row) => [
+      institutionUserId,
+      Number.isFinite(row.eventId) ? row.eventId : null,
+      row.fullName,
+      row.email,
+      row.contactNumber,
+      row.gender,
+      row.position,
+      row.eventTitle,
+      'approved',
+      createdBy,
+      new Date(),
+      null,
+      row.passwordHash,
+      row.notes,
+      createdBy,
+    ]);
 
-  await pool.query(
-    `INSERT INTO institution_members
-      (institution_user_id, event_id, full_name, email, contact_number, gender, position, event_title, status, approved_by, approved_at, rejection_reason, password_hash, notes, created_by)
-     VALUES ?`,
-    [values]
-  );
+    await pool.query(
+      `INSERT INTO institution_members
+        (institution_user_id, event_id, full_name, email, contact_number, gender, position, event_title, status, approved_by, approved_at, rejection_reason, password_hash, notes, created_by)
+       VALUES ?`,
+      [values]
+    );
 
-  for (const row of cleanRows) {
-    if (row.email) {
-      try {
-        await ensureInstitutionParticipantUser({
-          email: row.email,
-          fullName: row.fullName,
-          contactNumber: row.contactNumber,
-          passwordHash: row.passwordHash,
-          institutionUserId,
-        });
-      } catch (err) {
-        console.error('Account provisioning warning:', err);
+    for (const row of cleanRows) {
+      if (row.email) {
+        try {
+          await ensureInstitutionParticipantUser({
+            email: row.email,
+            fullName: row.fullName,
+            contactNumber: row.contactNumber,
+            passwordHash: row.passwordHash,
+            institutionUserId,
+          });
+        } catch (err) {
+          console.error('Account provisioning warning:', err);
+        }
       }
     }
-  }
 
-  return json(res, 201, {
-    success: true,
-    inserted: cleanRows.length,
-  });
+    return json(res, 201, {
+      success: true,
+      inserted: cleanRows.length,
+    });
+  } catch (err) {
+    console.error('Error in bulkCreateInstitutionMembers:', err);
+    return json(res, 500, { success: false, message: err?.message || 'Failed to process institution members upload.' });
+  }
 }
 
 async function approveInstitutionMember(req, res) {

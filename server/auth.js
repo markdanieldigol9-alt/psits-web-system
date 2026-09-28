@@ -342,49 +342,51 @@ async function register(req, res) {
       }
     }
 
-    // Always create a payment transaction record for registration / renewals
-    try {
-      const [payColumnRows] = await pool.execute('SHOW COLUMNS FROM payments');
-      const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
+    // Create a payment transaction record only if payment proof / reference is provided or for renewals
+    if (paymentProof || referenceNumber || membershipMode === 'renew') {
+      try {
+        const [payColumnRows] = await pool.execute('SHOW COLUMNS FROM payments');
+        const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
 
-      const methodVal = ['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'paymongo', 'paypal', 'card'].includes(paymentMethod)
-        ? paymentMethod
-        : 'gcash';
+        const methodVal = ['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'paymongo', 'paypal', 'card'].includes(paymentMethod)
+          ? paymentMethod
+          : 'gcash';
 
-      const paymentKindVal = membershipMode === 'renew' ? 'membership_renewal' : 'membership_registration';
-      const registrationAmount = Number(body.amount || body.paymentAmount || 500);
+        const paymentKindVal = membershipMode === 'renew' ? 'membership_renewal' : 'membership_registration';
+        const registrationAmount = Number(body.amount || body.paymentAmount || 500);
 
-      const payCols = [];
-      const payVals = [];
-      const addPay = (col, val) => {
-        if (payColumnSet.has(col)) {
-          payCols.push(`\`${col}\``);
-          payVals.push(val);
+        const payCols = [];
+        const payVals = [];
+        const addPay = (col, val) => {
+          if (payColumnSet.has(col)) {
+            payCols.push(`\`${col}\``);
+            payVals.push(val);
+          }
+        };
+
+        addPay('member_id', insertedId);
+        addPay('amount', registrationAmount);
+        addPay('method', methodVal);
+        addPay('payment_method', methodVal);
+        addPay('payment_kind', paymentKindVal);
+        addPay('reference_number', referenceNumber || `REG-${String(insertedId).padStart(5, '0')}`);
+        addPay('proof_url', proofUrl);
+        addPay('status', 'pending');
+        addPay('payment_status', 'pending');
+        addPay('process_status', 'submitted');
+        if (payColumnSet.has('date')) {
+          addPay('date', new Date().toISOString().slice(0, 10));
         }
-      };
 
-      addPay('member_id', insertedId);
-      addPay('amount', registrationAmount);
-      addPay('method', methodVal);
-      addPay('payment_method', methodVal);
-      addPay('payment_kind', paymentKindVal);
-      addPay('reference_number', referenceNumber || `REG-${String(insertedId).padStart(5, '0')}`);
-      addPay('proof_url', proofUrl);
-      addPay('status', 'pending');
-      addPay('payment_status', 'pending');
-      addPay('process_status', 'submitted');
-      if (payColumnSet.has('date')) {
-        addPay('date', new Date().toISOString().slice(0, 10));
+        if (payCols.length) {
+          await pool.execute(
+            `INSERT INTO payments (${payCols.join(', ')}) VALUES (${payCols.map(() => '?').join(', ')})`,
+            payVals
+          );
+        }
+      } catch (payErr) {
+        console.error('Registration payment record creation error:', payErr);
       }
-
-      if (payCols.length) {
-        await pool.execute(
-          `INSERT INTO payments (${payCols.join(', ')}) VALUES (${payCols.map(() => '?').join(', ')})`,
-          payVals
-        );
-      }
-    } catch (payErr) {
-      console.error('Registration payment record creation error:', payErr);
     }
 
     const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [insertedId]);
@@ -506,7 +508,7 @@ async function login(req, res) {
           `INSERT INTO users
             (email, username, full_name, password_hash, role, status, contact_number, sector, sector_details, member_type, institution_owner_id, terms_accepted)
            VALUES
-            (?, ?, ?, ?, 'member', 'active', ?, 'institution', ?, 'student', ?, 1)`,
+            (?, ?, ?, ?, 'member', 'active', ?, 'institution', ?, 'individual', ?, 1)`,
           [
             email,
             username,
@@ -535,6 +537,15 @@ async function login(req, res) {
   }
 
   if (!user) return json(res, 401, { success: false, message: 'Invalid email or password.' });
+
+  if (user.institution_owner_id && user.member_type !== 'individual') {
+    try {
+      await pool.execute("UPDATE users SET member_type = 'individual' WHERE id = ?", [user.id]);
+      user.member_type = 'individual';
+    } catch {
+      // ignore
+    }
+  }
 
   if (user.lock_until && new Date(user.lock_until).getTime() > Date.now()) {
     return json(res, 423, { success: false, message: 'Account temporarily locked. Please try again later.' });

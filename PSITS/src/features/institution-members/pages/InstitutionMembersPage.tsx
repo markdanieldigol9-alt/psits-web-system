@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Input, Button, Badge, Select, TextArea } from '@/shared/components/Form';
 import { Pagination, Modal } from '@/shared/components/Common';
@@ -10,6 +11,7 @@ import { exportToCSV } from '@/shared/utils/export';
 
 type InstitutionMember = {
   id: string;
+  institutionUserId?: string;
   institutionName: string;
   fullName: string;
   email?: string;
@@ -21,57 +23,40 @@ type InstitutionMember = {
   date: string;
 };
 
-const splitCsvLine = (line: string) => {
-  const values: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (ch === ',' && !inQuotes) {
-      values.push(current.trim());
-      current = '';
-    } else {
-      current += ch;
-    }
-  }
-  values.push(current.trim());
-  return values;
-};
+const parseSpreadsheetFile = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
+  const worksheet = workbook.Sheets[sheetName];
+  const rawData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-const parseCsv = (text: string) => {
-  const rows = text
-    .split(/\r?\n/)
-    .map((x) => x.trim())
-    .filter(Boolean);
+  return rawData
+    .map((row) => {
+      const findField = (...names: string[]) => {
+        for (const k of Object.keys(row)) {
+          const norm = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+          for (const n of names) {
+            if (norm === n.toLowerCase().replace(/[^a-z0-9]/g, '')) {
+              return String(row[k] ?? '').trim();
+            }
+          }
+        }
+        return '';
+      };
 
-  if (rows.length < 2) return [];
-
-  const headers = splitCsvLine(rows[0]).map((h) => h.toLowerCase().replace(/\s+/g, ''));
-  const get = (row: string[], keys: string[]) => {
-    const idx = headers.findIndex((h) => keys.includes(h));
-    return idx >= 0 ? row[idx] || '' : '';
-  };
-
-  return rows.slice(1).map((raw) => {
-    const row = splitCsvLine(raw);
-    return {
-      fullName: get(row, ['fullname', 'name']),
-      email: get(row, ['email']),
-      password: get(row, ['password', 'pass', 'initialpassword', 'userpassword']),
-      contactNumber: get(row, ['contactnumber', 'contact', 'phone']),
-      gender: get(row, ['gender']),
-      position: get(row, ['position']),
-      eventTitle: get(row, ['eventtitle', 'event']),
-      notes: get(row, ['notes', 'note']),
-    };
-  });
+      return {
+        fullName: findField('fullname', 'name', 'participantname', 'membername', 'studentname'),
+        email: findField('email', 'emailaddress', 'institutionemail', 'useremail'),
+        password: findField('password', 'pass', 'initialpassword', 'userpassword', 'loginpassword'),
+        contactNumber: findField('contactnumber', 'contact', 'phone', 'phonenumber', 'mobile', 'mobilenumber', 'contactno'),
+        gender: findField('gender', 'sex') || 'Male',
+        position: findField('position', 'role', 'membertype', 'designation') || 'Student',
+        eventTitle: findField('eventtitle', 'event', 'eventname'),
+        notes: findField('notes', 'note', 'remarks', 'remark'),
+      };
+    })
+    .filter((x) => Boolean(x.fullName));
 };
 
 export const InstitutionMembersPage = () => {
@@ -96,9 +81,39 @@ export const InstitutionMembersPage = () => {
   });
 
   const handleDownloadTemplate = () => {
+    const templateRows = [
+      {
+        'Full Name': 'Juan Dela Cruz',
+        'Email Address': 'juan.delacruz@example.com',
+        'Login Password': 'Password123!',
+        'Contact Number': '09171234567',
+        'Gender': 'Male',
+        'Position': 'Student',
+        'Event Title': 'PSITS Regional Assembly 2026',
+        'Notes': 'Participant',
+      },
+      {
+        'Full Name': 'Maria Clara',
+        'Email Address': 'maria.clara@example.com',
+        'Login Password': 'Password123!',
+        'Contact Number': '09181234567',
+        'Gender': 'Female',
+        'Position': 'Student',
+        'Event Title': 'PSITS Regional Assembly 2026',
+        'Notes': 'Participant',
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    XLSX.writeFile(wb, 'institution_members_template.xlsx');
+  };
+
+  const handleDownloadCsvTemplate = () => {
     const templateContent = 'fullName,email,password,contactNumber,gender,position,eventTitle,notes\n' +
-      'Juan Dela Cruz,juan.delacruz@example.com,Password123!,09171234567,Male,Student,PSITS Regional Assembly,Participant\n' +
-      'Maria Clara,maria.clara@example.com,Password123!,09181234567,Female,Student,PSITS Regional Assembly,Participant';
+      'Juan Dela Cruz,juan.delacruz@example.com,Password123!,09171234567,Male,Student,PSITS Regional Assembly 2026,Participant\n' +
+      'Maria Clara,maria.clara@example.com,Password123!,09181234567,Female,Student,PSITS Regional Assembly 2026,Participant';
     const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -137,11 +152,12 @@ export const InstitutionMembersPage = () => {
         eventTitle: '',
         notes: '',
       });
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to add institution member.';
       addNotification({
         userId: 'current',
         title: 'Failed',
-        message: err instanceof Error ? err.message : 'Failed to add institution member.',
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -192,16 +208,28 @@ export const InstitutionMembersPage = () => {
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
   const paginated = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const onUploadCsv = async (file: File) => {
+  const onUploadSpreadsheet = async (file: File) => {
     setIsUploading(true);
     try {
-      const text = await file.text();
-      const parsed = parseCsv(text).filter((x) => String(x.fullName || '').trim());
+      const allowedExts = ['.csv', '.xlsx', '.xls'];
+      const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      if (!allowedExts.includes(fileExt)) {
+        addNotification({
+          userId: 'current',
+          title: 'Invalid File',
+          message: 'Please upload a CSV (.csv) or Excel spreadsheet (.xlsx, .xls) file.',
+          type: 'error',
+          isRead: false,
+        });
+        return;
+      }
+
+      const parsed = await parseSpreadsheetFile(file);
       if (!parsed.length) {
         addNotification({
           userId: 'current',
-          title: 'Invalid CSV',
-          message: 'No valid rows found. Use at least a Full Name column.',
+          title: 'Invalid Spreadsheet',
+          message: 'No valid rows found. Please ensure the spreadsheet has at least a "Full Name" or "Name" column.',
           type: 'error',
           isRead: false,
         });
@@ -213,16 +241,17 @@ export const InstitutionMembersPage = () => {
       if (data?.success) setMembers(data.members || []);
       addNotification({
         userId: 'current',
-        title: 'Upload Complete',
-        message: `${parsed.length} institution members uploaded.`,
+        title: 'Upload Successful',
+        message: `${parsed.length} institution member(s) uploaded successfully from ${file.name}.`,
         type: 'success',
         isRead: false,
       });
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to upload spreadsheet file.';
       addNotification({
         userId: 'current',
         title: 'Upload Failed',
-        message: err instanceof Error ? err.message : 'Failed to upload CSV file.',
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -245,11 +274,12 @@ export const InstitutionMembersPage = () => {
         type: 'success',
         isRead: false,
       });
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to update member status.';
       addNotification({
         userId: 'current',
         title: 'Error',
-        message: err instanceof Error ? err.message : 'Failed to update member status.',
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -257,7 +287,7 @@ export const InstitutionMembersPage = () => {
   };
 
   const handleExportCSV = () => {
-    const dataToExport = filteredMembers.map(m => ({
+    const dataToExport = filteredMembers.map((m) => ({
       'Member Name': m.fullName || 'N/A',
       'Institution': m.institutionName || 'N/A',
       'Email': m.email || 'N/A',
@@ -288,8 +318,8 @@ export const InstitutionMembersPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">Institution Members</h1>
             <p className="text-gray-600 mt-2">
               {isInstitutionMember
-                ? 'Upload and manage your institution members for event participation.'
-                : 'View institution-uploaded member records.'}
+                ? 'Upload and manage your institution members for event participation and system access.'
+                : 'View and manage institution-uploaded member records.'}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
@@ -309,34 +339,43 @@ export const InstitutionMembersPage = () => {
         {(isInstitutionMember || canViewAll) && (
           <Card
             title="Upload Institution Members & Portal Login Setup"
-            subtitle="Headers: fullName, email, password (optional), contactNumber, gender, position, eventTitle, notes"
+            subtitle="Supported Formats: CSV (.csv), Excel (.xlsx, .xls) • Columns: fullName, email, password (optional), contactNumber, gender, position, eventTitle, notes"
           >
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 <p className="text-sm text-gray-700">
-                  Upload your institution participants in bulk. Include an <strong>email</strong> and <strong>password</strong> so members can log in directly to the PSITS portal.
+                  Upload your institution participants in bulk via Excel or CSV. Include an <strong>email</strong> and <strong>password</strong> so members can log in directly as <strong>Individual Members</strong> to the PSITS portal.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1"
-                >
-                  <FileSpreadsheet size={14} /> Download Sample CSV Template
-                </button>
+                <div className="flex flex-wrap gap-4 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <FileSpreadsheet size={14} /> Download Excel Template (.xlsx)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadCsvTemplate}
+                    className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Download size={14} /> Download CSV Template (.csv)
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900 shadow-sm transition-all">
                   <Upload size={16} />
-                  {isUploading ? 'Uploading...' : 'Upload CSV File'}
+                  {isUploading ? 'Uploading...' : 'Upload Excel / CSV File'}
                   <input
                     type="file"
-                    accept=".csv,text/csv"
+                    accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                     className="hidden"
                     disabled={isUploading}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      await onUploadCsv(file);
+                      await onUploadSpreadsheet(file);
                       e.currentTarget.value = '';
                     }}
                   />
@@ -442,7 +481,7 @@ export const InstitutionMembersPage = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 flex items-start gap-3">
             <Key size={20} className="text-blue-600 shrink-0 mt-0.5" />
             <div className="text-xs text-blue-900 leading-relaxed">
-              <strong>Portal Login Account Setup:</strong> Members uploaded here automatically receive a portal login account.
+              <strong>Individual Member Login Account:</strong> Members added here automatically receive an Individual Member portal login account.
               Set an optional initial password below (or leave blank to allow login using the institution password).
             </div>
           </div>

@@ -866,7 +866,7 @@ app.post('/api/uploads/avatar', authMiddleware, express.raw({ type: '*/*', limit
 
 // Institutional participants upload/list
 app.get('/api/institution-members', authMiddleware, listInstitutionMembers);
-app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member']), bulkCreateInstitutionMembers);
+app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), bulkCreateInstitutionMembers);
 app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), approveInstitutionMember);
 
   app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getDashboardReport);
