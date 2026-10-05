@@ -426,6 +426,7 @@ async function migrate() {
       event_id INT UNSIGNED NOT NULL,
       member_id INT UNSIGNED NOT NULL,
       participant_count INT UNSIGNED NOT NULL DEFAULT 1,
+      checked_in_count INT UNSIGNED NOT NULL DEFAULT 0,
       status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
       team_profile_url VARCHAR(255) NULL,
       notes VARCHAR(255) NULL,
@@ -451,8 +452,9 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 
-  // Backwards compatible add for team profile upload
+  // Backwards compatible add for team profile upload & venue attendance count
   try { await pool.query('ALTER TABLE event_registrations ADD COLUMN team_profile_url VARCHAR(255) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE event_registrations ADD COLUMN checked_in_count INT UNSIGNED NOT NULL DEFAULT 0'); } catch { /* ignore */ }
 
   // Event details (type-specific fields; flexible schema)
   await pool.query(`
