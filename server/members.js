@@ -723,6 +723,7 @@ async function updateMember(req, res) {
   const contactNumber = body.contactNumber ? String(body.contactNumber).trim() : null;
   const allowedSectors = ['school', 'industry', 'institution'];
   const sector = body.sector && allowedSectors.includes(body.sector) ? String(body.sector) : null;
+  const sectorDetails = body.sectorDetails ? String(body.sectorDetails).trim() : null;
   const allowedMemberTypes = ['student', 'school', 'individual', 'industry', 'institution'];
   let memberType = body.memberType ? String(body.memberType) : null;
   if (memberType === 'school') memberType = 'student';
@@ -753,6 +754,7 @@ async function updateMember(req, res) {
   if (fullName) { sets.push('full_name = ?'); params.push(fullName); }
   if (contactNumber) { sets.push('contact_number = ?'); params.push(contactNumber); }
   if (sector) { sets.push('sector = ?'); params.push(sector); }
+  if (sectorDetails !== null) { sets.push('sector_details = ?'); params.push(sectorDetails); }
   if (memberType) { sets.push('member_type = ?'); params.push(memberType); }
   if (address !== null) { sets.push('address = ?'); params.push(address); }
   if (gender !== null) { sets.push('gender = ?'); params.push(gender); }

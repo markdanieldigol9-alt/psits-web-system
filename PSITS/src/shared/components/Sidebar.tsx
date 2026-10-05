@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
-import { getUserInterfaceKey, getUserInterfaceLabel } from '@/shared/utils/userInterface';
+import { getUserInterfaceKey, getUserInterfaceLabel, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   LayoutDashboard,
@@ -289,7 +289,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
 
   if (!user) return null;
 
-  const initial = user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U';
+  const initial = getUserInitial(user);
 
   return (
     <>
@@ -373,7 +373,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
               {user?.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
-                  alt={user.fullName || 'User'}
+                  alt={getUserDisplayName(user)}
                   className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-slate-700"
                 />
               ) : (
@@ -385,7 +385,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 truncate leading-tight">
-                {user.fullName || 'User'}
+                {getUserDisplayName(user)}
               </span>
               <span className="text-[10px] text-gray-400 dark:text-slate-500 capitalize truncate leading-tight mt-0.5">
                 {getUserInterfaceLabel(user)}

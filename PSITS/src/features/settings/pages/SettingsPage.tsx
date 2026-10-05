@@ -8,8 +8,9 @@ import { useTheme } from '@/shared/context/ThemeContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
-import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2 } from 'lucide-react';
+import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2, ChevronDown, User, Palette, CreditCard, ShieldCheck } from 'lucide-react';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import { getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import type { OfficerContact } from '@/shared/types';
 
 const readAsDataUrl = (file: File) =>
@@ -76,6 +77,17 @@ export const SettingsPage = () => {
   const [reactivationError, setReactivationError] = useState<string | null>(null);
 
   const isSuspended = user?.status === 'suspended';
+
+  const [openSections, setOpenSections] = useState({
+    theme: false,
+    profile: true,
+    payment: false,
+    validity: true,
+  });
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
@@ -495,7 +507,7 @@ export const SettingsPage = () => {
           payload.sectorDetails = formData.sectorDetails;
           payload.companyEmail = formData.companyEmail;
           payload.representativeName = formData.representativeName;
-          payload.fullName = formData.representativeName;
+          payload.fullName = formData.sectorDetails?.trim() || formData.representativeName?.trim() || formData.fullName;
           payload.position = formData.position;
           payload.representativeName2 = formData.representativeName2;
           payload.representativePosition2 = formData.representativePosition2;
@@ -711,101 +723,139 @@ export const SettingsPage = () => {
         )}
 
         {/* Theme & Appearance Settings */}
-        <Card className="p-6 w-full">
-          <div className="space-y-4">
-            <div className="rounded-lg border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 p-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Appearance & Theme</h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-                Customize how PSITS looks on your device.
-              </p>
+        <Card className="w-full overflow-hidden transition-all duration-200 border border-gray-100 dark:border-slate-800 shadow-sm">
+          <button
+            type="button"
+            onClick={() => toggleSection('theme')}
+            className="w-full p-5 sm:p-6 text-left flex items-center justify-between hover:bg-gray-50/75 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
+                <Palette size={20} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">Appearance & Theme</h3>
+                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                  Customize how PSITS looks on your device • Current: <span className="font-semibold text-blue-600 dark:text-blue-400 capitalize">{themeMode === 'system' ? 'System Default' : `${themeMode} Mode`}</span>
+                </p>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Light Mode option */}
-              <button
-                type="button"
-                onClick={() => setThemeMode('light')}
-                className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                  themeMode === 'light'
-                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
-                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2.5 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
-                    <Sun size={20} />
-                  </div>
-                  {themeMode === 'light' && (
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
-                  )}
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Light Mode</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Bright, crisp standard view</p>
-                </div>
-              </button>
-
-              {/* Dark Mode option */}
-              <button
-                type="button"
-                onClick={() => setThemeMode('dark')}
-                className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                  themeMode === 'dark'
-                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
-                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
-                    <Moon size={20} />
-                  </div>
-                  {themeMode === 'dark' && (
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
-                  )}
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Dark Mode</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Easy on the eyes in low light</p>
-                </div>
-              </button>
-
-              {/* System Default option */}
-              <button
-                type="button"
-                onClick={() => setThemeMode('system')}
-                className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                  themeMode === 'system'
-                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
-                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    <Monitor size={20} />
-                  </div>
-                  {themeMode === 'system' && (
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
-                  )}
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-gray-900 dark:text-slate-100">System Default</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Match device OS preference</p>
-                </div>
-              </button>
+            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+              <ChevronDown
+                size={20}
+                className={`transition-transform duration-200 ${openSections.theme ? 'rotate-180' : ''}`}
+              />
             </div>
-          </div>
+          </button>
+
+          {openSections.theme && (
+            <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-gray-100 dark:border-slate-800 animate-fade-in">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                {/* Light Mode option */}
+                <button
+                  type="button"
+                  onClick={() => setThemeMode('light')}
+                  className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                    themeMode === 'light'
+                      ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
+                      : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
+                      <Sun size={20} />
+                    </div>
+                    {themeMode === 'light' && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Light Mode</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Bright, crisp standard view</p>
+                  </div>
+                </button>
+
+                {/* Dark Mode option */}
+                <button
+                  type="button"
+                  onClick={() => setThemeMode('dark')}
+                  className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                    themeMode === 'dark'
+                      ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
+                      : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                      <Moon size={20} />
+                    </div>
+                    {themeMode === 'dark' && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Dark Mode</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Easy on the eyes in low light</p>
+                  </div>
+                </button>
+
+                {/* System Default option */}
+                <button
+                  type="button"
+                  onClick={() => setThemeMode('system')}
+                  className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                    themeMode === 'system'
+                      ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-600'
+                      : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <Monitor size={20} />
+                    </div>
+                    {themeMode === 'system' && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">Active</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-900 dark:text-slate-100">System Default</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Match device OS preference</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
 
-        <Card className="p-6 w-full">
-          <div className="space-y-6">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-slate-800/60 dark:border-slate-700 p-4 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                {isMember ? 'Member Profile Information' : 'Profile Information'}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-                Update your account details and profile photo. Fields marked with <span className="text-red-500">*</span> are required.
-              </p>
+        <Card className="w-full overflow-hidden transition-all duration-200 border border-gray-100 dark:border-slate-800 shadow-sm">
+          <button
+            type="button"
+            onClick={() => toggleSection('profile')}
+            className="w-full p-5 sm:p-6 text-left flex items-center justify-between hover:bg-gray-50/75 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <User size={20} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">
+                  {isMember ? 'Member Profile Information' : 'Profile Information'}
+                </h3>
+                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                  {getUserDisplayName(user)} • {user.email}
+                </p>
+              </div>
             </div>
+            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+              <ChevronDown
+                size={20}
+                className={`transition-transform duration-200 ${openSections.profile ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </button>
+
+          {openSections.profile && (
+            <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-6">
 
             {/* Profile Picture Upload & Preview Card */}
             {isSuspended && (
@@ -825,12 +875,12 @@ export const SettingsPage = () => {
                 {avatarPreview ? (
                   <img
                     src={avatarPreview}
-                    alt={user.fullName || 'Profile'}
+                    alt={getUserDisplayName(user)}
                     className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md transition-transform group-hover:scale-105"
                   />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-3xl font-bold border-4 border-white dark:border-slate-800 shadow-md">
-                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                    {getUserInitial(user)}
                   </div>
                 )}
 
@@ -1177,241 +1227,290 @@ export const SettingsPage = () => {
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end mt-6">
-            <Button
-              variant="primary"
-              disabled={isSuspended || isLoading}
-              title={isSuspended ? 'Profile saving is disabled while account is suspended' : 'Save Changes'}
-              onClick={() => {
-                if (isSuspended) return;
-                if (validateForm()) {
-                  setConfirmSave(true);
-                }
-              }}
-              isLoading={isLoading}
-            >
-              Save Changes
-            </Button>
+            <div className="flex justify-end mt-6">
+              <Button
+                variant="primary"
+                disabled={isSuspended || isLoading}
+                title={isSuspended ? 'Profile saving is disabled while account is suspended' : 'Save Changes'}
+                onClick={() => {
+                  if (isSuspended) return;
+                  if (validateForm()) {
+                    setConfirmSave(true);
+                  }
+                }}
+                isLoading={isLoading}
+              >
+                Save Changes
+              </Button>
+            </div>
           </div>
+          )}
         </Card>
 
         {(user.role === 'admin' || user.role === 'super_admin') && (
-          <Card className="p-6">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Payment Method Settings</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Configure payment QR codes and instructions for all accepted payment methods during registration and renewals.
-              </p>
-            </div>
-
-            {/* Payment Method Selector Tabs */}
-            <div className="flex border-b border-gray-200 mb-6 gap-2 overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setActivePaymentTab('gcash')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activePaymentTab === 'gcash'
-                    ? 'border-primary text-primary font-semibold'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                GCash
-              </button>
-              <button
-                type="button"
-                onClick={() => setActivePaymentTab('paymaya')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activePaymentTab === 'paymaya'
-                    ? 'border-primary text-primary font-semibold'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                PayMaya / Maya
-              </button>
-              <button
-                type="button"
-                onClick={() => setActivePaymentTab('bank_transfer')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activePaymentTab === 'bank_transfer'
-                    ? 'border-primary text-primary font-semibold'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Bank Transfer
-              </button>
-              <button
-                type="button"
-                onClick={() => setActivePaymentTab('cash_officer')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activePaymentTab === 'cash_officer'
-                    ? 'border-primary text-primary font-semibold'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Cash through Officer
-              </button>
-            </div>
-
-            {paymentSettingsError && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {paymentSettingsError}
+          <Card className="w-full overflow-hidden transition-all duration-200 border border-gray-100 dark:border-slate-800 shadow-sm">
+            <button
+              type="button"
+              onClick={() => toggleSection('payment')}
+              className="w-full p-5 sm:p-6 text-left flex items-center justify-between hover:bg-gray-50/75 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <CreditCard size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">Payment Method Settings</h3>
+                  <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                    Configure QR codes and instructions for registration and renewals
+                  </p>
+                </div>
               </div>
-            )}
+              <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+                <ChevronDown
+                  size={20}
+                  className={`transition-transform duration-200 ${openSections.payment ? 'rotate-180' : ''}`}
+                />
+              </div>
+            </button>
 
-            <div className="space-y-4">
-              {activePaymentTab === 'gcash' && (
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">GCash QR Code</label>
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={(e) => handleQrFileSelect('gcash', e)}
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                  />
-                  {qrPreviews.gcash && (
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500 mb-1">Current / Preview GCash QR Code:</p>
-                      <img
-                        src={qrPreviews.gcash}
-                        alt="GCash QR Code"
-                        className="h-48 rounded border object-contain bg-white p-2"
-                      />
-                    </div>
-                  )}
+            {openSections.payment && (
+              <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-4">
+                {/* Payment Method Selector Tabs */}
+                <div className="flex border-b border-gray-200 dark:border-slate-800 mb-6 gap-2 overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setActivePaymentTab('gcash')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activePaymentTab === 'gcash'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    GCash
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePaymentTab('paymaya')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activePaymentTab === 'paymaya'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    PayMaya / Maya
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePaymentTab('bank_transfer')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activePaymentTab === 'bank_transfer'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Bank Transfer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePaymentTab('cash_officer')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activePaymentTab === 'cash_officer'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Cash through Officer
+                  </button>
                 </div>
-              )}
 
-              {activePaymentTab === 'paymaya' && (
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">PayMaya / Maya QR Code</label>
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={(e) => handleQrFileSelect('paymaya', e)}
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                  />
-                  {qrPreviews.paymaya && (
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500 mb-1">Current / Preview Maya QR Code:</p>
-                      <img
-                        src={qrPreviews.paymaya}
-                        alt="PayMaya / Maya QR Code"
-                        className="h-48 rounded border object-contain bg-white p-2"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+                {paymentSettingsError && (
+                  <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-300">
+                    {paymentSettingsError}
+                  </div>
+                )}
 
-              {activePaymentTab === 'bank_transfer' && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Bank Transfer QR Code (Optional)</label>
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={(e) => handleQrFileSelect('bank_transfer', e)}
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                    {qrPreviews.bank_transfer && (
-                      <div className="mt-3">
-                        <p className="text-xs text-gray-500 mb-1">Current / Preview Bank QR Code:</p>
-                        <img
-                          src={qrPreviews.bank_transfer}
-                          alt="Bank Transfer QR Code"
-                          className="h-48 rounded border object-contain bg-white p-2"
+                  {activePaymentTab === 'gcash' && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">GCash QR Code</label>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={(e) => handleQrFileSelect('gcash', e)}
+                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                      />
+                      {qrPreviews.gcash && (
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview GCash QR Code:</p>
+                          <img
+                            src={qrPreviews.gcash}
+                            alt="GCash QR Code"
+                            className="h-48 rounded border object-contain bg-white p-2"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activePaymentTab === 'paymaya' && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">PayMaya / Maya QR Code</label>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={(e) => handleQrFileSelect('paymaya', e)}
+                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                      />
+                      {qrPreviews.paymaya && (
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview Maya QR Code:</p>
+                          <img
+                            src={qrPreviews.paymaya}
+                            alt="PayMaya / Maya QR Code"
+                            className="h-48 rounded border object-contain bg-white p-2"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activePaymentTab === 'bank_transfer' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Bank Transfer QR Code (Optional)</label>
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={(e) => handleQrFileSelect('bank_transfer', e)}
+                          className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                        />
+                        {qrPreviews.bank_transfer && (
+                          <div className="mt-3">
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview Bank QR Code:</p>
+                            <img
+                              src={qrPreviews.bank_transfer}
+                              alt="Bank Transfer QR Code"
+                              className="h-48 rounded border object-contain bg-white p-2"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Bank Account Details / Instructions</label>
+                        <textarea
+                          rows={3}
+                          value={paymentSettings.bank_transfer_details}
+                          onChange={(e) =>
+                            setPaymentSettings((prev) => ({ ...prev, bank_transfer_details: e.target.value }))
+                          }
+                          placeholder="e.g. Bank Name: BDO&#10;Account Name: PSITS Region XII&#10;Account Number: 1234-5678-9012"
+                          className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
                         />
                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Bank Account Details / Instructions</label>
-                    <textarea
-                      rows={3}
-                      value={paymentSettings.bank_transfer_details}
-                      onChange={(e) =>
-                        setPaymentSettings((prev) => ({ ...prev, bank_transfer_details: e.target.value }))
-                      }
-                      placeholder="e.g. Bank Name: BDO&#10;Account Name: PSITS Region XII&#10;Account Number: 1234-5678-9012"
-                      className="block w-full rounded-lg border border-gray-300 p-2.5 text-sm"
-                    />
+                    </div>
+                  )}
+
+                  {activePaymentTab === 'cash_officer' && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Cash Payment Instructions</label>
+                      <textarea
+                        rows={3}
+                        value={paymentSettings.cash_instructions}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, cash_instructions: e.target.value }))
+                        }
+                        placeholder="e.g. Hand over payment to your school's authorized PSITS officer or treasurer and ask for the official receipt number."
+                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      variant="primary"
+                      onClick={handleSavePaymentSettings}
+                      isLoading={isPaymentSettingsLoading}
+                    >
+                      Save Payment Settings
+                    </Button>
                   </div>
                 </div>
-              )}
-
-              {activePaymentTab === 'cash_officer' && (
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Cash Payment Instructions</label>
-                  <textarea
-                    rows={3}
-                    value={paymentSettings.cash_instructions}
-                    onChange={(e) =>
-                      setPaymentSettings((prev) => ({ ...prev, cash_instructions: e.target.value }))
-                    }
-                    placeholder="e.g. Hand over payment to your school's authorized PSITS officer or treasurer and ask for the official receipt number."
-                    className="block w-full rounded-lg border border-gray-300 p-2.5 text-sm"
-                  />
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <Button
-                  variant="primary"
-                  onClick={handleSavePaymentSettings}
-                  isLoading={isPaymentSettingsLoading}
-                >
-                  Save Payment Settings
-                </Button>
               </div>
-            </div>
+            )}
           </Card>
         )}
 
         {hasExpiryWindow && (
-          <Card className="p-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">Membership Validity</h2>
-                <p className="text-sm text-gray-600">Memberships require renewal every year.</p>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                {isSuspended && (
-                  <span className="text-xs text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
-                    Renewal locked while suspended
-                  </span>
-                )}
-                <Button
-                  variant="outline"
-                  disabled={isSuspended}
-                  title={isSuspended ? 'Membership renewal is unavailable while account is suspended' : 'Request Renewal'}
-                  onClick={() => {
-                    if (isSuspended) return;
-                    setIsRenewalOpen(true);
-                  }}
-                >
-                  Request Renewal
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 text-sm">
-              <div className="rounded-lg border border-gray-200 p-3">
-                <div className="text-xs font-semibold uppercase text-gray-500">Status</div>
-                <div className="mt-1 font-semibold text-gray-900">{user.status || (user.isActive ? 'active' : 'pending')}</div>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-3">
-                <div className="text-xs font-semibold uppercase text-gray-500">Expires On</div>
-                <div className="mt-1 font-semibold text-gray-900">{formatDate(user.membershipExpiresAt) || '-'}</div>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-3">
-                <div className="text-xs font-semibold uppercase text-gray-500">Remaining</div>
-                <div className={`mt-1 font-semibold ${isExpired ? 'text-red-700' : 'text-gray-900'}`}>
-                  {daysLeft === null ? '-' : isExpired ? 'Expired' : `${daysLeft} day(s)`}
+          <Card className="w-full overflow-hidden transition-all duration-200 border border-gray-100 dark:border-slate-800 shadow-sm">
+            <button
+              type="button"
+              onClick={() => toggleSection('validity')}
+              className="w-full p-5 sm:p-6 text-left flex items-center justify-between hover:bg-gray-50/75 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 shrink-0">
+                  <ShieldCheck size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">Membership Validity</h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                    Status: <span className="font-semibold capitalize text-emerald-600 dark:text-emerald-400">{user.status || (user.isActive ? 'active' : 'pending')}</span> • Expires: {formatDate(user.membershipExpiresAt) || '1 Year'}
+                  </p>
                 </div>
               </div>
-            </div>
+              <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+                <ChevronDown
+                  size={20}
+                  className={`transition-transform duration-200 ${openSections.validity ? 'rotate-180' : ''}`}
+                />
+              </div>
+            </button>
+
+            {openSections.validity && (
+              <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-slate-400">Memberships require renewal every year.</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {isSuspended && (
+                      <span className="text-xs text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
+                        Renewal locked while suspended
+                      </span>
+                    )}
+                    <Button
+                      variant="outline"
+                      disabled={isSuspended}
+                      title={isSuspended ? 'Membership renewal is unavailable while account is suspended' : 'Request Renewal'}
+                      onClick={() => {
+                        if (isSuspended) return;
+                        setIsRenewalOpen(true);
+                      }}
+                    >
+                      Request Renewal
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 text-sm">
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Status</div>
+                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">{user.status || (user.isActive ? 'active' : 'pending')}</div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Expires On</div>
+                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">{formatDate(user.membershipExpiresAt) || '-'}</div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Remaining</div>
+                    <div className={`mt-1 font-semibold ${isExpired ? 'text-red-700 dark:text-red-400' : 'text-gray-900 dark:text-slate-100'}`}>
+                      {daysLeft === null ? '-' : isExpired ? 'Expired' : `${daysLeft} day(s)`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         )}
       </div>

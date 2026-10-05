@@ -5,6 +5,8 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Badge } from '@/shared/components/Form';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
+import { getUserDisplayName } from '@/shared/utils/userInterface';
+import { InstitutionEventLeaderboard } from '@/features/dashboard/components/InstitutionEventLeaderboard';
 import api from '@/shared/services/api';
 import {
   Users,
@@ -253,7 +255,12 @@ export const DashboardPage = () => {
 
           <Card className="overflow-hidden">
             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-100 p-6">
-              <h1 className="text-3xl font-bold text-gray-900">Welcome, {user.fullName}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome, {getUserDisplayName(user)}</h1>
+              {user.memberType === 'institution' && (user.representativeName || (user.sectorDetails && user.fullName && user.fullName !== user.sectorDetails)) && (
+                <p className="text-sm font-semibold text-blue-700 mt-1">
+                  Representative: {user.representativeName || user.fullName}
+                </p>
+              )}
               <p className="mt-2 text-gray-700">
                 Stay updated with your events, latest announcements, and quick actions.
               </p>
@@ -299,6 +306,9 @@ export const DashboardPage = () => {
               </div>
             </Card>
           </div>
+
+          {/* Institution Event Attendance & Registration Leaderboard */}
+          <InstitutionEventLeaderboard />
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card title="Upcoming Events" subtitle="Your next activities and schedules">
@@ -416,7 +426,7 @@ export const DashboardPage = () => {
           
           <div className="relative z-10">
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Welcome back, {user.fullName}!
+              Welcome back, {getUserDisplayName(user)}!
             </h1>
             <p className="mt-3 text-blue-100 text-lg max-w-2xl">
               Here's what's happening with your organization today. Monitor growth, approve members, and manage your community.
@@ -445,6 +455,9 @@ export const DashboardPage = () => {
             );
           })}
         </div>
+
+        {/* Institution Event Attendance & Registration Leaderboard */}
+        <InstitutionEventLeaderboard />
 
         {canManageMembers && (
           <Card title="Pending Registrations" subtitle="Approve new members">

@@ -236,6 +236,12 @@ async function runAllTests() {
     assert(res.data && res.data.success === true, `Expected success: true`);
   });
 
+  await test('GET /events/institution-leaderboard returns institution participation metrics', async () => {
+    const res = await sendRequest('GET', `${BASE_URL}/events/institution-leaderboard`, null, authHeaders());
+    assert(res.status === 200, `Expected 200, got ${res.status}`);
+    assert(res.data && res.data.success === true, `Expected success: true`);
+  });
+
   console.log(`\n[Suite 4: Reporting & Analytical Insights]`);
 
   await test('GET /reports/dashboard returns aggregate KPI data', async () => {

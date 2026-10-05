@@ -1299,6 +1299,8 @@ async function migrate() {
       'password_hash VARCHAR(255) NULL',
       'notes VARCHAR(255) NULL',
       'created_by INT UNSIGNED NULL',
+      'checked_in TINYINT(1) NOT NULL DEFAULT 0',
+      'checked_in_at DATETIME NULL',
     ];
     for (const col of instColumns) {
       try {
@@ -1356,6 +1358,20 @@ async function migrate() {
       SET member_type = 'individual' 
       WHERE member_type = 'student' 
          OR (institution_owner_id IS NOT NULL AND (member_type IS NULL OR member_type != 'individual'))
+    `);
+  } catch {
+    // ignore
+  }
+
+  // Ensure institutional accounts have full_name set to their Institution Name (sector_details)
+  try {
+    await pool.query(`
+      UPDATE users 
+      SET full_name = sector_details 
+      WHERE member_type = 'institution' 
+        AND sector_details IS NOT NULL 
+        AND TRIM(sector_details) != ''
+        AND (full_name IS NULL OR full_name = '' OR LENGTH(TRIM(full_name)) <= 2 OR full_name = representative_name)
     `);
   } catch {
     // ignore

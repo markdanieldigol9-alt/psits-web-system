@@ -652,6 +652,85 @@ class ApiService {
   clearAllNotifications() {
     return this.client.delete('/notifications');
   }
+
+  // Institution Event Attendance & Leaderboard
+  getInstitutionLeaderboard(eventId?: string) {
+    return this.client.get<{
+      success: boolean;
+      events: Array<{
+        id: string;
+        title: string;
+        date: string;
+        time?: string;
+        location?: string;
+        status: string;
+      }>;
+      selectedEvent: {
+        id: string;
+        title: string;
+        date: string;
+        time?: string;
+        location?: string;
+        status: string;
+      } | null;
+      summary: {
+        totalInstitutions: number;
+        totalRegisteredParticipants: number;
+        totalInVenue: number;
+        overallAttendanceRate: number;
+        fullyPresentInstitutions: number;
+      };
+      leaderboard: Array<{
+        rank: number;
+        institutionId: string;
+        institutionName: string;
+        institutionEmail?: string;
+        institutionAvatar?: string | null;
+        registrationId?: string | null;
+        registeredCount: number;
+        inVenueCount: number;
+        attendanceRate: number;
+        allInVenue: boolean;
+        status: string;
+        participants: Array<{
+          id: string;
+          fullName: string;
+          email?: string;
+          contactNumber?: string;
+          gender?: string;
+          position?: string;
+          checkedIn: boolean;
+          checkedInAt?: string | null;
+          status?: string;
+        }>;
+      }>;
+    }>('/events/institution-leaderboard', {
+      params: eventId ? { eventId } : undefined,
+    });
+  }
+
+  toggleParticipantAttendance(data: {
+    participantId?: string | number;
+    registrationId?: string | number;
+    checkedIn: boolean;
+    count?: number;
+  }) {
+    return this.client.post<{ success: boolean; message: string; checkedIn?: boolean; checkedInCount?: number }>(
+      '/events/institution-attendance/toggle',
+      data
+    );
+  }
+
+  checkAllInstitutionParticipants(data: {
+    eventId: string | number;
+    institutionUserId: string | number;
+    checkedIn: boolean;
+  }) {
+    return this.client.post<{ success: boolean; message: string }>(
+      '/events/institution-attendance/check-all',
+      data
+    );
+  }
 }
 
 const api = new ApiService();

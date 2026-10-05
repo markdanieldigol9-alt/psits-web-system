@@ -9,6 +9,7 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { AddMemberModal } from '@/features/members/components/AddMemberModal';
 import { Plus, Search, Edit2, Archive, Eye, CheckCircle, Building2, Factory, UserRound, Mail, XCircle, UserX, UserCheck, PauseCircle, Ban, Download } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
+import { getUserDisplayName } from '@/shared/utils/userInterface';
 import api from '@/shared/services/api';
 
 type MemberTypeFilter = 'all' | 'individual' | 'institution' | 'industry';
@@ -560,7 +561,7 @@ export const MembersPage = () => {
                     : null;
                   return (
                     <tr key={member.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-900">{member.fullName}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{getUserDisplayName(member as any)}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
                       <td className="px-6 py-4">
                         <Badge variant="info">{typeMeta[normalizedType].label}</Badge>
@@ -919,7 +920,7 @@ export const MembersPage = () => {
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-base font-semibold text-gray-900 truncate">{viewingMember.fullName || '-'}</p>
+                  <p className="text-base font-semibold text-gray-900 truncate">{getUserDisplayName(viewingMember as any)}</p>
                   <p className="text-sm text-gray-600 truncate">{viewingMember.email || '-'}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">

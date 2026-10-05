@@ -128,10 +128,11 @@ export const RegisterPage = () => {
     if (formData.memberType === 'student') sector = 'school';
 
     const fallbackFullName =
-      formData.fullName.trim() ||
-      formData.representativeName?.trim() ||
-      formData.sectorDetails?.trim() ||
-      'Member';
+      formData.memberType === 'institution'
+        ? (formData.sectorDetails?.trim() || formData.representativeName?.trim() || 'Institution')
+        : formData.memberType === 'industry'
+        ? (formData.sectorDetails?.trim() || formData.representativeName?.trim() || 'Company')
+        : (formData.fullName.trim() || formData.representativeName?.trim() || formData.sectorDetails?.trim() || 'Member');
 
     try {
       await register({

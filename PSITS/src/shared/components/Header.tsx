@@ -3,7 +3,7 @@ import { Bell, LogOut, Settings, Menu, X, Sun, Moon, ChevronRight } from 'lucide
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { useTheme } from '@/shared/context/ThemeContext';
-import { getUserInterfaceLabel } from '@/shared/utils/userInterface';
+import { getUserInterfaceLabel, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '@/assets/image/PSITS_Logo.png';
 
@@ -62,7 +62,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
     window.location.href = '/login';
   };
 
-  const initial = user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U';
+  const initial = getUserInitial(user);
 
   return (
     <header className="sticky top-0 z-40 bg-white/92 dark:bg-slate-900/92 backdrop-blur-md border-b border-gray-100/80 dark:border-slate-800/80 shadow-[0_1px_0_0_rgb(0,0,0,0.04)] transition-all duration-200">
@@ -162,7 +162,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
                 {user?.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
-                    alt={user?.fullName || 'User'}
+                    alt={getUserDisplayName(user)}
                     className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-slate-700"
                   />
                 ) : (
@@ -173,8 +173,8 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
                 <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-[1.5px] border-white dark:border-slate-900 rounded-full" />
               </div>
               <div className="hidden sm:flex flex-col text-left leading-tight">
-                <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 max-w-[8rem] truncate">
-                  {user?.fullName || 'User'}
+                <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 max-w-[9rem] truncate">
+                  {getUserDisplayName(user)}
                 </span>
                 <span className="text-[10px] text-gray-400 dark:text-slate-500 capitalize">
                   {user?.role || 'member'}
@@ -183,13 +183,13 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-modal border border-gray-100 dark:border-slate-800 py-2 z-50 animate-pop-in overflow-hidden">
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-modal border border-gray-100 dark:border-slate-800 py-2 z-50 animate-pop-in overflow-hidden">
                 {/* User info header */}
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800">
                   <div className="flex items-center gap-2.5">
                     <div className="relative shrink-0">
                       {user?.avatarUrl ? (
-                        <img src={user.avatarUrl} alt={user?.fullName || ''} className="w-9 h-9 rounded-full object-cover" />
+                        <img src={user.avatarUrl} alt={getUserDisplayName(user)} className="w-9 h-9 rounded-full object-cover" />
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-sm font-bold">
                           {initial}
@@ -198,7 +198,10 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
                       <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{user?.fullName}</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{getUserDisplayName(user)}</p>
+                      {user?.memberType === 'institution' && user?.representativeName && (
+                        <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 truncate">Rep: {user.representativeName}</p>
+                      )}
                       <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate">{user?.email}</p>
                     </div>
                   </div>

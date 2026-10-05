@@ -183,3 +183,61 @@ export interface ReportData {
   }>;
   revenueByMethod: Record<PaymentMethod, number>;
 }
+
+// Event Institution Leaderboard & Attendance Types
+export interface EventLeaderboardParticipant {
+  id: string;
+  fullName: string;
+  email?: string;
+  contactNumber?: string;
+  gender?: string;
+  position?: string;
+  checkedIn: boolean;
+  checkedInAt?: string | null;
+  status?: string;
+}
+
+export interface EventLeaderboardInstitution {
+  rank: number;
+  institutionId: string;
+  institutionName: string;
+  institutionEmail?: string;
+  institutionAvatar?: string | null;
+  registrationId?: string | null;
+  registeredCount: number;
+  inVenueCount: number;
+  attendanceRate: number;
+  allInVenue: boolean;
+  status: string;
+  participants: EventLeaderboardParticipant[];
+}
+
+export interface EventLeaderboardSummary {
+  totalInstitutions: number;
+  totalRegisteredParticipants: number;
+  totalInVenue: number;
+  overallAttendanceRate: number;
+  fullyPresentInstitutions: number;
+}
+
+export interface InstitutionLeaderboardData {
+  events: Array<{
+    id: string;
+    title: string;
+    date: string;
+    time?: string;
+    location?: string;
+    status: string;
+  }>;
+  selectedEvent: {
+    id: string;
+    title: string;
+    date: string;
+    time?: string;
+    location?: string;
+    status: string;
+  } | null;
+  summary: EventLeaderboardSummary;
+  leaderboard: EventLeaderboardInstitution[];
+}
+

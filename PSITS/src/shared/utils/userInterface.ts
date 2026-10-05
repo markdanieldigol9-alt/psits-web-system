@@ -38,3 +38,20 @@ export function getUserInterfaceLabel(user: User | null | undefined): string {
   }
 }
 
+export function getUserDisplayName(user: { fullName?: string; sectorDetails?: string; memberType?: string; representativeName?: string } | null | undefined): string {
+  if (!user) return 'User';
+  if (user.memberType === 'institution') {
+    return user.sectorDetails?.trim() || user.fullName?.trim() || user.representativeName?.trim() || 'Institution Member';
+  }
+  if (user.memberType === 'industry') {
+    return user.sectorDetails?.trim() || user.fullName?.trim() || user.representativeName?.trim() || 'Industry Member';
+  }
+  return user.fullName?.trim() || user.representativeName?.trim() || user.sectorDetails?.trim() || 'Member';
+}
+
+export function getUserInitial(user: { fullName?: string; sectorDetails?: string; memberType?: string; representativeName?: string } | null | undefined): string {
+  const name = getUserDisplayName(user);
+  return name.charAt(0).toUpperCase() || 'U';
+}
+
+
