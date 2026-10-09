@@ -131,11 +131,9 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
             {/* Logo — mobile only (hidden on desktop since sidebar shows it) */}
             <Link
               to={user?.status === 'suspended' ? '/settings' : '/dashboard'}
-              className="lg:hidden flex items-center gap-2 group"
+              className="lg:hidden flex items-center gap-2.5 group"
             >
-              <div className="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg shadow-sm">
-                <img src={logo} alt="PSITS" className="h-4 w-4 object-contain brightness-0 invert" />
-              </div>
+              <img src={logo} alt="PSITS" className="h-8 w-8 object-contain rounded-full shadow-xs" />
               <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tracking-tight">PSITS</span>
             </Link>
 

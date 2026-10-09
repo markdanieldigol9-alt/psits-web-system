@@ -310,9 +310,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
       >
         {/* ── Logo area ─────────────────────────── */}
         <div className="flex items-center gap-3 px-5 h-[60px] border-b border-gray-100/80 dark:border-slate-800/60 shrink-0">
-          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-md shadow-blue-600/30">
-            <img src={logo} alt="PSITS" className="h-5 w-5 object-contain brightness-0 invert" />
-          </div>
+          <img src={logo} alt="PSITS" className="h-9 w-9 object-contain rounded-full shadow-xs" />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tracking-tight">PSITS</span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide">Web System</span>

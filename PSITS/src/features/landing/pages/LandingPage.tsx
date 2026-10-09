@@ -15,9 +15,7 @@ export const LandingPage = () => {
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Brand Logo */}
             <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
-              <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg shadow-sm group-hover:bg-blue-700 transition-all p-1.5">
-                <img src={logo} alt="PSITS Logo" className="h-full w-full object-contain brightness-0 invert" />
-              </div>
+              <img src={logo} alt="PSITS Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-full shadow-xs" />
               <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white">
                 PSITS Region XII
               </span>
@@ -107,9 +105,7 @@ export const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Left: Brand Icon + Name */}
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-lg shadow-sm p-1.5">
-                <img src={logo} alt="PSITS Logo" className="h-full w-full object-contain brightness-0 invert" />
-              </div>
+              <img src={logo} alt="PSITS Logo" className="h-8 w-8 object-contain rounded-full shadow-xs" />
               <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                 PSITS Region XII
               </span>
