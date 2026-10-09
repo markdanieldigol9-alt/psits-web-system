@@ -11,8 +11,21 @@ function toPaymentDto(row) {
       eventTitle = 'Membership Registration';
     } else if (row.payment_kind === 'partner_sponsorship') {
       eventTitle = 'Partner Sponsorship';
+    } else if (row.payment_kind === 'institution_batch_registration') {
+      eventTitle = row.event || 'Institution Batch Member Registration';
     } else if (!row.event_id) {
       eventTitle = 'Membership Fee';
+    }
+  }
+
+  let billingBreakdown = null;
+  if (row.billing_breakdown_json) {
+    try {
+      billingBreakdown = typeof row.billing_breakdown_json === 'string'
+        ? JSON.parse(row.billing_breakdown_json)
+        : row.billing_breakdown_json;
+    } catch {
+      billingBreakdown = null;
     }
   }
 
@@ -36,6 +49,16 @@ function toPaymentDto(row) {
     rejectionReason: row.rejection_reason || null,
     verifiedBy: row.verified_by ? String(row.verified_by) : null,
     verifiedAt: row.verified_at || null,
+    totalHeads: row.total_heads !== null && row.total_heads !== undefined ? Number(row.total_heads) : null,
+    ratePerHead: row.rate_per_head !== null && row.rate_per_head !== undefined ? Number(row.rate_per_head) : 250,
+    freeSlots: row.free_slots !== null && row.free_slots !== undefined ? Number(row.free_slots) : 2,
+    grossAmount: row.gross_amount !== null && row.gross_amount !== undefined ? Number(row.gross_amount) : null,
+    discountAmount: row.discount_amount !== null && row.discount_amount !== undefined ? Number(row.discount_amount) : null,
+    netAmount: row.net_amount !== null && row.net_amount !== undefined ? Number(row.net_amount) : null,
+    partialAmount: row.partial_amount !== null && row.partial_amount !== undefined ? Number(row.partial_amount) : null,
+    remainingBalance: row.remaining_balance !== null && row.remaining_balance !== undefined ? Number(row.remaining_balance) : null,
+    isPartial: Boolean(row.is_partial),
+    billingBreakdown,
     date,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -161,8 +184,12 @@ async function createPayment(req, res) {
   const paymentKind = body.paymentKind ? String(body.paymentKind).trim().toLowerCase() : 'event';
   const proofUrl = body.proofUrl ? String(body.proofUrl).trim() : null;
 
-  if (!['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'paymongo', 'paypal', 'card'].includes(method)) {
+  if (!['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'through_officer', 'cheque', 'paymongo', 'paypal', 'card'].includes(method)) {
     return res.status(400).json({ success: false, message: 'Invalid payment method.' });
+  }
+
+  if (method === 'gcash' && !referenceNumber) {
+    return res.status(400).json({ success: false, message: 'Reference number is required for GCash payments.' });
   }
 
   let eventFee = null;
@@ -185,7 +212,10 @@ async function createPayment(req, res) {
   }
 
   if (!proofUrl) {
-    return res.status(400).json({ success: false, message: 'Transaction proof image is required for verification.' });
+    const proofMsg = (method === 'through_officer' || method === 'cash_officer')
+      ? 'Official Receipt (OR) image is required for verification.'
+      : 'Transaction receipt image is required for verification.';
+    return res.status(400).json({ success: false, message: proofMsg });
   }
 
   const memberId = req.user?.id;
@@ -214,7 +244,7 @@ async function createPayment(req, res) {
     }
   }
 
-  if (!['event', 'membership_renewal', 'membership_registration', 'membership', 'partner_sponsorship'].includes(paymentKind)) {
+  if (!['event', 'membership_renewal', 'membership_registration', 'membership', 'partner_sponsorship', 'institution_batch_registration'].includes(paymentKind)) {
     return res.status(400).json({ success: false, message: 'Invalid payment kind.' });
   }
 
@@ -235,6 +265,8 @@ async function createPayment(req, res) {
   if (eventId && Number.isFinite(eventId)) {
     const [eventRows] = await pool.execute('SELECT title FROM events WHERE id = ? LIMIT 1', [eventId]);
     eventTitle = eventRows[0]?.title || '';
+  } else if (paymentKind === 'institution_batch_registration' && body.eventTitle) {
+    eventTitle = String(body.eventTitle).trim();
   }
 
   const columns = [];
@@ -257,8 +289,22 @@ async function createPayment(req, res) {
   add('method', method); // legacy
   add('proof_url', proofUrl);
   add('status', 'pending');
-  add('payment_status', 'pending');
+  add('payment_status', body.isPartial ? 'partial' : 'pending');
   add('process_status', 'submitted');
+
+  // Billing calculation fields
+  if (body.totalHeads !== undefined && body.totalHeads !== null) add('total_heads', Number(body.totalHeads));
+  if (body.ratePerHead !== undefined && body.ratePerHead !== null) add('rate_per_head', Number(body.ratePerHead));
+  if (body.freeSlots !== undefined && body.freeSlots !== null) add('free_slots', Number(body.freeSlots));
+  if (body.grossAmount !== undefined && body.grossAmount !== null) add('gross_amount', Number(body.grossAmount));
+  if (body.discountAmount !== undefined && body.discountAmount !== null) add('discount_amount', Number(body.discountAmount));
+  if (body.netAmount !== undefined && body.netAmount !== null) add('net_amount', Number(body.netAmount));
+  if (body.partialAmount !== undefined && body.partialAmount !== null) add('partial_amount', Number(body.partialAmount));
+  if (body.remainingBalance !== undefined && body.remainingBalance !== null) add('remaining_balance', Number(body.remainingBalance));
+  if (body.isPartial !== undefined) add('is_partial', body.isPartial ? 1 : 0);
+  if (body.billingBreakdown) {
+    add('billing_breakdown_json', typeof body.billingBreakdown === 'string' ? body.billingBreakdown : JSON.stringify(body.billingBreakdown));
+  }
   if (columnSet.has('date')) {
     const today = new Date().toISOString().slice(0, 10);
     add('date', today);

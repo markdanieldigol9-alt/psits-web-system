@@ -419,6 +419,9 @@ async function migrate() {
   try { await pool.query('ALTER TABLE events ADD COLUMN reminder_1h_sent TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE events ADD COLUMN reminder_reg_closing_sent TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
 
+  // Coach Requirement flag
+  try { await pool.query('ALTER TABLE events ADD COLUMN requires_coach TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+
   // Event registrations (member joins an event)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS event_registrations (
@@ -732,21 +735,36 @@ async function migrate() {
 
   // Expand payment enums if table exists
   try {
-    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_kind ENUM('event','membership_renewal','membership_registration','membership','partner_sponsorship') NOT NULL DEFAULT 'membership_registration'");
+    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_kind VARCHAR(64) NOT NULL DEFAULT 'membership_registration'");
   } catch { /* ignore */ }
   try {
-    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_method ENUM('gcash','paymaya','bank_transfer','cash_officer','paymongo','paypal','card') NOT NULL DEFAULT 'gcash'");
+    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_status VARCHAR(32) NOT NULL DEFAULT 'pending'");
   } catch { /* ignore */ }
   try {
-    await pool.query("ALTER TABLE payments MODIFY COLUMN method ENUM('gcash','paypal','paymaya','card','bank_transfer','cash_officer','paymongo') NOT NULL DEFAULT 'gcash'");
+    await pool.query("ALTER TABLE payments MODIFY COLUMN payment_method VARCHAR(64) NOT NULL DEFAULT 'gcash'");
+  } catch { /* ignore */ }
+  try {
+    await pool.query("ALTER TABLE payments MODIFY COLUMN method VARCHAR(64) NOT NULL DEFAULT 'gcash'");
   } catch { /* ignore */ }
 
-  // Fix any legacy payments with 0/null amounts to default 500 fee for membership
+  // Batch member registration & billing columns (250/head, 2 free slots, partial payments)
+  try { await pool.query('ALTER TABLE payments ADD COLUMN total_heads INT UNSIGNED NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN rate_per_head DECIMAL(10,2) NOT NULL DEFAULT 250.00'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN free_slots INT UNSIGNED NOT NULL DEFAULT 2'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN gross_amount DECIMAL(10,2) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN discount_amount DECIMAL(10,2) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN net_amount DECIMAL(10,2) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN partial_amount DECIMAL(10,2) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN remaining_balance DECIMAL(10,2) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN is_partial TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE payments ADD COLUMN billing_breakdown_json TEXT NULL'); } catch { /* ignore */ }
+
+  // Fix any legacy payments with 0/null/500 amounts to standard 250 fee per person for membership
   try {
     await pool.query(`
       UPDATE payments
-      SET amount = 500.00
-      WHERE (amount = 0 OR amount IS NULL)
+      SET amount = 250.00
+      WHERE (amount = 0 OR amount IS NULL OR amount = 500.00)
         AND (event_id IS NULL OR payment_kind IN ('membership_registration', 'membership_renewal', 'membership'))
     `);
   } catch { /* ignore */ }
@@ -788,7 +806,7 @@ async function migrate() {
             INSERT INTO payments (
               member_id, amount, payment_kind, payment_method, method, reference_number,
               status, payment_status, process_status, created_at, updated_at
-            ) VALUES (?, 500.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, 250.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?)
           `, [
             m.id,
             kind,

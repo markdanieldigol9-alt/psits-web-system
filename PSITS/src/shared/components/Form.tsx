@@ -2,7 +2,7 @@ import type { ReactNode, ButtonHTMLAttributes } from 'react';
 
 // ─── Button ──────────────────────────────────────────────────
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost' | 'gradient';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost' | 'gradient' | 'cyber' | 'gold';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   children: ReactNode;
   isLoading?: boolean;
@@ -22,23 +22,27 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   const baseClasses =
-    'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-1';
+    'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 focus-visible:ring-offset-1 active:scale-[0.98]';
 
   const variantClasses = {
     primary:
-      'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0',
+      'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm hover:shadow-[0_4px_16px_rgb(37,99,235,0.35)] hover:-translate-y-[1px] active:translate-y-0',
+    cyber:
+      'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 shadow-sm hover:shadow-[0_4px_20px_rgb(6,182,212,0.4)] hover:-translate-y-[1px] active:translate-y-0 border border-cyan-400/30',
+    gold:
+      'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold hover:from-amber-600 hover:to-yellow-600 shadow-sm hover:shadow-[0_4px_16px_rgb(245,158,11,0.35)] hover:-translate-y-[1px] active:translate-y-0',
     secondary:
-      'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 active:bg-gray-300 hover:-translate-y-[1px] active:translate-y-0',
+      'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 active:bg-gray-300 hover:-translate-y-[1px] active:translate-y-0 border border-gray-200/60 dark:border-slate-700/60',
     danger:
       'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0',
     success:
       'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0',
     outline:
-      'border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600 shadow-xs hover:-translate-y-[1px] active:translate-y-0',
+      'border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-900/90 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-cyan-500/40 dark:hover:border-cyan-500/40 hover:text-blue-600 dark:hover:text-cyan-400 shadow-xs hover:-translate-y-[1px] active:translate-y-0',
     ghost:
       'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100 active:bg-gray-200 dark:active:bg-slate-700',
     gradient:
-      'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm hover:shadow-[0_4px_14px_rgb(37,99,235,0.35)] hover:-translate-y-[1px] active:translate-y-0',
+      'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 shadow-sm hover:shadow-[0_4px_16px_rgb(6,182,212,0.35)] hover:-translate-y-[1px] active:translate-y-0',
   };
 
   const sizeClasses = {
@@ -101,7 +105,7 @@ export const Input = ({
         )}
         <input
           required={required}
-          className={`w-full py-2.5 bg-white dark:bg-slate-900 border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 hover:border-gray-300 dark:hover:border-slate-600 ${
+          className={`w-full py-2.5 bg-white dark:bg-[#0B1326] border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400 hover:border-gray-300 dark:hover:border-slate-600 ${
             prefixIcon ? 'pl-9' : 'pl-3.5'
           } ${suffixIcon ? 'pr-9' : 'pr-3.5'} ${
             error
@@ -117,7 +121,7 @@ export const Input = ({
         )}
       </div>
       {error && <p className="text-red-500 dark:text-red-400 text-xs font-medium animate-fade-in">{error}</p>}
-      {helperText && !error && <p className="text-gray-400 dark:text-slate-500 text-xs">{helperText}</p>}
+      {helperText && !error && <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">{helperText}</p>}
     </div>
   );
 };
@@ -153,7 +157,7 @@ export const Select = ({
       )}
       <select
         required={required}
-        className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 hover:border-gray-300 dark:hover:border-slate-600 appearance-none cursor-pointer ${
+        className={`w-full px-3.5 py-2.5 bg-white dark:bg-[#0B1326] border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400 hover:border-gray-300 dark:hover:border-slate-600 appearance-none cursor-pointer ${
           error
             ? 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
             : 'border-gray-200 dark:border-slate-700'
@@ -167,12 +171,12 @@ export const Select = ({
         {...props}
       >
         {!hidePlaceholder && (
-          <option value="" className="dark:bg-slate-900 dark:text-slate-200 text-gray-400">
+          <option value="" className="dark:bg-[#0B1326] dark:text-slate-200 text-gray-400">
             {placeholder}
           </option>
         )}
         {filteredOptions.map((option) => (
-          <option key={option.value} value={option.value} className="dark:bg-slate-900 dark:text-slate-200">
+          <option key={option.value} value={option.value} className="dark:bg-[#0B1326] dark:text-slate-200">
             {option.label}
           </option>
         ))}
@@ -198,7 +202,7 @@ export const TextArea = ({ label, error, className = '', required, ...props }: T
       )}
       <textarea
         required={required}
-        className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 hover:border-gray-300 dark:hover:border-slate-600 resize-y ${
+        className={`w-full px-3.5 py-2.5 bg-white dark:bg-[#0B1326] border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400 hover:border-gray-300 dark:hover:border-slate-600 resize-y ${
           error
             ? 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
             : 'border-gray-200 dark:border-slate-700'
@@ -216,9 +220,10 @@ interface CardProps {
   className?: string;
   title?: string;
   subtitle?: string;
+  headerAction?: ReactNode;
   style?: React.CSSProperties;
   onClick?: () => void;
-  variant?: 'default' | 'elevated' | 'bordered' | 'glass' | 'flat';
+  variant?: 'default' | 'elevated' | 'bordered' | 'glass' | 'cyber' | 'flat';
 }
 
 export const Card = ({
@@ -226,19 +231,22 @@ export const Card = ({
   className = '',
   title,
   subtitle,
+  headerAction,
   style,
   onClick,
   variant = 'default',
 }: CardProps) => {
   const variantClasses = {
     default:
-      'bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-card hover:shadow-card-md hover:border-gray-200/80 dark:hover:border-slate-700',
+      'bg-white dark:bg-[#131B2E] border border-gray-100 dark:border-slate-800 shadow-card hover:shadow-card-md hover:border-gray-200/80 dark:hover:border-slate-700',
     elevated:
-      'bg-white dark:bg-slate-900 border border-gray-100/80 dark:border-slate-800 shadow-card-lg hover:shadow-[0_16px_40px_-8px_rgb(0,0,0,0.12)]',
+      'bg-white dark:bg-[#131B2E] border border-gray-100/80 dark:border-slate-800 shadow-card-lg hover:shadow-[0_16px_40px_-8px_rgb(0,0,0,0.12)]',
     bordered:
-      'bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800',
+      'bg-white dark:bg-[#131B2E] border-2 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-cyan-800/80',
     glass:
-      'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/60 dark:border-slate-700/60 shadow-card',
+      'bg-white/85 dark:bg-[#0B1326]/85 backdrop-blur-md border border-white/60 dark:border-slate-700/60 shadow-card',
+    cyber:
+      'bg-white dark:bg-[#131B2E] border border-blue-500/20 dark:border-cyan-500/20 shadow-card hover:shadow-glow-cyan hover:border-cyan-500/40 transition-all duration-200',
     flat:
       'bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800',
   };
@@ -249,13 +257,16 @@ export const Card = ({
       onClick={onClick}
       className={`rounded-2xl transition-all duration-200 text-gray-900 dark:text-slate-100 ${variantClasses[variant]} ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
-      {(title || subtitle) && (
-        <div className="border-b border-gray-100 dark:border-slate-800 px-5 py-4 sm:px-6 sm:py-4 rounded-t-2xl">
-          {title && <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight">{title}</h3>}
-          {subtitle && <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
+      {(title || subtitle || headerAction) && (
+        <div className="border-b border-gray-100 dark:border-slate-800 px-5 py-4 sm:px-6 sm:py-4 rounded-t-2xl flex items-center justify-between gap-3">
+          <div>
+            {title && <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight">{title}</h3>}
+            {subtitle && <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium mt-0.5">{subtitle}</p>}
+          </div>
+          {headerAction && <div className="shrink-0">{headerAction}</div>}
         </div>
       )}
-      <div className={title || subtitle ? 'p-5 sm:p-6' : ''}>{children}</div>
+      <div className={title || subtitle || headerAction ? 'p-5 sm:p-6' : ''}>{children}</div>
     </div>
   );
 };
@@ -263,7 +274,7 @@ export const Card = ({
 // ─── Badge ────────────────────────────────────────────────────
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'secondary';
+  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'secondary' | 'cyber' | 'gold';
   dot?: boolean;
   className?: string;
 }
@@ -272,6 +283,10 @@ export const Badge = ({ children, variant = 'primary', dot = false, className = 
   const variantClasses = {
     primary:
       'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/70',
+    cyber:
+      'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-800/70 font-mono tracking-wide',
+    gold:
+      'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-700/60 font-medium',
     secondary:
       'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700',
     success:
@@ -285,7 +300,8 @@ export const Badge = ({ children, variant = 'primary', dot = false, className = 
   };
 
   const dotColors = {
-    primary: 'bg-blue-500', secondary: 'bg-gray-400', success: 'bg-emerald-500',
+    primary: 'bg-blue-500', cyber: 'bg-cyan-400 animate-pulse', gold: 'bg-amber-400',
+    secondary: 'bg-gray-400', success: 'bg-emerald-500 animate-pulse',
     warning: 'bg-amber-500', error: 'bg-rose-500', info: 'bg-sky-500',
   };
 
@@ -300,3 +316,4 @@ export const Badge = ({ children, variant = 'primary', dot = false, className = 
     </span>
   );
 };
+

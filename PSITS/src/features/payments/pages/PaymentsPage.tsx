@@ -2,14 +2,24 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 
-import { Card, Button, TextArea } from '@/shared/components/Form';
+import { Card, Button, TextArea, Input, Select } from '@/shared/components/Form';
 import { Badge, Pagination, Modal } from '@/shared/components/Common';
-import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import api from '@/shared/services/api';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
+import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import { formatPaymentMethod, PAYMENT_METHOD_OPTIONS } from '@/shared/utils/helpers';
+
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.readAsDataURL(file);
+  });
 
 const mockPayments: any[] = [];
 
@@ -32,6 +42,26 @@ export const PaymentsPage = () => {
   const [paymentLogs, setPaymentLogs] = useState<any[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const isMember = user?.role === 'member';
+
+  // State for submitting a new payment / membership dues
+  const [showPayFeeModal, setShowPayFeeModal] = useState(false);
+  const [isSubmittingFee, setIsSubmittingFee] = useState(false);
+  const [feeError, setFeeError] = useState<string | null>(null);
+  const [feeForm, setFeeForm] = useState<{
+    method: string;
+    amount: number;
+    paymentKind: string;
+    referenceNumber: string;
+    file: File | null;
+    previewUrl: string;
+  }>({
+    method: 'gcash',
+    amount: 250,
+    paymentKind: 'membership_registration',
+    referenceNumber: '',
+    file: null,
+    previewUrl: '',
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -84,12 +114,6 @@ export const PaymentsPage = () => {
   const getVerificationStatus = (payment: any) =>
     String(payment?.verificationStatus || payment?.status || 'pending').toLowerCase();
 
-  const formatPaymentMethod = (method: string) => {
-    if (!method) return '-';
-    if (method === 'bank_transfer') return 'Bank Transfer';
-    return method.toUpperCase();
-  };
-
   const filteredPayments = scopedPayments.filter((payment) => {
     const status = getVerificationStatus(payment);
     const matchesStatus = filterStatus === 'all' || status === filterStatus;
@@ -116,13 +140,88 @@ export const PaymentsPage = () => {
     currentPage * itemsPerPage
   );
 
+  const handleSubmitFee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeeError(null);
+
+    if (!feeForm.amount || Number(feeForm.amount) <= 0) {
+      setFeeError('Please enter a valid amount.');
+      return;
+    }
+
+    if (!feeForm.file) {
+      if (feeForm.method === 'through_officer' || feeForm.method === 'cash_officer') {
+        setFeeError('Official Receipt (OR) image is required.');
+      } else {
+        setFeeError('Receipt image is required.');
+      }
+      return;
+    }
+
+    if (feeForm.method === 'gcash' && !feeForm.referenceNumber.trim()) {
+      setFeeError('GCash Reference Number is required.');
+      return;
+    }
+
+    setIsSubmittingFee(true);
+    try {
+      const dataUrl = await readAsDataUrl(feeForm.file);
+      const { data: uploadData } = await api.uploadPaymentProof(dataUrl);
+      const proofUrl = uploadData?.url;
+      if (!proofUrl) {
+        throw new Error('Failed to upload proof image.');
+      }
+
+      const { data } = await api.createPayment({
+        paymentKind: feeForm.paymentKind,
+        amount: Number(feeForm.amount),
+        method: feeForm.method,
+        paymentMethod: feeForm.method,
+        referenceNumber: feeForm.referenceNumber.trim() || undefined,
+        proofUrl,
+      });
+
+      if (data?.success) {
+        addNotification({
+          userId: 'current',
+          title: 'Payment Submitted',
+          message: 'Your payment proof has been submitted for officer verification.',
+          type: 'success',
+          isRead: false,
+        });
+
+        // Refresh list
+        const res = await api.getPayments({ status: filterStatus });
+        if (res.data?.success) {
+          setPayments(res.data.payments || []);
+        }
+
+        setShowPayFeeModal(false);
+        setFeeForm({
+          method: 'gcash',
+          amount: 250,
+          paymentKind: 'membership_registration',
+          referenceNumber: '',
+          file: null,
+          previewUrl: '',
+        });
+      } else {
+        throw new Error(data?.message || 'Failed to submit payment.');
+      }
+    } catch (err: any) {
+      setFeeError(err?.response?.data?.message || err?.message || 'Failed to submit payment.');
+    } finally {
+      setIsSubmittingFee(false);
+    }
+  };
+
   const handleExportCSV = () => {
     const dataToExport = filteredPayments.map(p => ({
       'Member Name': p.memberName || 'N/A',
       'Member Email': p.memberEmail || 'N/A',
       'Payment Type / Event': p.event || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : p.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee'),
       'Amount': p.amount || 0,
-      'Payment Method': String(p.method || p.paymentMethod || '').toUpperCase() || '-',
+      'Payment Method': formatPaymentMethod(p.method || p.paymentMethod),
       'Reference Number': p.referenceNumber || '-',
       'Status': getVerificationStatus(p),
       'Date Submitted': p.date || 'N/A',
@@ -165,46 +264,85 @@ export const PaymentsPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isMember ? 'My Payment History' : 'Payment Tracking'}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {isMember ? 'View your submitted payments and verification status.' : 'Monitor and verify member payments'}
-            </p>
+        {/* Module Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-obsidian-card via-obsidian-surface to-obsidian-card border border-cyber-cyan/20 p-6 shadow-glow-sm">
+          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-cyber-cyan/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="telemetry-chip font-mono text-[11px] text-cyber-cyan">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse" />
+                  MODULE.FINANCE
+                </span>
+                <span className="text-xs text-slate-500 font-mono">AUDIT_LOG_ENABLED</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
+                {isMember ? 'My Payment History' : 'Financial Ledger & Verification'}
+              </h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                {isMember ? 'Track your membership dues, event registrations, and digital receipts.' : 'Monitor transactions, verify digital receipts, and audit collegiate cash flows.'}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+              {isMember && (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => setShowPayFeeModal(true)}
+                  className="w-full sm:w-auto shrink-0 font-medium"
+                >
+                  <DollarSign size={18} />
+                  Submit Payment / Pay Fee
+                </Button>
+              )}
+              <Button variant="cyber" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto shrink-0 font-medium">
+                <Download size={18} />
+                Export CSV Ledger
+              </Button>
+            </div>
           </div>
-          <Button variant="secondary" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto shrink-0">
-            <Download size={20} />
-            Export CSV
-          </Button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6">
-            <p className="text-gray-600 text-sm">Total Revenue</p>
-            <p className="text-2xl font-bold text-primary mt-2">PHP {totalRevenue.toLocaleString()}</p>
-          </Card>
-          <Card className="p-6">
-            <p className="text-gray-600 text-sm">Pending Verification</p>
-            <p className="text-2xl font-bold text-yellow-600 mt-2">
+          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-cyber-blue/30 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Verified Revenue</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue dark:text-cyber-cyan font-bold">SYS.REV</span>
+            </div>
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-cyber-blue dark:text-cyber-cyan mt-3">
+              PHP {totalRevenue.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">Audited real-time platform collections</p>
+          </div>
+
+          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-amber-500/30 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Pending Verification</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">IN_REVIEW</span>
+            </div>
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-gold-accent mt-3">
               {payments.filter((p) => getVerificationStatus(p) === 'pending').length}
             </p>
-          </Card>
-          <Card className="p-6">
-            <p className="text-gray-600 text-sm">Verified Payments</p>
-            <p className="text-2xl font-bold text-green-600 mt-2">
+            <p className="text-xs text-slate-500 mt-1">Awaiting officer confirmation</p>
+          </div>
+
+          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-emerald-500/30 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Verified Transactions</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">SETTLED</span>
+            </div>
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
               {payments.filter((p) => getVerificationStatus(p) === 'verified').length}
             </p>
-          </Card>
+            <p className="text-xs text-slate-500 mt-1">Confirmed with reference IDs</p>
+          </div>
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-obsidian-card/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
               placeholder="Search by member, ref #, event, or method..."
@@ -218,7 +356,7 @@ export const PaymentsPage = () => {
                   setSearchParams({});
                 }
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-900 dark:text-white placeholder-slate-400"
             />
           </div>
           <select
@@ -227,17 +365,17 @@ export const PaymentsPage = () => {
               setFilterStatus(e.target.value as any);
               setCurrentPage(1);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="px-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-800 dark:text-slate-200 cursor-pointer"
           >
-            <option value="all">All Payments</option>
-            <option value="pending">Pending</option>
-            <option value="verified">Verified</option>
-            <option value="rejected">Rejected</option>
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending Verification</option>
+            <option value="verified">Verified (Settled)</option>
+            <option value="rejected">Rejected (Flagged)</option>
           </select>
         </div>
 
         {/* Payments Table */}
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px]">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -300,6 +438,13 @@ export const PaymentsPage = () => {
                         </span>
                       );
                     }
+                    if (payment.paymentKind === 'institution_batch_registration') {
+                      return (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800">
+                          Batch Registration ({payment.totalHeads ? `${payment.totalHeads} Heads` : 'Institution'})
+                        </span>
+                      );
+                    }
                     return (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
                         {payment.event || 'Membership Fee'}
@@ -319,7 +464,16 @@ export const PaymentsPage = () => {
                     )}
                     <td className="px-6 py-4 text-sm">{renderPaymentKindBadge()}</td>
                     <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">
-                      ₱{Number(payment.amount || 0).toLocaleString()}
+                      <div>₱{Number(payment.amount || 0).toLocaleString()}</div>
+                      {payment.paymentKind === 'institution_batch_registration' ? (
+                        <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
+                          ₱250/head • {payment.totalHeads || 'Batch'} heads
+                        </div>
+                      ) : (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership' || (!payment.eventId && !payment.paymentKind)) ? (
+                        <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
+                          ₱250 / person
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className="text-gray-950 font-medium">{formattedMethod}</span>
@@ -394,18 +548,81 @@ export const PaymentsPage = () => {
                   {viewing.memberEmail && <span className="text-gray-500 text-xs block">{viewing.memberEmail}</span>}
                 </div>
               )}
-              <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
-              <div><span className="font-semibold">Amount:</span> ₱{Number(viewing.amount || 0).toLocaleString()}</div>
+              <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'institution_batch_registration' ? 'Institution Batch Member Registration' : viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
+              <div><span className="font-semibold">Amount Paid:</span> <strong className="text-blue-600 dark:text-blue-400">₱{Number(viewing.amount || 0).toLocaleString()}</strong></div>
               <div><span className="font-semibold">Method:</span> {formatPaymentMethod(viewing.method || viewing.paymentMethod)}</div>
               <div><span className="font-semibold">Reference Number:</span> <span className="font-mono">{viewing.referenceNumber || 'N/A'}</span></div>
               <div><span className="font-semibold">Status:</span> {getVerificationStatus(viewing)}</div>
               <div><span className="font-semibold">Date Submitted:</span> {viewing.date}</div>
             </div>
 
+            {/* Batch Registration Official Billing Breakdown */}
+            {(viewing.totalHeads || viewing.paymentKind === 'institution_batch_registration' || viewing.billingBreakdown) && (
+              <div className="rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-800/60 pb-2">
+                  <div className="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+                    <span>📄 Official Billing Breakdown</span>
+                    {viewing.isPartial ? (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                        Partial Payment
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                        Full Payment
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                    Rate: ₱250.00 / head
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-gray-700 dark:text-slate-300">
+                  <div className="flex justify-between items-center">
+                    <span>Total Members Uploaded:</span>
+                    <span className="font-semibold">{viewing.totalHeads || (viewing.billingBreakdown?.totalHeads) || 'N/A'} Persons</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Amount Per Head ({viewing.totalHeads || viewing.billingBreakdown?.totalHeads || 0} × ₱250.00):</span>
+                    <span className="font-medium">
+                      ₱{(viewing.grossAmount ?? ((viewing.totalHeads || 0) * 250)).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span>Complimentary Discount ({viewing.freeSlots ?? 2} Free Slots):</span>
+                    <span>-₱{(viewing.discountAmount ?? ((viewing.freeSlots ?? 2) * 250)).toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-indigo-200/60 dark:border-indigo-800/60 pt-1.5 flex justify-between items-center text-sm font-bold text-gray-900 dark:text-slate-100">
+                    <span>Total Bill (Net Payable):</span>
+                    <span className="text-indigo-600 dark:text-indigo-400">
+                      ₱{(viewing.netAmount ?? Math.max(0, ((viewing.totalHeads || 0) * 250) - ((viewing.freeSlots ?? 2) * 250))).toLocaleString()}
+                    </span>
+                  </div>
+
+                  {viewing.isPartial && (
+                    <div className="pt-2 border-t border-dashed border-indigo-200 dark:border-indigo-800 space-y-1">
+                      <div className="flex justify-between items-center text-blue-700 dark:text-blue-300 font-semibold">
+                        <span>Partial Amount Paid:</span>
+                        <span>₱{Number(viewing.partialAmount ?? viewing.amount ?? 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-amber-700 dark:text-amber-300 font-semibold">
+                        <span>Remaining Balance:</span>
+                        <span>₱{Number(viewing.remainingBalance ?? 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {viewing.proofUrl ? (
               <div className="rounded-lg border border-gray-200 p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-gray-900">Transaction Proof</div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    {['through_officer', 'cash_officer'].includes(String(viewing.method || viewing.paymentMethod).toLowerCase())
+                      ? 'Official Receipt (OR) Proof'
+                      : 'Transaction Proof / Receipt'}
+                  </div>
                   <a
                     href={viewing.proofUrl}
                     target="_blank"
@@ -571,6 +788,163 @@ export const PaymentsPage = () => {
           }
         }}
       />
+
+      {/* Member Submit Payment / Pay Fee Modal */}
+      <Modal
+        isOpen={showPayFeeModal}
+        onClose={() => {
+          if (isSubmittingFee) return;
+          setShowPayFeeModal(false);
+          setFeeError(null);
+        }}
+        title="Submit Payment / Pay Membership Fee"
+        size="lg"
+      >
+        <form onSubmit={handleSubmitFee} className="space-y-4">
+          {feeError && (
+            <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-300">
+              {feeError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Payment Purpose"
+              required
+              options={[
+                { value: 'membership_registration', label: 'Membership Fee (₱250.00)' },
+                { value: 'membership_renewal', label: 'Membership Renewal (₱250.00)' },
+              ]}
+              value={feeForm.paymentKind}
+              onChange={(e) => {
+                const kind = e.target.value;
+                setFeeForm((prev) => ({
+                  ...prev,
+                  paymentKind: kind,
+                  amount: 250,
+                }));
+              }}
+            />
+
+            <Input
+              label="Amount (PHP)"
+              type="number"
+              min="1"
+              required
+              value={feeForm.amount}
+              onChange={(e) => setFeeForm((prev) => ({ ...prev, amount: Number(e.target.value) }))}
+            />
+          </div>
+
+          <Select
+            label="Payment Method"
+            required
+            options={PAYMENT_METHOD_OPTIONS}
+            value={feeForm.method}
+            onChange={(e) => {
+              setFeeForm((prev) => ({ ...prev, method: e.target.value }));
+              setFeeError(null);
+            }}
+          />
+
+          {/* Dynamic Instructions Card */}
+          <PaymentInstructionsCard method={feeForm.method} />
+
+          {/* Reference Number: strictly required for GCash, optional for others */}
+          <Input
+            label={
+              feeForm.method === 'gcash'
+                ? 'GCash Reference Number'
+                : feeForm.method === 'cheque'
+                ? 'Cheque Number (Optional)'
+                : feeForm.method === 'through_officer'
+                ? 'Official Receipt (OR) Number (Optional)'
+                : 'Reference / Transaction ID (Optional)'
+            }
+            required={feeForm.method === 'gcash'}
+            placeholder={
+              feeForm.method === 'gcash'
+                ? 'e.g. 100234981723'
+                : feeForm.method === 'cheque'
+                ? 'e.g. CHQ-0012398'
+                : feeForm.method === 'through_officer'
+                ? 'e.g. OR-2026-0045'
+                : 'e.g. Ref # or Transaction ID'
+            }
+            value={feeForm.referenceNumber}
+            onChange={(e) => setFeeForm((prev) => ({ ...prev, referenceNumber: e.target.value }))}
+            helperText={
+              feeForm.method === 'gcash'
+                ? 'Required: Enter the exact reference number shown on your GCash transaction receipt.'
+                : undefined
+            }
+          />
+
+          {/* Dynamic Proof / Receipt File Upload */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
+              {feeForm.method === 'through_officer'
+                ? 'Upload Official Receipt (OR) *'
+                : feeForm.method === 'bank_transfer'
+                ? 'Upload Bank Transfer Receipt *'
+                : feeForm.method === 'cheque'
+                ? 'Upload Cheque Receipt / Copy *'
+                : 'Upload GCash Receipt *'}
+            </label>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+              {feeForm.method === 'through_officer'
+                ? 'Please upload a clear scan or photo of your PSITS Officer-issued Official Receipt (OR).'
+                : feeForm.method === 'bank_transfer'
+                ? 'Please upload a screenshot or photo of your bank deposit slip or transfer confirmation receipt.'
+                : feeForm.method === 'cheque'
+                ? 'Please upload a clear photo or copy of your issued cheque receipt.'
+                : 'Please upload a clear screenshot of your completed GCash payment receipt.'}
+            </p>
+            <input
+              type="file"
+              accept="image/png, image/jpeg, image/webp"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (!file) return;
+                setFeeForm((prev) => ({
+                  ...prev,
+                  file,
+                  previewUrl: URL.createObjectURL(file),
+                }));
+              }}
+              className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-slate-100"
+            />
+            {feeForm.previewUrl && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Receipt Preview:</p>
+                <img
+                  src={feeForm.previewUrl}
+                  alt="Receipt preview"
+                  className="max-h-48 rounded border border-gray-200 dark:border-slate-700 object-contain bg-white dark:bg-slate-900 p-1"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-200 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmittingFee}
+              onClick={() => {
+                setShowPayFeeModal(false);
+                setFeeError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isSubmittingFee}>
+              <Upload size={16} />
+              Submit Payment Proof
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </MainLayout>
   );
 };

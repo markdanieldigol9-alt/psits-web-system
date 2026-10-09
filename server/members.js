@@ -232,7 +232,7 @@ async function getMemberDetails(req, res) {
           `INSERT INTO payments (
             member_id, amount, payment_kind, payment_method, method, reference_number,
             status, payment_status, process_status, created_at, updated_at
-          ) VALUES (?, 500.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, 250.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?)`,
           [
             id,
             kind,

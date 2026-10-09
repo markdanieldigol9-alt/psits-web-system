@@ -190,10 +190,10 @@ async function register(req, res) {
   const membershipMode = body.membershipMode ? String(body.membershipMode).trim() : 'new';
   const paymentProof = body.paymentProof ? String(body.paymentProof) : null;
   const referenceNumber = body.referenceNumber ? String(body.referenceNumber).trim() : null;
-  const paymentMethod = (body.paymentMethod || body.method) ? String(body.paymentMethod || body.method).trim() : 'gcash';
+  const paymentMethod = (body.paymentMethod || body.method) ? String(body.paymentMethod || body.method).trim().toLowerCase() : 'gcash';
 
-  if (paymentProof && !referenceNumber) {
-    return json(res, 400, { success: false, message: 'Reference number is required.' });
+  if (paymentProof && paymentMethod === 'gcash' && !referenceNumber) {
+    return json(res, 400, { success: false, message: 'Reference number is required for GCash payments.' });
   }
 
   if (memberType === 'industry') {
@@ -348,12 +348,12 @@ async function register(req, res) {
         const [payColumnRows] = await pool.execute('SHOW COLUMNS FROM payments');
         const payColumnSet = new Set(payColumnRows.map((row) => String(row.Field)));
 
-        const methodVal = ['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'paymongo', 'paypal', 'card'].includes(paymentMethod)
+        const methodVal = ['gcash', 'paymaya', 'bank_transfer', 'cash_officer', 'through_officer', 'cheque', 'paymongo', 'paypal', 'card'].includes(paymentMethod)
           ? paymentMethod
           : 'gcash';
 
         const paymentKindVal = membershipMode === 'renew' ? 'membership_renewal' : 'membership_registration';
-        const registrationAmount = Number(body.amount || body.paymentAmount || 500);
+        const registrationAmount = Number(body.amount || body.paymentAmount || 250);
 
         const payCols = [];
         const payVals = [];

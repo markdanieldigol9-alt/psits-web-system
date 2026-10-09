@@ -71,7 +71,7 @@ type DashboardAnnouncement = {
   date: string;
 };
 
-const colors = ['#003D82', '#FF6B6B', '#FFC300', '#10B981'];
+const chartColors = ['#2563EB', '#06B6D4', '#F59E0B', '#10B981', '#8B5CF6'];
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -117,7 +117,7 @@ export const DashboardPage = () => {
         const notifiedKey = `psits_notified_announcements_${user?.id ?? 'guest'}`;
         const notifiedRaw = localStorage.getItem(notifiedKey);
         const notifiedIds = notifiedRaw ? (JSON.parse(notifiedRaw) as string[]) : [];
-        let updatedIds = [...notifiedIds];
+        const updatedIds = [...notifiedIds];
         let hasNew = false;
 
         list.forEach((ann: any) => {
@@ -219,14 +219,14 @@ export const DashboardPage = () => {
       <MainLayout>
         <div className="space-y-6">
           {daysLeft !== null && daysLeft < 0 && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+            <div className="bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 p-4 rounded-xl shadow-xs animate-fade-in">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <Megaphone className="h-5 w-5 text-red-400" aria-hidden="true" />
+                  <Megaphone className="h-5 w-5 text-red-500" aria-hidden="true" />
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Membership Expired</h3>
-                  <div className="mt-2 text-sm text-red-700">
+                  <h3 className="text-sm font-bold text-red-800 dark:text-red-200">Membership Expired</h3>
+                  <div className="mt-1 text-xs sm:text-sm text-red-700 dark:text-red-300">
                     <p>
                       Your membership has expired. Your account is restricted. Please go to the Payments page to renew and regain full access.
                     </p>
@@ -236,14 +236,14 @@ export const DashboardPage = () => {
             </div>
           )}
           {daysLeft !== null && daysLeft >= 0 && daysLeft <= 90 && (
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+            <div className="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-400 p-4 rounded-xl shadow-xs animate-fade-in">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <Clock className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+                  <Clock className="h-5 w-5 text-amber-500" aria-hidden="true" />
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800">Renewal Notice</h3>
-                  <div className="mt-2 text-sm text-yellow-700">
+                  <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200">Renewal Notice</h3>
+                  <div className="mt-1 text-xs sm:text-sm text-amber-700 dark:text-amber-300">
                     <p>
                       Your membership will expire in {daysLeft} days (on {expiryDate?.toLocaleDateString()}). Please renew soon to maintain access.
                     </p>
@@ -253,54 +253,69 @@ export const DashboardPage = () => {
             </div>
           )}
 
-          <Card className="overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-100 p-6">
-              <h1 className="text-3xl font-bold text-gray-900">Welcome, {getUserDisplayName(user)}</h1>
-              {user.memberType === 'institution' && (user.representativeName || (user.sectorDetails && user.fullName && user.fullName !== user.sectorDetails)) && (
-                <p className="text-sm font-semibold text-blue-700 mt-1">
-                  Representative: {user.representativeName || user.fullName}
+          {/* Member Hero Banner */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 text-white shadow-xl shadow-blue-600/20 p-6 sm:p-8 animate-fade-in">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse" /> Student Portal
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Welcome, {getUserDisplayName(user)}</h1>
+                {user.memberType === 'institution' && (user.representativeName || (user.sectorDetails && user.fullName && user.fullName !== user.sectorDetails)) && (
+                  <p className="text-xs sm:text-sm font-semibold text-cyan-200 mt-1">
+                    Representative: {user.representativeName || user.fullName}
+                  </p>
+                )}
+                <p className="mt-1 text-blue-100 text-xs sm:text-sm max-w-xl">
+                  Stay updated with your registered events, live announcements, and fast-track actions.
                 </p>
-              )}
-              <p className="mt-2 text-gray-700">
-                Stay updated with your events, latest announcements, and quick actions.
-              </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                  <CalendarDays size={15} /> Browse Events
+                </Button>
+                <Button variant="gold" size="sm" onClick={() => navigate('/payments')}>
+                  <DollarSign size={15} /> Pay Fee
+                </Button>
+              </div>
             </div>
-          </Card>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-primary">
-              <div className="p-3 bg-primary/10 rounded-xl text-primary">
-                <Users size={24} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-cyan-500 shadow-card hover:shadow-glow-cyan transition-all">
+              <div className="p-3 bg-cyan-50 dark:bg-cyan-950/50 rounded-2xl text-cyan-600 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800">
+                <Users size={22} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Status</p>
+                <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Account Status</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={user.status === 'active' ? 'success' : user.status === 'pending' ? 'warning' : 'error'}>
+                  <Badge variant={user.status === 'active' ? 'cyber' : user.status === 'pending' ? 'warning' : 'error'} dot={true}>
                     {user.status || (user.isActive ? 'active' : 'pending')}
                   </Badge>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-blue-500">
-              <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
-                <CalendarDays size={24} />
+            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-blue-500 shadow-card hover:shadow-card-md transition-all">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-2xl text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                <CalendarDays size={22} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Service Period</p>
-                <p className="mt-1 font-semibold text-gray-900">
+                <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Service Period</p>
+                <p className="mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-mono">
                   {user.membershipStartedAt ? formatDate(user.membershipStartedAt) : 'N/A'} - {expiryDate ? formatDate(expiryDate.toISOString()) : 'N/A'}
                 </p>
               </div>
             </Card>
 
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-green-500">
-              <div className="p-3 bg-green-50 rounded-xl text-green-600">
-                <Clock size={24} />
+            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-emerald-500 shadow-card hover:shadow-card-md transition-all">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                <Clock size={22} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Days Remaining</p>
-                <p className={`mt-1 font-semibold ${daysLeft !== null && daysLeft < 30 ? 'text-red-600' : 'text-green-600'}`}>
+                <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Days Remaining</p>
+                <p className={`mt-1 font-bold text-sm ${daysLeft !== null && daysLeft < 30 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {daysLeft !== null ? (daysLeft >= 0 ? `${daysLeft} days` : 'Expired') : 'N/A'}
                 </p>
               </div>
@@ -313,21 +328,22 @@ export const DashboardPage = () => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card title="Upcoming Events" subtitle="Your next activities and schedules">
               <div className="space-y-3">
-                {memberLoading && <p className="text-sm text-gray-500">Loading events...</p>}
+                {memberLoading && <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Loading events...</p>}
                 {!memberLoading && upcomingEvents.length === 0 && (
-                  <p className="text-sm text-gray-600 py-2">No upcoming events yet.</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium py-4 text-center">No upcoming events yet.</p>
                 )}
                 {upcomingEvents.map((event) => (
-                  <div key={event.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={event.id} className="border border-gray-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-cyan-500/30 transition-all bg-white dark:bg-[#0B1326]">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{event.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{event.title}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 flex items-center gap-1.5">
+                          <CalendarDays size={13} className="text-cyan-500" />
                           {formatDate(event.date)}{event.time ? ` at ${event.time}` : ''}
                         </p>
-                        <p className="text-sm text-gray-500 truncate">{event.location || 'TBA'}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate mt-0.5">{event.location || 'TBA'}</p>
                       </div>
-                      <Badge variant={event.status === 'ongoing' ? 'success' : 'info'} className="shrink-0">
+                      <Badge variant={event.status === 'ongoing' ? 'cyber' : 'primary'} dot={true} className="shrink-0">
                         {event.status}
                       </Badge>
                     </div>
@@ -338,18 +354,22 @@ export const DashboardPage = () => {
 
             <Card title="Announcements List" subtitle="Latest system updates for members">
               <div className="space-y-3">
-                {memberLoading && <p className="text-sm text-gray-500">Loading announcements...</p>}
+                {memberLoading && <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Loading announcements...</p>}
                 {!memberLoading && latestAnnouncements.length === 0 && (
-                  <p className="text-sm text-gray-600 py-2">No announcements available.</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium py-4 text-center">No announcements available.</p>
                 )}
                 {latestAnnouncements.map((announcement) => (
-                  <div key={announcement.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={announcement.id} className="border border-gray-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-blue-500/30 transition-all bg-white dark:bg-[#0B1326]">
                     <div className="flex items-start gap-3">
-                      <Megaphone size={18} className="text-blue-700 mt-1 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{announcement.title}</p>
-                        <p className="text-sm text-gray-500">{formatDate(announcement.date)}</p>
-                        <p className="text-sm text-gray-700 mt-1 line-clamp-2">{announcement.content}</p>
+                      <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5">
+                        <Megaphone size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{announcement.title}</p>
+                          <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 font-medium shrink-0">{formatDate(announcement.date)}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">{announcement.content}</p>
                       </div>
                     </div>
                   </div>
@@ -359,7 +379,7 @@ export const DashboardPage = () => {
           </div>
 
           <Card title="Quick Links" subtitle="Go directly to common member actions">
-            <div className={`grid grid-cols-1 md:grid-cols-2 ${user.memberType === 'institution' ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${user.memberType === 'institution' ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}>
               {user.memberType === 'institution' && (
                 <Button variant="outline" onClick={() => navigate('/institution-members')} className="justify-between">
                   <span className="flex items-center gap-2"><CheckCircle size={16} /> Institution Members</span>
@@ -391,63 +411,86 @@ export const DashboardPage = () => {
       label: 'Total Members',
       value: String(summary?.totalMembers ?? 0),
       subtitle: `${summary?.activeMembers ?? 0} active members`,
+      tag: 'SYS.OK',
       icon: Users,
-      iconBg: 'bg-blue-50 text-blue-600 border border-blue-100/80',
+      iconBg: 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 border border-blue-100 dark:border-blue-900',
     },
     {
-      label: 'Active Events',
+      label: 'Active Tech Events',
       value: String(summary?.activeEvents ?? 0),
       subtitle: 'Scheduled & ongoing',
+      tag: 'LIVE',
       icon: Calendar,
-      iconBg: 'bg-amber-50 text-amber-600 border border-amber-100/80',
+      iconBg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900',
     },
     {
       label: 'Total Revenue',
       value: `PHP ${(summary?.totalRevenue ?? 0).toLocaleString()}`,
-      subtitle: 'Verified payments',
+      subtitle: 'Verified collections',
+      tag: 'FINANCE',
       icon: DollarSign,
-      iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/80',
+      iconBg: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900',
     },
     {
       label: 'Pending Approvals',
       value: String(summary?.pendingApprovals ?? 0),
-      subtitle: 'Requires review',
+      subtitle: 'Requires officer review',
+      tag: 'QUEUE',
       icon: Clock,
-      iconBg: 'bg-rose-50 text-rose-600 border border-rose-100/80',
+      iconBg: 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900',
     },
   ];
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-blue-800 to-indigo-900 text-white shadow-xl shadow-primary/20 p-8 sm:p-10 mb-8 animate-fade-in">
-          <div className="absolute top-0 -left-10 w-72 h-72 bg-white/10 rounded-full mix-blend-overlay filter blur-2xl animate-pulse-slow"></div>
-          <div className="absolute -bottom-10 right-0 w-72 h-72 bg-secondary/30 rounded-full mix-blend-overlay filter blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
-          
-          <div className="relative z-10">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Welcome back, {getUserDisplayName(user)}!
-            </h1>
-            <p className="mt-3 text-blue-100 text-lg max-w-2xl">
-              Here's what's happening with your organization today. Monitor growth, approve members, and manage your community.
-            </p>
+        {/* Admin/Officer Hero Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-900 to-[#060E20] text-white shadow-xl shadow-blue-900/20 p-8 sm:p-10 animate-fade-in border border-blue-700/40">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 left-10 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-300">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span>GOVERNANCE PORTAL • REGION XII</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
+                Welcome back, {getUserDisplayName(user)}!
+              </h1>
+              <p className="text-blue-100 text-sm sm:text-base max-w-2xl leading-relaxed">
+                Here is your organizational telemetry for today. Monitor member growth, approve registrations, and manage regional IT summits.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <Button variant="cyber" size="sm" onClick={() => navigate('/members')}>
+                <Users size={16} /> Manage Members
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                <Calendar size={16} /> Add Event
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* 4 Telemetry Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} className="p-5 sm:p-6 transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <Card key={stat.label} className="p-5 sm:p-6 transition-all hover:-translate-y-1 hover:shadow-card-elevated hover:border-cyan-500/40 group">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wide">{stat.label}</p>
-                    <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{stat.value}</p>
-                    <p className="text-xs text-gray-400 font-medium">
+                    <div className="flex items-center gap-2">
+                      <p className="text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{stat.value}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                       {isLoading ? 'Refreshing...' : stat.subtitle}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-xl ${stat.iconBg} shadow-2xs`}>
+                  <div className={`p-3 rounded-2xl ${stat.iconBg} shadow-sm group-hover:scale-110 transition-transform`}>
                     <Icon size={22} />
                   </div>
                 </div>
@@ -460,15 +503,25 @@ export const DashboardPage = () => {
         <InstitutionEventLeaderboard />
 
         {canManageMembers && (
-          <Card title="Pending Registrations" subtitle="Approve new members">
+          <Card
+            title="Pending Registrations"
+            subtitle="Review and approve new collegiate members"
+            headerAction={
+              report?.pendingMembers?.length ? (
+                <Button variant="outline" size="xs" onClick={() => navigate('/members')}>
+                  View All ({report.pendingMembers.length})
+                </Button>
+              ) : null
+            }
+          >
             {report?.pendingMembers?.length ? (
               <div className="space-y-3">
                 {report.pendingMembers.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between gap-4 border border-gray-200 rounded-lg p-4">
+                  <div key={m.id} className="flex items-center justify-between gap-4 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-cyan-500/30 transition-all bg-white dark:bg-[#0B1326]">
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{m.fullName}</p>
-                      <p className="text-sm text-gray-600 truncate">{m.email}</p>
-                      <p className="text-xs text-gray-500 mt-1">{m.sector} • {m.memberType || 'member'} • {m.status}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{m.fullName}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">{m.email}</p>
+                      <p className="text-[11px] font-mono text-slate-600 dark:text-slate-400 font-medium mt-1">{m.sector} • {m.memberType || 'member'} • {m.status}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
@@ -477,43 +530,49 @@ export const DashboardPage = () => {
                         onClick={() => setConfirmApprove({ id: m.id, name: m.fullName || m.email })}
                         disabled={approvingId === m.id}
                       >
-                        <CheckCircle size={16} /> Approve
+                        <CheckCircle size={15} /> Approve
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => navigate('/members')}>View</Button>
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/members')}>View All Members</Button>
-                </div>
               </div>
             ) : (
-              <p className="text-gray-600 text-center py-6">No pending registrations.</p>
+              <p className="text-slate-600 dark:text-slate-400 font-medium text-center py-8 text-sm">No pending registrations requiring review.</p>
             )}
           </Card>
         )}
 
+        {/* Analytics Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title="Member Growth" subtitle="Last 6 months">
-            <div className="overflow-x-auto">
+          <Card title="Monthly Member Growth" subtitle="Registrations over last 6 months">
+            <div className="overflow-x-auto pt-2">
               <div className="min-w-[400px]">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={report?.memberGrowth || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                    <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
+                    <YAxis allowDecimals={false} stroke="#94A3B8" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(11, 19, 38, 0.9)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        color: '#fff',
+                        fontSize: '12px',
+                      }}
+                    />
                     <Legend />
-                    <Line type="monotone" dataKey="members" stroke="#003D82" name="New Registrations" />
-                    <Line type="monotone" dataKey="active" stroke="#10B981" name="Approved" />
+                    <Line type="monotone" dataKey="members" stroke="#2563EB" strokeWidth={3} dot={{ r: 4 }} name="New Registrations" />
+                    <Line type="monotone" dataKey="active" stroke="#06B6D4" strokeWidth={3} dot={{ r: 4 }} name="Approved Active" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
           </Card>
 
-          <Card title="Revenue by Payment Method">
-            <div className="overflow-x-auto">
+          <Card title="Revenue Distribution" subtitle="Payment methods breakdown">
+            <div className="overflow-x-auto pt-2">
               <div className="min-w-[300px]">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -521,40 +580,39 @@ export const DashboardPage = () => {
                       data={report?.revenueByMethod || []}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
-                      label={({ name, value }: { name: string; value: number }) => `${name} ${value}`}
+                      innerRadius={60}
                       outerRadius={100}
-                      fill="#8884d8"
+                      paddingAngle={4}
+                      labelLine={false}
+                      label={({ name, value }: { name: string; value: number }) => `${name}: ₱${value.toLocaleString()}`}
                       dataKey="value"
                     >
                       {(report?.revenueByMethod || []).map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(11, 19, 38, 0.9)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        color: '#fff',
+                        fontSize: '12px',
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
           </Card>
         </div>
-
-        <Card title="Recent Activity">
-          <div className="space-y-2">
-            <p className="text-gray-600">Dashboard updates live from the database.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/members')}>Members</Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/events')}>Events</Button>
-            </div>
-          </div>
-        </Card>
       </div>
 
       <VerifyActionModal
         isOpen={!!confirmApprove}
         title="Approve Member"
-        message={`Approve ${confirmApprove?.name}? This will activate the member account.`}
-        confirmLabel="Accept"
+        message={`Approve ${confirmApprove?.name}? This will activate the member account and send login details.`}
+        confirmLabel="Accept & Activate"
         confirmVariant="primary"
         onCancel={() => {
           if (approvingId) return;
@@ -569,4 +627,5 @@ export const DashboardPage = () => {
     </MainLayout>
   );
 };
+
 

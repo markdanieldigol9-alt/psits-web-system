@@ -75,64 +75,70 @@ export const OfficersPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {canManageOfficers ? 'Officer Management' : 'Officer List'}
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              {canManageOfficers ? 'Officer Management' : 'Officer Directory'}
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
               {canManageOfficers
-                ? 'Manage organization officers, their positions, and active/inactive status'
-                : 'View-only list of active organization officers.'}
+                ? 'Manage organizational leadership, positions, and executive board appointments'
+                : 'Executive board and regional leadership directory for PSITS Region XII.'}
             </p>
           </div>
           {canManageOfficers && (
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="lg" onClick={() => setIsManagePositionsOpen(true)} className="w-full sm:w-auto">
+              <Button variant="outline" size="md" onClick={() => setIsManagePositionsOpen(true)} className="w-full sm:w-auto">
                 Manage Positions
               </Button>
-              <Button variant="primary" size="lg" onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto">
-                <Plus size={20} />
+              <Button variant="cyber" size="md" onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto">
+                <Plus size={18} />
                 Assign Officer
               </Button>
             </div>
           )}
         </div>
 
-        <select
-          value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value as any);
-            setCurrentPage(1);
-          }}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="all">All Officers</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="past">Past Officers</option>
-        </select>
+        <div className="flex items-center justify-between gap-4">
+          <select
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value as any);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2.5 bg-white dark:bg-[#0B1326] border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+          >
+            <option value="all">All Officers ({officers.length})</option>
+            <option value="active">Active Officers</option>
+            <option value="inactive">Inactive</option>
+            <option value="past">Past Officers / Alumni</option>
+          </select>
+        </div>
 
         <Card>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-slate-50 dark:bg-[#171F33] border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Position</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Sector</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Service Period</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Status</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Position</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sector</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Service Period</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                   {canManageOfficers && (
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Actions</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {paginatedOfficers.map((officer) => (
-                  <tr key={officer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">{officer.fullName || officer.name}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{officer.position}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{officer.sectorDetails || officer.sector}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">
+                  <tr key={officer.id} className="hover:bg-slate-50/80 dark:hover:bg-[#171F33]/60 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{officer.fullName || officer.name}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-medium">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-cyan-300 border border-blue-200/60 dark:border-blue-800/60 text-xs font-semibold">
+                        {officer.position}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">{officer.sectorDetails || officer.sector}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm font-mono">
                       {formatYear(officer.termStart)}{officer.termEnd ? ` - ${formatYear(officer.termEnd)}` : ''}
                     </td>
                     <td className="px-6 py-4">
@@ -151,15 +157,15 @@ export const OfficersPage = () => {
                           className="inline-flex items-center gap-1.5 cursor-pointer group"
                           title={`Click to set status to ${officer.officerStatus === 'active' ? 'Inactive' : 'Active'}`}
                         >
-                          <Badge variant={officer.officerStatus === 'active' ? 'success' : 'error'}>
+                          <Badge variant={officer.officerStatus === 'active' ? 'cyber' : 'error'} dot={true}>
                             {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
                           </Badge>
-                          <span className="text-[11px] text-blue-600 underline opacity-0 group-hover:opacity-100 transition-opacity">
-                            (Set {officer.officerStatus === 'active' ? 'Inactive' : 'Active'})
+                          <span className="text-[11px] text-cyan-600 dark:text-cyan-400 underline opacity-0 group-hover:opacity-100 transition-opacity">
+                            (Toggle)
                           </span>
                         </button>
                       ) : (
-                        <Badge variant={officer.officerStatus === 'active' ? 'success' : officer.officerStatus === 'past' ? 'warning' : 'error'}>
+                        <Badge variant={officer.officerStatus === 'active' ? 'cyber' : officer.officerStatus === 'past' ? 'gold' : 'error'} dot={true}>
                           {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
                         </Badge>
                       )}

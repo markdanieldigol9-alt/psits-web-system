@@ -319,17 +319,17 @@ export const InstitutionEventLeaderboard = () => {
             </div>
 
             {/* Event Selector Dropdown + Refresh */}
-            <div className="flex items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 lg:w-72">
+            <div className="flex items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+              <div className="relative flex-1 lg:w-80 xl:w-96">
                 <select
                   value={selectedEventId}
                   onChange={(e) => handleEventChange(e.target.value)}
                   disabled={isLoading || events.length === 0}
-                  className="w-full px-3.5 py-2.5 bg-white/15 backdrop-blur-md text-white border border-white/25 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer appearance-none pr-8"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-white/15 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 hover:border-white/45 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer appearance-none pr-10 sm:pr-12 shadow-sm transition-all"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
+                    backgroundPosition: 'right 16px center',
                   }}
                 >
                   {events.length === 0 ? (
@@ -338,7 +338,7 @@ export const InstitutionEventLeaderboard = () => {
                     </option>
                   ) : (
                     events.map((evt) => (
-                      <option key={evt.id} value={evt.id} className="text-gray-900 bg-white">
+                      <option key={evt.id} value={evt.id} className="text-gray-900 bg-white font-medium">
                         {evt.title} ({evt.status})
                       </option>
                     ))
@@ -346,16 +346,15 @@ export const InstitutionEventLeaderboard = () => {
                 </select>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => void loadLeaderboard(selectedEventId, true)}
                 disabled={isRefreshing || isLoading}
                 title="Refresh Leaderboard Data"
-                className="bg-white/15 hover:bg-white/25 text-white border-white/25 shrink-0 px-3 py-2.5"
+                className="h-[46px] w-[46px] sm:h-[50px] sm:w-[50px] flex items-center justify-center bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 rounded-xl sm:rounded-2xl shrink-0 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
               >
-                <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
-              </Button>
+                <RefreshCw size={19} className={isRefreshing ? 'animate-spin' : ''} />
+              </button>
             </div>
           </div>
 
@@ -387,78 +386,78 @@ export const InstitutionEventLeaderboard = () => {
         </div>
 
         {/* ── Summary Statistics Cards Grid ──────────────────────── */}
-        <div className="p-5 sm:p-6 bg-slate-50/50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-800">
+        <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-900/40 border-b border-slate-200/80 dark:border-slate-800">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {/* Registered Institutions */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
               <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
                 <Building2 size={22} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 truncate">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                   Registered Institutions
                 </p>
-                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-slate-100 mt-0.5">
+                <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                   {summary.totalInstitutions}
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
                   Schools / Organizations
                 </p>
               </div>
             </div>
 
             {/* Total Registered Participants */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
               <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
                 <Users size={22} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 truncate">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                   Total Participants
                 </p>
-                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-slate-100 mt-0.5">
+                <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                   {summary.totalRegisteredParticipants}
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
                   Registered for this event
                 </p>
               </div>
             </div>
 
             {/* Present in Venue */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
               <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
                 <UserCheck size={22} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 truncate">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                   In Venue (Present)
                 </p>
                 <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {summary.totalInVenue}
-                  <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 ml-1">
+                  <span className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">
                     / {summary.totalRegisteredParticipants}
                   </span>
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
                   {summary.fullyPresentInstitutions} institutions 100% present
                 </p>
               </div>
             </div>
 
             {/* Overall Turnout Rate */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
               <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0">
                 <Award size={22} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 truncate">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                   Venue Turnout
                 </p>
                 <p className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
                   {summary.overallAttendanceRate}%
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
                   Attendance verification rate
                 </p>
               </div>
@@ -467,21 +466,21 @@ export const InstitutionEventLeaderboard = () => {
         </div>
 
         {/* ── Filter and Search Controls ─────────────────────────── */}
-        <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900">
           {/* Search box */}
           <div className="w-full md:w-80 relative">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search school or participant..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 <X size={14} />
               </button>
@@ -490,45 +489,45 @@ export const InstitutionEventLeaderboard = () => {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 shrink-0 mr-1">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 shrink-0 mr-1">
               <Filter size={13} /> Filter:
             </span>
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
                 statusFilter === 'all'
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
               }`}
             >
               All ({data?.leaderboard.length || 0})
             </button>
             <button
               onClick={() => setStatusFilter('all_in_venue')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
                 statusFilter === 'all_in_venue'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 hover:bg-emerald-100'
               }`}
             >
               All in Venue (100%)
             </button>
             <button
               onClick={() => setStatusFilter('partial')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
                 statusFilter === 'partial'
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 hover:bg-amber-100'
               }`}
             >
               Arriving / Partial
             </button>
             <button
               onClick={() => setStatusFilter('not_in_venue')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
                 statusFilter === 'not_in_venue'
-                  ? 'bg-slate-700 text-white shadow-xs'
-                  : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                  ? 'bg-slate-800 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'
               }`}
             >
               Not in Venue
@@ -549,12 +548,12 @@ export const InstitutionEventLeaderboard = () => {
               <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                 <Building2 size={26} />
               </div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 {searchQuery || statusFilter !== 'all'
                   ? 'No matching institutions found'
                   : 'No institutions registered for this event yet'}
               </h3>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md mx-auto mt-1">
                 {searchQuery || statusFilter !== 'all'
                   ? 'Try adjusting your search query or clear the active filter.'
                   : 'Institutions that register participants for this event will automatically show up on this leaderboard.'}
@@ -586,10 +585,10 @@ export const InstitutionEventLeaderboard = () => {
                     key={inst.institutionId}
                     className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
                       inst.allInVenue
-                        ? 'bg-gradient-to-r from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-slate-900 dark:to-emerald-950/10 border-emerald-200/80 dark:border-emerald-800/60 shadow-xs'
+                        ? 'bg-gradient-to-r from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-slate-900 dark:to-emerald-950/10 border-emerald-300 dark:border-emerald-800/60 shadow-xs'
                         : isUserSchool
-                        ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 shadow-xs'
-                        : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 hover:border-gray-200 shadow-card hover:shadow-card-md'
+                        ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-300 dark:border-blue-900 shadow-xs'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-card hover:shadow-card-md'
                     }`}
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -621,21 +620,21 @@ export const InstitutionEventLeaderboard = () => {
                         {/* Text info */}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-base font-bold text-gray-900 dark:text-slate-100 truncate">
+                            <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
                               {inst.institutionName}
                             </h4>
                             {isUserSchool && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                                 Your School
                               </span>
                             )}
                             {inst.allInVenue && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                 <CheckCircle2 size={11} /> All in Venue
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">
+                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5 truncate">
                             {inst.registeredCount} participant{inst.registeredCount !== 1 ? 's' : ''} registered
                             {inst.institutionEmail ? ` • ${inst.institutionEmail}` : ''}
                           </p>
@@ -643,38 +642,38 @@ export const InstitutionEventLeaderboard = () => {
                       </div>
 
                       {/* Right: Attendance Stats + Progress Bar + Action */}
-                      <div className="flex items-center gap-4 sm:gap-6 justify-between md:justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-slate-800">
+                      <div className="flex items-center gap-4 sm:gap-6 justify-between md:justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-slate-800">
                         {/* Numbers & Progress bar */}
                         <div className="flex flex-col items-start md:items-end min-w-[130px] sm:min-w-[160px]">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                               In Venue:
                             </span>
                             <span
                               className={`text-sm font-black ${
                                 inst.allInVenue
-                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  ? 'text-emerald-700 dark:text-emerald-400'
                                   : inst.inVenueCount > 0
-                                  ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-gray-400 dark:text-slate-500'
+                                  ? 'text-amber-700 dark:text-amber-400'
+                                  : 'text-slate-500 dark:text-slate-400'
                               }`}
                             >
                               {inst.inVenueCount} / {inst.registeredCount}
                             </span>
-                            <span className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">
                               ({inst.attendanceRate}%)
                             </span>
                           </div>
 
                           {/* Progress bar */}
-                          <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-slate-800 overflow-hidden mt-1.5 border border-gray-200/50 dark:border-slate-700/50">
+                          <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mt-1.5 border border-slate-300/50 dark:border-slate-700/50">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${
                                 inst.allInVenue
                                   ? 'bg-gradient-to-r from-emerald-500 to-green-400'
                                   : inst.inVenueCount > 0
                                   ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                                  : 'bg-gray-300 dark:bg-slate-700'
+                                  : 'bg-slate-300 dark:bg-slate-700'
                               }`}
                               style={{ width: `${Math.min(100, Math.max(4, inst.attendanceRate))}%` }}
                             />
@@ -686,13 +685,13 @@ export const InstitutionEventLeaderboard = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setActiveInstitution(inst)}
-                          className="shrink-0 flex items-center gap-1.5 text-xs font-semibold"
+                          className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
                           <span>Roster</span>
-                          <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center">
+                          <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center">
                             {inst.participants.length || inst.registeredCount}
                           </span>
-                          <ChevronRight size={14} className="text-gray-400" />
+                          <ChevronRight size={14} className="text-slate-500 dark:text-slate-400" />
                         </Button>
                       </div>
                     </div>
@@ -771,30 +770,30 @@ export const InstitutionEventLeaderboard = () => {
 
             {/* Search inside roster */}
             <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search participant by name or role..."
                 value={participantSearch}
                 onChange={(e) => setParticipantSearch(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
 
             {/* Participants List */}
             {activeInstitution.participants.length === 0 ? (
               <div className="p-8 text-center bg-gray-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                <Users size={28} className="mx-auto mb-2 text-gray-400" />
-                <p className="text-sm font-bold text-gray-800 dark:text-slate-200">
+                <Users size={28} className="mx-auto mb-2 text-slate-400" />
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Bulk Registration ({activeInstitution.registeredCount} seats)
                 </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1 max-w-sm mx-auto">
                   This institution registered with a head count of {activeInstitution.registeredCount} participants.
                   Detailed individual names can be uploaded through the Institution Members module.
                 </p>
               </div>
             ) : filteredParticipants.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 text-xs">
+              <div className="py-8 text-center text-slate-600 dark:text-slate-400 font-medium text-xs">
                 No participants matched &quot;{participantSearch}&quot;.
               </div>
             ) : (
@@ -817,16 +816,16 @@ export const InstitutionEventLeaderboard = () => {
                           className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                             part.checkedIn
                               ? 'bg-emerald-500 text-white shadow-xs'
-                              : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold'
                           }`}
                         >
                           {part.checkedIn ? <Check size={14} strokeWidth={3} /> : part.fullName.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">
+                          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                             {part.fullName}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">
                             {part.position || 'Participant'}
                             {part.contactNumber ? ` • ${part.contactNumber}` : ''}
                           </p>

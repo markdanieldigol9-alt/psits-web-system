@@ -7,7 +7,7 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useTheme } from '@/shared/context/ThemeContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
-import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
+import { validateEmail, validatePhoneNumber, PAYMENT_METHOD_OPTIONS } from '@/shared/utils/helpers';
 import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2, ChevronDown, User, Palette, CreditCard, ShieldCheck } from 'lucide-react';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import { getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
@@ -49,11 +49,13 @@ export const SettingsPage = () => {
     paymaya_qr_code: '',
     bank_transfer_qr_code: '',
     bank_transfer_details: '',
+    cheque_details: '',
+    officer_instructions: '',
     cash_instructions: '',
   });
   const [qrFiles, setQrFiles] = useState<Record<string, File | null>>({});
   const [qrPreviews, setQrPreviews] = useState<Record<string, string>>({});
-  const [activePaymentTab, setActivePaymentTab] = useState<'gcash' | 'paymaya' | 'bank_transfer' | 'cash_officer'>('gcash');
+  const [activePaymentTab, setActivePaymentTab] = useState<'through_officer' | 'bank_transfer' | 'cheque' | 'gcash'>('gcash');
   const [isPaymentSettingsLoading, setIsPaymentSettingsLoading] = useState(false);
   const [paymentSettingsError, setPaymentSettingsError] = useState<string | null>(null);
   const [confirmSave, setConfirmSave] = useState(false);
@@ -270,7 +272,9 @@ export const SettingsPage = () => {
               paymaya_qr_code: data.settings.paymaya_qr_code || '',
               bank_transfer_qr_code: data.settings.bank_transfer_qr_code || '',
               bank_transfer_details: data.settings.bank_transfer_details || '',
-              cash_instructions: data.settings.cash_instructions || '',
+              cheque_details: data.settings.cheque_details || '',
+              officer_instructions: data.settings.officer_instructions || data.settings.cash_instructions || '',
+              cash_instructions: data.settings.officer_instructions || data.settings.cash_instructions || '',
             });
             setQrPreviews({
               gcash: data.settings.gcash_qr_code || '',
@@ -316,6 +320,10 @@ export const SettingsPage = () => {
             updatedSettings[settingKey] = data.url;
           }
         }
+      }
+
+      if (updatedSettings.officer_instructions) {
+        updatedSettings.cash_instructions = updatedSettings.officer_instructions;
       }
 
       const { data: updateRes } = await api.updateSettings(updatedSettings);
@@ -1291,17 +1299,6 @@ export const SettingsPage = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActivePaymentTab('paymaya')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                      activePaymentTab === 'paymaya'
-                        ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    PayMaya / Maya
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setActivePaymentTab('bank_transfer')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                       activePaymentTab === 'bank_transfer'
@@ -1313,14 +1310,25 @@ export const SettingsPage = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActivePaymentTab('cash_officer')}
+                    onClick={() => setActivePaymentTab('cheque')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                      activePaymentTab === 'cash_officer'
+                      activePaymentTab === 'cheque'
                         ? 'border-primary text-primary font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    Cash through Officer
+                    Cheque
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePaymentTab('through_officer')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activePaymentTab === 'through_officer'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Through Officer
                   </button>
                 </div>
 
@@ -1334,6 +1342,9 @@ export const SettingsPage = () => {
                   {activePaymentTab === 'gcash' && (
                     <div>
                       <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">GCash QR Code</label>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                        Upload the official PSITS GCash QR code. Members must upload their transaction receipt and reference number.
+                      </p>
                       <input
                         type="file"
                         accept="image/png, image/jpeg, image/webp"
@@ -1353,32 +1364,13 @@ export const SettingsPage = () => {
                     </div>
                   )}
 
-                  {activePaymentTab === 'paymaya' && (
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">PayMaya / Maya QR Code</label>
-                      <input
-                        type="file"
-                        accept="image/png, image/jpeg, image/webp"
-                        onChange={(e) => handleQrFileSelect('paymaya', e)}
-                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
-                      />
-                      {qrPreviews.paymaya && (
-                        <div className="mt-3">
-                          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview Maya QR Code:</p>
-                          <img
-                            src={qrPreviews.paymaya}
-                            alt="PayMaya / Maya QR Code"
-                            className="h-48 rounded border object-contain bg-white p-2"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {activePaymentTab === 'bank_transfer' && (
                     <div className="space-y-4">
                       <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Bank Transfer QR Code (Optional)</label>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                          Upload the bank QR code (InstaPay/PESONet). Members must upload their bank transfer receipt or deposit slip.
+                        </p>
                         <input
                           type="file"
                           accept="image/png, image/jpeg, image/webp"
@@ -1411,16 +1403,41 @@ export const SettingsPage = () => {
                     </div>
                   )}
 
-                  {activePaymentTab === 'cash_officer' && (
+                  {activePaymentTab === 'cheque' && (
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Cash Payment Instructions</label>
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Cheque Payment Guidelines & Payee Details</label>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                        Specify the exact payee name and guidelines. Members must upload a clear photo or copy of their cheque receipt.
+                      </p>
                       <textarea
                         rows={3}
-                        value={paymentSettings.cash_instructions}
+                        value={paymentSettings.cheque_details}
                         onChange={(e) =>
-                          setPaymentSettings((prev) => ({ ...prev, cash_instructions: e.target.value }))
+                          setPaymentSettings((prev) => ({ ...prev, cheque_details: e.target.value }))
                         }
-                        placeholder="e.g. Hand over payment to your school's authorized PSITS officer or treasurer and ask for the official receipt number."
+                        placeholder="e.g. Please issue cheque payable to: 'Philippine Society of Information Technology Students Region XII'. Remind members to upload their cheque receipt or deposit slip."
+                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {activePaymentTab === 'through_officer' && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Through Officer Guidelines</label>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                        Specify instructions for direct officer collections. Members must upload the Official Receipt (OR) issued by the officer.
+                      </p>
+                      <textarea
+                        rows={3}
+                        value={paymentSettings.officer_instructions}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({
+                            ...prev,
+                            officer_instructions: e.target.value,
+                            cash_instructions: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Hand over payment directly to your school's authorized PSITS officer or treasurer. Ensure you request and upload a copy of your Official Receipt (OR)."
                         className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
                       />
                     </div>
@@ -1555,12 +1572,16 @@ export const SettingsPage = () => {
               setRenewalError('Amount is required.');
               return;
             }
-            if (!renewalForm.referenceNumber.trim()) {
-              setRenewalError('Reference number is required.');
+            if (renewalForm.method === 'gcash' && !renewalForm.referenceNumber.trim()) {
+              setRenewalError('GCash Reference Number is required.');
               return;
             }
             if (!renewalForm.file) {
-              setRenewalError('Transaction proof image is required.');
+              if (renewalForm.method === 'through_officer' || renewalForm.method === 'cash_officer') {
+                setRenewalError('Official Receipt (OR) image is required.');
+              } else {
+                setRenewalError('Receipt image is required.');
+              }
               return;
             }
             setRenewalSubmitting(true);
@@ -1576,7 +1597,7 @@ export const SettingsPage = () => {
                   amount: Number(renewalForm.amount),
                   method: renewalForm.method,
                   paymentMethod: renewalForm.method,
-                  referenceNumber: renewalForm.referenceNumber || undefined,
+                  referenceNumber: renewalForm.referenceNumber.trim() || undefined,
                   proofUrl,
                 });
 
@@ -1615,12 +1636,7 @@ export const SettingsPage = () => {
             <Select
               label="Payment Method"
               required
-              options={[
-                { value: 'gcash', label: 'GCash' },
-                { value: 'paymaya', label: 'PayMaya / Maya' },
-                { value: 'bank_transfer', label: 'Bank Transfer' },
-                { value: 'cash_officer', label: 'Cash through Officer' },
-              ]}
+              options={PAYMENT_METHOD_OPTIONS}
               value={renewalForm.method}
               onChange={(e) => setRenewalForm((p) => ({ ...p, method: e.target.value }))}
             />
@@ -1630,15 +1646,53 @@ export const SettingsPage = () => {
           <PaymentInstructionsCard method={renewalForm.method} />
 
           <Input
-            label="Reference Number"
-            required
+            label={
+              renewalForm.method === 'gcash'
+                ? 'GCash Reference Number'
+                : renewalForm.method === 'cheque'
+                ? 'Cheque Number (Optional)'
+                : renewalForm.method === 'through_officer'
+                ? 'Official Receipt (OR) Number (Optional)'
+                : 'Reference / Transaction ID (Optional)'
+            }
+            required={renewalForm.method === 'gcash'}
             value={renewalForm.referenceNumber}
             onChange={(e) => setRenewalForm((p) => ({ ...p, referenceNumber: e.target.value }))}
-            placeholder="Enter Reference or Receipt Number"
+            placeholder={
+              renewalForm.method === 'gcash'
+                ? 'e.g. 100234981723'
+                : renewalForm.method === 'cheque'
+                ? 'e.g. CHQ-0012398'
+                : renewalForm.method === 'through_officer'
+                ? 'e.g. OR-2026-0045'
+                : 'Enter Reference or Receipt Number'
+            }
+            helperText={
+              renewalForm.method === 'gcash'
+                ? 'Required: Enter the exact reference number from your GCash payment receipt.'
+                : undefined
+            }
           />
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Payment Proof</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
+              {renewalForm.method === 'through_officer'
+                ? 'Upload Official Receipt (OR) *'
+                : renewalForm.method === 'bank_transfer'
+                ? 'Upload Bank Transfer Receipt *'
+                : renewalForm.method === 'cheque'
+                ? 'Upload Cheque Receipt / Copy *'
+                : 'Upload GCash Receipt *'}
+            </label>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+              {renewalForm.method === 'through_officer'
+                ? 'Please upload a clear scan or photo of your PSITS Officer-issued Official Receipt (OR).'
+                : renewalForm.method === 'bank_transfer'
+                ? 'Please upload a screenshot or photo of your bank deposit slip or transfer confirmation receipt.'
+                : renewalForm.method === 'cheque'
+                ? 'Please upload a clear photo or copy of your issued cheque receipt.'
+                : 'Please upload a clear screenshot of your completed GCash payment receipt.'}
+            </p>
             <input
               type="file"
               accept="image/png, image/jpeg, image/webp"
@@ -1647,10 +1701,10 @@ export const SettingsPage = () => {
                 if (!file) return;
                 setRenewalForm((p) => ({ ...p, file, previewUrl: URL.createObjectURL(file) }));
               }}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-slate-100"
             />
             {renewalForm.previewUrl && (
-              <img src={renewalForm.previewUrl} alt="Proof preview" className="mt-2 h-28 rounded border object-contain" />
+              <img src={renewalForm.previewUrl} alt="Proof preview" className="mt-2 h-28 rounded border object-contain bg-white dark:bg-slate-900 p-1" />
             )}
           </div>
 

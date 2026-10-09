@@ -270,9 +270,120 @@ async function bulkCreateInstitutionMembers(req, res) {
       }
     }
 
+    // Billing Calculation (250 per head, 2 free slots discount, partial payment support)
+    const totalHeads = cleanRows.length;
+    const ratePerHead = 250.0;
+    const freeSlots = Math.min(totalHeads, 2);
+    const grossAmount = totalHeads * ratePerHead;
+    const discountAmount = freeSlots * ratePerHead;
+    const netAmount = Math.max(0, grossAmount - discountAmount);
+
+    const billingInput = body.billing || {};
+    const isPartial = Boolean(billingInput.isPartial && Number(billingInput.partialAmount) > 0 && Number(billingInput.partialAmount) < netAmount);
+    const partialAmount = isPartial ? Number(billingInput.partialAmount) : null;
+    const amountPaid = isPartial ? (partialAmount || 0) : netAmount;
+    const remainingBalance = Math.max(0, netAmount - amountPaid);
+    const paymentMethod = String(billingInput.paymentMethod || 'gcash').toLowerCase();
+    const referenceNumber = billingInput.referenceNumber
+      ? String(billingInput.referenceNumber).trim()
+      : `BATCH-REG-${Date.now().toString(36).toUpperCase()}`;
+    const proofUrl = billingInput.proofUrl ? String(billingInput.proofUrl).trim() : null;
+    const billingEventTitle = billingInput.eventTitle || cleanRows[0]?.eventTitle || `Batch Upload (${totalHeads} Members)`;
+
+    const billingBreakdown = {
+      totalHeads,
+      ratePerHead,
+      grossAmount,
+      freeSlots,
+      discountAmount,
+      netAmount,
+      isPartial,
+      partialAmount,
+      amountPaid,
+      remainingBalance,
+      referenceNumber,
+      paymentMethod,
+      date: new Date().toISOString().slice(0, 10),
+    };
+
+    let paymentId = null;
+    try {
+      const [instUserRows] = await pool.execute(
+        'SELECT full_name, sector_details, email FROM users WHERE id = ? LIMIT 1',
+        [institutionUserId]
+      );
+      const instName = instUserRows[0]?.sector_details || instUserRows[0]?.full_name || 'Institution';
+
+      const [columnRows] = await pool.execute('SHOW COLUMNS FROM payments');
+      const columnSet = new Set(columnRows.map((row) => String(row.Field)));
+
+      const payCols = [];
+      const payVals = [];
+      const addPay = (col, val) => {
+        if (columnSet.has(col)) {
+          payCols.push(col);
+          payVals.push(val);
+        }
+      };
+
+      addPay('member_id', institutionUserId);
+      addPay('member_name', instName);
+      addPay('event', billingEventTitle);
+      addPay('amount', amountPaid);
+      addPay('payment_kind', 'institution_batch_registration');
+      addPay('payment_method', paymentMethod);
+      addPay('method', paymentMethod);
+      addPay('reference_number', referenceNumber);
+      addPay('proof_url', proofUrl);
+      addPay('status', netAmount === 0 ? 'verified' : 'pending');
+      addPay('payment_status', isPartial && remainingBalance > 0 ? 'partial' : (netAmount === 0 ? 'paid' : 'pending'));
+      addPay('process_status', netAmount === 0 ? 'verified' : 'submitted');
+      addPay('total_heads', totalHeads);
+      addPay('rate_per_head', ratePerHead);
+      addPay('free_slots', freeSlots);
+      addPay('gross_amount', grossAmount);
+      addPay('discount_amount', discountAmount);
+      addPay('net_amount', netAmount);
+      addPay('partial_amount', partialAmount);
+      addPay('remaining_balance', remainingBalance);
+      addPay('is_partial', isPartial ? 1 : 0);
+      addPay('billing_breakdown_json', JSON.stringify(billingBreakdown));
+
+      if (payCols.length) {
+        const placeholders = payCols.map(() => '?').join(', ');
+        const colNames = payCols.map((c) => `\`${c}\``).join(', ');
+        const [payRes] = await pool.execute(
+          `INSERT INTO payments (${colNames}) VALUES (${placeholders})`,
+          payVals
+        );
+        paymentId = payRes.insertId ? String(payRes.insertId) : null;
+      }
+
+      // Notify Institution and Officers
+      try {
+        await pool.execute(
+          `INSERT INTO notifications (user_id, title, message, type)
+           VALUES (?, ?, ?, 'info')`,
+          [
+            institutionUserId,
+            '📄 Batch Member Billing Generated',
+            `Billing generated for ${totalHeads} member(s). Total: ₱${netAmount.toLocaleString()} (${freeSlots} complimentary free slot(s) applied). Amount: ₱${amountPaid.toLocaleString()}${isPartial ? ` (Partial, Balance: ₱${remainingBalance.toLocaleString()})` : ''}.`,
+          ]
+        );
+      } catch {
+        // ignore notification error
+      }
+    } catch (payErr) {
+      console.error('Batch payment creation warning:', payErr);
+    }
+
     return json(res, 201, {
       success: true,
       inserted: cleanRows.length,
+      billing: {
+        ...billingBreakdown,
+        paymentId,
+      },
     });
   } catch (err) {
     console.error('Error in bulkCreateInstitutionMembers:', err);

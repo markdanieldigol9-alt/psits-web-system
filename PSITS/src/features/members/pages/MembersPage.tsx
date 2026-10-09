@@ -435,18 +435,25 @@ export const MembersPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-900/40 via-cyan-900/20 to-slate-900/60 p-6 rounded-2xl border border-cyan-500/20 shadow-lg backdrop-blur-md">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">Members Management</h1>
-            <p className="mt-2 text-gray-600">Membership Management for individual, institution, and industry profiles.</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="telemetry-chip text-cyan-400 border-cyan-500/30 bg-cyan-950/40">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                ROSTER.DATABASE
+              </span>
+              <span className="text-xs text-slate-400 font-mono">NODE.ACTIVE</span>
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Members Management</h1>
+            <p className="mt-1 text-slate-600 dark:text-slate-400 text-sm">Membership registry for individual, institutional chapters, and industry partner profiles.</p>
           </div>
           {canManageMembers && (
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button variant="secondary" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto">
-                <Download size={20} />
+              <Button variant="outline" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto border-cyan-500/30 hover:border-cyan-400">
+                <Download size={18} />
                 Export CSV
               </Button>
-              <Button variant="primary" size="lg" onClick={() => setIsAddMemberModalOpen(true)} className="w-full sm:w-auto">
+              <Button variant="cyber" size="lg" onClick={() => setIsAddMemberModalOpen(true)} className="w-full sm:w-auto">
                 <Plus size={20} />
                 Add Member
               </Button>
@@ -467,17 +474,24 @@ export const MembersPage = () => {
                   setFilterType(key);
                   setCurrentPage(1);
                 }}
-                className={`rounded-lg border p-4 text-left transition ${
-                  active ? 'border-primary bg-blue-50' : 'border-gray-200 bg-white hover:border-primary/40'
+                className={`card-cyber p-5 text-left transition-all duration-300 relative overflow-hidden group ${
+                  active
+                    ? 'border-cyan-400 bg-cyan-950/30 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400'
+                    : 'hover:border-cyan-500/40'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Member Type</p>
-                    <p className="text-lg font-bold text-gray-900">{meta.label}</p>
-                    <p className="text-sm text-gray-600">{memberTypeCounts[key]} members</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">TIER.{key.toUpperCase()}</span>
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>}
+                    </div>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">{meta.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">{memberTypeCounts[key]} registered profiles</p>
                   </div>
-                  <Icon className="text-primary" size={22} />
+                  <div className={`p-3 rounded-xl border ${active ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' : 'bg-slate-800/40 text-slate-400 border-slate-700/50 group-hover:text-cyan-400 group-hover:border-cyan-500/30'}`}>
+                    <Icon size={22} />
+                  </div>
                 </div>
               </button>
             );

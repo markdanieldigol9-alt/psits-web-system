@@ -5,7 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
@@ -180,7 +180,7 @@ export const EventsPage = () => {
   const [memberPayments, setMemberPayments] = useState<any[]>([]);
 
   const [paymentForm, setPaymentForm] = useState<{
-    method: 'gcash' | 'paypal' | 'paymaya' | 'bank_transfer';
+    method: 'through_officer' | 'bank_transfer' | 'cheque' | 'gcash' | string;
     amount: number;
     referenceNumber: string;
     file: File | null;
@@ -223,7 +223,10 @@ export const EventsPage = () => {
     bannerPreviewUrl: '',
     themeColor: '#2563eb',
     customBadge: '',
+    requiresCoach: false,
   });
+
+  const [selectedCoachMemberId, setSelectedCoachMemberId] = useState<string>('');
 
   const canManageEvents = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const isMember = user?.role === 'member';
@@ -253,9 +256,17 @@ export const EventsPage = () => {
   }, [uniqueInstitutionMembers, selectedInstitutionMemberIds]);
 
   const toggleSelectMember = (id: string) => {
-    setSelectedInstitutionMemberIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelectedInstitutionMemberIds((prev) => {
+      const willSelect = !prev.includes(id);
+      const member = uniqueInstitutionMembers.find((m) => String(m.id) === id);
+      const isCoach = (member?.position || '').toLowerCase().includes('coach');
+      if (willSelect && isCoach && !selectedCoachMemberId) {
+        setSelectedCoachMemberId(id);
+      } else if (!willSelect && selectedCoachMemberId === id) {
+        setSelectedCoachMemberId('');
+      }
+      return willSelect ? [...prev, id] : prev.filter((x) => x !== id);
+    });
     setTeamProfileError(null);
   };
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
@@ -574,6 +585,7 @@ export const EventsPage = () => {
       bannerPreviewUrl: '',
       themeColor: '#2563eb',
       customBadge: '',
+      requiresCoach: false,
     });
     setShowEventModal(true);
   };
@@ -611,6 +623,7 @@ export const EventsPage = () => {
       bannerPreviewUrl: event.bannerUrl || '',
       themeColor: event.themeColor || '#2563eb',
       customBadge: event.customBadge || '',
+      requiresCoach: Boolean(event.requiresCoach ?? event.requires_coach),
     });
     setShowEventModal(true);
   };
@@ -900,6 +913,15 @@ export const EventsPage = () => {
           setTeamProfileError(`Team registration requires at least 2 members (currently selected: ${selectedMembers.length}).`);
           return;
         }
+        if (Boolean(event?.requiresCoach ?? event?.requires_coach)) {
+          const hasCoach = selectedMembers.some(
+            (m) => (m.position || '').toLowerCase().includes('coach') || String(m.id) === String(selectedCoachMemberId)
+          );
+          if (!hasCoach) {
+            setTeamProfileError('This event requires an assigned Coach. Please select a Coach from your institution members.');
+            return;
+          }
+        }
       } else {
         if (['team', 'pair'].includes(mode) && !teamProfileFile) {
           setTeamProfileError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
@@ -981,18 +1003,25 @@ export const EventsPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-900/40 via-cyan-900/20 to-slate-900/60 p-6 rounded-2xl border border-cyan-500/20 shadow-lg backdrop-blur-md">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">Events Management</h1>
-            <p className="text-gray-600 mt-2">Events Activites managements</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="telemetry-chip text-cyan-400 border-cyan-500/30 bg-cyan-950/40">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                MODULE.EVENTS
+              </span>
+              <span className="text-xs text-slate-400 font-mono">SYS.OK</span>
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Events Management</h1>
+            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Conventions, seminars, hackathons, and esports tournament activities.</p>
           </div>
           {canManageEvents && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <Button variant="outline" onClick={() => openTemplateUpload()} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={() => openTemplateUpload()} className="w-full sm:w-auto border-cyan-500/30 hover:border-cyan-400">
                 <Upload size={16} />
                 Upload Spreadsheet Template
               </Button>
-              <Button variant="primary" size="lg" onClick={openCreateModal} className="w-full sm:w-auto">
+              <Button variant="cyber" size="lg" onClick={openCreateModal} className="w-full sm:w-auto">
                 <Plus size={20} />
                 Create Event
               </Button>
@@ -1013,7 +1042,6 @@ export const EventsPage = () => {
             value={filterStatus}
             onChange={(e) => setFilterStatus((e.target as HTMLSelectElement).value as any)}
           />
-
         </div>
 
         <div className="space-y-4">
@@ -1024,7 +1052,7 @@ export const EventsPage = () => {
             const regState = getRegistrationState(event);
             const cardThemeColor = event.themeColor || '#2563eb';
             return (
-              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all border-l-4" style={{ borderLeftColor: cardThemeColor }}>
+              <Card key={event.id} variant="cyber" className="overflow-hidden transition-all duration-300 hover:border-cyan-500/40 hover:shadow-cyan-500/10 border-l-4" style={{ borderLeftColor: cardThemeColor }}>
                 {event.bannerUrl && (
                   <div className="w-full h-44 sm:h-52 bg-gray-100 relative overflow-hidden border-b border-gray-200">
                     <img
@@ -1072,6 +1100,11 @@ export const EventsPage = () => {
                         <Badge variant={['competition', 'contest', 'hackathon'].includes(event.eventType) ? 'error' : 'info'}>
                           {getCategoryLabel(event.eventType)}
                         </Badge>
+                      )}
+                      {event.requiresCoach && (
+                        <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-indigo-200">
+                          <UserCheck size={12} /> Coach Required
+                        </span>
                       )}
                       {/* 2-Phase Lifecycle Badge */}
                       {event.status === 'upcoming' && (
@@ -1369,6 +1402,7 @@ export const EventsPage = () => {
                 bannerUrl: finalBannerUrl,
                 themeColor: formData.themeColor || '#2563eb',
                 customBadge: formData.customBadge.trim() || null,
+                requiresCoach: formData.requiresCoach,
               });
               setConfirmSaveEvent(true);
             })();
@@ -1412,6 +1446,25 @@ export const EventsPage = () => {
                 value={formData.description}
                 onChange={(e) => setFormData((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))}
               />
+
+              {/* Coach Requirement Checkbox Button */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <UserCheck size={18} className="text-blue-600 shrink-0" />
+                  <div>
+                    <span className="text-sm font-bold text-gray-900 block">Require Coach for this Event</span>
+                    <span className="text-xs text-gray-500">Check if institutions must designate an official Coach from their roster during registration.</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="requiresCoachTab"
+                  checked={formData.requiresCoach}
+                  onChange={(e) => setFormData((p) => ({ ...p, requiresCoach: e.target.checked }))}
+                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer shrink-0"
+                />
+              </div>
+
               <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Trophy size={18} className="text-purple-600" />
@@ -1870,9 +1923,16 @@ export const EventsPage = () => {
               </div>
             </div>
 
-            <div className="text-sm text-gray-700">
-              <span className="font-semibold text-gray-900">Registration Mode:</span>{' '}
-              {String(detailsEvent.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+              <div>
+                <span className="font-semibold text-gray-900">Registration Mode:</span>{' '}
+                {String(detailsEvent.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}
+              </div>
+              {detailsEvent.requiresCoach && (
+                <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-indigo-200">
+                  <UserCheck size={12} /> Coach Required
+                </span>
+              )}
             </div>
 
             {detailsEvent.description && (
@@ -2261,6 +2321,64 @@ export const EventsPage = () => {
 
                     {isInstitution && registrationSource === 'select' ? (
                       <div className="space-y-3">
+                        {/* Event Coach Selection (when requiresCoach is true) */}
+                        {detailsEvent.requiresCoach && (
+                          <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <UserCheck size={17} className="text-indigo-600 shrink-0" />
+                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900">
+                                  Event Coach Required
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800">
+                                Official Coach
+                              </span>
+                            </div>
+                            <p className="text-xs text-indigo-900 leading-relaxed">
+                              This event requires an assigned Coach. Select your designated Coach from your institution members below:
+                            </p>
+
+                            <div className="space-y-2">
+                              <select
+                                value={selectedCoachMemberId}
+                                onChange={(e) => {
+                                  const coachId = e.target.value;
+                                  setSelectedCoachMemberId(coachId);
+                                  if (coachId && !selectedInstitutionMemberIds.includes(coachId)) {
+                                    setSelectedInstitutionMemberIds((prev) => [...prev, coachId]);
+                                  }
+                                  setTeamProfileError(null);
+                                }}
+                                className="w-full text-xs rounded-lg border border-indigo-300 bg-white px-3 py-2 text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-medium"
+                              >
+                                <option value="">-- Choose Coach from Institution Members --</option>
+                                {uniqueInstitutionMembers.map((m) => {
+                                  const isCoachPos = (m.position || '').toLowerCase().includes('coach');
+                                  return (
+                                    <option key={m.id} value={String(m.id)}>
+                                      {isCoachPos ? '⭐ [COACH] ' : ''}{m.fullName} ({m.position || 'Member'}) {m.email ? `• ${m.email}` : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+
+                              {selectedCoachMemberId ? (
+                                <div className="flex items-center gap-2 text-xs text-indigo-800 font-semibold bg-indigo-100/80 px-2.5 py-1.5 rounded-lg border border-indigo-200">
+                                  <CheckCircle size={14} className="text-indigo-600 shrink-0" />
+                                  <span>
+                                    Designated Coach: <strong>{uniqueInstitutionMembers.find((m) => String(m.id) === String(selectedCoachMemberId))?.fullName || 'Selected Member'}</strong>
+                                  </span>
+                                </div>
+                              ) : (
+                                <p className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
+                                  ⚠️ Please select an official Coach for this event.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between gap-2">
                           <div className="relative flex-1">
                             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -2316,6 +2434,7 @@ export const EventsPage = () => {
                           <div className="max-h-56 overflow-y-auto space-y-1.5 rounded-lg border border-gray-200 bg-white p-2">
                             {filteredInstitutionMembers.map((member) => {
                               const isSelected = selectedInstitutionMemberIds.includes(String(member.id));
+                              const isCoach = (member.position || '').toLowerCase().includes('coach');
                               return (
                                 <div
                                   key={member.id}
@@ -2341,7 +2460,12 @@ export const EventsPage = () => {
                                       </p>
                                     </div>
                                   </div>
-                                  <span className="shrink-0 text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                  <span className={`shrink-0 text-[10px] uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
+                                    isCoach
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {isCoach && <UserCheck size={11} />}
                                     {member.position || 'Member'}
                                   </span>
                                 </div>
@@ -2375,6 +2499,13 @@ export const EventsPage = () => {
                                     '✓ Ready to register'
                                   )}
                                 </p>
+                                {detailsEvent.requiresCoach && (
+                                  <p className="text-[11px] font-semibold text-indigo-700 mt-0.5">
+                                    {selectedMembers.some((m) => (m.position || '').toLowerCase().includes('coach') || String(m.id) === String(selectedCoachMemberId))
+                                      ? '✓ Official Coach designated'
+                                      : '⚠️ Coach required: Please select a member with position Coach'}
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <button
@@ -2770,12 +2901,16 @@ export const EventsPage = () => {
               setPaymentError(`Amount cannot exceed the remaining balance of PHP ${stats.remainingBalance.toLocaleString()}.`);
               return;
             }
-            if (!paymentForm.referenceNumber.trim()) {
-              setPaymentError('Please enter the transaction reference number.');
+            if (!paymentForm.file) {
+              if (paymentForm.method === 'through_officer') {
+                setPaymentError('Please upload an Official Receipt (OR) photo or scan.');
+              } else {
+                setPaymentError('Please upload a screenshot/photo of your payment receipt.');
+              }
               return;
             }
-            if (!paymentForm.file) {
-              setPaymentError('Please upload a screenshot/photo of the transaction.');
+            if (paymentForm.method === 'gcash' && !paymentForm.referenceNumber.trim()) {
+              setPaymentError('Please enter the GCash transaction reference number.');
               return;
             }
             setConfirmPaymentSubmit(true);
@@ -2797,10 +2932,10 @@ export const EventsPage = () => {
             <Select
               label="Payment Method"
               options={[
-                { value: 'gcash', label: 'GCash' },
-                { value: 'paymaya', label: 'PayMaya' },
-                { value: 'paypal', label: 'PayPal' },
+                { value: 'through_officer', label: 'Through Officer' },
                 { value: 'bank_transfer', label: 'Bank Transfer' },
+                { value: 'cheque', label: 'Cheque' },
+                { value: 'gcash', label: 'GCash' },
               ]}
               value={paymentForm.method}
               onChange={(e) => setPaymentForm((p) => ({ ...p, method: (e.target as HTMLSelectElement).value as any }))}
@@ -2814,12 +2949,33 @@ export const EventsPage = () => {
             />
             <div className="md:col-span-2">
               <Input
-                label="Reference Number"
+                label={
+                  paymentForm.method === 'gcash'
+                    ? 'GCash Reference Number'
+                    : paymentForm.method === 'through_officer'
+                    ? 'Official Receipt (OR) Number (optional)'
+                    : paymentForm.method === 'bank_transfer'
+                    ? 'Bank Reference / Trace Number (optional)'
+                    : 'Cheque Number (optional)'
+                }
                 type="text"
                 value={paymentForm.referenceNumber}
                 onChange={(e) => setPaymentForm((p) => ({ ...p, referenceNumber: (e.target as HTMLInputElement).value }))}
-                placeholder="Enter transaction reference number"
-                required
+                placeholder={
+                  paymentForm.method === 'gcash'
+                    ? 'Enter 13-digit GCash reference number'
+                    : paymentForm.method === 'through_officer'
+                    ? 'e.g. OR-2026-0042'
+                    : paymentForm.method === 'bank_transfer'
+                    ? 'e.g. BNK-837492'
+                    : 'e.g. CHQ-0012394'
+                }
+                required={paymentForm.method === 'gcash'}
+                helperText={
+                  paymentForm.method === 'gcash'
+                    ? 'Required: Enter the reference number from your GCash receipt.'
+                    : undefined
+                }
               />
             </div>
           </div>
@@ -2828,7 +2984,24 @@ export const EventsPage = () => {
           <PaymentInstructionsCard method={paymentForm.method} />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Screenshot / Photo</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              {paymentForm.method === 'through_officer'
+                ? 'Official Receipt (OR) Photo / Scan *'
+                : paymentForm.method === 'bank_transfer'
+                ? 'Bank Transfer Receipt / Deposit Slip *'
+                : paymentForm.method === 'cheque'
+                ? 'Cheque Receipt / Copy *'
+                : 'GCash Transaction Receipt / Screenshot *'}
+            </label>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+              {paymentForm.method === 'through_officer'
+                ? 'Please upload a clear photo or scanned image of the Official Receipt (OR) issued by the PSITS officer.'
+                : paymentForm.method === 'bank_transfer'
+                ? 'Please upload your bank deposit slip or mobile banking transfer confirmation receipt.'
+                : paymentForm.method === 'cheque'
+                ? 'Please upload a clear photo of the cheque or bank deposit receipt.'
+                : 'Please upload the full transaction receipt or screenshot from your GCash app.'}
+            </p>
             <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-primary px-4 py-2 text-primary hover:bg-blue-50">
               <Upload size={16} /> Choose File
               <input

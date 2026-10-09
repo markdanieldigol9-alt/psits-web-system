@@ -36,6 +36,7 @@ function toEventDto(row) {
     bannerUrl: row.banner_url || null,
     themeColor: row.theme_color || '#2563eb',
     customBadge: row.custom_badge || null,
+    requiresCoach: Boolean(row.requires_coach),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -160,10 +161,11 @@ async function createEvent(req, res) {
   const bannerUrl = body.bannerUrl ? String(body.bannerUrl).trim() : null;
   const themeColor = body.themeColor ? String(body.themeColor).trim() : '#2563eb';
   const customBadge = body.customBadge ? String(body.customBadge).trim() : null;
+  const requiresCoach = Boolean(body.requiresCoach);
 
   const [result] = await pool.execute(
-    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, event_type, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, banner_url, theme_color, custom_badge, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, event_type, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, banner_url, theme_color, custom_badge, requires_coach, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       title,
       description,
@@ -185,6 +187,7 @@ async function createEvent(req, res) {
       bannerUrl,
       themeColor,
       customBadge,
+      requiresCoach ? 1 : 0,
       req.user?.id || null,
     ]
   );
@@ -365,6 +368,9 @@ async function updateEvent(req, res) {
   }
   if (body.customBadge !== undefined) {
     sets.push('custom_badge = ?'); params.push(body.customBadge ? String(body.customBadge).trim() : null);
+  }
+  if (body.requiresCoach !== undefined) {
+    sets.push('requires_coach = ?'); params.push(Boolean(body.requiresCoach) ? 1 : 0);
   }
 
   const hasExplicitStatus = typeof body.status === 'string' && allowedStatus.includes(body.status);

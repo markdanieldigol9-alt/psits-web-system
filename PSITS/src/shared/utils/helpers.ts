@@ -73,3 +73,21 @@ export const groupBy = <T,>(array: T[], key: keyof T): Record<string, T[]> => {
     return result;
   }, {} as Record<string, T[]>);
 };
+
+export const PAYMENT_METHOD_OPTIONS: { value: string; label: string }[] = [
+  { value: 'through_officer', label: 'Through Officer' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'gcash', label: 'GCash' },
+];
+
+export const formatPaymentMethod = (method: string): string => {
+  if (!method) return '-';
+  const m = String(method).toLowerCase();
+  if (m === 'through_officer' || m === 'cash_officer' || m === 'officer') return 'Through Officer';
+  if (m === 'bank_transfer') return 'Bank Transfer';
+  if (m === 'cheque' || m === 'check') return 'Cheque';
+  if (m === 'gcash') return 'GCash';
+  if (m === 'paymaya') return 'PayMaya';
+  return method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};

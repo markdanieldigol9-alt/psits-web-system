@@ -65,7 +65,7 @@ export const Modal = ({
                 {title}
               </h2>
               {subtitle && (
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{subtitle}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mt-1">{subtitle}</p>
               )}
             </div>
 
@@ -73,7 +73,7 @@ export const Modal = ({
               <button
                 onClick={onClose}
                 aria-label="Close modal"
-                className="shrink-0 p-1.5 text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors mt-0.5"
+                className="shrink-0 p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors mt-0.5"
               >
                 <X size={18} />
               </button>
@@ -157,7 +157,7 @@ export const LoadingSpinner = ({ size = 'md', fullPage = false, label }: Loading
       <div
         className={`animate-spin border-blue-600 dark:border-blue-400 border-t-transparent rounded-full ${sizeClasses[size]}`}
       />
-      {label && <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">{label}</p>}
+      {label && <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{label}</p>}
     </div>
   );
 
@@ -256,32 +256,48 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
 // ─── Badge (Common) ───────────────────────────────────────────
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'cyber' | 'gold';
   className?: string;
+  dot?: boolean;
 }
 
-export const Badge = ({ children, variant = 'primary', className = '' }: BadgeProps) => {
+export const Badge = ({ children, variant = 'primary', className = '', dot = false }: BadgeProps) => {
   const variantClasses = {
     primary: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/70',
+    secondary: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
     success: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70',
     warning: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/70',
     error: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/70',
     info: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70',
+    cyber: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-800/70 font-mono tracking-wide',
+    gold: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-700/60 font-medium',
+  };
+
+  const dotColors: Record<string, string> = {
+    primary: 'bg-blue-500',
+    secondary: 'bg-slate-400',
+    success: 'bg-emerald-500 animate-pulse',
+    warning: 'bg-amber-500',
+    error: 'bg-rose-500',
+    info: 'bg-sky-500',
+    cyber: 'bg-cyan-400 animate-pulse',
+    gold: 'bg-amber-400',
   };
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
         variantClasses[variant] || variantClasses.primary
       } ${className}`}
     >
+      {dot && <span className={`w-1.5 h-1.5 rounded-full ${dotColors[variant] || 'bg-current'} shrink-0`} />}
       {children}
     </span>
   );
 };
 
 // ─── StatusBadge ──────────────────────────────────────────────
-type StatusBadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand';
+type StatusBadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand' | 'cyber' | 'gold';
 
 const statusToneClasses: Record<StatusBadgeTone, string> = {
   neutral: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-slate-700',
@@ -290,6 +306,18 @@ const statusToneClasses: Record<StatusBadgeTone, string> = {
   danger: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/70',
   info: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70',
   brand: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/70',
+  cyber: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-800/70 font-mono tracking-wide',
+  gold: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-700/60 font-medium',
+};
+
+const statusToneDotClasses: Partial<Record<StatusBadgeTone, string>> = {
+  success: 'bg-emerald-500 animate-pulse',
+  warning: 'bg-amber-500',
+  danger: 'bg-rose-500',
+  info: 'bg-sky-500',
+  brand: 'bg-blue-500',
+  cyber: 'bg-cyan-400 animate-pulse',
+  gold: 'bg-amber-400',
 };
 
 function normalizeStatus(value: unknown) {
@@ -303,12 +331,13 @@ function getStatusTone(status: string): StatusBadgeTone {
     case 'rejected': case 'inactive': return 'danger';
     case 'suspended': return 'warning';
     case 'banned': return 'danger';
-    case 'ongoing': case 'registration_open': return 'info';
+    case 'ongoing': case 'registration_open': return 'cyber';
     case 'registration_closed': case 'completed': return 'neutral';
-    case 'draft': case 'published': return 'brand';
+    case 'draft': return 'neutral';
+    case 'published': return 'brand';
     case 'cancelled': return 'danger';
     case 'scheduled': return 'brand';
-    case 'live': return 'info';
+    case 'live': return 'cyber';
     case 'ended': return 'neutral';
     default: return 'neutral';
   }
@@ -322,17 +351,19 @@ interface StatusBadgeProps {
   status: string;
   label?: string;
   className?: string;
+  dot?: boolean;
 }
 
-export const StatusBadge = ({ status, label, className = '' }: StatusBadgeProps) => {
+export const StatusBadge = ({ status, label, className = '', dot = true }: StatusBadgeProps) => {
   const normalized = normalizeStatus(status);
   const tone = getStatusTone(normalized);
   const isBanned = normalized === 'banned';
+  const dotColor = statusToneDotClasses[tone];
 
   return (
     <span
       className={[
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide select-none',
         statusToneClasses[tone],
         isBanned ? 'bg-gray-900 text-gray-100 border-gray-800 dark:bg-gray-950 dark:text-gray-200' : '',
         className,
@@ -340,6 +371,7 @@ export const StatusBadge = ({ status, label, className = '' }: StatusBadgeProps)
         .filter(Boolean)
         .join(' ')}
     >
+      {dot && dotColor && <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`} />}
       {label || formatStatusLabel(normalized)}
     </span>
   );
@@ -361,9 +393,9 @@ export const EmptyState = ({ title, description, action, icon }: EmptyStateProps
           {icon}
         </div>
       )}
-      <p className="text-sm font-bold text-gray-800 dark:text-slate-200">{title}</p>
+      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</p>
       {description && (
-        <p className="mt-1.5 text-sm text-gray-400 dark:text-slate-500 max-w-sm mx-auto leading-relaxed">{description}</p>
+        <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto leading-relaxed">{description}</p>
       )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>

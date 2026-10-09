@@ -100,6 +100,7 @@ export interface Event {
   bannerUrl?: string;
   themeColor?: string;
   customBadge?: string;
+  requiresCoach?: boolean;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -116,7 +117,7 @@ export interface EventRegistration {
 }
 
 // Payment Types
-export type PaymentMethod = 'gcash' | 'paypal' | 'paymaya' | 'bank_transfer';
+export type PaymentMethod = 'through_officer' | 'bank_transfer' | 'cheque' | 'gcash' | 'cash_officer' | 'paymaya' | 'paypal' | string;
 export type PaymentStatus = 'pending' | 'verified' | 'rejected';
 
 export interface Payment {

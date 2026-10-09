@@ -434,44 +434,57 @@ export const AnnouncementsPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">Announcements</h1>
-            <p className="text-gray-600 mt-2">
-              {isMember ? 'View published system announcements.' : 'Manage system announcements'}
-            </p>
+        {/* Module Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-obsidian-card via-obsidian-surface to-obsidian-card border border-cyber-cyan/20 p-6 shadow-glow-sm">
+          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-cyber-cyan/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="telemetry-chip font-mono text-[11px] text-cyber-cyan">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse" />
+                  COMMS.DISPATCH
+                </span>
+                <span className="text-xs text-slate-500 font-mono">BROADCAST_FEED</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
+                Official Announcements
+              </h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                {isMember ? 'Stay updated with verified college broadcasts, memorandums, and urgent notices.' : 'Publish official notices, broadcast updates to collegiate tiers, and manage comms.'}
+              </p>
+            </div>
+            {canCreateAnnouncements && (
+              <Button
+                variant="cyber"
+                size="lg"
+                onClick={() => {
+                  resetCreateAnnouncementForm();
+                  setShowModal(true);
+                }}
+                className="w-full sm:w-auto font-medium"
+              >
+                <Plus size={18} />
+                New Announcement
+              </Button>
+            )}
           </div>
-          {canCreateAnnouncements && (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => {
-                resetCreateAnnouncementForm();
-                setShowModal(true);
-              }}
-              className="w-full sm:w-auto"
-            >
-              <Plus size={20} />
-              New Announcement
-            </Button>
-          )}
         </div>
 
         {/* Filter */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-obsidian-card/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
           {isMember ? (
-            <div className="inline-flex rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
-              Showing: Published announcements for members
+            <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              FEED: VERIFIED_MEMBER_BROADCASTS
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 w-full justify-between">
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                className="px-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-800 dark:text-slate-200 cursor-pointer"
               >
-                <option value="all">Active Announcements</option>
+                <option value="all">All Active Announcements</option>
                 <option value="published">Published</option>
                 <option value="draft">Draft</option>
                 <option value="archived">Archived (3+ Months)</option>
@@ -483,8 +496,9 @@ export const AnnouncementsPage = () => {
                   size="sm"
                   onClick={() => void handleTriggerArchive()}
                   title="Scan and auto-archive announcements and forum posts older than 3 months"
+                  className="text-xs"
                 >
-                  <Archive size={16} /> Run 3-Month Archive Check
+                  <Archive size={14} /> Run 3-Month Archive Check
                 </Button>
               )}
             </div>
@@ -494,18 +508,18 @@ export const AnnouncementsPage = () => {
         {/* Announcements List */}
         <div className="space-y-4">
           {filteredAnnouncements.map((announcement) => (
-            <Card key={announcement.id} className="p-6">
+            <div key={announcement.id} className="card-cyber p-6 bg-white dark:bg-obsidian-card/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300 hover:border-cyber-blue/40">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyber-blue to-cyber-cyan text-sm font-bold text-white shadow-glow-sm">
                     {getInitials(announcement.postedBy?.name || 'PSITS')}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-gray-900">{announcement.title}</h3>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {announcement.postedBy?.name || 'PSITS'}
+                    <h3 className="text-lg font-bold font-display text-slate-900 dark:text-white">{announcement.title}</h3>
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                      {announcement.postedBy?.name || 'PSITS Officer'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                       Posted on {announcement.date}
                     </p>
                   </div>
@@ -633,7 +647,7 @@ export const AnnouncementsPage = () => {
                   )}
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
 import { getUserInterfaceKey, getUserInterfaceLabel, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
@@ -261,6 +261,7 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
 export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
   const { user } = useAuth();
   const location = useLocation();
+  const [now] = useState(() => Date.now());
 
   const groupsToDisplay = useMemo(() => {
     if (!user) return [];
@@ -277,7 +278,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
 
     const isMember = user.role === 'member';
     const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;
-    const isExpired = isMember && expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < Date.now();
+    const isExpired = isMember && expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < now;
 
     if (!isExpired) return groups;
 
@@ -285,7 +286,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
     return groups
       .map((g) => ({ ...g, items: g.items.filter((i) => allowedHrefs.includes(i.href)) }))
       .filter((g) => g.items.length > 0);
-  }, [user]);
+  }, [user, now]);
 
   if (!user) return null;
 
@@ -314,7 +315,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tracking-tight">PSITS</span>
-            <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium tracking-wide">Web System</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide">Web System</span>
           </div>
         </div>
 
@@ -323,7 +324,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
           {groupsToDisplay.map((group, gi) => (
             <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
               {/* Group label */}
-              <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-600">
+              <p className="px-3 mb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {group.group}
               </p>
 
@@ -339,10 +340,10 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                     key={item.href}
                     to={item.href}
                     onClick={onClose}
-                    className={`group flex items-center justify-between px-3 py-2 rounded-xl mb-0.5 text-sm font-medium transition-all duration-150 ${
+                    className={`group flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition-all duration-150 ${
                       isActive
-                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 font-semibold shadow-[inset_3px_0_0_#2563EB]'
-                        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800/60 hover:text-gray-900 dark:hover:text-slate-100'
+                        ? 'bg-gradient-to-r from-blue-50 to-cyan-50/50 dark:from-blue-950/60 dark:to-cyan-950/30 text-blue-700 dark:text-cyan-300 font-bold shadow-xs border-l-[3px] border-l-cyan-500 dark:border-l-cyan-400'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -350,14 +351,14 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                         size={17}
                         className={`shrink-0 transition-colors ${
                           isActive
-                            ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-300'
+                            ? 'text-blue-600 dark:text-cyan-400'
+                            : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                         }`}
                       />
                       <span className="truncate">{item.label}</span>
                     </div>
                     {isActive && (
-                      <ChevronRight size={13} className="text-blue-400 dark:text-blue-500 shrink-0" />
+                      <ChevronRight size={14} className="text-cyan-500 dark:text-cyan-400 shrink-0" />
                     )}
                   </Link>
                 );
@@ -366,8 +367,8 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
           ))}
         </nav>
 
-        {/* ── User footer ───────────────────────── */}
-        <div className="shrink-0 border-t border-gray-100 dark:border-slate-800/60 p-3">
+        {/* ── User footer with Node Telemetry ──────────────── */}
+        <div className="shrink-0 border-t border-gray-100 dark:border-slate-800/80 p-3 space-y-2">
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors cursor-default">
             <div className="relative shrink-0">
               {user?.avatarUrl ? (
@@ -377,7 +378,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                   className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-slate-700"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-xs font-bold shadow-sm">
                   {initial}
                 </div>
               )}
@@ -387,10 +388,18 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
               <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 truncate leading-tight">
                 {getUserDisplayName(user)}
               </span>
-              <span className="text-[10px] text-gray-400 dark:text-slate-500 capitalize truncate leading-tight mt-0.5">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize truncate leading-tight mt-0.5">
                 {getUserInterfaceLabel(user)}
               </span>
             </div>
+          </div>
+
+          <div className="px-2 py-1 flex items-center justify-between text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              ONLINE
+            </span>
+            <span>NODE-MNL-01</span>
           </div>
         </div>
       </aside>

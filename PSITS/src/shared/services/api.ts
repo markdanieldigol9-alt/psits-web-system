@@ -501,8 +501,11 @@ class ApiService {
     return this.client.get('/institution-members', { params: filters });
   }
 
-  bulkUploadInstitutionMembers(members: any[]) {
-    return this.client.post('/institution-members/bulk', { members });
+  bulkUploadInstitutionMembers(payload: { members: any[]; billing?: any } | any[]) {
+    if (Array.isArray(payload)) {
+      return this.client.post('/institution-members/bulk', { members: payload });
+    }
+    return this.client.post('/institution-members/bulk', payload);
   }
 
   approveInstitutionMember(id: string, data: any) {
