@@ -7,7 +7,7 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useTheme } from '@/shared/context/ThemeContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
-import { validateEmail, validatePhoneNumber, PAYMENT_METHOD_OPTIONS } from '@/shared/utils/helpers';
+import { validateEmail, validatePhoneNumber, PAYMENT_METHOD_OPTIONS, resolveImageUrl } from '@/shared/utils/helpers';
 import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2, ChevronDown, User, Palette, CreditCard, ShieldCheck } from 'lucide-react';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import { getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
@@ -1355,7 +1355,7 @@ export const SettingsPage = () => {
                         <div className="mt-3">
                           <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview GCash QR Code:</p>
                           <img
-                            src={qrPreviews.gcash}
+                            src={resolveImageUrl(qrPreviews.gcash)}
                             alt="GCash QR Code"
                             className="h-48 rounded border object-contain bg-white p-2"
                           />
@@ -1381,7 +1381,7 @@ export const SettingsPage = () => {
                           <div className="mt-3">
                             <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview Bank QR Code:</p>
                             <img
-                              src={qrPreviews.bank_transfer}
+                              src={resolveImageUrl(qrPreviews.bank_transfer)}
                               alt="Bank Transfer QR Code"
                               className="h-48 rounded border object-contain bg-white p-2"
                             />

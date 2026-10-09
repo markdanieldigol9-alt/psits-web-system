@@ -91,3 +91,35 @@ export const formatPaymentMethod = (method: string): string => {
   if (m === 'paymaya') return 'PayMaya';
   return method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
+
+export const resolveImageUrl = (url?: string | null): string => {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (!trimmed) return '';
+
+  // Already a full or embedded URL
+  if (
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://')
+  ) {
+    return trimmed;
+  }
+
+  // Determine production/development backend origin
+  const envApiUrl = (import.meta as any)?.env?.VITE_API_URL || (globalThis as any).__VITE_API_URL__ || '';
+  let serverBase = envApiUrl ? String(envApiUrl).replace(/\/api\/?$/, '') : '';
+
+  // In production (when not on localhost), ensure we point to the Render backend domain if relative
+  if (!serverBase && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    serverBase = 'https://psits-web-system.onrender.com';
+  }
+
+  if (serverBase) {
+    return trimmed.startsWith('/') ? `${serverBase}${trimmed}` : `${serverBase}/${trimmed}`;
+  }
+
+  return trimmed;
+};
+

@@ -620,10 +620,15 @@ async function ensureSettingsTable(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS settings (
       key_name VARCHAR(191) NOT NULL,
-      value_text TEXT NULL,
+      value_text LONGTEXT NULL,
       PRIMARY KEY (key_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+  try {
+    await pool.query(`ALTER TABLE settings MODIFY COLUMN value_text LONGTEXT NULL`);
+  } catch {
+    // ignore
+  }
   const [existing] = await pool.execute(
     'SELECT key_name FROM settings WHERE key_name = ? LIMIT 1',
     ['gcash_qr_code']

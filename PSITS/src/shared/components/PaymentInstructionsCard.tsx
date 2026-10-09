@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '@/shared/services/api';
+import { resolveImageUrl } from '@/shared/utils/helpers';
 import { QrCode, Building2, Wallet, Banknote, ShieldAlert, FileText, CheckCircle2 } from 'lucide-react';
+
 
 export interface PaymentSettingsData {
   gcash_qr_code?: string;
@@ -87,7 +89,7 @@ export const PaymentInstructionsCard = ({
           {settings?.gcash_qr_code ? (
             <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
               <img
-                src={settings.gcash_qr_code}
+                src={resolveImageUrl(settings.gcash_qr_code)}
                 alt="GCash QR Code"
                 className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
               />
@@ -120,7 +122,7 @@ export const PaymentInstructionsCard = ({
           {settings?.bank_transfer_qr_code && (
             <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
               <img
-                src={settings.bank_transfer_qr_code}
+                src={resolveImageUrl(settings.bank_transfer_qr_code)}
                 alt="Bank Transfer QR Code"
                 className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
               />
@@ -216,7 +218,7 @@ export const PaymentInstructionsCard = ({
           {settings?.paymaya_qr_code ? (
             <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
               <img
-                src={settings.paymaya_qr_code}
+                src={resolveImageUrl(settings.paymaya_qr_code)}
                 alt="PayMaya / Maya QR Code"
                 className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
               />

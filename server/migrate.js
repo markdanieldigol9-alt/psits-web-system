@@ -1337,10 +1337,17 @@ async function migrate() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS settings (
       key_name VARCHAR(191) NOT NULL,
-      value_text TEXT NULL,
+      value_text LONGTEXT NULL,
       PRIMARY KEY (key_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+
+  try {
+    await pool.query(`ALTER TABLE settings MODIFY COLUMN value_text LONGTEXT NULL`);
+  } catch {
+    // ignore
+  }
+
 
   // Create notifications table for system alerts and in-app member/admin communications
   await pool.query(`
