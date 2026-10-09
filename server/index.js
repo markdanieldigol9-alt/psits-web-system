@@ -369,14 +369,17 @@ app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'ad
     return res.status(400).json({ success: false, message: 'Image is required and must be <= 8MB.' });
   }
 
-  const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
-  const dir = path.join(__dirname, 'uploads', 'qr-codes');
-  await fs.mkdir(dir, { recursive: true });
+  try {
+    const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+    const dir = path.join(__dirname, 'uploads', 'qr-codes');
+    await fs.mkdir(dir, { recursive: true });
 
-  const filename = `qr-code-${Date.now()}.${ext}`;
-  await fs.writeFile(path.join(dir, filename), buffer);
-
-  return res.status(201).json({ success: true, url: `/uploads/qr-codes/${filename}` });
+    const filename = `qr-code-${Date.now()}.${ext}`;
+    await fs.writeFile(path.join(dir, filename), buffer);
+    return res.status(201).json({ success: true, url: dataUrl, fileUrl: `/uploads/qr-codes/${filename}` });
+  } catch {
+    return res.status(201).json({ success: true, url: dataUrl });
+  }
 });
 
 app.post('/api/auth/register', requireMigrationReady, registerLimiter, register);

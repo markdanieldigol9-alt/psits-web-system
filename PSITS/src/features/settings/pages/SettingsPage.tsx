@@ -21,6 +21,49 @@ const readAsDataUrl = (file: File) =>
     reader.readAsDataURL(file);
   });
 
+const processQrImage = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read QR image file'));
+    reader.onload = () => {
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxDim = 800;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(String(reader.result || ''));
+            return;
+          }
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.88);
+          resolve(compressed);
+        } catch {
+          resolve(String(reader.result || ''));
+        }
+      };
+      img.onerror = () => resolve(String(reader.result || ''));
+      img.src = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+  });
+
+
 const formatDate = (value?: string | null) => {
   if (!value) return '';
   const dt = new Date(value);
@@ -313,11 +356,15 @@ export const SettingsPage = () => {
       for (const key of ['gcash', 'paymaya', 'bank_transfer'] as const) {
         const file = qrFiles[key];
         if (file) {
-          const dataUrl = await readAsDataUrl(file);
-          const { data } = await api.uploadQrCode(dataUrl);
-          if (data?.success && data.url) {
-            const settingKey = `${key}_qr_code` as keyof typeof updatedSettings;
-            updatedSettings[settingKey] = data.url;
+          const dataUrl = await processQrImage(file);
+          const settingKey = `${key}_qr_code` as keyof typeof updatedSettings;
+          updatedSettings[settingKey] = dataUrl;
+
+          // Attempt backend upload for caching, but preserve dataUrl in settings for permanent uptime
+          try {
+            await api.uploadQrCode(dataUrl);
+          } catch {
+            // ignore
           }
         }
       }
