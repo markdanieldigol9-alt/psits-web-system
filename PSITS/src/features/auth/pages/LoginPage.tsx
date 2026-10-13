@@ -171,13 +171,26 @@ export const LoginPage = () => {
           Login
         </Button>
 
-        <p className="text-center text-gray-600 text-sm border-t border-gray-100 pt-4">
-          Don&apos;t have an account?{' '}
-          <Link to="/register" className="text-primary hover:underline font-medium">
-            Register here
-          </Link>
-        </p>
+        <div className="text-center text-gray-600 text-sm border-t border-gray-100 pt-4 space-y-2">
+          <p>
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="text-primary hover:underline font-medium">
+              Register here
+            </Link>
+          </p>
+
+          <div className="flex items-center justify-center gap-3 text-xs text-gray-400 pt-1">
+            <Link to="/terms" className="hover:text-primary hover:underline">
+              Terms & Conditions
+            </Link>
+            <span>•</span>
+            <Link to="/privacy" className="hover:text-primary hover:underline">
+              Privacy Policy (RA 10173)
+            </Link>
+          </div>
+        </div>
       </form>
     </AuthLayout>
+
   );
 };

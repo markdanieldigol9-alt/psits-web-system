@@ -23,6 +23,7 @@ import {
   ChevronUp,
   Coins,
   UserCheck,
+  Trash2,
 } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 
@@ -506,6 +507,73 @@ export const InstitutionMembersPage = () => {
     }
   };
 
+  const handleDeleteMember = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to remove "${name}" from institution members?`)) {
+      return;
+    }
+    try {
+      await api.deleteInstitutionMember(id);
+      setMembers((prev) => prev.filter((m) => String(m.id) !== String(id)));
+      addNotification({
+        userId: 'current',
+        title: 'Member Removed',
+        message: `"${name}" has been removed successfully.`,
+        type: 'success',
+        isRead: false,
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to remove institution member.';
+      addNotification({
+        userId: 'current',
+        title: 'Error',
+        message: msg,
+        type: 'error',
+        isRead: false,
+      });
+    }
+  };
+
+  const handleCleanupTestMembers = async () => {
+    if (!window.confirm('Are you sure you want to remove all Test Participant records?')) {
+      return;
+    }
+    try {
+      const { data } = await api.cleanupTestInstitutionMembers();
+      const deletedCount = data?.deletedCount || 0;
+      setMembers((prev) =>
+        prev.filter(
+          (m) =>
+            !m.fullName?.includes('Test Participant') &&
+            !m.email?.includes('test_part')
+        )
+      );
+      addNotification({
+        userId: 'current',
+        title: 'Test Participants Removed',
+        message: `Successfully removed ${deletedCount} test participant(s).`,
+        type: 'success',
+        isRead: false,
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to cleanup test participants.';
+      addNotification({
+        userId: 'current',
+        title: 'Error',
+        message: msg,
+        type: 'error',
+        isRead: false,
+      });
+    }
+  };
+
+  const testParticipantsCount = useMemo(() => {
+    return members.filter(
+      (m) =>
+        Boolean(m.fullName?.includes('Test Participant')) ||
+        Boolean(m.email?.includes('test_part'))
+    ).length;
+  }, [members]);
+
   const handleExportCSV = () => {
     const dataToExport = filteredMembers.map((m) => ({
       'Member Name': m.fullName || 'N/A',
@@ -548,6 +616,17 @@ export const InstitutionMembersPage = () => {
               <Button variant="primary" size="lg" onClick={() => setShowAddModal(true)}>
                 <Plus size={20} />
                 Add Member
+              </Button>
+            )}
+            {testParticipantsCount > 0 && canViewAll && (
+              <Button
+                variant="danger"
+                size="lg"
+                onClick={handleCleanupTestMembers}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+              >
+                <Trash2 size={20} />
+                Remove Test Participants ({testParticipantsCount})
               </Button>
             )}
             <Button variant="secondary" size="lg" onClick={handleExportCSV}>
@@ -726,12 +805,21 @@ export const InstitutionMembersPage = () => {
                     <td className="px-6 py-4 text-sm text-gray-600">{member.date || '-'}</td>
                     {canApprove && (
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-1.5">
                           <Button size="sm" variant="success" onClick={() => updateStatus(String(member.id), true)} disabled={member.status === 'approved'}>
                             Approve
                           </Button>
                           <Button size="sm" variant="danger" onClick={() => updateStatus(String(member.id), false)} disabled={member.status === 'rejected'}>
                             Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-rose-600 hover:text-white hover:bg-rose-600 hover:border-rose-600 dark:text-rose-400 dark:hover:bg-rose-600 px-2 py-1.5"
+                            onClick={() => handleDeleteMember(String(member.id), member.fullName || 'Member')}
+                            title="Remove Member"
+                          >
+                            <Trash2 size={14} />
                           </Button>
                         </div>
                       </td>

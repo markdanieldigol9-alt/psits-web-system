@@ -1,0 +1,223 @@
+{
+  "startedAt": "2026-10-13T09:59:38.320Z",
+  "users": {
+    "totalLocal": 17,
+    "skippedDuplicates": 10,
+    "inserted": 7,
+    "details": [
+      {
+        "status": "skipped_duplicate",
+        "email": "admin@psits.com",
+        "fullName": "Admin / President",
+        "reason": "Email already exists online with user ID 1"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "agdulangon@gmail.com",
+        "fullName": "Almar Dulangon",
+        "reason": "Email already exists online with user ID 60"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "keenalayaguinenerio@gmail.com",
+        "fullName": "Keena Enerio",
+        "reason": "Email already exists online with user ID 105"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "mdigol19@mail.com",
+        "fullName": "Mark Daniel Digol",
+        "reason": "Email already exists online with user ID 118"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "tesda@gmail.com",
+        "fullName": "A",
+        "reason": "Email already exists online with user ID 121"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "digol.348659@gensan.sti.edu.ph",
+        "fullName": "STI Gensan, Inc",
+        "reason": "Email already exists online with user ID 122"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "industrytest@psits.com",
+        "fullName": "Industry Tester",
+        "reason": "Email already exists online with user ID 126"
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "mdigol771@gmail.com",
+        "fullName": "neil digol",
+        "reason": "Email already exists online with user ID 90002"
+      },
+      {
+        "status": "inserted",
+        "email": "markdanieldigol10@gmail.com",
+        "fullName": "Mark Digol",
+        "onlineId": 210002
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "nhelvwork@gmail.com",
+        "fullName": "Nhel Arobo",
+        "reason": "Email already exists online with user ID 180004"
+      },
+      {
+        "status": "inserted",
+        "email": "justinedayak3@gmail.com",
+        "fullName": "Justine Dayak",
+        "onlineId": 210004
+      },
+      {
+        "status": "skipped_duplicate",
+        "email": "lides1235@gmail.com",
+        "fullName": "jobilee",
+        "reason": "Email already exists online with user ID 30002"
+      },
+      {
+        "status": "inserted",
+        "email": "juan.delacruz@example.com",
+        "fullName": "Juan Dela Cruz",
+        "onlineId": 210006
+      },
+      {
+        "status": "inserted",
+        "email": "maria.santos@example.com",
+        "fullName": "Maria Santos",
+        "onlineId": 210008
+      },
+      {
+        "status": "inserted",
+        "email": "mark.reyes@example.com",
+        "fullName": "Mark Reyes",
+        "onlineId": 210010
+      },
+      {
+        "status": "inserted",
+        "email": "angela.garcia@example.com",
+        "fullName": "Angela Garcia",
+        "onlineId": 210012
+      },
+      {
+        "status": "inserted",
+        "email": "carlos.mendoza@example.com",
+        "fullName": "Carlos Mendoza",
+        "onlineId": 210014
+      }
+    ]
+  },
+  "partners": {
+    "totalLocal": 2,
+    "skippedDuplicates": 1,
+    "inserted": 1,
+    "details": []
+  },
+  "partner_contributions": {
+    "totalLocal": 0,
+    "skippedDuplicates": 0,
+    "inserted": 0,
+    "details": []
+  },
+  "events": {
+    "totalLocal": 8,
+    "skippedDuplicates": 0,
+    "inserted": 8,
+    "details": []
+  },
+  "event_registrations": {
+    "totalLocal": 5,
+    "skippedDuplicates": 0,
+    "inserted": 5,
+    "details": []
+  },
+  "payments": {
+    "totalLocal": 34,
+    "skippedDuplicates": 0,
+    "inserted": 34,
+    "details": []
+  },
+  "payment_status_logs": {
+    "totalLocal": 3,
+    "skippedDuplicates": 0,
+    "inserted": 0,
+    "details": []
+  },
+  "logs": [
+    "[2026-10-13T09:59:38.320Z] Starting data sync to online database...",
+    "[2026-10-13T09:59:38.320Z] --- Step 1: Processing PSITS Members / Users ---",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] admin@psits.com (Admin / President) already exists online (ID: 1).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] agdulangon@gmail.com (Almar Dulangon) already exists online (ID: 60).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] keenalayaguinenerio@gmail.com (Keena Enerio) already exists online (ID: 105).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] mdigol19@mail.com (Mark Daniel Digol) already exists online (ID: 118).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] tesda@gmail.com (A) already exists online (ID: 121).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] digol.348659@gensan.sti.edu.ph (STI Gensan, Inc) already exists online (ID: 122).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] industrytest@psits.com (Industry Tester) already exists online (ID: 126).",
+    "[2026-10-13T09:59:38.483Z] [USER SKIP] mdigol771@gmail.com (neil digol) already exists online (ID: 90002).",
+    "[2026-10-13T09:59:38.671Z] [USER INSERT] Created user markdanieldigol10@gmail.com (Mark Digol) -> Online ID 210002",
+    "[2026-10-13T09:59:38.671Z] [USER SKIP] nhelvwork@gmail.com (Nhel Arobo) already exists online (ID: 180004).",
+    "[2026-10-13T09:59:38.845Z] [USER INSERT] Created user justinedayak3@gmail.com (Justine Dayak) -> Online ID 210004",
+    "[2026-10-13T09:59:38.845Z] [USER SKIP] lides1235@gmail.com (jobilee) already exists online (ID: 30002).",
+    "[2026-10-13T09:59:39.015Z] [USER INSERT] Created user juan.delacruz@example.com (Juan Dela Cruz) -> Online ID 210006",
+    "[2026-10-13T09:59:39.187Z] [USER INSERT] Created user maria.santos@example.com (Maria Santos) -> Online ID 210008",
+    "[2026-10-13T09:59:39.355Z] [USER INSERT] Created user mark.reyes@example.com (Mark Reyes) -> Online ID 210010",
+    "[2026-10-13T09:59:39.538Z] [USER INSERT] Created user angela.garcia@example.com (Angela Garcia) -> Online ID 210012",
+    "[2026-10-13T09:59:39.711Z] [USER INSERT] Created user carlos.mendoza@example.com (Carlos Mendoza) -> Online ID 210014",
+    "[2026-10-13T09:59:39.712Z] --- Step 2: Processing Partners & Contributions ---",
+    "[2026-10-13T09:59:39.875Z] [PARTNER SKIP] Partner \"Test Partner Co\" already exists online (ID: 1).",
+    "[2026-10-13T09:59:40.065Z] [PARTNER INSERT] Created partner \"Test Company\" -> Online ID 30002",
+    "[2026-10-13T09:59:40.065Z] --- Step 3: Processing Events & Registrations ---",
+    "[2026-10-13T09:59:40.412Z] [EVENT INSERT] Created event \"Tournament  MLBB\" -> Online ID 150005",
+    "[2026-10-13T09:59:40.582Z] [EVENT INSERT] Created event \"Test 1\" -> Online ID 150007",
+    "[2026-10-13T09:59:40.753Z] [EVENT INSERT] Created event \"programming challenge\" -> Online ID 150009",
+    "[2026-10-13T09:59:40.923Z] [EVENT INSERT] Created event \"Test\" -> Online ID 150011",
+    "[2026-10-13T09:59:41.096Z] [EVENT INSERT] Created event \"CRUD Test Event (Updated)\" -> Online ID 150013",
+    "[2026-10-13T09:59:41.265Z] [EVENT INSERT] Created event \"CRUD Test Event  (Updated)\" -> Online ID 150015",
+    "[2026-10-13T09:59:41.437Z] [EVENT INSERT] Created event \"Dance Testing Event\" -> Online ID 150017",
+    "[2026-10-13T09:59:41.609Z] [EVENT INSERT] Created event \"Test 2\" -> Online ID 150019",
+    "[2026-10-13T09:59:41.953Z] [REG INSERT] Registered member ID 118 for event ID 150007.",
+    "[2026-10-13T09:59:42.289Z] [REG INSERT] Registered member ID 118 for event ID 150009.",
+    "[2026-10-13T09:59:42.623Z] [REG INSERT] Registered member ID 118 for event ID 150015.",
+    "[2026-10-13T09:59:42.957Z] [REG INSERT] Registered member ID 60 for event ID 150017.",
+    "[2026-10-13T09:59:43.291Z] [REG INSERT] Registered member ID 60 for event ID 150019.",
+    "[2026-10-13T09:59:43.291Z] --- Step 4: Processing Payment Tracking ---",
+    "[2026-10-13T09:59:43.642Z] [PAY INSERT] Inserted payment ID 150022 (Amount: 100.00, Ref: N/A).",
+    "[2026-10-13T09:59:43.813Z] [PAY INSERT] Inserted payment ID 150024 (Amount: 100.00, Ref: N/A).",
+    "[2026-10-13T09:59:43.982Z] [PAY INSERT] Inserted payment ID 150026 (Amount: 150.00, Ref: N/A).",
+    "[2026-10-13T09:59:44.157Z] [PAY INSERT] Inserted payment ID 150028 (Amount: 500.00, Ref: N/A).",
+    "[2026-10-13T09:59:44.329Z] [PAY INSERT] Inserted payment ID 150030 (Amount: 500.00, Ref: N/A).",
+    "[2026-10-13T09:59:44.497Z] [PAY INSERT] Inserted payment ID 150032 (Amount: 500.00, Ref: N/A).",
+    "[2026-10-13T09:59:44.665Z] [PAY INSERT] Inserted payment ID 150034 (Amount: 500.00, Ref: N/A).",
+    "[2026-10-13T09:59:44.835Z] [PAY INSERT] Inserted payment ID 150036 (Amount: 200.00, Ref: N/A).",
+    "[2026-10-13T09:59:45.003Z] [PAY INSERT] Inserted payment ID 150038 (Amount: 150.00, Ref: 2931381776131).",
+    "[2026-10-13T09:59:45.178Z] [PAY INSERT] Inserted payment ID 150040 (Amount: 100.00, Ref: N/A).",
+    "[2026-10-13T09:59:45.351Z] [PAY INSERT] Inserted payment ID 150042 (Amount: 100.00, Ref: 4353453465754).",
+    "[2026-10-13T09:59:45.522Z] [PAY INSERT] Inserted payment ID 150044 (Amount: 250.00, Ref: REG-00105).",
+    "[2026-10-13T09:59:45.693Z] [PAY INSERT] Inserted payment ID 150046 (Amount: 250.00, Ref: REG-00118).",
+    "[2026-10-13T09:59:45.871Z] [PAY INSERT] Inserted payment ID 150048 (Amount: 250.00, Ref: REG-00121).",
+    "[2026-10-13T09:59:46.038Z] [PAY INSERT] Inserted payment ID 150050 (Amount: 250.00, Ref: REG-00122).",
+    "[2026-10-13T09:59:46.209Z] [PAY INSERT] Inserted payment ID 150052 (Amount: 250.00, Ref: REG-00126).",
+    "[2026-10-13T09:59:46.381Z] [PAY INSERT] Inserted payment ID 150054 (Amount: 250.00, Ref: REG-00127).",
+    "[2026-10-13T09:59:46.549Z] [PAY INSERT] Inserted payment ID 150056 (Amount: 250.00, Ref: REG-00128).",
+    "[2026-10-13T09:59:46.736Z] [PAY INSERT] Inserted payment ID 150058 (Amount: 250.00, Ref: REG-00134).",
+    "[2026-10-13T09:59:46.915Z] [PAY INSERT] Inserted payment ID 150060 (Amount: 250.00, Ref: REG-00135).",
+    "[2026-10-13T09:59:47.085Z] [PAY INSERT] Inserted payment ID 150062 (Amount: 250.00, Ref: REG-00139).",
+    "[2026-10-13T09:59:47.257Z] [PAY INSERT] Inserted payment ID 150064 (Amount: 250.00, Ref: REG-00060).",
+    "[2026-10-13T09:59:47.427Z] [PAY INSERT] Inserted payment ID 150066 (Amount: 5555.00, Ref: 4353654643).",
+    "[2026-10-13T09:59:47.599Z] [PAY INSERT] Inserted payment ID 150068 (Amount: 150.00, Ref: 434354645645).",
+    "[2026-10-13T09:59:47.771Z] [PAY INSERT] Inserted payment ID 150070 (Amount: 150.00, Ref: 12345678).",
+    "[2026-10-13T09:59:47.939Z] [PAY INSERT] Inserted payment ID 150072 (Amount: 150.00, Ref: 987654321).",
+    "[2026-10-13T09:59:48.113Z] [PAY INSERT] Inserted payment ID 150074 (Amount: 250.00, Ref: REG-00140).",
+    "[2026-10-13T09:59:48.289Z] [PAY INSERT] Inserted payment ID 150076 (Amount: 250.00, Ref: REG-00141).",
+    "[2026-10-13T09:59:48.461Z] [PAY INSERT] Inserted payment ID 150078 (Amount: 250.00, Ref: REG-00142).",
+    "[2026-10-13T09:59:48.633Z] [PAY INSERT] Inserted payment ID 150080 (Amount: 250.00, Ref: REG-00143).",
+    "[2026-10-13T09:59:48.805Z] [PAY INSERT] Inserted payment ID 150082 (Amount: 250.00, Ref: REG-00144).",
+    "[2026-10-13T09:59:48.975Z] [PAY INSERT] Inserted payment ID 150084 (Amount: 250.00, Ref: REG-00145).",
+    "[2026-10-13T09:59:49.148Z] [PAY INSERT] Inserted payment ID 150086 (Amount: 5555.00, Ref: 4366t443324).",
+    "[2026-10-13T09:59:49.319Z] [PAY INSERT] Inserted payment ID 150088 (Amount: 5555.00, Ref: 123456789).",
+    "[2026-10-13T09:59:49.319Z] Data sync finished successfully!"
+  ],
+  "completedAt": "2026-10-13T09:59:49.319Z"
+}

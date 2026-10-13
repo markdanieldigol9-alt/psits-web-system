@@ -352,6 +352,16 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
             </span>
             <span>NODE-MNL-01</span>
           </div>
+
+          <div className="px-2 pt-1.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 border-t border-gray-100/80 dark:border-slate-800/60 font-sans">
+            <Link to="/terms" className="hover:underline hover:text-slate-600 dark:hover:text-slate-300">
+              Terms & Conditions
+            </Link>
+            <span>•</span>
+            <Link to="/privacy" className="hover:underline hover:text-slate-600 dark:hover:text-slate-300">
+              Privacy (RA 10173)
+            </Link>
+          </div>
         </div>
       </aside>
     </>

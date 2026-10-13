@@ -6,7 +6,11 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import { Alert } from '@/shared/components/Common';
 import { Button, Input, Select } from '@/shared/components/Form';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
+import { LegalTermsModal } from '@/features/legal/components/LegalTermsModal';
+import { ShieldCheck } from 'lucide-react';
 import type { MemberType, RegisterData } from '@/shared/types';
+
+
 
 type RegisterFormData = RegisterData & {
   birthDate?: string;
@@ -41,6 +45,9 @@ export const RegisterPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<'privacy' | 'terms'>('terms');
+
 
   const validateForm = () => {
     const nextErrors: Record<string, string> = {};
@@ -292,21 +299,68 @@ export const RegisterPage = () => {
 
           {formData.memberType && (
             <div className="space-y-4 pt-2">
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={Boolean(formData.termsAccepted)}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked }))}
-                  className="mt-1 rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                />
-                <span className="text-sm text-gray-700">
-                  I agree to the{' '}
-                  <span className="font-semibold text-primary underline underline-offset-2">
-                    Terms and Conditions
+              <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/60 text-xs text-gray-700 space-y-2">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(formData.termsAccepted)}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked }))}
+                    className="mt-0.5 rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 shrink-0"
+                  />
+                  <span className="leading-relaxed">
+                    I have read, understood, and agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLegalModalTab('terms');
+                        setLegalModalOpen(true);
+                      }}
+                      className="font-bold text-primary underline underline-offset-2 hover:text-blue-700"
+                    >
+                      Terms and Conditions
+                    </button>{' '}
+                    and the{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLegalModalTab('privacy');
+                        setLegalModalOpen(true);
+                      }}
+                      className="font-bold text-primary underline underline-offset-2 hover:text-blue-700"
+                    >
+                      Data Privacy Policy
+                    </button>{' '}
+                    pursuant to Republic Act No. 10173 (Data Privacy Act of 2012).
                   </span>
-                  .
-                </span>
-              </label>
+                </label>
+
+                <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-blue-200/50">
+                  <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                    <ShieldCheck size={13} className="text-emerald-600" />
+                    Protected by RA 10173 & RA 10175
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline text-blue-600"
+                    >
+                      Terms (New Tab)
+                    </a>
+                    <span>•</span>
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline text-blue-600"
+                    >
+                      Privacy (New Tab)
+                    </a>
+                  </div>
+                </div>
+              </div>
+
               {errors.termsAccepted && <p className="text-sm text-red-600">{errors.termsAccepted}</p>}
 
               <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
@@ -323,6 +377,23 @@ export const RegisterPage = () => {
           </Link>
         </p>
       </form>
+
+      {/* Interactive In-App Legal Terms & Privacy Modal */}
+      <LegalTermsModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        defaultTab={legalModalTab}
+        showAcceptButton={true}
+        onAccept={() => {
+          setFormData((prev) => ({ ...prev, termsAccepted: true }));
+          setErrors((prev) => {
+            const next = { ...prev };
+            delete next.termsAccepted;
+            return next;
+          });
+        }}
+      />
     </AuthLayout>
   );
 };
+

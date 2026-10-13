@@ -78,6 +78,13 @@ const ForumPage = lazy(() =>
 const LandingPage = lazy(() =>
   import('@/features/landing/pages/LandingPage').then((m) => ({ default: m.LandingPage }))
 );
+const PrivacyPolicyPage = lazy(() =>
+  import('@/features/legal/pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage }))
+);
+const TermsPage = lazy(() =>
+  import('@/features/legal/pages/TermsPage').then((m) => ({ default: m.TermsPage }))
+);
+
 
 export const App = () => {
   return (
@@ -104,7 +111,10 @@ export const App = () => {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
 
               {/* Protected Routes */}
               <Route

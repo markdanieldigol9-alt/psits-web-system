@@ -516,6 +516,14 @@ class ApiService {
     return this.client.put(`/institution-members/${id}/approval`, data);
   }
 
+  deleteInstitutionMember(id: string) {
+    return this.client.delete(`/institution-members/${id}`);
+  }
+
+  cleanupTestInstitutionMembers() {
+    return this.client.post('/institution-members/cleanup-test');
+  }
+
   // Elections
   getElections(filters?: any) {
     return this.client.get('/elections', { params: filters });

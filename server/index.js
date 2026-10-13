@@ -77,7 +77,13 @@ const {
   cleanupExpiredLiveEventRecordings,
 } = require('./liveEvents');
 const { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer, listOfficerPositions, createOfficerPosition, deleteOfficerPosition } = require('./officers');
-const { listInstitutionMembers, bulkCreateInstitutionMembers, approveInstitutionMember } = require('./institutionMembers');
+const {
+  listInstitutionMembers,
+  bulkCreateInstitutionMembers,
+  approveInstitutionMember,
+  deleteInstitutionMember,
+  cleanupTestInstitutionMembers,
+} = require('./institutionMembers');
 const { getInstitutionLeaderboard, toggleParticipantAttendance, checkAllInstitutionParticipants } = require('./institutionLeaderboard');
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
 const { sendSmtpTest } = require('./emailTest');
@@ -950,6 +956,8 @@ app.post('/api/uploads/avatar', authMiddleware, express.raw({ type: '*/*', limit
 app.get('/api/institution-members', authMiddleware, listInstitutionMembers);
 app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), bulkCreateInstitutionMembers);
 app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), approveInstitutionMember);
+app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteInstitutionMember);
+app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
 
   app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getDashboardReport);
   app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getElectionReport);

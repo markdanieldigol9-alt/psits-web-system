@@ -446,8 +446,56 @@ async function approveInstitutionMember(req, res) {
   return json(res, 200, { success: true, member: toDto(rows[0]) });
 }
 
+async function deleteInstitutionMember(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
+
+  try {
+    const [rows] = await pool.execute('SELECT id, email, full_name FROM institution_members WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) return json(res, 404, { success: false, message: 'Institution member not found.' });
+    const row = rows[0];
+
+    await pool.execute('DELETE FROM institution_members WHERE id = ?', [id]);
+
+    if (row.email && (row.email.startsWith('test_part_') || row.full_name?.startsWith('Test Participant'))) {
+      await pool.execute('DELETE FROM users WHERE email = ?', [row.email]);
+    }
+
+    return json(res, 200, { success: true, message: 'Institution member removed successfully.' });
+  } catch (err) {
+    console.error('Error deleting institution member:', err);
+    return json(res, 500, { success: false, message: 'Failed to delete institution member.', error: err.message });
+  }
+}
+
+async function cleanupTestInstitutionMembers(req, res) {
+  try {
+    const [testRows] = await pool.query(
+      "SELECT id, email FROM institution_members WHERE full_name LIKE '%Test Participant%' OR email LIKE '%test_part%'"
+    );
+
+    const ids = testRows.map((r) => r.id);
+    const emails = testRows.map((r) => r.email).filter(Boolean);
+
+    if (ids.length) {
+      await pool.query(`DELETE FROM institution_members WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
+    }
+
+    if (emails.length) {
+      await pool.query(`DELETE FROM users WHERE email IN (${emails.map(() => '?').join(',')})`, emails);
+    }
+
+    return json(res, 200, { success: true, deletedCount: ids.length, deletedIds: ids });
+  } catch (err) {
+    console.error('Error cleaning up test institution members:', err);
+    return json(res, 500, { success: false, message: 'Failed to cleanup test participants.', error: err.message });
+  }
+}
+
 module.exports = {
   listInstitutionMembers,
   bulkCreateInstitutionMembers,
   approveInstitutionMember,
+  deleteInstitutionMember,
+  cleanupTestInstitutionMembers,
 };

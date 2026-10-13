@@ -111,6 +111,17 @@ export const LandingPage = () => {
               </span>
             </div>
 
+            {/* Center: Legal & Governance Links */}
+            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+              <Link to="/terms" className="hover:text-blue-600 dark:hover:text-cyan-400 hover:underline transition-colors">
+                Terms & Conditions
+              </Link>
+              <span>•</span>
+              <Link to="/privacy" className="hover:text-blue-600 dark:hover:text-cyan-400 hover:underline transition-colors">
+                Privacy Policy (RA 10173)
+              </Link>
+            </div>
+
             {/* Right: Copyright Text */}
             <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-right">
               © {new Date().getFullYear()} Philippine Society of Information Technology Students Region XII. All rights reserved.

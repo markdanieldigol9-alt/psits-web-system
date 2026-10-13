@@ -8,10 +8,13 @@ import { useTheme } from '@/shared/context/ThemeContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import api from '@/shared/services/api';
 import { validateEmail, validatePhoneNumber, PAYMENT_METHOD_OPTIONS, resolveImageUrl } from '@/shared/utils/helpers';
-import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2, ChevronDown, User, Palette, CreditCard, ShieldCheck } from 'lucide-react';
+import { Sun, Moon, Monitor, AlertTriangle, Mail, Send, CheckCircle, Bell, Camera, Trash2, Upload, Loader2, ChevronDown, User, Palette, CreditCard, ShieldCheck, FileText, Lock } from 'lucide-react';
+
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import { LegalTermsModal } from '@/features/legal/components/LegalTermsModal';
 import { getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import type { OfficerContact } from '@/shared/types';
+
 
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -128,11 +131,16 @@ export const SettingsPage = () => {
     profile: true,
     payment: false,
     validity: true,
+    legal: false,
   });
+
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<'privacy' | 'terms'>('privacy');
 
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
+
 
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
@@ -1577,7 +1585,125 @@ export const SettingsPage = () => {
             )}
           </Card>
         )}
+
+        {/* ── Data Privacy & Terms Section ── */}
+        <Card variant="cyber" className="p-0 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => toggleSection('legal')}
+            className="w-full p-5 sm:p-6 flex items-center justify-between text-left hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-cyan-400 shrink-0">
+                <ShieldCheck size={20} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">
+                  Data Privacy & Terms of Service
+                </h2>
+                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                  Republic Act No. 10173 • Acceptable Use & Account Governance
+                </p>
+              </div>
+            </div>
+            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+              <ChevronDown
+                size={20}
+                className={`transition-transform duration-200 ${openSections.legal ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </button>
+
+          {openSections.legal && (
+            <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-4">
+              <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  <Lock size={16} className="text-blue-600 dark:text-cyan-400" />
+                  <span>Your Data Privacy Rights</span>
+                </div>
+                <p className="text-blue-800 dark:text-blue-300 leading-relaxed">
+                  Under the Philippine Data Privacy Act of 2012 (RA 10173), you have the right to be informed, access, rectify, or request deletion of your personal data held within the PSITS Web System. Passwords are salted and encrypted with bcrypt, and static data is protected by strict role-based access control.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-slate-100">
+                    <ShieldCheck size={16} className="text-emerald-500" />
+                    <span>Privacy Policy</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                    Learn how your personal details, academic information, payment receipts, and ballots are protected.
+                  </p>
+                  <div className="pt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLegalModalTab('privacy');
+                        setLegalModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                    >
+                      Read Policy (Modal)
+                    </button>
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      Open Page
+                    </a>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-slate-100">
+                    <FileText size={16} className="text-blue-500" />
+                    <span>Terms & Conditions</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                    Review acceptable use policies, election code of conduct, payment verification terms, and system protections.
+                  </p>
+                  <div className="pt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLegalModalTab('terms');
+                        setLegalModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                    >
+                      Read Terms (Modal)
+                    </button>
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      Open Page
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-gray-500 dark:text-slate-400 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-gray-100 dark:border-slate-800">
+                <span>Data Protection Officer Desk: <strong className="text-primary font-medium">dpo@psits12.org</strong></span>
+                <span>Regulated by National Privacy Commission (NPC)</span>
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
+
+      {/* In-App Legal Terms Modal */}
+      <LegalTermsModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        defaultTab={legalModalTab}
+      />
+
 
       <VerifyActionModal
         isOpen={confirmSave}
