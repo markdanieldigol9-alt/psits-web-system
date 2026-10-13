@@ -101,6 +101,11 @@ export interface Event {
   themeColor?: string;
   customBadge?: string;
   requiresCoach?: boolean;
+  hasModerator?: boolean;
+  moderatorOfficerId?: string | null;
+  moderatorOfficerName?: string | null;
+  moderatorIds?: string[];
+  moderatorNames?: string | null;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

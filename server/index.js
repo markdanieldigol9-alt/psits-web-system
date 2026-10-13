@@ -83,6 +83,7 @@ const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEv
 const { sendSmtpTest } = require('./emailTest');
 const { resendFailedApprovalEmails, sendReactivationRequestEmail } = require('./mailer');
 const { checkExpiringMemberships } = require('./services/expirationService');
+const { importDataIntoPool } = require('./dataSync');
 const { archiveExpiredContent, purgeArchivedAnnouncements, purgeArchivedForumPosts } = require('./services/archiveService');
 const { buildRedisClient, createRateLimiter } = require('./rateLimiter');
 const { attachLiveRealtime } = require('./liveRealtime');
@@ -867,6 +868,21 @@ app.delete('/api/archive/forum-posts', requireMigrationReady, authMiddleware, re
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
   const result = await purgeArchivedForumPosts(ids);
   return res.json(result);
+});
+
+// Administrative data sync endpoint (local to online database sync)
+app.post('/api/admin/data-sync', requireMigrationReady, authMiddleware, requireRole(['super_admin']), async (req, res) => {
+  try {
+    const data = req.body || {};
+    if (!data.users && !data.partners && !data.events && !data.payments) {
+      return res.status(400).json({ success: false, message: 'Invalid sync payload.' });
+    }
+    const report = await importDataIntoPool(data);
+    return res.json({ success: true, report });
+  } catch (err) {
+    console.error('Data sync error:', err);
+    return res.status(500).json({ success: false, message: 'Data sync failed', error: err.message });
+  }
 });
 
 app.post('/api/uploads/forum-video', authMiddleware, express.raw({ type: '*/*', limit: '1024mb' }), async (req, res) => {

@@ -426,6 +426,13 @@ async function migrate() {
   try { await pool.query('ALTER TABLE events ADD COLUMN guidelines_file_url VARCHAR(500) NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE events ADD COLUMN guidelines_file_name VARCHAR(255) NULL'); } catch { /* ignore */ }
 
+  // Officer Moderator features
+  try { await pool.query('ALTER TABLE events ADD COLUMN has_moderator TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN moderator_officer_id VARCHAR(191) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN moderator_officer_name VARCHAR(255) NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN moderator_ids TEXT NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE events ADD COLUMN moderator_names TEXT NULL'); } catch { /* ignore */ }
+
   // Event registrations (member joins an event)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS event_registrations (

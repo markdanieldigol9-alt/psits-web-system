@@ -39,6 +39,11 @@ function toEventDto(row) {
     themeColor: row.theme_color || '#2563eb',
     customBadge: row.custom_badge || null,
     requiresCoach: Boolean(row.requires_coach),
+    hasModerator: Boolean(row.has_moderator || row.moderator_officer_id || row.moderator_officer_name),
+    moderatorOfficerId: row.moderator_officer_id || null,
+    moderatorOfficerName: row.moderator_officer_name || null,
+    moderatorIds: row.moderator_ids ? (typeof row.moderator_ids === 'string' ? JSON.parse(row.moderator_ids || '[]') : row.moderator_ids) : [],
+    moderatorNames: row.moderator_names || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -163,6 +168,11 @@ async function createEvent(req, res) {
   const themeColor = body.themeColor ? String(body.themeColor).trim() : '#2563eb';
   const customBadge = body.customBadge ? String(body.customBadge).trim() : null;
   const requiresCoach = Boolean(body.requiresCoach);
+  const hasModerator = Boolean(body.hasModerator);
+  const moderatorOfficerId = body.moderatorOfficerId ? String(body.moderatorOfficerId).trim() : null;
+  const moderatorOfficerName = body.moderatorOfficerName ? String(body.moderatorOfficerName).trim() : null;
+  const moderatorIds = Array.isArray(body.moderatorIds) ? JSON.stringify(body.moderatorIds) : (body.moderatorIds ? String(body.moderatorIds) : null);
+  const moderatorNames = body.moderatorNames ? String(body.moderatorNames).trim() : null;
   const guidelinesFileUrl = body.guidelinesFileUrl ? String(body.guidelinesFileUrl).trim() : null;
   const guidelinesFileName = body.guidelinesFileName ? String(body.guidelinesFileName).trim() : null;
 
@@ -199,6 +209,11 @@ async function createEvent(req, res) {
   addCol('theme_color', themeColor);
   addCol('custom_badge', customBadge);
   addCol('requires_coach', requiresCoach ? 1 : 0);
+  addCol('has_moderator', hasModerator ? 1 : 0);
+  addCol('moderator_officer_id', moderatorOfficerId);
+  addCol('moderator_officer_name', moderatorOfficerName);
+  addCol('moderator_ids', moderatorIds);
+  addCol('moderator_names', moderatorNames);
   addCol('guidelines_file_url', guidelinesFileUrl);
   addCol('guidelines_file_name', guidelinesFileName);
   addCol('created_by', req.user?.id || null);
@@ -386,6 +401,21 @@ async function updateEvent(req, res) {
   }
   if (body.requiresCoach !== undefined) {
     sets.push('requires_coach = ?'); params.push(Boolean(body.requiresCoach) ? 1 : 0);
+  }
+  if (body.hasModerator !== undefined) {
+    sets.push('has_moderator = ?'); params.push(Boolean(body.hasModerator) ? 1 : 0);
+  }
+  if (body.moderatorOfficerId !== undefined) {
+    sets.push('moderator_officer_id = ?'); params.push(body.moderatorOfficerId ? String(body.moderatorOfficerId).trim() : null);
+  }
+  if (body.moderatorOfficerName !== undefined) {
+    sets.push('moderator_officer_name = ?'); params.push(body.moderatorOfficerName ? String(body.moderatorOfficerName).trim() : null);
+  }
+  if (body.moderatorIds !== undefined) {
+    sets.push('moderator_ids = ?'); params.push(Array.isArray(body.moderatorIds) ? JSON.stringify(body.moderatorIds) : (body.moderatorIds ? String(body.moderatorIds) : null));
+  }
+  if (body.moderatorNames !== undefined) {
+    sets.push('moderator_names = ?'); params.push(body.moderatorNames ? String(body.moderatorNames).trim() : null);
   }
   if (body.guidelinesFileUrl !== undefined) {
     sets.push('guidelines_file_url = ?'); params.push(body.guidelinesFileUrl ? String(body.guidelinesFileUrl).trim() : null);

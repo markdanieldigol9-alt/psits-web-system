@@ -5,7 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
@@ -231,9 +231,15 @@ export const EventsPage = () => {
     themeColor: '#2563eb',
     customBadge: '',
     requiresCoach: false,
+    hasOfficerModerator: false,
+    moderatorOfficerId: '',
+    moderatorOfficerName: '',
+    moderatorOfficerIds: [] as string[],
   });
 
   const [selectedCoachMemberId, setSelectedCoachMemberId] = useState<string>('');
+  const [officersList, setOfficersList] = useState<any[]>([]);
+  const [isLoadingOfficers, setIsLoadingOfficers] = useState<boolean>(false);
 
   const canManageEvents = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const isMember = user?.role === 'member';
@@ -561,6 +567,29 @@ export const EventsPage = () => {
     return { key: 'open', label: 'Open for Registration', variant: 'success' };
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchOfficers = async () => {
+      setIsLoadingOfficers(true);
+      try {
+        const { data } = await api.getOfficers('active');
+        if (!cancelled && data?.success) {
+          setOfficersList(data.officers || []);
+        }
+      } catch (err) {
+        console.warn('Failed to load officers for event wizard:', err);
+      } finally {
+        if (!cancelled) setIsLoadingOfficers(false);
+      }
+    };
+    if (showEventModal) {
+      void fetchOfficers();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [showEventModal]);
+
   const openCreateModal = () => {
     setEditingEventId(null);
     setActiveFormTab('basic');
@@ -599,6 +628,10 @@ export const EventsPage = () => {
       themeColor: '#2563eb',
       customBadge: '',
       requiresCoach: false,
+      hasOfficerModerator: false,
+      moderatorOfficerId: '',
+      moderatorOfficerName: '',
+      moderatorOfficerIds: [],
     });
     setShowEventModal(true);
   };
@@ -615,6 +648,12 @@ export const EventsPage = () => {
     const catSelect = isEsp ? 'esports' : (isStandardCat ? rawType.toLowerCase() : (rawType ? 'other' : ''));
     const customText = (!isEsp && isOtherCat) ? (rawType.toLowerCase() === 'other' ? '' : rawType) : '';
     const isUnlimited = !event.capacity || Number(event.capacity) <= 0;
+
+    const initialModIds: string[] = Array.isArray(event.moderatorIds)
+      ? event.moderatorIds.map(String)
+      : event.moderatorOfficerId
+      ? [String(event.moderatorOfficerId)]
+      : [];
 
     setFormData({
       title: event.title || '',
@@ -651,6 +690,10 @@ export const EventsPage = () => {
       themeColor: event.themeColor || '#2563eb',
       customBadge: event.customBadge || '',
       requiresCoach: Boolean(event.requiresCoach ?? event.requires_coach),
+      hasOfficerModerator: Boolean(event.hasModerator ?? event.has_moderator ?? event.moderatorOfficerName ?? event.moderator_officer_name),
+      moderatorOfficerId: event.moderatorOfficerId || event.moderator_officer_id || '',
+      moderatorOfficerName: event.moderatorOfficerName || event.moderator_officer_name || '',
+      moderatorOfficerIds: initialModIds,
     });
     setShowEventModal(true);
   };
@@ -1169,6 +1212,11 @@ export const EventsPage = () => {
                           <UserCheck size={12} /> Coach Required
                         </span>
                       )}
+                      {Boolean(event.hasModerator || event.moderatorOfficerName) && (
+                        <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200">
+                          <ShieldCheck size={12} /> Moderator: {event.moderatorOfficerName || 'Officer Assigned'}
+                        </span>
+                      )}
                       {/* 2-Phase Lifecycle Badge */}
                       {event.status === 'upcoming' && (
                         <Badge variant="info" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -1490,6 +1538,11 @@ export const EventsPage = () => {
                 themeColor: formData.themeColor || '#2563eb',
                 customBadge: formData.customBadge.trim() || null,
                 requiresCoach: formData.requiresCoach,
+                hasModerator: formData.hasOfficerModerator,
+                moderatorOfficerId: formData.hasOfficerModerator ? (formData.moderatorOfficerId || null) : null,
+                moderatorOfficerName: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
+                moderatorIds: formData.hasOfficerModerator ? formData.moderatorOfficerIds : [],
+                moderatorNames: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
               });
               setConfirmSaveEvent(true);
             })();
@@ -1571,6 +1624,126 @@ export const EventsPage = () => {
                   className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer shrink-0"
                 />
               </div>
+
+              {/* Officer Moderator Checkbox Card */}
+              <div className="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/50 rounded-xl flex items-center justify-between transition-all">
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck size={18} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <div>
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100 block">Assign Officer as Event Moderator</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Designate official PSITS officer(s) to moderate, oversee, and facilitate this event.</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="hasOfficerModeratorTab"
+                  checked={formData.hasOfficerModerator}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setFormData((p) => ({
+                      ...p,
+                      hasOfficerModerator: checked,
+                    }));
+                  }}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer shrink-0"
+                />
+              </div>
+
+              {/* Officer Moderator Selection (when Assign Officer as Event Moderator is checked) */}
+              {formData.hasOfficerModerator && (
+                <div className="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/50 rounded-xl space-y-3 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <UserCheck size={16} className="text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
+                        Select Officer Moderator(s)
+                      </span>
+                    </div>
+                    {formData.moderatorOfficerIds.length > 0 && (
+                      <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100/90 dark:bg-indigo-900/50 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-700">
+                        {formData.moderatorOfficerIds.length} {formData.moderatorOfficerIds.length === 1 ? 'Officer' : 'Officers'} Selected
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Select the officer(s) who will act as moderator for this event:
+                  </p>
+
+                  {isLoadingOfficers ? (
+                    <div className="flex items-center justify-center py-4 text-xs text-gray-500">
+                      <RefreshCw size={15} className="animate-spin mr-2 text-indigo-600" />
+                      Loading active officers...
+                    </div>
+                  ) : officersList.length === 0 ? (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg text-xs text-amber-800 dark:text-amber-300">
+                      No active officers currently found in the system. You can add officers under the PSITS Officers module.
+                    </div>
+                  ) : (
+                    <div className="max-h-56 overflow-y-auto space-y-2 pr-1 border border-indigo-100 dark:border-indigo-900/40 p-2 rounded-lg bg-white/70 dark:bg-slate-900/60">
+                      {officersList.map((officer) => {
+                        const isChecked = formData.moderatorOfficerIds.includes(String(officer.id));
+                        return (
+                          <label
+                            key={officer.id}
+                            className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                              isChecked
+                                ? 'bg-indigo-50/90 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-700 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setFormData((prev) => {
+                                    const currentIds = prev.moderatorOfficerIds || [];
+                                    const nextIds = checked
+                                      ? [...currentIds, String(officer.id)]
+                                      : currentIds.filter((id) => id !== String(officer.id));
+
+                                    const selectedOfficers = officersList.filter((o) => nextIds.includes(String(o.id)));
+                                    const names = selectedOfficers.map((o) => `${o.fullName} (${o.position || 'Officer'})`).join(', ');
+                                    const primaryId = nextIds[0] || '';
+                                    const primaryName = selectedOfficers[0] ? selectedOfficers[0].fullName : '';
+
+                                    return {
+                                      ...prev,
+                                      moderatorOfficerIds: nextIds,
+                                      moderatorOfficerId: primaryId,
+                                      moderatorOfficerName: names || primaryName,
+                                    };
+                                  });
+                                }}
+                                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                              />
+                              <div>
+                                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 block">
+                                  {officer.fullName}
+                                </span>
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                  {officer.position || 'Officer'} {officer.email ? `• ${officer.email}` : ''}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100/70 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                              {officer.position || 'Officer'}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {formData.moderatorOfficerIds.length > 0 && (
+                    <div className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium bg-indigo-100/60 dark:bg-indigo-950/40 p-2 rounded-lg flex items-center gap-1.5 border border-indigo-200/50">
+                      <ShieldCheck size={14} className="shrink-0" />
+                      <span><strong>Designated Moderator(s):</strong> {formData.moderatorOfficerName}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* eSports Tournament Settings (shown when Event Category is Esports) */}
               {formData.categorySelect === 'esports' && (
@@ -2160,6 +2333,11 @@ export const EventsPage = () => {
               {detailsEvent.requiresCoach && (
                 <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-indigo-200">
                   <UserCheck size={12} /> Coach Required
+                </span>
+              )}
+              {Boolean(detailsEvent.hasModerator || detailsEvent.moderatorOfficerName) && (
+                <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                  <ShieldCheck size={12} /> Moderator: {detailsEvent.moderatorOfficerName || 'Officer Assigned'}
                 </span>
               )}
             </div>
