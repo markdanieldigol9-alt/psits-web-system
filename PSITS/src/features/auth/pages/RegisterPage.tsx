@@ -184,7 +184,11 @@ export const RegisterPage = () => {
 
   return (
     <AuthLayout title="Registration Page">
-      <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-6xl mx-auto border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 w-full max-w-6xl mx-auto border border-gray-200 rounded-xl p-6 bg-white shadow-sm auth-card auth-scope [color-scheme:light]"
+        style={{ colorScheme: 'light' }}
+      >
         {submitSuccess && <Alert type="success" message={submitSuccess} />}
         {!submitSuccess && (submitError || error) && <Alert type="error" message={submitError || error || 'Registration failed.'} />}
 
@@ -199,6 +203,7 @@ export const RegisterPage = () => {
           <Select
             label="Member Type"
             required
+            variant="light"
             options={[
               { value: 'individual', label: 'Individual' },
               { value: 'industry', label: 'Industry' },
@@ -225,6 +230,7 @@ export const RegisterPage = () => {
               <Select
                 label="Gender"
                 required
+                variant="light"
                 options={[
                   { value: 'Male', label: 'Male' },
                   { value: 'Female', label: 'Female' },
@@ -265,6 +271,7 @@ export const RegisterPage = () => {
               <Select
                 label="Gender"
                 required
+                variant="light"
                 options={[
                   { value: 'Male', label: 'Male' },
                   { value: 'Female', label: 'Female' },

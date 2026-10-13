@@ -16,6 +16,8 @@ function toEventDto(row) {
     title: row.title,
     description: row.description || '',
     guidelines: row.guidelines || '',
+    guidelinesFileUrl: row.guidelines_file_url || null,
+    guidelinesFileName: row.guidelines_file_name || null,
     registrationMode: row.registration_mode === 'group' ? 'team' : (row.registration_mode || 'individual'),
     registrationStartAt: regStart && !Number.isNaN(regStart.getTime()) ? regStart.toISOString() : null,
     registrationEndAt: regEnd && !Number.isNaN(regEnd.getTime()) ? regEnd.toISOString() : null,
@@ -143,9 +145,8 @@ async function createEvent(req, res) {
   const allowedModes = ['individual', 'pair', 'team'];
   const safeMode = allowedModes.includes(registrationMode) ? registrationMode : 'individual';
 
-  const eventType = body.eventType ? String(body.eventType).trim().toLowerCase() : 'seminar';
-  const allowedEventTypes = ['seminar', 'conference', 'workshop', 'competition', 'contest', 'hackathon', 'webinar', 'training', 'assembly', 'meeting', 'other'];
-  const safeEventType = allowedEventTypes.includes(eventType) ? eventType : 'seminar';
+  const rawEventType = body.eventType ? String(body.eventType).trim() : 'seminar';
+  const safeEventType = rawEventType.slice(0, 100) || 'seminar';
 
   const safeOverride = ['open', 'closed'].includes(registrationOverride) ? registrationOverride : null;
   if (registrationStartAt && Number.isNaN(registrationStartAt.getTime())) {
@@ -162,34 +163,49 @@ async function createEvent(req, res) {
   const themeColor = body.themeColor ? String(body.themeColor).trim() : '#2563eb';
   const customBadge = body.customBadge ? String(body.customBadge).trim() : null;
   const requiresCoach = Boolean(body.requiresCoach);
+  const guidelinesFileUrl = body.guidelinesFileUrl ? String(body.guidelinesFileUrl).trim() : null;
+  const guidelinesFileName = body.guidelinesFileName ? String(body.guidelinesFileName).trim() : null;
+
+  const [columnRows] = await pool.execute('SHOW COLUMNS FROM events');
+  const columnSet = new Set(columnRows.map((r) => String(r.Field)));
+
+  const columns = [];
+  const values = [];
+  const addCol = (col, val) => {
+    if (columnSet.has(col)) {
+      columns.push(`\`${col}\``);
+      values.push(val);
+    }
+  };
+
+  addCol('title', title);
+  addCol('description', description);
+  addCol('guidelines', guidelines);
+  addCol('registration_mode', safeMode);
+  addCol('registration_start_at', registrationStartAt && !Number.isNaN(registrationStartAt.getTime()) ? registrationStartAt : null);
+  addCol('registration_end_at', registrationEndAt && !Number.isNaN(registrationEndAt.getTime()) ? registrationEndAt : null);
+  addCol('registration_override', safeOverride);
+  addCol('event_type', safeEventType);
+  addCol('start_at', startAt);
+  addCol('end_at', endAt && !Number.isNaN(endAt.getTime()) ? endAt : null);
+  addCol('location', location);
+  addCol('registration_fee', Number.isFinite(fee) ? fee : 0);
+  addCol('capacity', Number.isFinite(capacity) ? capacity : 0);
+  addCol('status', safeStatus);
+  addCol('is_esports', isEsports ? 1 : 0);
+  addCol('esports_game', esportsGame);
+  addCol('esports_bracket_format', esportsBracketFormat);
+  addCol('banner_url', bannerUrl);
+  addCol('theme_color', themeColor);
+  addCol('custom_badge', customBadge);
+  addCol('requires_coach', requiresCoach ? 1 : 0);
+  addCol('guidelines_file_url', guidelinesFileUrl);
+  addCol('guidelines_file_name', guidelinesFileName);
+  addCol('created_by', req.user?.id || null);
 
   const [result] = await pool.execute(
-    `INSERT INTO events (title, description, guidelines, registration_mode, registration_start_at, registration_end_at, registration_override, event_type, start_at, end_at, location, registration_fee, capacity, status, is_esports, esports_game, esports_bracket_format, banner_url, theme_color, custom_badge, requires_coach, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      title,
-      description,
-      guidelines,
-      safeMode,
-      registrationStartAt && !Number.isNaN(registrationStartAt.getTime()) ? registrationStartAt : null,
-      registrationEndAt && !Number.isNaN(registrationEndAt.getTime()) ? registrationEndAt : null,
-      safeOverride,
-      safeEventType,
-      startAt,
-      endAt && !Number.isNaN(endAt.getTime()) ? endAt : null,
-      location,
-      Number.isFinite(fee) ? fee : 0,
-      Number.isFinite(capacity) ? capacity : 0,
-      safeStatus,
-      isEsports ? 1 : 0,
-      esportsGame,
-      esportsBracketFormat,
-      bannerUrl,
-      themeColor,
-      customBadge,
-      requiresCoach ? 1 : 0,
-      req.user?.id || null,
-    ]
+    `INSERT INTO events (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
+    values
   );
 
 async function broadcastNewEventNotification(eventId, eventData) {
@@ -267,7 +283,6 @@ async function updateEvent(req, res) {
   const body = req.body || {};
   const allowedStatus = ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'];
   const allowedModes = ['individual', 'pair', 'team'];
-  const allowedTypes = ['seminar', 'conference', 'workshop', 'competition', 'contest', 'hackathon', 'webinar', 'training', 'assembly', 'meeting', 'other'];
 
   const sets = [];
   const params = [];
@@ -284,8 +299,8 @@ async function updateEvent(req, res) {
   if (typeof body.guidelines === 'string') { sets.push('guidelines = ?'); params.push(body.guidelines.trim()); }
   if (typeof body.registrationMode === 'string' && allowedModes.includes(body.registrationMode)) { sets.push('registration_mode = ?'); params.push(body.registrationMode); }
   if (typeof body.eventType === 'string') {
-    const et = String(body.eventType).trim().toLowerCase();
-    if (!allowedTypes.includes(et)) {
+    const et = String(body.eventType).trim().slice(0, 100);
+    if (!et) {
       return res.status(400).json({ success: false, message: 'Invalid eventType.' });
     }
     sets.push('event_type = ?'); params.push(et);
@@ -371,6 +386,12 @@ async function updateEvent(req, res) {
   }
   if (body.requiresCoach !== undefined) {
     sets.push('requires_coach = ?'); params.push(Boolean(body.requiresCoach) ? 1 : 0);
+  }
+  if (body.guidelinesFileUrl !== undefined) {
+    sets.push('guidelines_file_url = ?'); params.push(body.guidelinesFileUrl ? String(body.guidelinesFileUrl).trim() : null);
+  }
+  if (body.guidelinesFileName !== undefined) {
+    sets.push('guidelines_file_name = ?'); params.push(body.guidelinesFileName ? String(body.guidelinesFileName).trim() : null);
   }
 
   const hasExplicitStatus = typeof body.status === 'string' && allowedStatus.includes(body.status);

@@ -379,7 +379,7 @@ export const NotificationsPage = () => {
                       }}
                     >
                       <UserCheck size={16} />
-                      <span>Review & Reactivate Member in Membership</span>
+                      <span>Review & Reactivate Member in PSITS Members</span>
                       <ExternalLink size={14} />
                     </Button>
                   </div>

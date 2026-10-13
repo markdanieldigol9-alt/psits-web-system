@@ -13,7 +13,6 @@ import {
   Settings,
   Briefcase,
   Video,
-  Bell,
   Upload,
   Vote,
   MessageSquareText,
@@ -38,7 +37,7 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
     {
       group: 'Management',
       items: [
-        { label: 'Membership', icon: Users, href: '/members' },
+        { label: 'PSITS Members', icon: Users, href: '/members' },
         { label: 'Officers', icon: Briefcase, href: '/officers' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
         { label: 'Events', icon: Calendar, href: '/events' },
@@ -56,13 +55,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Stream Events', icon: Video, href: '/stream-events' },
       ],
     },
-    {
-      group: 'Account',
-      items: [
-        { label: 'Notifications', icon: Bell, href: '/notifications' },
-        { label: 'Settings', icon: Settings, href: '/settings' },
-      ],
-    },
   ],
   admin: [
     {
@@ -72,7 +64,7 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
     {
       group: 'Management',
       items: [
-        { label: 'Membership', icon: Users, href: '/members' },
+        { label: 'PSITS Members', icon: Users, href: '/members' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
         { label: 'Events', icon: Calendar, href: '/events' },
         { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
@@ -89,13 +81,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Stream Events', icon: Video, href: '/stream-events' },
       ],
     },
-    {
-      group: 'Account',
-      items: [
-        { label: 'Notifications', icon: Bell, href: '/notifications' },
-        { label: 'Settings', icon: Settings, href: '/settings' },
-      ],
-    },
   ],
   officer: [
     {
@@ -105,7 +90,7 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
     {
       group: 'Management',
       items: [
-        { label: 'Membership', icon: Users, href: '/members' },
+        { label: 'PSITS Members', icon: Users, href: '/members' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
         { label: 'Events', icon: Calendar, href: '/events' },
         { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
@@ -120,10 +105,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
         { label: 'Stream Events', icon: Video, href: '/stream-events' },
       ],
-    },
-    {
-      group: 'Account',
-      items: [{ label: 'Notifications', icon: Bell, href: '/notifications' }],
     },
   ],
   member: [
@@ -150,13 +131,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
       ],
     },
-    {
-      group: 'Account',
-      items: [
-        { label: 'Notifications', icon: Bell, href: '/notifications' },
-        { label: 'Profile', icon: Settings, href: '/settings' },
-      ],
-    },
   ],
   member_individual: [
     {
@@ -180,13 +154,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Partners', icon: Briefcase, href: '/partners' },
         { label: 'Officers', icon: Briefcase, href: '/officers' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
-      ],
-    },
-    {
-      group: 'Account',
-      items: [
-        { label: 'Notifications', icon: Bell, href: '/notifications' },
-        { label: 'Profile', icon: Settings, href: '/settings' },
       ],
     },
   ],
@@ -215,13 +182,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
       ],
     },
-    {
-      group: 'Account',
-      items: [
-        { label: 'Notifications', icon: Bell, href: '/notifications' },
-        { label: 'Profile', icon: Settings, href: '/settings' },
-      ],
-    },
   ],
   member_industry: [
     {
@@ -246,13 +206,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Officers', icon: Briefcase, href: '/officers' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
         { label: 'Reports', icon: FileText, href: '/reports' },
-      ],
-    },
-    {
-      group: 'Account',
-      items: [
-        { label: 'Notifications', icon: Bell, href: '/notifications' },
-        { label: 'Profile', icon: Settings, href: '/settings' },
       ],
     },
   ],
@@ -280,7 +233,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
     const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;
     const isExpired = isMember && expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < now;
 
-    if (!isExpired) return groups;
+    if (!isExpired) return groups.filter((g) => g.items.length > 0);
 
     const allowedHrefs = ['/dashboard', '/settings', '/payments'];
     return groups

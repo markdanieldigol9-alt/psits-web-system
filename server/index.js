@@ -351,6 +351,58 @@ app.post('/api/uploads/event-banner', authMiddleware, requireRole(['super_admin'
   return res.status(201).json({ success: true, url: `/uploads/event-banners/${filename}` });
 });
 
+app.post('/api/uploads/event-guidelines', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+  const body = req.body || {};
+  const dataUrl = String(body.dataUrl || '');
+  const originalFileName = String(body.fileName || '').trim();
+
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    return res.status(400).json({ success: false, message: 'Invalid file format. Use PDF, Word (.docx/.doc), text (.txt/.md), or image.' });
+  }
+
+  const mime = match[1].toLowerCase();
+  const base64 = match[2];
+  const buffer = Buffer.from(base64, 'base64');
+
+  const maxBytes = 15 * 1024 * 1024; // 15MB
+  if (!buffer.length || buffer.length > maxBytes) {
+    return res.status(400).json({ success: false, message: 'File is required and must be <= 15MB.' });
+  }
+
+  let ext = 'pdf';
+  if (mime.includes('pdf') || originalFileName.toLowerCase().endsWith('.pdf')) {
+    ext = 'pdf';
+  } else if (mime.includes('text/plain') || originalFileName.toLowerCase().endsWith('.txt')) {
+    ext = 'txt';
+  } else if (mime.includes('markdown') || originalFileName.toLowerCase().endsWith('.md')) {
+    ext = 'md';
+  } else if (mime.includes('word') || mime.includes('document') || originalFileName.toLowerCase().endsWith('.docx') || originalFileName.toLowerCase().endsWith('.doc')) {
+    ext = originalFileName.toLowerCase().endsWith('.doc') ? 'doc' : 'docx';
+  } else if (mime.includes('image/png') || originalFileName.toLowerCase().endsWith('.png')) {
+    ext = 'png';
+  } else if (mime.includes('image/webp') || originalFileName.toLowerCase().endsWith('.webp')) {
+    ext = 'webp';
+  } else if (mime.includes('image/jpeg') || mime.includes('image/jpg') || originalFileName.toLowerCase().endsWith('.jpg') || originalFileName.toLowerCase().endsWith('.jpeg')) {
+    ext = 'jpg';
+  } else {
+    const fileExt = path.extname(originalFileName).toLowerCase().replace('.', '');
+    if (['pdf', 'txt', 'md', 'docx', 'doc', 'png', 'jpg', 'jpeg', 'webp'].includes(fileExt)) {
+      ext = fileExt;
+    } else {
+      return res.status(400).json({ success: false, message: 'Only PDF, Word, Text, Markdown, or Image documents are allowed.' });
+    }
+  }
+
+  const dir = path.join(__dirname, 'uploads', 'event-guidelines');
+  await fs.mkdir(dir, { recursive: true });
+
+  const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+  await fs.writeFile(path.join(dir, filename), buffer);
+
+  return res.status(201).json({ success: true, url: `/uploads/event-guidelines/${filename}`, fileName: originalFileName || filename });
+});
+
 app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');

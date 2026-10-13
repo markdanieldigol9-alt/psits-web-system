@@ -391,6 +391,10 @@ class ApiService {
     return this.client.post('/uploads/event-banner', { dataUrl });
   }
 
+  uploadEventGuidelines(dataUrl: string, fileName?: string) {
+    return this.client.post('/uploads/event-guidelines', { dataUrl, fileName });
+  }
+
   createPayment(data: any) {
     return this.client.post('/payments', data);
   }

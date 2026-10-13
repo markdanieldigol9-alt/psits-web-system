@@ -62,7 +62,10 @@ export const AuthLayout = ({ title, subtitle, children }: AuthLayoutProps) => {
         </div>
 
         {/* Form card — solid white, responsive padding */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.3)] p-6 sm:p-8 md:p-10">
+        <div
+          className="bg-white rounded-2xl sm:rounded-3xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.3)] p-6 sm:p-8 md:p-10 auth-card auth-scope [color-scheme:light] text-gray-900"
+          style={{ colorScheme: 'light' }}
+        >
           {(title || subtitle) && (
             <div className="mb-6 sm:mb-8">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">{title}</h2>

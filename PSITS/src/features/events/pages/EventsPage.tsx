@@ -19,6 +19,7 @@ type RegistrationOverride = '' | 'open' | 'closed';
 export const EVENT_CATEGORIES = [
   { value: 'competition', label: 'Competition' },
   { value: 'contest', label: 'Contest' },
+  { value: 'esports', label: 'Esports' },
   { value: 'seminar', label: 'Seminar' },
   { value: 'conference', label: 'Conference' },
   { value: 'other', label: 'Other' },
@@ -199,6 +200,9 @@ export const EventsPage = () => {
     title: '',
     description: '',
     guidelines: '',
+    guidelinesFile: null as File | null,
+    guidelinesFileUrl: '',
+    guidelinesFileName: '',
     guidelineFileName: '',
     registrationMode: '',
     registrationOverride: '' as RegistrationOverride,
@@ -207,6 +211,8 @@ export const EventsPage = () => {
     registrationEndDate: '',
     registrationEndTime: '',
     eventType: '',
+    categorySelect: '',
+    customCategoryText: '',
     location: '',
     startDate: '',
     startTime: '',
@@ -214,6 +220,7 @@ export const EventsPage = () => {
     endTime: '',
     fee: 0,
     capacity: 0,
+    isUnlimitedCapacity: true,
     status: '' as EventStatus,
     isEsports: false,
     esportsGame: '',
@@ -561,6 +568,9 @@ export const EventsPage = () => {
       title: '',
       description: '',
       guidelines: '',
+      guidelinesFile: null,
+      guidelinesFileUrl: '',
+      guidelinesFileName: '',
       guidelineFileName: '',
       registrationMode: '',
       registrationOverride: '' as RegistrationOverride,
@@ -569,6 +579,8 @@ export const EventsPage = () => {
       registrationEndDate: '',
       registrationEndTime: '',
       eventType: '',
+      categorySelect: '',
+      customCategoryText: '',
       location: '',
       startDate: '',
       startTime: '',
@@ -576,7 +588,8 @@ export const EventsPage = () => {
       endTime: '',
       fee: 0,
       capacity: 0,
-      status: '' as EventStatus,
+      isUnlimitedCapacity: true,
+      status: 'upcoming' as EventStatus,
       isEsports: false,
       esportsGame: '',
       esportsBracketFormat: '',
@@ -595,10 +608,21 @@ export const EventsPage = () => {
     setActiveFormTab('basic');
     const regStart = splitIsoToDateTime(event.registrationStartAt);
     const regEnd = splitIsoToDateTime(event.registrationEndAt);
+    const rawType = (event.eventType || '').trim();
+    const isEsp = Boolean(event.isEsports || rawType.toLowerCase() === 'esports');
+    const isStandardCat = ['competition', 'contest', 'esports', 'seminar', 'conference'].includes(rawType.toLowerCase());
+    const isOtherCat = Boolean(rawType && !isStandardCat);
+    const catSelect = isEsp ? 'esports' : (isStandardCat ? rawType.toLowerCase() : (rawType ? 'other' : ''));
+    const customText = (!isEsp && isOtherCat) ? (rawType.toLowerCase() === 'other' ? '' : rawType) : '';
+    const isUnlimited = !event.capacity || Number(event.capacity) <= 0;
+
     setFormData({
       title: event.title || '',
       description: event.description || '',
       guidelines: event.guidelines || '',
+      guidelinesFile: null,
+      guidelinesFileUrl: event.guidelinesFileUrl || '',
+      guidelinesFileName: event.guidelinesFileName || '',
       guidelineFileName: '',
       registrationMode: event.registrationMode || 'individual',
       registrationOverride: (event.registrationOverride || '') as RegistrationOverride,
@@ -606,7 +630,9 @@ export const EventsPage = () => {
       registrationStartTime: regStart.time,
       registrationEndDate: regEnd.date,
       registrationEndTime: regEnd.time,
-      eventType: event.eventType || 'seminar',
+      eventType: rawType || 'seminar',
+      categorySelect: catSelect,
+      customCategoryText: customText,
       location: event.location || '',
       startDate: event.date || '',
       startTime: event.time || '',
@@ -614,8 +640,9 @@ export const EventsPage = () => {
       endTime: event.endTime || '',
       fee: Number(event.fee || 0),
       capacity: Number(event.capacity || 0),
+      isUnlimitedCapacity: isUnlimited,
       status: (['draft', 'cancelled'].includes(String(event.status)) ? String(event.status) : 'upcoming') as EventStatus,
-      isEsports: Boolean(event.isEsports),
+      isEsports: isEsp,
       esportsGame: event.esportsGame || '',
       esportsBracketFormat: event.esportsBracketFormat || '',
       bannerUrl: event.bannerUrl || '',
@@ -626,6 +653,33 @@ export const EventsPage = () => {
       requiresCoach: Boolean(event.requiresCoach ?? event.requires_coach),
     });
     setShowEventModal(true);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    if (val === 'esports') {
+      setFormData((p) => ({
+        ...p,
+        categorySelect: 'esports',
+        eventType: 'esports',
+        customCategoryText: '',
+        isEsports: true,
+      }));
+    } else if (val === 'other') {
+      setFormData((p) => ({
+        ...p,
+        categorySelect: 'other',
+        eventType: p.customCategoryText.trim() || 'other',
+        isEsports: false,
+      }));
+    } else {
+      setFormData((p) => ({
+        ...p,
+        categorySelect: val,
+        eventType: val,
+        customCategoryText: '',
+        isEsports: false,
+      }));
+    }
   };
 
   const getAutoStatusPreview = () => {
@@ -647,7 +701,16 @@ export const EventsPage = () => {
         addNotification({ userId: 'current', title: 'Validation', message: 'Event title is required.', type: 'error', isRead: false });
         return false;
       }
-      if (formData.isEsports) {
+      if (!formData.categorySelect) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Event category is required.', type: 'error', isRead: false });
+        return false;
+      }
+      if (formData.categorySelect === 'other' && !formData.customCategoryText.trim()) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Please specify the custom category name.', type: 'error', isRead: false });
+        return false;
+      }
+      const isEsportsActive = formData.categorySelect === 'esports';
+      if (isEsportsActive) {
         if (!formData.esportsGame) {
           addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
           return false;
@@ -668,8 +731,8 @@ export const EventsPage = () => {
         addNotification({ userId: 'current', title: 'Validation', message: 'Event fee must be 0 or greater.', type: 'error', isRead: false });
         return false;
       }
-      if (Number(formData.capacity) < 0) {
-        addNotification({ userId: 'current', title: 'Validation', message: `${getParticipantCapacityLabel(formData.registrationMode)} must be 0 or greater.`, type: 'error', isRead: false });
+      if (!formData.isUnlimitedCapacity && (!formData.capacity || Number(formData.capacity) <= 0)) {
+        addNotification({ userId: 'current', title: 'Validation', message: `${getParticipantCapacityLabel(formData.registrationMode)} limit must be greater than 0 when set to Limited.`, type: 'error', isRead: false });
         return false;
       }
       if (!formData.startDate || !formData.startTime) {
@@ -688,9 +751,6 @@ export const EventsPage = () => {
           return false;
         }
       }
-      return true;
-    }
-    if (tab === 'guidelines') {
       if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
         addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
         return false;
@@ -707,6 +767,9 @@ export const EventsPage = () => {
           return false;
         }
       }
+      return true;
+    }
+    if (tab === 'guidelines') {
       return true;
     }
     return true;
@@ -1097,7 +1160,7 @@ export const EventsPage = () => {
                       {isRegistered && <Badge variant="success">Registered</Badge>}
                       {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
                       {event.eventType && (
-                        <Badge variant={['competition', 'contest', 'hackathon'].includes(event.eventType) ? 'error' : 'info'}>
+                        <Badge variant={['competition', 'contest', 'hackathon', 'esports'].includes(event.eventType.toLowerCase()) ? 'error' : 'info'}>
                           {getCategoryLabel(event.eventType)}
                         </Badge>
                       )}
@@ -1136,7 +1199,7 @@ export const EventsPage = () => {
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 rounded-lg bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">
                   <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400" /> <span><strong>Location:</strong> {event.location}</span></div>
-                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.registrations} / {event.capacity}</span></div>
+                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.registrations} / {Number(event.capacity) > 0 ? event.capacity : 'Unlimited'}</span></div>
                   <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400" /> <span><strong>Mode:</strong> {String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
                   {isMember && (event.registrationStartAt || event.registrationEndAt) && (
                     <div className="sm:col-span-2 md:col-span-3 text-xs text-gray-500 border-t border-gray-200/60 pt-2 mt-1">
@@ -1319,12 +1382,12 @@ export const EventsPage = () => {
 
             if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
-              setActiveFormTab('guidelines');
+              setActiveFormTab('schedule');
               return;
             }
             if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
               addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
-              setActiveFormTab('guidelines');
+              setActiveFormTab('schedule');
               return;
             }
             if (registrationStartAt && registrationEndAt) {
@@ -1332,7 +1395,7 @@ export const EventsPage = () => {
               const re = new Date(registrationEndAt);
               if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
-                setActiveFormTab('guidelines');
+                setActiveFormTab('schedule');
                 return;
               }
             }
@@ -1353,7 +1416,8 @@ export const EventsPage = () => {
               }
             }
 
-            if (formData.isEsports) {
+            const isEsportsActive = formData.categorySelect === 'esports';
+            if (isEsportsActive) {
               if (!formData.esportsGame) {
                 addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
                 setActiveFormTab('basic');
@@ -1381,24 +1445,47 @@ export const EventsPage = () => {
                 }
               }
 
+              let finalGuidelinesFileUrl = formData.guidelinesFileUrl || null;
+              let finalGuidelinesFileName = formData.guidelinesFileName || null;
+              if (formData.guidelinesFile) {
+                try {
+                  const dataUrl = await readAsDataUrl(formData.guidelinesFile);
+                  const { data: uploadG } = await api.uploadEventGuidelines(dataUrl, formData.guidelinesFile.name);
+                  if (uploadG?.url) {
+                    finalGuidelinesFileUrl = uploadG.url;
+                    finalGuidelinesFileName = uploadG.fileName || formData.guidelinesFile.name;
+                  }
+                } catch (err) {
+                  console.error('Guidelines upload error:', err);
+                  addNotification({ userId: 'current', title: 'Guidelines Upload Warning', message: 'Failed to upload guidelines file. Saved text guidelines only.', type: 'warning', isRead: false });
+                }
+              }
+
+              const finalEventType = formData.categorySelect === 'other'
+                ? (formData.customCategoryText.trim() || 'other')
+                : (formData.categorySelect || formData.eventType || 'seminar');
+              const finalIsEsports = formData.categorySelect === 'esports';
+
               setPendingEventPayload({
                 title: formData.title.trim(),
                 description: formData.description.trim(),
                 guidelines: formData.guidelines.trim(),
+                guidelinesFileUrl: finalGuidelinesFileUrl,
+                guidelinesFileName: finalGuidelinesFileName,
                 registrationMode: formData.registrationMode || 'individual',
-                registrationOverride: formData.registrationOverride || null,
+                registrationOverride: null,
                 ...(registrationStartAt ? { registrationStartAt } : {}),
                 ...(registrationEndAt ? { registrationEndAt } : {}),
                 location: formData.location.trim(),
-                eventType: formData.eventType || 'seminar',
+                eventType: finalEventType,
                 startAt,
                 ...(endAt ? { endAt } : {}),
                 fee: Number(formData.fee) || 0,
-                capacity: Number(formData.capacity) || 0,
+                capacity: formData.isUnlimitedCapacity ? 0 : (Number(formData.capacity) || 0),
                 status: formData.status || 'upcoming',
-                isEsports: formData.isEsports,
-                esportsGame: formData.esportsGame,
-                esportsBracketFormat: formData.esportsBracketFormat,
+                isEsports: finalIsEsports,
+                esportsGame: finalIsEsports ? formData.esportsGame : null,
+                esportsBracketFormat: finalIsEsports ? formData.esportsBracketFormat : null,
                 bannerUrl: finalBannerUrl,
                 themeColor: formData.themeColor || '#2563eb',
                 customBadge: formData.customBadge.trim() || null,
@@ -1421,12 +1508,11 @@ export const EventsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
                   label="Event Category"
-                  options={[
-                    { value: '', label: 'Select an option' },
-                    ...EVENT_CATEGORIES,
-                  ]}
-                  value={formData.eventType}
-                  onChange={(e) => setFormData((p) => ({ ...p, eventType: (e.target as HTMLSelectElement).value }))}
+                  required
+                  placeholder="Select an option"
+                  options={EVENT_CATEGORIES}
+                  value={formData.categorySelect}
+                  onChange={(e) => handleCategoryChange((e.target as HTMLSelectElement).value)}
                 />
                 <Select
                   label="Registration Mode"
@@ -1439,6 +1525,27 @@ export const EventsPage = () => {
                   onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
                 />
               </div>
+
+              {/* If "Other" category is selected, allow user to type what is needed */}
+              {formData.categorySelect === 'other' && (
+                <div className="animate-fadeIn">
+                  <Input
+                    label="Specify Category"
+                    placeholder="Type what is needed for this category (e.g. Hackathon, Workshop, Boot Camp...)"
+                    required
+                    value={formData.customCategoryText}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((p) => ({
+                        ...p,
+                        customCategoryText: val,
+                        eventType: val.trim() || 'other',
+                      }));
+                    }}
+                  />
+                </div>
+              )}
+
               <TextArea
                 label="Description"
                 rows={4}
@@ -1465,53 +1572,46 @@ export const EventsPage = () => {
                 />
               </div>
 
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Trophy size={18} className="text-purple-600" />
-                  <span className="text-sm font-medium text-gray-800">This is for Esports Events</span>
-                </div>
-                <input
-                  type="checkbox"
-                  id="isEsportsTab"
-                  checked={formData.isEsports}
-                  onChange={(e) => setFormData((p) => ({ ...p, isEsports: e.target.checked }))}
-                  className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
-                />
-              </div>
-
-              {formData.isEsports && (
-                <div className="space-y-4 animate-fadeIn bg-purple-50/60 p-4 rounded-xl border border-purple-200">
+              {/* eSports Tournament Settings (shown when Event Category is Esports) */}
+              {formData.categorySelect === 'esports' && (
+                <div className="space-y-4 animate-fadeIn bg-purple-50/60 dark:bg-purple-950/20 p-4 rounded-xl border border-purple-200 dark:border-purple-800/50">
                   <div className="flex items-center gap-2 mb-1">
-                    <Trophy size={18} className="text-purple-600" />
-                    <h4 className="text-sm font-bold text-purple-900">eSports Tournament Settings</h4>
+                    <Trophy size={18} className="text-purple-600 dark:text-purple-400" />
+                    <h4 className="text-sm font-bold text-purple-900 dark:text-purple-200">eSports Tournament Settings</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">eSports Game *</label>
-                      <select
-                        value={formData.esportsGame}
-                        onChange={(e) => setFormData((p) => ({ ...p, esportsGame: e.target.value }))}
-                        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                      >
-                        <option value="">Select Game...</option>
-                        <optgroup label="Mobile Games">
-                          <option value="Mobile Legends: Bang Bang">Mobile Legends: Bang Bang</option>
-                          <option value="PUBG Mobile">PUBG Mobile</option>
-                          <option value="Arena of Valor">Arena of Valor</option>
-                          <option value="Call of Duty: Mobile">Call of Duty: Mobile</option>
-                        </optgroup>
-                        <optgroup label="PC Games">
-                          <option value="VALORANT">VALORANT</option>
-                          <option value="Dota 2">Dota 2</option>
-                          <option value="League of Legends">League of Legends</option>
-                          <option value="CrossFire">CrossFire</option>
-                        </optgroup>
-                      </select>
-                    </div>
                     <Select
-                      label="Tournament Bracket Format *"
+                      label="eSports Game"
+                      required
+                      placeholder="Select Game..."
                       options={[
-                        { value: '', label: 'Select Format...' },
+                        { value: 'Mobile Legends: Bang Bang', label: 'Mobile Legends: Bang Bang' },
+                        { value: 'PUBG Mobile', label: 'PUBG Mobile' },
+                        { value: 'Arena of Valor', label: 'Arena of Valor' },
+                        { value: 'Call of Duty: Mobile', label: 'Call of Duty: Mobile' },
+                        { value: 'VALORANT', label: 'VALORANT' },
+                        { value: 'Dota 2', label: 'Dota 2' },
+                        { value: 'League of Legends', label: 'League of Legends' },
+                        { value: 'CrossFire', label: 'CrossFire' },
+                        ...(formData.esportsGame && ![
+                          'Mobile Legends: Bang Bang',
+                          'PUBG Mobile',
+                          'Arena of Valor',
+                          'Call of Duty: Mobile',
+                          'VALORANT',
+                          'Dota 2',
+                          'League of Legends',
+                          'CrossFire',
+                        ].includes(formData.esportsGame) ? [{ value: formData.esportsGame, label: formData.esportsGame }] : []),
+                      ]}
+                      value={formData.esportsGame}
+                      onChange={(e) => setFormData((p) => ({ ...p, esportsGame: (e.target as HTMLSelectElement).value }))}
+                    />
+                    <Select
+                      label="Tournament Bracket Format"
+                      required
+                      placeholder="Select an option"
+                      options={[
                         { value: 'Single Elimination', label: 'Single Elimination' },
                         { value: 'Double Elimination', label: 'Double Elimination' },
                         { value: 'Swiss System', label: 'Swiss System' },
@@ -1543,33 +1643,76 @@ export const EventsPage = () => {
                 <Input label="End Time" type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Input label="Registration Fee (₱)" type="number" min="0" value={String(formData.fee)} onChange={(e) => setFormData((p) => ({ ...p, fee: Number(e.target.value) }))} />
-                <Input label={getParticipantCapacityLabel(formData.registrationMode)} type="number" min="0" value={String(formData.capacity)} onChange={(e) => setFormData((p) => ({ ...p, capacity: Number(e.target.value) }))} />
-                <Select
-                  label="Event Status"
-                  options={[
-                    { value: 'upcoming', label: 'Automatic (default)' },
-                    { value: 'draft', label: 'Draft (Manual)' },
-                  ]}
-                  value={formData.status}
-                  onChange={(e) => setFormData((p) => ({ ...p, status: (e.target as HTMLSelectElement).value as EventStatus }))}
-                />
+              <div className="text-xs text-gray-500 flex items-center justify-between px-1">
+                <span>Calculated Event Status:</span>
+                <span className="font-semibold text-blue-600 dark:text-blue-400">{getAutoStatusPreview()}</span>
               </div>
-              <p className="text-xs text-gray-500">
-                Automatic status preview: <strong>{getAutoStatusPreview()}</strong>.
-              </p>
-            </div>
-          )}
 
-          {/* TAB 3: GUIDELINES */}
-          {activeFormTab === 'guidelines' && (
-            <div className="space-y-5 animate-fadeIn">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pt-2 border-t border-gray-200 dark:border-slate-800">
+                <Input label="Registration Fee (₱)" type="number" min="0" value={String(formData.fee)} onChange={(e) => setFormData((p) => ({ ...p, fee: Number(e.target.value) }))} />
+                
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    {getParticipantCapacityLabel(formData.registrationMode)}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, isUnlimitedCapacity: true, capacity: 0 }))}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
+                        formData.isUnlimitedCapacity
+                          ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/60 dark:border-cyan-500 dark:text-cyan-300 shadow-xs ring-1 ring-blue-500/20'
+                          : 'bg-white border-gray-200 text-gray-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      Unlimited
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({
+                        ...p,
+                        isUnlimitedCapacity: false,
+                        capacity: p.capacity > 0 ? p.capacity : 50,
+                      }))}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
+                        !formData.isUnlimitedCapacity
+                          ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/60 dark:border-cyan-500 dark:text-cyan-300 shadow-xs ring-1 ring-blue-500/20'
+                          : 'bg-white border-gray-200 text-gray-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      Limited
+                    </button>
+                  </div>
 
-              {/* Registration Window */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Registration Window (Optional)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+                  {!formData.isUnlimitedCapacity ? (
+                    <div className="pt-1">
+                      <Input
+                        label="Maximum Limit *"
+                        type="number"
+                        min="1"
+                        placeholder="e.g. 50"
+                        value={formData.capacity > 0 ? String(formData.capacity) : ''}
+                        onChange={(e) => setFormData((p) => ({ ...p, capacity: Number(e.target.value) }))}
+                        helperText="Registration closes automatically when this limit is reached."
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-slate-400 pt-0.5">
+                      No participant capacity limit (unlimited registrations allowed).
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Registration Window (Moved to Step 2) */}
+              <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
+                    Registration Window (Optional)
+                  </h4>
+                  <span className="text-[11px] text-gray-400">Controls registration schedule</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-slate-800">
                   <Input
                     label="Registration Start Date"
                     type="date"
@@ -1595,33 +1738,119 @@ export const EventsPage = () => {
                     onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))}
                   />
                 </div>
-                <p className="text-xs text-gray-500">Leave blank to keep registration open based on event status.</p>
-              </div>
-
-              {/* Registration Override */}
-              <Select
-                label="Registration Override"
-                options={[
-                  { value: '', label: 'Auto (based on schedule)' },
-                  { value: 'open', label: 'Force Open' },
-                  { value: 'closed', label: 'Force Closed' },
-                ]}
-                value={formData.registrationOverride}
-                onChange={(e) => setFormData((p) => ({ ...p, registrationOverride: (e.target as HTMLSelectElement).value as RegistrationOverride }))}
-              />
-
-              {/* Guidelines */}
-              <div className="space-y-2">
-                <TextArea
-                  label="Guidelines"
-                  rows={5}
-                  placeholder="Enter event rules, mechanics, and important reminders for participants..."
-                  value={formData.guidelines}
-                  onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
-                />
-                <p className="text-xs text-gray-500">
-                  Provide clear rules and mechanics that participants must follow.
+                <p className="text-xs text-gray-500 dark:text-slate-400">
+                  Leave blank to naturally keep registration open based on event schedule.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: GUIDELINES */}
+          {activeFormTab === 'guidelines' && (
+            <div className="space-y-5 animate-fadeIn">
+              {/* Guidelines */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <TextArea
+                    label="Guidelines"
+                    rows={5}
+                    placeholder="Enter event rules, mechanics, and important reminders for participants..."
+                    value={formData.guidelines}
+                    onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Provide clear rules and mechanics that participants must follow.
+                  </p>
+                </div>
+
+                {/* Upload Guidelines Document Option */}
+                <div className="p-4 bg-slate-50 dark:bg-obsidian-surface/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
+                  <div>
+                    <span className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider block">
+                      Upload Guidelines Document (Optional)
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400">
+                      Upload an official PDF, Word (.docx/.doc), Markdown (.md), Text (.txt), or Image guidelines document.
+                    </span>
+                  </div>
+
+                  {(formData.guidelinesFile || formData.guidelinesFileUrl) ? (
+                    <div className="flex items-center justify-between p-3 bg-white dark:bg-obsidian-card rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
+                          <FileSpreadsheet size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                            {formData.guidelinesFile?.name || formData.guidelinesFileName || 'Uploaded Guidelines Document'}
+                          </p>
+                          <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                            {formData.guidelinesFile
+                              ? `${(formData.guidelinesFile.size / 1024).toFixed(1)} KB • Attached`
+                              : 'Attached Document'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {formData.guidelinesFileUrl && !formData.guidelinesFile && (
+                          <a
+                            href={formData.guidelinesFileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline font-medium px-2 py-1"
+                          >
+                            Preview ↗
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setFormData((p) => ({ ...p, guidelinesFile: null, guidelinesFileUrl: '', guidelinesFileName: '' }))}
+                          className="text-xs text-red-600 hover:text-red-700 p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          title="Remove guidelines file"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary dark:hover:border-cyber-cyan rounded-xl p-4 text-center transition-colors bg-white/50 dark:bg-obsidian-card/40">
+                      <Upload size={20} className="text-slate-400" />
+                      <div>
+                        <span className="text-xs font-semibold text-primary dark:text-cyber-cyan hover:underline">
+                          Click to upload guidelines document
+                        </span>
+                        <span className="text-xs text-slate-500 block mt-0.5">
+                          PDF, DOCX, DOC, TXT, MD, or Image (max 15MB)
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept=".pdf,.docx,.doc,.txt,.md,image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 15 * 1024 * 1024) {
+                            addNotification({ userId: 'current', title: 'File Too Large', message: 'Guidelines file must be 15MB or less.', type: 'error', isRead: false });
+                            return;
+                          }
+                          if ((file.name.endsWith('.txt') || file.name.endsWith('.md')) && !formData.guidelines.trim()) {
+                            try {
+                              const text = await file.text();
+                              if (text) {
+                                setFormData((p) => ({ ...p, guidelines: text.trim(), guidelinesFile: file, guidelinesFileName: file.name }));
+                                return;
+                              }
+                            } catch {
+                              // ignore
+                            }
+                          }
+                          setFormData((p) => ({ ...p, guidelinesFile: file, guidelinesFileName: file.name }));
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
 
               {/* Event Banner */}
@@ -1942,10 +2171,17 @@ export const EventsPage = () => {
               </div>
             )}
 
-            {detailsEvent.guidelines && (
+            {(detailsEvent.guidelines || detailsEvent.guidelinesFileUrl) && (
               <div>
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold text-gray-900">Guidelines</div>
+                  <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <span>Guidelines</span>
+                    {detailsEvent.guidelinesFileUrl && (
+                      <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 font-medium">
+                        Document Attached
+                      </span>
+                    )}
+                  </div>
                   <Button size="sm" variant="outline" onClick={() => setShowGuidelinesModal(true)}>
                     View Guidelines
                   </Button>
@@ -2736,14 +2972,52 @@ export const EventsPage = () => {
         title="Event Guidelines"
         size="lg"
       >
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="text-xs text-gray-500">
             {detailsEvent?.title ? `Event: ${detailsEvent.title}` : 'Guidelines'}
           </p>
-          <div className="max-h-[60vh] overflow-auto rounded-lg border border-gray-200 p-4 text-sm text-gray-700 whitespace-pre-wrap">
-            {detailsEvent?.guidelines ? String(detailsEvent.guidelines) : 'No guidelines available.'}
-          </div>
-          <div className="flex justify-end">
+
+          {/* Attached Guidelines Document */}
+          {detailsEvent?.guidelinesFileUrl && (
+            <div className="p-4 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 shrink-0">
+                  <FileSpreadsheet size={22} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-sm font-bold text-gray-900 dark:text-white block truncate">
+                    {detailsEvent.guidelinesFileName || 'Official Guidelines Document'}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-slate-400">Attached file for participant review & reference</span>
+                </div>
+              </div>
+              <a
+                href={detailsEvent.guidelinesFileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors shrink-0"
+              >
+                <Download size={15} />
+                View / Download Document ↗
+              </a>
+            </div>
+          )}
+
+          {/* Text Guidelines */}
+          {detailsEvent?.guidelines && (
+            <div className="max-h-[60vh] overflow-auto rounded-lg border border-gray-200 dark:border-slate-800 p-4 text-sm text-gray-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed bg-white dark:bg-obsidian-card">
+              {String(detailsEvent.guidelines)}
+            </div>
+          )}
+
+          {!detailsEvent?.guidelines && !detailsEvent?.guidelinesFileUrl && (
+            <div className="p-6 text-center text-sm text-gray-500 bg-gray-50 dark:bg-obsidian-surface rounded-lg border border-gray-200 dark:border-slate-800">
+              No guidelines available for this event.
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-slate-800">
             <Button variant="primary" onClick={() => setShowGuidelinesModal(false)}>
               Close
             </Button>

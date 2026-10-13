@@ -78,6 +78,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   helperText?: string;
   prefixIcon?: ReactNode;
   suffixIcon?: ReactNode;
+  variant?: 'default' | 'light';
 }
 
 export const Input = ({
@@ -88,40 +89,54 @@ export const Input = ({
   suffixIcon,
   className = '',
   required,
+  variant = 'default',
+  style,
   ...props
 }: InputProps) => {
+  const isLight = variant === 'light';
+
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300">
+        <label className={`block text-xs font-semibold ${isLight ? 'text-gray-700' : 'text-gray-700 dark:text-slate-300'}`}>
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       <div className="relative">
         {prefixIcon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none">
+          <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-gray-400' : 'text-gray-400 dark:text-slate-500'} pointer-events-none`}>
             {prefixIcon}
           </div>
         )}
         <input
           required={required}
-          className={`w-full py-2.5 bg-white dark:bg-[#0B1326] border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400 hover:border-gray-300 dark:hover:border-slate-600 ${
+          className={`w-full py-2.5 rounded-[10px] text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 ${
+            isLight
+              ? 'bg-white text-gray-900 placeholder:text-slate-400 hover:border-gray-300 border-gray-200 [color-scheme:light]'
+              : 'bg-white dark:bg-[#0B1326] text-gray-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 hover:border-gray-300 dark:hover:border-slate-600 dark:focus:border-cyan-400 border border-gray-200 dark:border-slate-700'
+          } ${
             prefixIcon ? 'pl-9' : 'pl-3.5'
           } ${suffixIcon ? 'pr-9' : 'pr-3.5'} ${
             error
-              ? 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
-              : 'border-gray-200 dark:border-slate-700'
+              ? isLight
+                ? 'border-red-400 bg-red-50/30'
+                : 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
+              : ''
           } ${className}`}
+          style={{
+            ...(isLight ? { colorScheme: 'light', backgroundColor: '#ffffff', color: '#111827' } : {}),
+            ...style,
+          }}
           {...props}
         />
         {suffixIcon && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none">
+          <div className={`absolute right-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-gray-400' : 'text-gray-400 dark:text-slate-500'} pointer-events-none`}>
             {suffixIcon}
           </div>
         )}
       </div>
-      {error && <p className="text-red-500 dark:text-red-400 text-xs font-medium animate-fade-in">{error}</p>}
-      {helperText && !error && <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">{helperText}</p>}
+      {error && <p className={`text-xs font-medium animate-fade-in ${isLight ? 'text-red-500' : 'text-red-500 dark:text-red-400'}`}>{error}</p>}
+      {helperText && !error && <p className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-500 dark:text-slate-400'}`}>{helperText}</p>}
     </div>
   );
 };
@@ -133,6 +148,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: Array<{ value: string | number; label: string }>;
   placeholder?: string;
   hidePlaceholder?: boolean;
+  variant?: 'default' | 'light';
 }
 
 export const Select = ({
@@ -143,45 +159,60 @@ export const Select = ({
   required,
   placeholder = 'Select an option',
   hidePlaceholder = false,
+  variant = 'default',
+  style,
   ...props
 }: SelectProps) => {
   const hasEmptyOption = options.some((o) => o.value === '');
   const filteredOptions = hasEmptyOption ? options.filter((o) => o.value !== '') : options;
+  const isLight = variant === 'light';
 
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300">
+        <label className={`block text-xs font-semibold ${isLight ? 'text-gray-700' : 'text-gray-700 dark:text-slate-300'}`}>
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       <select
         required={required}
-        className={`w-full px-3.5 py-2.5 bg-white dark:bg-[#0B1326] border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400 hover:border-gray-300 dark:hover:border-slate-600 appearance-none cursor-pointer ${
+        className={`w-full px-3.5 py-2.5 rounded-[10px] text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 appearance-none cursor-pointer ${
+          isLight
+            ? 'bg-white text-gray-900 border border-gray-200 hover:border-gray-300 [color-scheme:light]'
+            : 'bg-white dark:bg-[#0B1326] border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100 hover:border-gray-300 dark:hover:border-slate-600 dark:focus:border-cyan-400'
+        } ${
           error
-            ? 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
-            : 'border-gray-200 dark:border-slate-700'
+            ? isLight
+              ? 'border-red-400 bg-red-50/30'
+              : 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
+            : ''
         } ${className}`}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'right 12px center',
           paddingRight: '36px',
+          ...(isLight ? { colorScheme: 'light', backgroundColor: '#ffffff', color: '#111827' } : {}),
+          ...style,
         }}
         {...props}
       >
         {!hidePlaceholder && (
-          <option value="" className="dark:bg-[#0B1326] dark:text-slate-200 text-gray-400">
+          <option value="" className={isLight ? "bg-white text-gray-400" : "dark:bg-[#0B1326] dark:text-slate-200 text-gray-400"}>
             {placeholder}
           </option>
         )}
         {filteredOptions.map((option) => (
-          <option key={option.value} value={option.value} className="dark:bg-[#0B1326] dark:text-slate-200">
+          <option
+            key={option.value}
+            value={option.value}
+            className={isLight ? "bg-white text-gray-900" : "dark:bg-[#0B1326] dark:text-slate-200 text-gray-900"}
+          >
             {option.label}
           </option>
         ))}
       </select>
-      {error && <p className="text-red-500 dark:text-red-400 text-xs font-medium animate-fade-in">{error}</p>}
+      {error && <p className={`text-xs font-medium animate-fade-in ${isLight ? 'text-red-500' : 'text-red-500 dark:text-red-400'}`}>{error}</p>}
     </div>
   );
 };
@@ -190,26 +221,39 @@ export const Select = ({
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
+  variant?: 'default' | 'light';
 }
 
-export const TextArea = ({ label, error, className = '', required, ...props }: TextAreaProps) => {
+export const TextArea = ({ label, error, className = '', required, variant = 'default', style, ...props }: TextAreaProps) => {
+  const isLight = variant === 'light';
+
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300">
+        <label className={`block text-xs font-semibold ${isLight ? 'text-gray-700' : 'text-gray-700 dark:text-slate-300'}`}>
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       <textarea
         required={required}
-        className={`w-full px-3.5 py-2.5 bg-white dark:bg-[#0B1326] border rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400 hover:border-gray-300 dark:hover:border-slate-600 resize-y ${
+        className={`w-full px-3.5 py-2.5 rounded-[10px] text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 resize-y ${
+          isLight
+            ? 'bg-white text-gray-900 placeholder-gray-400 border border-gray-200 hover:border-gray-300 [color-scheme:light]'
+            : 'bg-white dark:bg-[#0B1326] border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 hover:border-gray-300 dark:hover:border-slate-600 dark:focus:border-cyan-400'
+        } ${
           error
-            ? 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
-            : 'border-gray-200 dark:border-slate-700'
+            ? isLight
+              ? 'border-red-400 bg-red-50/30'
+              : 'border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500'
+            : ''
         } ${className}`}
+        style={{
+          ...(isLight ? { colorScheme: 'light', backgroundColor: '#ffffff', color: '#111827' } : {}),
+          ...style,
+        }}
         {...props}
       />
-      {error && <p className="text-red-500 dark:text-red-400 text-xs font-medium animate-fade-in">{error}</p>}
+      {error && <p className={`text-xs font-medium animate-fade-in ${isLight ? 'text-red-500' : 'text-red-500 dark:text-red-400'}`}>{error}</p>}
     </div>
   );
 };

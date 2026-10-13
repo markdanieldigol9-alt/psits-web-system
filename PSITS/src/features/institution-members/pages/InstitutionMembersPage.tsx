@@ -260,7 +260,7 @@ export const InstitutionMembersPage = () => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return members;
     return members.filter((m) =>
-      [m.fullName, m.email, m.contactNumber, m.position, m.eventTitle, m.institutionName]
+      [m.fullName, m.email, m.contactNumber, m.gender, m.position, m.eventTitle, m.institutionName]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -514,7 +514,7 @@ export const InstitutionMembersPage = () => {
       'Contact Number': m.contactNumber || 'N/A',
       'Position': m.position || 'N/A',
       'Fee / Rate': 'PHP 250.00',
-      'Event Title': m.eventTitle || 'N/A',
+      'Gender': m.gender || 'N/A',
       'Status': m.status || 'pending',
       'Date Added': m.date || 'N/A',
     }));
@@ -676,7 +676,7 @@ export const InstitutionMembersPage = () => {
             <div className="relative w-full">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <Input
-                placeholder="Search member, institution, event, email..."
+                placeholder="Search member, institution, gender, email..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -699,7 +699,7 @@ export const InstitutionMembersPage = () => {
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Contact</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Position</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Fee / Rate</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Event</th>
+                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Gender</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Date</th>
                   {canApprove && <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Actions</th>}
@@ -717,7 +717,7 @@ export const InstitutionMembersPage = () => {
                       <div>₱250.00</div>
                       <span className="text-[10px] text-gray-400 font-normal">per person</span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{member.eventTitle || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{member.gender || '-'}</td>
                     <td className="px-6 py-4">
                       <Badge variant={member.status === 'approved' ? 'success' : member.status === 'rejected' ? 'error' : 'warning'}>
                         {String(member.status || 'pending').charAt(0).toUpperCase() + String(member.status || 'pending').slice(1)}

@@ -319,26 +319,26 @@ export const InstitutionEventLeaderboard = () => {
             </div>
 
             {/* Event Selector Dropdown + Refresh */}
-            <div className="flex items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
-              <div className="relative flex-1 lg:w-80 xl:w-96">
+            <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
+              <div className="relative flex-1 lg:w-[440px] xl:w-[520px] 2xl:w-[580px]">
                 <select
                   value={selectedEventId}
                   onChange={(e) => handleEventChange(e.target.value)}
                   disabled={isLoading || events.length === 0}
-                  className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-white/15 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 hover:border-white/45 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer appearance-none pr-10 sm:pr-12 shadow-sm transition-all"
+                  className="w-full px-5 sm:px-6 py-3.5 sm:py-4 md:py-4.5 bg-white/15 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/35 hover:border-white/55 rounded-2xl text-base sm:text-lg md:text-xl font-black tracking-tight focus:outline-none focus:ring-4 focus:ring-white/30 cursor-pointer appearance-none pr-14 sm:pr-16 shadow-lg transition-all min-h-[52px] sm:min-h-[58px] md:min-h-[64px] flex items-center"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 16px center',
+                    backgroundPosition: 'right 20px center',
                   }}
                 >
                   {events.length === 0 ? (
-                    <option value="" className="text-gray-800">
+                    <option value="" className="text-gray-800 text-base">
                       No active events available
                     </option>
                   ) : (
                     events.map((evt) => (
-                      <option key={evt.id} value={evt.id} className="text-gray-900 bg-white font-medium">
+                      <option key={evt.id} value={evt.id} className="text-gray-900 bg-white font-bold text-base sm:text-lg py-2">
                         {evt.title} ({evt.status})
                       </option>
                     ))
@@ -351,9 +351,9 @@ export const InstitutionEventLeaderboard = () => {
                 onClick={() => void loadLeaderboard(selectedEventId, true)}
                 disabled={isRefreshing || isLoading}
                 title="Refresh Leaderboard Data"
-                className="h-[46px] w-[46px] sm:h-[50px] sm:w-[50px] flex items-center justify-center bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 rounded-xl sm:rounded-2xl shrink-0 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                className="h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] md:h-[64px] md:w-[64px] flex items-center justify-center bg-white/15 hover:bg-white/25 active:scale-95 text-white border-2 border-white/35 hover:border-white/55 rounded-2xl shrink-0 transition-all shadow-lg disabled:opacity-50 cursor-pointer"
               >
-                <RefreshCw size={19} className={isRefreshing ? 'animate-spin' : ''} />
+                <RefreshCw className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
