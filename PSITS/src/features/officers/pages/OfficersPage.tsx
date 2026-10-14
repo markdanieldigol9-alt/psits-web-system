@@ -9,6 +9,7 @@ import { AddOfficerModal } from '@/features/officers/components/AddOfficerModal'
 import { ManagePositionsModal } from '@/features/officers/components/ManagePositionsModal';
 import { useAuth } from '@/shared/context/AuthContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
+import { getPositionRank } from '@/shared/utils/helpers';
 
 const formatYear = (dateStr?: string | null) => {
   if (!dateStr) return '';
@@ -55,13 +56,24 @@ export const OfficersPage = () => {
     };
   }, [filterStatus]);
 
-  const filteredOfficers = useMemo(
-    () =>
-      officers.filter(
-        (officer) => filterStatus === 'all' || officer.officerStatus === filterStatus
-      ),
-    [officers, filterStatus]
-  );
+  const filteredOfficers = useMemo(() => {
+    const list = officers.filter(
+      (officer) => filterStatus === 'all' || officer.officerStatus === filterStatus
+    );
+    return list.slice().sort((a, b) => {
+      const rankA = getPositionRank(a.position);
+      const rankB = getPositionRank(b.position);
+      if (rankA !== rankB) return rankA - rankB;
+
+      const dateA = a.termStart ? new Date(a.termStart).getTime() : 0;
+      const dateB = b.termStart ? new Date(b.termStart).getTime() : 0;
+      if (dateA !== dateB) return dateB - dateA;
+
+      const nameA = String(a.fullName || a.name || '').toLowerCase();
+      const nameB = String(b.fullName || b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }, [officers, filterStatus]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredOfficers.length / itemsPerPage);
@@ -119,7 +131,9 @@ export const OfficersPage = () => {
               <thead className="bg-slate-50 dark:bg-[#171F33] border-b border-gray-200 dark:border-slate-800">
                 <tr>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Position</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Position <span className="text-[10px] font-normal lowercase tracking-normal text-slate-400">(Executive Order)</span>
+                  </th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sector</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Service Period</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>

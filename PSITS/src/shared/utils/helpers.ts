@@ -123,3 +123,78 @@ export const resolveImageUrl = (url?: string | null): string => {
   return trimmed;
 };
 
+/**
+ * Returns a numerical rank for an officer position title where President is the highest rank (lowest numerical value, e.g. 10).
+ * Ordering follows standard executive board hierarchy:
+ * 1. President
+ * 2. Vice President (Internal, External, Academic, Executive, etc.)
+ * 3. Secretary / Assistant Secretary
+ * 4. Treasurer / Assistant Treasurer
+ * 5. Auditor / Assistant Auditor
+ * 6. Business Manager
+ * 7. Public Information Officer / Press Relations Officer (PIO / PRO)
+ * 8. Protocol Officer
+ * 9. Sergeant-at-Arms / Peace Officer / Marshal
+ * 10. Representative (Year level, college, sector)
+ * 11. Member / Committee
+ */
+export const getPositionRank = (positionName?: string | null): number => {
+  if (!positionName) return 999;
+  const pos = String(positionName).trim().toLowerCase();
+
+  // 1. President (must not be Vice President or VP)
+  if (pos.includes('president') && !pos.includes('vice') && !/\bvp\b/.test(pos)) return 10;
+
+  // 2. Vice President
+  if (
+    pos.includes('vice president') ||
+    pos.includes('vice-president') ||
+    /\bvp\b/.test(pos) ||
+    pos.includes('v-pres')
+  ) {
+    return 20;
+  }
+
+  // 3. Secretary
+  if (pos.includes('assistant secretary') || pos.includes('asst secretary') || pos.includes('asst. secretary')) return 35;
+  if (pos.includes('secretary')) return 30;
+
+  // 4. Treasurer
+  if (pos.includes('assistant treasurer') || pos.includes('asst treasurer') || pos.includes('asst. treasurer')) return 45;
+  if (pos.includes('treasurer') || pos.includes('finance')) return 40;
+
+  // 5. Auditor
+  if (pos.includes('assistant auditor') || pos.includes('asst auditor') || pos.includes('asst. auditor')) return 55;
+  if (pos.includes('auditor')) return 50;
+
+  // 6. Business Manager
+  if (pos.includes('business')) return 60;
+
+  // 7. Public Information Officer / Press Relations Officer (PIO / PRO)
+  if (pos.includes('public information') || /\bpio\b/.test(pos)) return 70;
+  if (pos.includes('press relations') || pos.includes('public relations') || /\bpro\b/.test(pos)) return 75;
+  if ((pos.includes('information') || pos.includes('relations')) && !pos.includes('protocol')) return 78;
+
+  // 8. Protocol Officer
+  if (pos.includes('protocol')) return 80;
+
+  // 9. Sergeant-at-Arms / Peace Officer / Marshal
+  if (
+    pos.includes('sergeant') ||
+    pos.includes('sgt') ||
+    pos.includes('peace') ||
+    pos.includes('marshal') ||
+    pos.includes('arms')
+  ) {
+    return 90;
+  }
+
+  // 10. Representative
+  if (pos.includes('representative') || pos.includes('rep')) return 100;
+
+  // 11. Board / Committee / Member
+  if (pos.includes('member') || pos.includes('committee')) return 110;
+
+  return 200;
+};
+

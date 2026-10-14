@@ -1114,22 +1114,25 @@ async function migrate() {
   `);
 
   try {
-    const [posCount] = await pool.query('SELECT COUNT(*) AS cnt FROM officer_positions');
-    if (posCount[0] && posCount[0].cnt === 0) {
-      const defaults = [
-        ['President', 'Lead organization executive', 1],
-        ['Vice President', 'Assisting organization executive', 1],
-        ['Secretary', 'Record keeping and administration', 1],
-        ['Treasurer', 'Financial management and records', 1],
-        ['Member', 'Board or committee member position', 1]
-      ];
-      for (const [pName, pDesc, pIsDef] of defaults) {
-        // eslint-disable-next-line no-await-in-loop
-        await pool.query(
-          'INSERT IGNORE INTO officer_positions (name, description, is_default) VALUES (?, ?, ?)',
-          [pName, pDesc, pIsDef]
-        );
-      }
+    const defaults = [
+      ['President', 'Lead organization executive', 1],
+      ['Vice President', 'Assisting organization executive', 1],
+      ['Secretary', 'Record keeping and administration', 1],
+      ['Treasurer', 'Financial management and records', 1],
+      ['Auditor', 'Financial audit and examination', 1],
+      ['Business Manager', 'Commercial and sponsorship operations', 1],
+      ['Public Information Officer', 'Information dissemination and external communications', 1],
+      ['Press Relations Officer', 'Media and press communications', 1],
+      ['Protocol Officer', 'Official ceremonies, decorum, and proceedings', 1],
+      ['Sergeant-at-Arms', 'Order and security enforcement during meetings', 1],
+      ['Member', 'Board or committee member position', 1]
+    ];
+    for (const [pName, pDesc, pIsDef] of defaults) {
+      // eslint-disable-next-line no-await-in-loop
+      await pool.query(
+        'INSERT IGNORE INTO officer_positions (name, description, is_default) VALUES (?, ?, ?)',
+        [pName, pDesc, pIsDef]
+      );
     }
   } catch {
     // Ignore seeding error

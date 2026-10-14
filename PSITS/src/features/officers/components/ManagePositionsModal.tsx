@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Input, Button, TextArea } from '@/shared/components/Form';
 import { Alert, Badge } from '@/shared/components/Common';
 import api from '@/shared/services/api';
+import { getPositionRank } from '@/shared/utils/helpers';
 import { X, Plus, Trash2, ShieldAlert } from 'lucide-react';
 
 interface ManagePositionsModalProps {
@@ -45,7 +46,13 @@ export const ManagePositionsModal = ({
     try {
       const { data } = await api.getOfficerPositions();
       if (data?.success) {
-        setPositions(data.positions || []);
+        const sorted = (data.positions || []).slice().sort((a: OfficerPositionItem, b: OfficerPositionItem) => {
+          const rankA = getPositionRank(a.name);
+          const rankB = getPositionRank(b.name);
+          if (rankA !== rankB) return rankA - rankB;
+          return a.name.localeCompare(b.name);
+        });
+        setPositions(sorted);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load officer positions.');

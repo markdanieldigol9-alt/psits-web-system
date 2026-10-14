@@ -6,6 +6,7 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
+import { getPositionRank } from '@/shared/utils/helpers';
 import { Plus, Users, Trophy, Lock, Eye, Trash2, Info } from 'lucide-react';
 
 type ElectionStatus = 'draft' | 'open' | 'closed' | 'archived';
@@ -80,6 +81,12 @@ export const ElectionsPage = () => {
     'Vice President',
     'Secretary',
     'Treasurer',
+    'Auditor',
+    'Business Manager',
+    'Public Information Officer',
+    'Press Relations Officer',
+    'Protocol Officer',
+    'Sergeant-at-Arms',
     'Member',
   ]);
 
@@ -92,7 +99,11 @@ export const ElectionsPage = () => {
       ]);
       if (electionsResp.data?.success) setElections(electionsResp.data.elections || []);
       if (posResp.data?.success && posResp.data.positions?.length > 0) {
-        setAllOfficerPositions(posResp.data.positions.map((p: any) => p.name));
+        const sortedPos = posResp.data.positions
+          .slice()
+          .sort((a: any, b: any) => getPositionRank(a.name) - getPositionRank(b.name))
+          .map((p: any) => p.name);
+        setAllOfficerPositions(sortedPos);
       }
     } catch (err) {
       addNotification({ userId: 'current', title: 'Error', message: err instanceof Error ? err.message : 'Failed to load elections.', type: 'error', isRead: false });

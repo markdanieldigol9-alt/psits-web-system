@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Input, Button, Badge, Select, TextArea } from '@/shared/components/Form';
@@ -84,6 +84,7 @@ export const InstitutionMembersPage = () => {
   const [members, setMembers] = useState<InstitutionMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -613,10 +614,35 @@ export const InstitutionMembersPage = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             {(isInstitutionMember || canViewAll) && (
-              <Button variant="primary" size="lg" onClick={() => setShowAddModal(true)}>
-                <Plus size={20} />
-                Add Member
-              </Button>
+              <>
+                <Button variant="primary" size="lg" onClick={() => setShowAddModal(true)}>
+                  <Plus size={20} />
+                  Add Member
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    await onSelectSpreadsheet(file);
+                    e.currentTarget.value = '';
+                  }}
+                />
+                <Button
+                  variant="primary"
+                  size="lg"
+                  disabled={isUploading}
+                  isLoading={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload size={20} />
+                  {isUploading ? 'Uploading...' : 'Upload Excel / CSV File'}
+                </Button>
+              </>
             )}
             {testParticipantsCount > 0 && canViewAll && (
               <Button
@@ -636,7 +662,7 @@ export const InstitutionMembersPage = () => {
           </div>
         </div>
 
-        {(isInstitutionMember || canViewAll) && (
+        {isInstitutionMember && (
           <Card
             title="Upload Institution Members & Portal Login Setup"
             subtitle="Standard Fee: ₱250.00 / person • Supported Formats: CSV (.csv), Excel (.xlsx, .xls) • Columns: fullName, email, password (optional), contactNumber, gender, position, eventTitle, notes"
@@ -662,24 +688,6 @@ export const InstitutionMembersPage = () => {
                     <Download size={14} /> Download CSV Template (.csv)
                   </button>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900 shadow-sm transition-all">
-                  <Upload size={16} />
-                  {isUploading ? 'Uploading...' : 'Upload Excel / CSV File'}
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                    className="hidden"
-                    disabled={isUploading}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      await onSelectSpreadsheet(file);
-                      e.currentTarget.value = '';
-                    }}
-                  />
-                </label>
               </div>
             </div>
 

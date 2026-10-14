@@ -45,6 +45,81 @@ function toOfficerDto(row) {
   };
 }
 
+/**
+ * Returns a numerical rank for an officer position title where President is the highest rank (lowest numerical value, e.g. 10).
+ * Hierarchy order:
+ * 1. President
+ * 2. Vice President
+ * 3. Secretary / Assistant Secretary
+ * 4. Treasurer / Assistant Treasurer
+ * 5. Auditor / Assistant Auditor
+ * 6. Business Manager
+ * 7. Public Information Officer / Press Relations Officer (PIO / PRO)
+ * 8. Protocol Officer
+ * 9. Sergeant-at-Arms / Peace Officer / Marshal
+ * 10. Representative
+ * 11. Member / Committee
+ */
+function getPositionRank(positionName) {
+  if (!positionName) return 999;
+  const pos = String(positionName).trim().toLowerCase();
+
+  // 1. President (must not be Vice President or VP)
+  if (pos.includes('president') && !pos.includes('vice') && !/\bvp\b/.test(pos)) return 10;
+
+  // 2. Vice President
+  if (
+    pos.includes('vice president') ||
+    pos.includes('vice-president') ||
+    /\bvp\b/.test(pos) ||
+    pos.includes('v-pres')
+  ) {
+    return 20;
+  }
+
+  // 3. Secretary
+  if (pos.includes('assistant secretary') || pos.includes('asst secretary') || pos.includes('asst. secretary')) return 35;
+  if (pos.includes('secretary')) return 30;
+
+  // 4. Treasurer / Finance
+  if (pos.includes('assistant treasurer') || pos.includes('asst treasurer') || pos.includes('asst. treasurer')) return 45;
+  if (pos.includes('treasurer') || pos.includes('finance')) return 40;
+
+  // 5. Auditor
+  if (pos.includes('assistant auditor') || pos.includes('asst auditor') || pos.includes('asst. auditor')) return 55;
+  if (pos.includes('auditor')) return 50;
+
+  // 6. Business Manager
+  if (pos.includes('business')) return 60;
+
+  // 7. Public Information Officer / Press Relations Officer (PIO / PRO)
+  if (pos.includes('public information') || /\bpio\b/.test(pos)) return 70;
+  if (pos.includes('press relations') || pos.includes('public relations') || /\bpro\b/.test(pos)) return 75;
+  if ((pos.includes('information') || pos.includes('relations')) && !pos.includes('protocol')) return 78;
+
+  // 8. Protocol Officer
+  if (pos.includes('protocol')) return 80;
+
+  // 9. Sergeant-at-Arms / Peace Officer / Marshal
+  if (
+    pos.includes('sergeant') ||
+    pos.includes('sgt') ||
+    pos.includes('peace') ||
+    pos.includes('marshal') ||
+    pos.includes('arms')
+  ) {
+    return 90;
+  }
+
+  // 10. Representative
+  if (pos.includes('representative') || pos.includes('rep')) return 100;
+
+  // 11. Board / Committee / Member
+  if (pos.includes('member') || pos.includes('committee')) return 110;
+
+  return 200;
+}
+
 async function getOfficerColumnSet(conn) {
   const [columnRows] = await conn.execute('SHOW COLUMNS FROM officers');
   return new Set(columnRows.map((r) => String(r.Field)));
@@ -122,12 +197,44 @@ async function listOfficers(req, res) {
      FROM users u
      JOIN officers o ON o.user_id = u.id
      WHERE ${where.join(' AND ')}
-     ORDER BY o.start_date DESC, u.created_at DESC`
+     ORDER BY
+       CASE
+         WHEN LOWER(o.position) LIKE '%president%' AND LOWER(o.position) NOT LIKE '%vice%' AND LOWER(o.position) NOT LIKE '%vp%' THEN 10
+         WHEN LOWER(o.position) LIKE '%vice president%' OR LOWER(o.position) LIKE '%vice-president%' OR LOWER(o.position) LIKE 'vp%' OR LOWER(o.position) LIKE '% vp%' THEN 20
+         WHEN LOWER(o.position) LIKE '%assistant secretary%' OR LOWER(o.position) LIKE '%asst%secretary%' THEN 35
+         WHEN LOWER(o.position) LIKE '%secretary%' THEN 30
+         WHEN LOWER(o.position) LIKE '%assistant treasurer%' OR LOWER(o.position) LIKE '%asst%treasurer%' THEN 45
+         WHEN LOWER(o.position) LIKE '%treasurer%' OR LOWER(o.position) LIKE '%finance%' THEN 40
+         WHEN LOWER(o.position) LIKE '%assistant auditor%' OR LOWER(o.position) LIKE '%asst%auditor%' THEN 55
+         WHEN LOWER(o.position) LIKE '%auditor%' THEN 50
+         WHEN LOWER(o.position) LIKE '%business%' THEN 60
+         WHEN LOWER(o.position) LIKE '%public information%' OR LOWER(o.position) LIKE '%pio%' THEN 70
+         WHEN LOWER(o.position) LIKE '%press relations%' OR LOWER(o.position) LIKE '%public relations%' OR LOWER(o.position) LIKE '%pro%' THEN 75
+         WHEN LOWER(o.position) LIKE '%information%' OR LOWER(o.position) LIKE '%relations%' THEN 78
+         WHEN LOWER(o.position) LIKE '%protocol%' THEN 80
+         WHEN LOWER(o.position) LIKE '%sergeant%' OR LOWER(o.position) LIKE '%sgt%' OR LOWER(o.position) LIKE '%peace%' OR LOWER(o.position) LIKE '%marshal%' OR LOWER(o.position) LIKE '%arms%' THEN 90
+         WHEN LOWER(o.position) LIKE '%representative%' OR LOWER(o.position) LIKE '%rep%' THEN 100
+         WHEN LOWER(o.position) LIKE '%member%' OR LOWER(o.position) LIKE '%committee%' THEN 110
+         ELSE 200
+       END ASC,
+       o.start_date DESC,
+       u.full_name ASC`
     ,
     params
   );
 
-  return res.json({ success: true, officers: rows.map(toOfficerDto) });
+  const officers = rows.map(toOfficerDto);
+  officers.sort((a, b) => {
+    const rankA = getPositionRank(a.position);
+    const rankB = getPositionRank(b.position);
+    if (rankA !== rankB) return rankA - rankB;
+    const dateA = a.termStart ? new Date(a.termStart).getTime() : 0;
+    const dateB = b.termStart ? new Date(b.termStart).getTime() : 0;
+    if (dateA !== dateB) return dateB - dateA;
+    return String(a.fullName || '').localeCompare(String(b.fullName || ''));
+  });
+
+  return res.json({ success: true, officers });
 }
 
 async function createOfficer(req, res) {
@@ -520,9 +627,38 @@ async function deleteOfficer(req, res) {
 async function listOfficerPositions(req, res) {
   try {
     const [rows] = await pool.execute(
-      'SELECT id, name, description, is_default AS isDefault, created_at AS createdAt FROM officer_positions ORDER BY id ASC'
+      `SELECT id, name, description, is_default AS isDefault, created_at AS createdAt
+       FROM officer_positions
+       ORDER BY
+         CASE
+           WHEN LOWER(name) LIKE '%president%' AND LOWER(name) NOT LIKE '%vice%' AND LOWER(name) NOT LIKE '%vp%' THEN 10
+           WHEN LOWER(name) LIKE '%vice president%' OR LOWER(name) LIKE '%vice-president%' OR LOWER(name) LIKE 'vp%' OR LOWER(name) LIKE '% vp%' THEN 20
+           WHEN LOWER(name) LIKE '%assistant secretary%' OR LOWER(name) LIKE '%asst%secretary%' THEN 35
+           WHEN LOWER(name) LIKE '%secretary%' THEN 30
+           WHEN LOWER(name) LIKE '%assistant treasurer%' OR LOWER(name) LIKE '%asst%treasurer%' THEN 45
+           WHEN LOWER(name) LIKE '%treasurer%' OR LOWER(name) LIKE '%finance%' THEN 40
+           WHEN LOWER(name) LIKE '%assistant auditor%' OR LOWER(name) LIKE '%asst%auditor%' THEN 55
+           WHEN LOWER(name) LIKE '%auditor%' THEN 50
+           WHEN LOWER(name) LIKE '%business%' THEN 60
+           WHEN LOWER(name) LIKE '%public information%' OR LOWER(name) LIKE '%pio%' THEN 70
+           WHEN LOWER(name) LIKE '%press relations%' OR LOWER(name) LIKE '%public relations%' OR LOWER(name) LIKE '%pro%' THEN 75
+           WHEN LOWER(name) LIKE '%information%' OR LOWER(name) LIKE '%relations%' THEN 78
+           WHEN LOWER(name) LIKE '%protocol%' THEN 80
+           WHEN LOWER(name) LIKE '%sergeant%' OR LOWER(name) LIKE '%sgt%' OR LOWER(name) LIKE '%peace%' OR LOWER(name) LIKE '%marshal%' OR LOWER(name) LIKE '%arms%' THEN 90
+           WHEN LOWER(name) LIKE '%representative%' OR LOWER(name) LIKE '%rep%' THEN 100
+           WHEN LOWER(name) LIKE '%member%' OR LOWER(name) LIKE '%committee%' THEN 110
+           ELSE 200
+         END ASC,
+         id ASC`
     );
-    return res.json({ success: true, positions: rows.map(r => ({ ...r, id: String(r.id), isDefault: Boolean(r.isDefault) })) });
+    const positions = rows.map(r => ({ ...r, id: String(r.id), isDefault: Boolean(r.isDefault) }));
+    positions.sort((a, b) => {
+      const rankA = getPositionRank(a.name);
+      const rankB = getPositionRank(b.name);
+      if (rankA !== rankB) return rankA - rankB;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+    return res.json({ success: true, positions });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to fetch officer positions.' });
   }
@@ -615,6 +751,7 @@ async function deleteOfficerPosition(req, res) {
 }
 
 module.exports = {
+  getPositionRank,
   listOfficers,
   createOfficer,
   assignOfficer,

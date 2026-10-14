@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Input, Button, Select } from '@/shared/components/Form';
 import { Alert } from '@/shared/components/Common';
 import api from '@/shared/services/api';
+import { getPositionRank } from '@/shared/utils/helpers';
 import { X } from 'lucide-react';
 
 interface AddOfficerModalProps {
@@ -137,8 +138,14 @@ export const AddOfficerModal = ({
   const [availablePositions, setAvailablePositions] = useState<string[]>([
     'President',
     'Vice President',
-    'Treasurer',
     'Secretary',
+    'Treasurer',
+    'Auditor',
+    'Business Manager',
+    'Public Information Officer',
+    'Press Relations Officer',
+    'Protocol Officer',
+    'Sergeant-at-Arms',
     'Member',
   ]);
 
@@ -159,7 +166,10 @@ export const AddOfficerModal = ({
 
         const fetchedPositions = posResp.data?.positions || [];
         if (fetchedPositions.length > 0) {
-          const names = fetchedPositions.map((p: any) => p.name);
+          const names = fetchedPositions
+            .map((p: any) => p.name)
+            .slice()
+            .sort((a: string, b: string) => getPositionRank(a) - getPositionRank(b));
           if (!cancelled) setAvailablePositions(names);
         }
       } catch {
