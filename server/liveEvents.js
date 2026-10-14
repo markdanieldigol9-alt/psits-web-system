@@ -72,6 +72,20 @@ function addDays(date, days) {
   return d;
 }
 
+function toMysqlDatetime(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  const seconds = pad(d.getSeconds());
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 function safeFilename(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
@@ -561,8 +575,13 @@ async function createLiveEvent(req, res) {
   const privacy = SESSION_PRIVACY.includes(String(body.privacy)) ? String(body.privacy) : 'public';
   const status = SESSION_STATUSES.includes(String(body.status)) ? String(body.status) : 'ended';
   const now = new Date();
-  const startAt = normalizeDateTime(body.startAt) || toMysqlDatetime(now);
-  const endAt = normalizeDateTime(body.endAt) || null;
+  const normalizedStart = normalizeDateTime(body.startAt);
+  if (normalizedStart === 'invalid') return json(res, 400, { success: false, message: 'Invalid start date/time.' });
+  const startAt = normalizedStart ? toMysqlDatetime(normalizedStart) : toMysqlDatetime(now);
+
+  const normalizedEnd = normalizeDateTime(body.endAt);
+  if (normalizedEnd === 'invalid') return json(res, 400, { success: false, message: 'Invalid end date/time.' });
+  const endAt = normalizedEnd ? toMysqlDatetime(normalizedEnd) : null;
   const roomCode = normalizeRoomCode(body.roomCode || generateRoomCode(title));
   const sessionIdentifier = safeString(body.sessionId || body.sessionIdentifier, 64) || generateSessionIdentifier(title);
   const sessionToken = safeString(body.sessionToken, 96) || generateSessionToken();
@@ -1246,6 +1265,7 @@ async function uploadLiveEventRecording(req, res) {
 
   const relativePosixPath = `uploads/live-recordings/${finalFilename}`;
   const expiresAt = addDays(new Date(), RECORDING_RETENTION_DAYS);
+  const expiresAtMysql = toMysqlDatetime(expiresAt);
   const downloadUrl = `/api/live-events/${id}/recording/download`;
 
   await pool.execute(
@@ -1255,14 +1275,14 @@ async function uploadLiveEventRecording(req, res) {
          recording_path = ?,
          recording_expires_at = ?
      WHERE id = ?`,
-    [downloadUrl, relativePosixPath, expiresAt, id]
+    [downloadUrl, relativePosixPath, expiresAtMysql, id]
   );
 
   await upsertSessionRecordingMetadata({
     liveEventId: id,
     recordingUrl: downloadUrl,
     recordingPath: relativePosixPath,
-    expiresAt,
+    expiresAt: expiresAtMysql,
     originalFilename: originalFilename || null,
     sizeBytes: buffer.length,
     mimeType: contentType,

@@ -1028,7 +1028,7 @@ app.use((err, _req, res, _next) => {
     return res.status(503).json({ success: false, message: getDbUnavailableMessage(err) });
   }
 
-  res.status(500).json({ success: false, message: 'Server error.' });
+  res.status(500).json({ success: false, message: err?.message ? `Server error: ${err.message}` : 'Server error.' });
 });
 
 const port = Number(process.env.PORT || 3000);
