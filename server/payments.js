@@ -13,6 +13,8 @@ function toPaymentDto(row) {
       eventTitle = 'Partner Sponsorship';
     } else if (row.payment_kind === 'institution_batch_registration') {
       eventTitle = row.event || 'Institution Batch Member Registration';
+    } else if (row.payment_kind === 'institution_partial_payment') {
+      eventTitle = row.event || 'Institution Partial Payment';
     } else if (!row.event_id) {
       eventTitle = 'Membership Fee';
     }
@@ -244,7 +246,7 @@ async function createPayment(req, res) {
     }
   }
 
-  if (!['event', 'membership_renewal', 'membership_registration', 'membership', 'partner_sponsorship', 'institution_batch_registration'].includes(paymentKind)) {
+  if (!['event', 'membership_renewal', 'membership_registration', 'membership', 'partner_sponsorship', 'institution_batch_registration', 'institution_partial_payment'].includes(paymentKind)) {
     return res.status(400).json({ success: false, message: 'Invalid payment kind.' });
   }
 
@@ -265,8 +267,10 @@ async function createPayment(req, res) {
   if (eventId && Number.isFinite(eventId)) {
     const [eventRows] = await pool.execute('SELECT title FROM events WHERE id = ? LIMIT 1', [eventId]);
     eventTitle = eventRows[0]?.title || '';
-  } else if (paymentKind === 'institution_batch_registration' && body.eventTitle) {
+  } else if ((paymentKind === 'institution_batch_registration' || paymentKind === 'institution_partial_payment') && body.eventTitle) {
     eventTitle = String(body.eventTitle).trim();
+  } else if (paymentKind === 'institution_partial_payment') {
+    eventTitle = 'Institution Partial Payment';
   }
 
   const columns = [];

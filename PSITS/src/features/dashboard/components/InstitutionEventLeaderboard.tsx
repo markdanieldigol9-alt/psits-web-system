@@ -10,20 +10,14 @@ import {
   Users,
   MapPin,
   Calendar,
-  CheckCircle2,
   Search,
   RefreshCw,
-  UserCheck,
-  Award,
   ChevronRight,
-  Filter,
-  Check,
   X,
 } from 'lucide-react';
 import type {
   InstitutionLeaderboardData,
   EventLeaderboardInstitution,
-  EventLeaderboardParticipant,
 } from '@/shared/types';
 
 export const InstitutionEventLeaderboard = () => {
@@ -35,16 +29,10 @@ export const InstitutionEventLeaderboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'all_in_venue' | 'partial' | 'not_in_venue'>('all');
 
   // Modal state for viewing institution participants
   const [activeInstitution, setActiveInstitution] = useState<EventLeaderboardInstitution | null>(null);
   const [participantSearch, setParticipantSearch] = useState<string>('');
-  const [togglingParticipantId, setTogglingParticipantId] = useState<string | null>(null);
-  const [isBulkChecking, setIsBulkChecking] = useState<boolean>(false);
-
-  const canManage =
-    user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
   const loadLeaderboard = useCallback(
     async (eventId?: string, showRefreshIndicator = false) => {
@@ -92,118 +80,7 @@ export const InstitutionEventLeaderboard = () => {
     void loadLeaderboard(eventId);
   };
 
-  const handleToggleAttendance = async (
-    participant: EventLeaderboardParticipant,
-    institutionId: string
-  ) => {
-    setTogglingParticipantId(participant.id);
-    const nextCheckedIn = !participant.checkedIn;
-
-    try {
-      const res = await api.toggleParticipantAttendance({
-        participantId: participant.id,
-        checkedIn: nextCheckedIn,
-      });
-
-      if (res.data?.success) {
-        addNotification({
-          userId: 'current',
-          title: nextCheckedIn ? 'Marked In Venue' : 'Attendance Removed',
-          message: `${participant.fullName} is now ${nextCheckedIn ? 'verified in venue' : 'marked as not yet in venue'}.`,
-          type: 'success',
-          isRead: false,
-        });
-
-        // Optimistically update active institution modal
-        if (activeInstitution && activeInstitution.institutionId === institutionId) {
-          const updatedParts = activeInstitution.participants.map((p) =>
-            p.id === participant.id
-              ? { ...p, checkedIn: nextCheckedIn, checkedInAt: nextCheckedIn ? new Date().toISOString() : null }
-              : p
-          );
-          const inVenue = updatedParts.filter((p) => p.checkedIn).length;
-          const reg = activeInstitution.registeredCount;
-          const allIn = reg > 0 && inVenue >= reg;
-          setActiveInstitution({
-            ...activeInstitution,
-            participants: updatedParts,
-            inVenueCount: inVenue,
-            attendanceRate: reg > 0 ? Math.round((inVenue / reg) * 100) : 0,
-            allInVenue: allIn,
-            status: allIn ? 'All in Venue' : inVenue > 0 ? `Arriving (${inVenue}/${reg})` : 'Not in Venue',
-          });
-        }
-
-        // Refresh entire leaderboard to keep ranks accurate
-        void loadLeaderboard(selectedEventId, true);
-      }
-    } catch (err: any) {
-      addNotification({
-        userId: 'current',
-        title: 'Check-in Error',
-        message: err?.response?.data?.message || err?.message || 'Failed to update attendance.',
-        type: 'error',
-        isRead: false,
-      });
-    } finally {
-      setTogglingParticipantId(null);
-    }
-  };
-
-  const handleBulkCheckAll = async (institution: EventLeaderboardInstitution, checkIn: boolean) => {
-    if (!selectedEventId) return;
-    setIsBulkChecking(true);
-
-    try {
-      const res = await api.checkAllInstitutionParticipants({
-        eventId: selectedEventId,
-        institutionUserId: institution.institutionId,
-        checkedIn: checkIn,
-      });
-
-      if (res.data?.success) {
-        addNotification({
-          userId: 'current',
-          title: checkIn ? 'All Checked In' : 'Attendance Cleared',
-          message: res.data.message || `Attendance updated for ${institution.institutionName}.`,
-          type: 'success',
-          isRead: false,
-        });
-
-        // Optimistically update active institution
-        if (activeInstitution && activeInstitution.institutionId === institution.institutionId) {
-          const updatedParts = activeInstitution.participants.map((p) => ({
-            ...p,
-            checkedIn: checkIn,
-            checkedInAt: checkIn ? new Date().toISOString() : null,
-          }));
-          const inVenue = checkIn ? updatedParts.length : 0;
-          setActiveInstitution({
-            ...activeInstitution,
-            participants: updatedParts,
-            inVenueCount: inVenue,
-            attendanceRate: checkIn ? 100 : 0,
-            allInVenue: checkIn,
-            status: checkIn ? 'All in Venue' : 'Not in Venue',
-          });
-        }
-
-        void loadLeaderboard(selectedEventId, true);
-      }
-    } catch (err: any) {
-      addNotification({
-        userId: 'current',
-        title: 'Bulk Update Failed',
-        message: err?.response?.data?.message || err?.message || 'Failed to update all participants.',
-        type: 'error',
-        isRead: false,
-      });
-    } finally {
-      setIsBulkChecking(false);
-    }
-  };
-
-  // Filtered leaderboard
+  // Filtered leaderboard based on search query
   const filteredLeaderboard = useMemo(() => {
     if (!data?.leaderboard) return [];
 
@@ -219,16 +96,8 @@ export const InstitutionEventLeaderboard = () => {
       );
     }
 
-    if (statusFilter === 'all_in_venue') {
-      list = list.filter((i) => i.allInVenue);
-    } else if (statusFilter === 'partial') {
-      list = list.filter((i) => i.inVenueCount > 0 && !i.allInVenue);
-    } else if (statusFilter === 'not_in_venue') {
-      list = list.filter((i) => i.inVenueCount === 0);
-    }
-
     return list;
-  }, [data?.leaderboard, searchQuery, statusFilter]);
+  }, [data?.leaderboard, searchQuery]);
 
   // Modal participants filtered
   const filteredParticipants = useMemo(() => {
@@ -242,11 +111,6 @@ export const InstitutionEventLeaderboard = () => {
         p.position?.toLowerCase().includes(q)
     );
   }, [activeInstitution?.participants, participantSearch]);
-
-  const canEditInstitutionAttendance = (institution: EventLeaderboardInstitution) => {
-    if (canManage) return true;
-    return String(user?.id) === String(institution.institutionId);
-  };
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) {
@@ -280,9 +144,6 @@ export const InstitutionEventLeaderboard = () => {
   const summary = data?.summary || {
     totalInstitutions: 0,
     totalRegisteredParticipants: 0,
-    totalInVenue: 0,
-    overallAttendanceRate: 0,
-    fullyPresentInstitutions: 0,
   };
 
   const selectedEvent = data?.selectedEvent;
@@ -307,12 +168,9 @@ export const InstitutionEventLeaderboard = () => {
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
                     Institution Event Leaderboard
-                    <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 backdrop-blur-sm uppercase tracking-wider">
-                      Live Attendance
-                    </span>
                   </h2>
                   <p className="text-blue-100 text-xs sm:text-sm mt-0.5">
-                    Track registered institutions, participant headcounts, and venue check-in turnout in real time.
+                    Track registered institutions and participant headcounts in real time.
                   </p>
                 </div>
               </div>
@@ -385,97 +243,58 @@ export const InstitutionEventLeaderboard = () => {
           )}
         </div>
 
-        {/* ── Summary Statistics Cards Grid ──────────────────────── */}
+        {/* ── Summary Statistics Cards Grid (Registered Institutions & Total Participants) ── */}
         <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-900/40 border-b border-slate-200/80 dark:border-slate-800">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Registered Institutions */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
-                <Building2 size={22} />
+            <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+              <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+                <Building2 size={24} />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                   Registered Institutions
                 </p>
-                <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                   {summary.totalInstitutions}
                 </p>
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
-                  Schools / Organizations
+                  Participating Schools / Organizations
                 </p>
               </div>
             </div>
 
             {/* Total Registered Participants */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
-                <Users size={22} />
+            <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+              <div className="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <Users size={24} />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                   Total Participants
                 </p>
-                <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                   {summary.totalRegisteredParticipants}
                 </p>
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
-                  Registered for this event
-                </p>
-              </div>
-            </div>
-
-            {/* Present in Venue */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
-                <UserCheck size={22} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
-                  In Venue (Present)
-                </p>
-                <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  {summary.totalInVenue}
-                  <span className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">
-                    / {summary.totalRegisteredParticipants}
-                  </span>
-                </p>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
-                  {summary.fullyPresentInstitutions} institutions 100% present
-                </p>
-              </div>
-            </div>
-
-            {/* Overall Turnout Rate */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0">
-                <Award size={22} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
-                  Venue Turnout
-                </p>
-                <p className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
-                  {summary.overallAttendanceRate}%
-                </p>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
-                  Attendance verification rate
+                  Total delegation registered for this event
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Filter and Search Controls ─────────────────────────── */}
-        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900">
+        {/* ── Search Controls ─────────────────────────── */}
+        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900">
           {/* Search box */}
-          <div className="w-full md:w-80 relative">
+          <div className="w-full sm:w-80 relative">
             <Search className="w-4 h-4 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search school or participant..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
             {searchQuery && (
               <button
@@ -487,51 +306,8 @@ export const InstitutionEventLeaderboard = () => {
             )}
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 shrink-0 mr-1">
-              <Filter size={13} /> Filter:
-            </span>
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
-                statusFilter === 'all'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              All ({data?.leaderboard.length || 0})
-            </button>
-            <button
-              onClick={() => setStatusFilter('all_in_venue')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
-                statusFilter === 'all_in_venue'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 hover:bg-emerald-100'
-              }`}
-            >
-              All in Venue (100%)
-            </button>
-            <button
-              onClick={() => setStatusFilter('partial')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
-                statusFilter === 'partial'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 hover:bg-amber-100'
-              }`}
-            >
-              Arriving / Partial
-            </button>
-            <button
-              onClick={() => setStatusFilter('not_in_venue')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
-                statusFilter === 'not_in_venue'
-                  ? 'bg-slate-800 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Not in Venue
-            </button>
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Showing {filteredLeaderboard.length} of {data?.leaderboard.length || 0} registered institutions
           </div>
         </div>
 
@@ -549,26 +325,23 @@ export const InstitutionEventLeaderboard = () => {
                 <Building2 size={26} />
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                {searchQuery || statusFilter !== 'all'
+                {searchQuery
                   ? 'No matching institutions found'
                   : 'No institutions registered for this event yet'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md mx-auto mt-1">
-                {searchQuery || statusFilter !== 'all'
-                  ? 'Try adjusting your search query or clear the active filter.'
+                {searchQuery
+                  ? 'Try adjusting your search query.'
                   : 'Institutions that register participants for this event will automatically show up on this leaderboard.'}
               </p>
-              {(searchQuery || statusFilter !== 'all') && (
+              {searchQuery && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setStatusFilter('all');
-                  }}
+                  onClick={() => setSearchQuery('')}
                   className="mt-4"
                 >
-                  Clear Filters
+                  Clear Search
                 </Button>
               )}
             </div>
@@ -584,14 +357,12 @@ export const InstitutionEventLeaderboard = () => {
                   <div
                     key={inst.institutionId}
                     className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
-                      inst.allInVenue
-                        ? 'bg-gradient-to-r from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-slate-900 dark:to-emerald-950/10 border-emerald-300 dark:border-emerald-800/60 shadow-xs'
-                        : isUserSchool
+                      isUserSchool
                         ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-300 dark:border-blue-900 shadow-xs'
                         : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-card hover:shadow-card-md'
                     }`}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       {/* Left: Rank + Institution Info */}
                       <div className="flex items-center gap-3.5 min-w-0 flex-1">
                         {/* Rank indicator */}
@@ -610,11 +381,6 @@ export const InstitutionEventLeaderboard = () => {
                               {inst.institutionName.charAt(0).toUpperCase()}
                             </div>
                           )}
-                          {inst.allInVenue && (
-                            <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
-                              <Check size={10} strokeWidth={3} />
-                            </span>
-                          )}
                         </div>
 
                         {/* Text info */}
@@ -628,59 +394,21 @@ export const InstitutionEventLeaderboard = () => {
                                 Your School
                               </span>
                             )}
-                            {inst.allInVenue && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                <CheckCircle2 size={11} /> All in Venue
-                              </span>
-                            )}
                           </div>
                           <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5 truncate">
-                            {inst.registeredCount} participant{inst.registeredCount !== 1 ? 's' : ''} registered
+                            {inst.registeredCount} registered participant{inst.registeredCount !== 1 ? 's' : ''}
                             {inst.institutionEmail ? ` • ${inst.institutionEmail}` : ''}
                           </p>
                         </div>
                       </div>
 
-                      {/* Right: Attendance Stats + Progress Bar + Action */}
-                      <div className="flex items-center gap-4 sm:gap-6 justify-between md:justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-slate-800">
-                        {/* Numbers & Progress bar */}
-                        <div className="flex flex-col items-start md:items-end min-w-[130px] sm:min-w-[160px]">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                              In Venue:
-                            </span>
-                            <span
-                              className={`text-sm font-black ${
-                                inst.allInVenue
-                                  ? 'text-emerald-700 dark:text-emerald-400'
-                                  : inst.inVenueCount > 0
-                                  ? 'text-amber-700 dark:text-amber-400'
-                                  : 'text-slate-500 dark:text-slate-400'
-                              }`}
-                            >
-                              {inst.inVenueCount} / {inst.registeredCount}
-                            </span>
-                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                              ({inst.attendanceRate}%)
-                            </span>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mt-1.5 border border-slate-300/50 dark:border-slate-700/50">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                inst.allInVenue
-                                  ? 'bg-gradient-to-r from-emerald-500 to-green-400'
-                                  : inst.inVenueCount > 0
-                                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                                  : 'bg-slate-300 dark:bg-slate-700'
-                              }`}
-                              style={{ width: `${Math.min(100, Math.max(4, inst.attendanceRate))}%` }}
-                            />
-                          </div>
+                      {/* Right: Participant Count Badge + Action */}
+                      <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
+                        <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200">
+                          {inst.registeredCount} {inst.registeredCount === 1 ? 'Participant' : 'Participants'}
                         </div>
 
-                        {/* View Participants button */}
+                        {/* View Delegation Roster button */}
                         <Button
                           variant="outline"
                           size="sm"
@@ -703,7 +431,7 @@ export const InstitutionEventLeaderboard = () => {
         </div>
       </Card>
 
-      {/* ── Institution Participants Roster & Check-In Modal ───── */}
+      {/* ── Institution Participants Delegation Roster Modal ───── */}
       {activeInstitution && (
         <Modal
           isOpen={Boolean(activeInstitution)}
@@ -720,52 +448,14 @@ export const InstitutionEventLeaderboard = () => {
             <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/60 border border-blue-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                  Venue Presence Status
+                  Registered Delegation
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xl font-black text-gray-900 dark:text-slate-100">
-                    {activeInstitution.inVenueCount} of {activeInstitution.registeredCount} Present
+                    {activeInstitution.registeredCount} {activeInstitution.registeredCount === 1 ? 'Participant' : 'Participants'}
                   </span>
-                  <Badge
-                    variant={
-                      activeInstitution.allInVenue
-                        ? 'success'
-                        : activeInstitution.inVenueCount > 0
-                        ? 'warning'
-                        : 'secondary'
-                    }
-                  >
-                    {activeInstitution.status}
-                  </Badge>
                 </div>
               </div>
-
-              {/* Bulk actions for authorized users */}
-              {canEditInstitutionAttendance(activeInstitution) && (
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={isBulkChecking || activeInstitution.allInVenue}
-                    onClick={() => void handleBulkCheckAll(activeInstitution, true)}
-                    className="text-xs flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 size={14} />
-                    <span>Check In All</span>
-                  </Button>
-                  {activeInstitution.inVenueCount > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isBulkChecking}
-                      onClick={() => void handleBulkCheckAll(activeInstitution, false)}
-                      className="text-xs text-rose-600 hover:text-rose-700"
-                    >
-                      <span>Undo All</span>
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Search inside roster */}
@@ -798,60 +488,27 @@ export const InstitutionEventLeaderboard = () => {
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                {filteredParticipants.map((part) => {
-                  const isBusy = togglingParticipantId === part.id;
-                  const canEdit = canEditInstitutionAttendance(activeInstitution);
-
-                  return (
-                    <div
-                      key={part.id}
-                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
-                        part.checkedIn
-                          ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
-                          : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            part.checkedIn
-                              ? 'bg-emerald-500 text-white shadow-xs'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold'
-                          }`}
-                        >
-                          {part.checkedIn ? <Check size={14} strokeWidth={3} /> : part.fullName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                            {part.fullName}
-                          </p>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">
-                            {part.position || 'Participant'}
-                            {part.contactNumber ? ` • ${part.contactNumber}` : ''}
-                          </p>
-                        </div>
+                {filteredParticipants.map((part) => (
+                  <div
+                    key={part.id}
+                    className="p-3 rounded-xl border flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                        {part.fullName.charAt(0).toUpperCase()}
                       </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant={part.checkedIn ? 'success' : 'secondary'} className="text-[11px]">
-                          {part.checkedIn ? 'In Venue' : 'Not in Venue'}
-                        </Badge>
-
-                        {canEdit && (
-                          <Button
-                            variant={part.checkedIn ? 'outline' : 'primary'}
-                            size="xs"
-                            disabled={isBusy}
-                            onClick={() => void handleToggleAttendance(part, activeInstitution.institutionId)}
-                            className="text-[11px]"
-                          >
-                            {part.checkedIn ? 'Undo' : 'Check In'}
-                          </Button>
-                        )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {part.fullName}
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">
+                          {part.position || 'Participant'}
+                          {part.contactNumber ? ` • ${part.contactNumber}` : ''}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
 

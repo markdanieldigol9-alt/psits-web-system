@@ -7,6 +7,7 @@ const {
   sendPasswordResetEmail,
   sendPasswordResetSuccessEmail,
 } = require('./mailer');
+const { syncIndustryPartner } = require('./partners');
 
 const PASSWORD_RULES = {
   minLength: 10,
@@ -315,6 +316,14 @@ async function register(req, res) {
     );
 
     const insertedId = result.insertId;
+
+    if (memberType === 'industry' || sector === 'industry') {
+      try {
+        await syncIndustryPartner(insertedId);
+      } catch (indSyncErr) {
+        console.error('Failed to auto-sync industry partner on registration:', indSyncErr);
+      }
+    }
 
     let proofUrl = null;
     if (paymentProof) {

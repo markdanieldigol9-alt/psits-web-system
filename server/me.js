@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { pool } = require('./db');
+const { syncIndustryPartner } = require('./partners');
 
 function formatDateOnly(value) {
   if (!value) return null;
@@ -126,6 +127,16 @@ async function updateMe(req, res) {
   await pool.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, params);
 
   const [rows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+  if (rows.length) {
+    const updatedUser = rows[0];
+    if (updatedUser.member_type === 'industry' || updatedUser.sector === 'industry') {
+      try {
+        await syncIndustryPartner(userId);
+      } catch (indErr) {
+        console.error('Failed to auto-sync industry partner on profile update:', indErr);
+      }
+    }
+  }
   return res.json({ success: true, user: toUserDto(rows[0]) });
 }
 

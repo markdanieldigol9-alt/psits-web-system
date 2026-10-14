@@ -39,6 +39,10 @@ type DashboardReport = {
     totalMembers: number;
     activeMembers: number;
     pendingApprovals: number;
+    psitsMembers?: number;
+    institutionMembers?: number;
+    activePsitsMembers?: number;
+    activeInstitutionMembers?: number;
     activeEvents: number;
     totalRevenue: number;
   };
@@ -410,7 +414,9 @@ export const DashboardPage = () => {
     {
       label: 'Total Members',
       value: String(summary?.totalMembers ?? 0),
-      subtitle: `${summary?.activeMembers ?? 0} active members`,
+      subtitle: summary?.psitsMembers !== undefined && summary?.institutionMembers !== undefined
+        ? `${summary.psitsMembers} PSITS + ${summary.institutionMembers} Inst.`
+        : `${summary?.activeMembers ?? 0} active members`,
       tag: 'SYS.OK',
       icon: Users,
       iconBg: 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 border border-blue-100 dark:border-blue-900',

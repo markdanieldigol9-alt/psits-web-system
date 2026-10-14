@@ -24,15 +24,30 @@ async function getDashboardReport(_req, res) {
     return res.status(403).json({ success: false, message: 'Forbidden.' });
   }
 
-  const [[{ totalMembers }]] = await pool.query(
-    "SELECT COUNT(*) AS totalMembers FROM users WHERE role='member'"
+  const [[{ totalUsers }]] = await pool.query(
+    "SELECT COUNT(*) AS totalUsers FROM users WHERE role='member'"
   );
-  const [[{ activeMembers }]] = await pool.query(
-    "SELECT COUNT(*) AS activeMembers FROM users WHERE role='member' AND status='active'"
+  const [[{ totalInstMembers }]] = await pool.query(
+    "SELECT COUNT(*) AS totalInstMembers FROM institution_members"
   );
-  const [[{ pendingApprovals }]] = await pool.query(
-    "SELECT COUNT(*) AS pendingApprovals FROM users WHERE role='member' AND status='pending'"
+  const totalMembers = (Number(totalUsers) || 0) + (Number(totalInstMembers) || 0);
+
+  const [[{ activeUsers }]] = await pool.query(
+    "SELECT COUNT(*) AS activeUsers FROM users WHERE role='member' AND status='active'"
   );
+  const [[{ approvedInstMembers }]] = await pool.query(
+    "SELECT COUNT(*) AS approvedInstMembers FROM institution_members WHERE status='approved'"
+  );
+  const activeMembers = (Number(activeUsers) || 0) + (Number(approvedInstMembers) || 0);
+
+  const [[{ pendingUsers }]] = await pool.query(
+    "SELECT COUNT(*) AS pendingUsers FROM users WHERE role='member' AND status='pending'"
+  );
+  const [[{ pendingInstMembers }]] = await pool.query(
+    "SELECT COUNT(*) AS pendingInstMembers FROM institution_members WHERE status='pending'"
+  );
+  const pendingApprovals = (Number(pendingUsers) || 0) + (Number(pendingInstMembers) || 0);
+
   const [[{ activeEvents }]] = await pool.query(
     "SELECT COUNT(*) AS activeEvents FROM events WHERE status IN ('upcoming','ongoing')"
   );
@@ -60,7 +75,7 @@ async function getDashboardReport(_req, res) {
   const now = new Date();
   const start = addMonths(firstOfMonth(now), -5);
 
-  const [registeredByMonth] = await pool.execute(
+  const [registeredUsers] = await pool.execute(
     `SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS cnt
      FROM users
      WHERE role='member' AND created_at >= ?
@@ -69,7 +84,16 @@ async function getDashboardReport(_req, res) {
     [start]
   );
 
-  const [approvedByMonth] = await pool.execute(
+  const [registeredInst] = await pool.execute(
+    `SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS cnt
+     FROM institution_members
+     WHERE created_at >= ?
+     GROUP BY ym
+     ORDER BY ym`,
+    [start]
+  );
+
+  const [approvedUsers] = await pool.execute(
     `SELECT DATE_FORMAT(updated_at, '%Y-%m') AS ym, COUNT(*) AS cnt
      FROM users
      WHERE role='member' AND status='active' AND updated_at >= ?
@@ -78,8 +102,30 @@ async function getDashboardReport(_req, res) {
     [start]
   );
 
-  const regMap = new Map(registeredByMonth.map((r) => [r.ym, Number(r.cnt)]));
-  const apprMap = new Map(approvedByMonth.map((r) => [r.ym, Number(r.cnt)]));
+  const [approvedInst] = await pool.execute(
+    `SELECT DATE_FORMAT(COALESCE(approved_at, updated_at), '%Y-%m') AS ym, COUNT(*) AS cnt
+     FROM institution_members
+     WHERE status='approved' AND COALESCE(approved_at, updated_at) >= ?
+     GROUP BY ym
+     ORDER BY ym`,
+    [start]
+  );
+
+  const regMap = new Map();
+  for (const r of registeredUsers) {
+    regMap.set(r.ym, (regMap.get(r.ym) || 0) + Number(r.cnt));
+  }
+  for (const r of registeredInst) {
+    regMap.set(r.ym, (regMap.get(r.ym) || 0) + Number(r.cnt));
+  }
+
+  const apprMap = new Map();
+  for (const r of approvedUsers) {
+    apprMap.set(r.ym, (apprMap.get(r.ym) || 0) + Number(r.cnt));
+  }
+  for (const r of approvedInst) {
+    apprMap.set(r.ym, (apprMap.get(r.ym) || 0) + Number(r.cnt));
+  }
 
   const memberGrowth = [];
   for (let i = 0; i < 6; i += 1) {
@@ -104,12 +150,20 @@ async function getDashboardReport(_req, res) {
       totalMembers: Number(totalMembers) || 0,
       activeMembers: Number(activeMembers) || 0,
       pendingApprovals: Number(pendingApprovals) || 0,
+      psitsMembers: Number(totalUsers) || 0,
+      institutionMembers: Number(totalInstMembers) || 0,
+      activePsitsMembers: Number(activeUsers) || 0,
+      activeInstitutionMembers: Number(approvedInstMembers) || 0,
+      pendingPsitsMembers: Number(pendingUsers) || 0,
+      pendingInstitutionMembers: Number(pendingInstMembers) || 0,
       activeEvents: Number(activeEvents) || 0,
       totalRevenue: Number(totalRevenue) || 0,
     }
     : {
       totalMembers: Number(totalMembers) || 0,
       activeMembers: Number(activeMembers) || 0,
+      psitsMembers: Number(totalUsers) || 0,
+      institutionMembers: Number(totalInstMembers) || 0,
       activeEvents: Number(activeEvents) || 0,
       totalRevenue: Number(totalRevenue) || 0,
     };

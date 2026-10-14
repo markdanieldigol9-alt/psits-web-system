@@ -24,13 +24,20 @@ import {
   Coins,
   UserCheck,
   Trash2,
+  Building2,
+  Filter,
+  X,
 } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 
 type InstitutionMember = {
   id: string;
   institutionUserId?: string;
+  institution_user_id?: string;
   institutionName: string;
+  institution_name?: string;
+  institutionEmail?: string;
+  institution_email?: string;
   fullName: string;
   email?: string;
   contactNumber?: string;
@@ -232,7 +239,21 @@ export const InstitutionMembersPage = () => {
     };
   }, [user, isInstitutionMember, canViewAll]);
 
-  // Financial aggregates for the institution
+  // Admin Institution Filter & Board State
+  const [selectedInstitutionFilter, setSelectedInstitutionFilter] = useState<string>('all');
+  const [boardSearchTerm, setBoardSearchTerm] = useState<string>('');
+  const [boardStatusFilter, setBoardStatusFilter] = useState<'all' | 'with_balance' | 'settled'>('all');
+
+  // Institution Partial Payment Modal State
+  const [showPartialPaymentModal, setShowPartialPaymentModal] = useState<boolean>(false);
+  const [partialPaymentAmount, setPartialPaymentAmount] = useState<string>('');
+  const [partialPaymentMethod, setPartialPaymentMethod] = useState<string>('gcash');
+  const [partialPaymentRefNumber, setPartialPaymentRefNumber] = useState<string>('');
+  const [partialPaymentFile, setPartialPaymentFile] = useState<File | null>(null);
+  const [partialPaymentPreview, setPartialPaymentPreview] = useState<string>('');
+  const [isSubmittingPartialPayment, setIsSubmittingPartialPayment] = useState<boolean>(false);
+
+  // Financial aggregates for the institution (or global when admin)
   const totalInstitutionHeads = members.length;
   const ratePerPerson = 250;
   const grossInstitutionAmount = totalInstitutionHeads * ratePerPerson;
@@ -243,6 +264,7 @@ export const InstitutionMembersPage = () => {
   const relevantPayments = institutionPayments.filter(
     (p) =>
       p.paymentKind === 'institution_batch_registration' ||
+      p.paymentKind === 'institution_partial_payment' ||
       (!p.eventId && ['membership_registration', 'membership_renewal', 'membership'].includes(p.paymentKind)) ||
       (!p.eventId && !p.paymentKind)
   );
@@ -258,17 +280,131 @@ export const InstitutionMembersPage = () => {
 
   const remainingBalanceAmount = Math.max(0, totalInstitutionBill - totalPaidAmount);
 
+  // Institution Payment List Board breakdown for admin view
+  const institutionAccounts = useMemo(() => {
+    const map = new Map<string, {
+      id: string;
+      name: string;
+      email: string;
+      headCount: number;
+      members: any[];
+    }>();
+
+    for (const m of members) {
+      const instId = String(m.institutionUserId || m.institution_user_id || m.institutionName || 'unknown');
+      const instName = m.institutionName || m.institution_name || 'Unnamed Institution';
+      const instEmail = m.institutionEmail || m.institution_email || '';
+
+      if (!map.has(instId)) {
+        map.set(instId, {
+          id: instId,
+          name: instName,
+          email: instEmail,
+          headCount: 0,
+          members: [],
+        });
+      }
+      const entry = map.get(instId)!;
+      entry.headCount += 1;
+      entry.members.push(m);
+      if ((!entry.name || entry.name === 'Unnamed Institution') && instName) entry.name = instName;
+      if (!entry.email && instEmail) entry.email = instEmail;
+    }
+
+    return Array.from(map.values()).map((inst) => {
+      const heads = inst.headCount;
+      const rate = 250;
+      const gross = heads * rate;
+      const free = heads > 0 ? Math.min(heads, 2) : 0;
+      const totalAmount = Math.max(0, gross - (free * rate));
+
+      // Match payments belonging to this institution
+      const instPayments = institutionPayments.filter((p) => {
+        const pMemberId = String(p.memberId || '');
+        const pMemberName = String(p.memberName || '').toLowerCase();
+        const instNameLower = inst.name.toLowerCase();
+        const isKindMatch =
+          p.paymentKind === 'institution_batch_registration' ||
+          p.paymentKind === 'institution_partial_payment' ||
+          (!p.eventId && ['membership_registration', 'membership_renewal', 'membership'].includes(p.paymentKind)) ||
+          (!p.eventId && !p.paymentKind);
+
+        return (
+          isKindMatch &&
+          (pMemberId === inst.id ||
+            (instNameLower && pMemberName.includes(instNameLower)) ||
+            (pMemberName && instNameLower.includes(pMemberName)))
+        );
+      });
+
+      const totalPaid = instPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const remainingBalance = Math.max(0, totalAmount - totalPaid);
+      const hasPartial = totalPaid > 0 && totalPaid < totalAmount;
+
+      return {
+        id: inst.id,
+        name: inst.name,
+        email: inst.email,
+        headCount: heads,
+        freeSlots: free,
+        totalAmount,
+        partialAmountPaid: totalPaid,
+        remainingBalance,
+        hasPartial,
+        paymentsCount: instPayments.length,
+        status: remainingBalance === 0 && totalPaid > 0 ? 'fully_paid' : (totalPaid > 0 ? 'partial_paid' : 'unpaid'),
+      };
+    });
+  }, [members, institutionPayments]);
+
+  // Selected institution context (when admin selects a specific institution)
+  const currentSelectedInst = useMemo(() => {
+    if (selectedInstitutionFilter === 'all') return null;
+    return institutionAccounts.find((i) => i.id === selectedInstitutionFilter) || null;
+  }, [selectedInstitutionFilter, institutionAccounts]);
+
+  // Active metrics to display in the 3 cards
+  const displayTotalHeads = currentSelectedInst ? currentSelectedInst.headCount : totalInstitutionHeads;
+  const displayTotalBill = currentSelectedInst ? currentSelectedInst.totalAmount : totalInstitutionBill;
+  const displayFreeSlots = currentSelectedInst ? currentSelectedInst.freeSlots : freeInstitutionSlots;
+  const displayPartialPaid = currentSelectedInst ? currentSelectedInst.partialAmountPaid : partialPaidAmount;
+  const displayRemainingBalance = currentSelectedInst ? currentSelectedInst.remainingBalance : remainingBalanceAmount;
+  const displayHasPartial = currentSelectedInst ? (currentSelectedInst.hasPartial || displayPartialPaid > 0) : hasPartialPayment;
+
+  // Filtered institution accounts for the Payment List Board
+  const filteredBoardAccounts = useMemo(() => {
+    return institutionAccounts.filter((inst) => {
+      if (boardStatusFilter === 'with_balance' && inst.remainingBalance <= 0) return false;
+      if (boardStatusFilter === 'settled' && inst.remainingBalance > 0) return false;
+      if (boardSearchTerm.trim()) {
+        const term = boardSearchTerm.trim().toLowerCase();
+        const matchName = inst.name.toLowerCase().includes(term);
+        const matchEmail = (inst.email || '').toLowerCase().includes(term);
+        if (!matchName && !matchEmail) return false;
+      }
+      return true;
+    });
+  }, [institutionAccounts, boardStatusFilter, boardSearchTerm]);
+
   const filteredMembers = useMemo(() => {
+    let result = members;
+    if (canViewAll && selectedInstitutionFilter !== 'all') {
+      result = result.filter(
+        (m) =>
+          String(m.institutionUserId || m.institution_user_id) === selectedInstitutionFilter ||
+          m.institutionName === selectedInstitutionFilter
+      );
+    }
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) =>
+    if (!q) return result;
+    return result.filter((m) =>
       [m.fullName, m.email, m.contactNumber, m.gender, m.position, m.eventTitle, m.institutionName]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(q)
     );
-  }, [members, searchTerm]);
+  }, [members, searchTerm, selectedInstitutionFilter, canViewAll]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
@@ -482,6 +618,137 @@ export const InstitutionMembersPage = () => {
     }
   };
 
+  const handleConfirmPartialPayment = async () => {
+    const amountNum = parseFloat(partialPaymentAmount);
+    if (!amountNum || amountNum <= 0) {
+      addNotification({
+        userId: 'current',
+        title: 'Validation Error',
+        message: 'Please enter a valid payment amount greater than 0.',
+        type: 'error',
+        isRead: false,
+      });
+      return;
+    }
+
+    if (amountNum > remainingBalanceAmount) {
+      addNotification({
+        userId: 'current',
+        title: 'Validation Error',
+        message: `Payment amount cannot exceed the remaining balance of ₱${remainingBalanceAmount.toLocaleString()}.`,
+        type: 'error',
+        isRead: false,
+      });
+      return;
+    }
+
+    if (partialPaymentMethod === 'gcash' && !partialPaymentRefNumber.trim()) {
+      addNotification({
+        userId: 'current',
+        title: 'Reference Number Required',
+        message: 'Please enter the GCash reference number.',
+        type: 'error',
+        isRead: false,
+      });
+      return;
+    }
+
+    if (!partialPaymentFile) {
+      addNotification({
+        userId: 'current',
+        title: 'Receipt Required',
+        message: (partialPaymentMethod === 'through_officer' || partialPaymentMethod === 'cash_officer')
+          ? 'Please attach a photo or scan of the Official Receipt (OR) issued by the officer.'
+          : 'Please attach a photo or screenshot of your payment receipt.',
+        type: 'error',
+        isRead: false,
+      });
+      return;
+    }
+
+    setIsSubmittingPartialPayment(true);
+    try {
+      let uploadedProofUrl: string | null = null;
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(partialPaymentFile);
+      const base64 = await base64Promise;
+
+      try {
+        const uploadRes = await api.uploadPaymentProof(base64);
+        if (uploadRes?.data?.url) {
+          uploadedProofUrl = uploadRes.data.url;
+        } else {
+          uploadedProofUrl = base64;
+        }
+      } catch {
+        uploadedProofUrl = base64;
+      }
+
+      const generatedRef = partialPaymentRefNumber.trim() || `PARTIAL-${Date.now().toString(36).toUpperCase()}`;
+      const isStillPartial = amountNum < remainingBalanceAmount;
+      const newRemaining = Math.max(0, remainingBalanceAmount - amountNum);
+
+      await api.createPayment({
+        amount: amountNum,
+        paymentMethod: partialPaymentMethod,
+        method: partialPaymentMethod,
+        referenceNumber: generatedRef,
+        proofUrl: uploadedProofUrl,
+        paymentKind: 'institution_partial_payment',
+        eventTitle: `Partial Payment - ${user?.fullName || 'Institution'}`,
+        isPartial: isStillPartial,
+        partialAmount: amountNum,
+        remainingBalance: newRemaining,
+        totalHeads: totalInstitutionHeads,
+        ratePerHead: 250,
+        grossAmount: grossInstitutionAmount,
+        discountAmount: discountInstitutionAmount,
+        netAmount: totalInstitutionBill,
+        notes: `Partial payment submitted by institution ${user?.fullName || ''}.`,
+      });
+
+      // Reload members & payments
+      const [membersRes, paymentsRes] = await Promise.allSettled([
+        api.getInstitutionMembers(),
+        api.getPayments(),
+      ]);
+      if (membersRes.status === 'fulfilled' && membersRes.value.data?.success) {
+        setMembers(membersRes.value.data.members || []);
+      }
+      if (paymentsRes.status === 'fulfilled' && paymentsRes.value.data?.success) {
+        setInstitutionPayments(paymentsRes.value.data.payments || []);
+      }
+
+      setShowPartialPaymentModal(false);
+      setPartialPaymentAmount('');
+      setPartialPaymentRefNumber('');
+      setPartialPaymentFile(null);
+      setPartialPaymentPreview('');
+
+      addNotification({
+        userId: 'current',
+        title: 'Payment Submitted',
+        message: `Partial payment of ₱${amountNum.toLocaleString()} submitted successfully! Your remaining balance is now ₱${newRemaining.toLocaleString()}.`,
+        type: 'success',
+        isRead: false,
+      });
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        title: 'Submission Failed',
+        message: err?.response?.data?.message || err?.message || 'Could not submit partial payment.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setIsSubmittingPartialPayment(false);
+    }
+  };
+
   const updateStatus = async (id: string, approve: boolean) => {
     try {
       const { data } = await api.approveInstitutionMember(id, { status: approve ? 'approved' : 'rejected' });
@@ -644,6 +911,24 @@ export const InstitutionMembersPage = () => {
                 </Button>
               </>
             )}
+            {isInstitutionMember && (
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => {
+                  setPartialPaymentAmount('');
+                  setPartialPaymentMethod('gcash');
+                  setPartialPaymentRefNumber('');
+                  setPartialPaymentFile(null);
+                  setPartialPaymentPreview('');
+                  setShowPartialPaymentModal(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 shadow-sm"
+              >
+                <Coins size={20} />
+                Make Partial Payment
+              </Button>
+            )}
             {testParticipantsCount > 0 && canViewAll && (
               <Button
                 variant="danger"
@@ -662,7 +947,7 @@ export const InstitutionMembersPage = () => {
           </div>
         </div>
 
-        {isInstitutionMember && (
+        {(isInstitutionMember || canViewAll) && (
           <Card
             title="Upload Institution Members & Portal Login Setup"
             subtitle="Standard Fee: ₱250.00 / person • Supported Formats: CSV (.csv), Excel (.xlsx, .xls) • Columns: fullName, email, password (optional), contactNumber, gender, position, eventTitle, notes"
@@ -693,7 +978,19 @@ export const InstitutionMembersPage = () => {
 
             {/* Institution Live Billing & Financial Status Breakdown */}
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-800">
-              <div className={`grid grid-cols-1 sm:grid-cols-2 ${hasPartialPayment ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3.5`}>
+              {canViewAll && selectedInstitutionFilter !== 'all' && (
+                <div className="mb-3 flex items-center justify-between bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-900 dark:text-blue-200">
+                  <span>Filtered Financials: <strong>{currentSelectedInst?.name}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInstitutionFilter('all')}
+                    className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                  >
+                    <X size={12} /> Show Combined Totals
+                  </button>
+                </div>
+              )}
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${displayHasPartial ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3.5`}>
                 {/* 1. Total Amount */}
                 <div className="p-3.5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/30 flex items-center justify-between">
                   <div>
@@ -702,16 +999,16 @@ export const InstitutionMembersPage = () => {
                       Total Amount
                     </div>
                     <div className="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-0.5">
-                      ₱{totalInstitutionBill.toLocaleString()}
+                      ₱{displayTotalBill.toLocaleString()}
                     </div>
                     <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
-                      {totalInstitutionHeads} person(s) @ ₱250 {freeInstitutionSlots > 0 ? `• ${freeInstitutionSlots} Free` : ''}
+                      {displayTotalHeads} person(s) @ ₱250 {displayFreeSlots > 0 ? `• ${displayFreeSlots} Free` : ''}
                     </div>
                   </div>
                 </div>
 
                 {/* 2. Partial Amount Paid (Included ONLY when partial payment was made) */}
-                {hasPartialPayment && (
+                {displayHasPartial && (
                   <div className="p-3.5 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/30 flex items-center justify-between">
                     <div>
                       <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
@@ -719,7 +1016,7 @@ export const InstitutionMembersPage = () => {
                         Partial Amount Paid
                       </div>
                       <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
-                        ₱{partialPaidAmount.toLocaleString()}
+                        ₱{displayPartialPaid.toLocaleString()}
                       </div>
                       <div className="text-[11px] text-amber-700/80 font-medium mt-0.5">
                         Initial Downpayment
@@ -730,35 +1027,287 @@ export const InstitutionMembersPage = () => {
 
                 {/* 3. Remaining Balance */}
                 <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
-                  remainingBalanceAmount > 0
+                  displayRemainingBalance > 0
                     ? 'border-rose-200/80 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30'
                     : 'border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/30'
                 }`}>
                   <div>
                     <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                      remainingBalanceAmount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'
+                      displayRemainingBalance > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'
                     }`}>
                       <CreditCard size={13} />
                       Remaining Balance
                     </div>
                     <div className={`text-xl font-black mt-0.5 ${
-                      remainingBalanceAmount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                      displayRemainingBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}>
-                      ₱{remainingBalanceAmount.toLocaleString()}
+                      ₱{displayRemainingBalance.toLocaleString()}
                     </div>
                     <div className={`text-[11px] font-medium mt-0.5 ${
-                      remainingBalanceAmount > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
+                      displayRemainingBalance > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
                     }`}>
-                      {remainingBalanceAmount > 0 ? 'To be settled' : 'All balances settled ✓'}
+                      {displayRemainingBalance > 0 ? 'To be settled' : 'All balances settled ✓'}
                     </div>
                   </div>
+
+                  {/* Partial Payment Button for Institution Side */}
+                  {!canViewAll && displayRemainingBalance > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPartialPaymentAmount('');
+                        setPartialPaymentMethod('gcash');
+                        setPartialPaymentRefNumber('');
+                        setPartialPaymentFile(null);
+                        setPartialPaymentPreview('');
+                        setShowPartialPaymentModal(true);
+                      }}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <Coins size={14} />
+                      Make Partial Payment
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </Card>
         )}
 
+        {/* ── Admin Institution Payment List Board ────────────────── */}
+        {canViewAll && (
+          <Card className="p-6">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                <Building2 size={20} />
+              </div>
+              <div>
+                <div className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  Institution Payment List Board
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                    Admin Tracking
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 font-normal">
+                  Track each institution's total amount, partial amount paid, and remaining balance in real time.
+                </div>
+              </div>
+            </div>
+            {/* Top Toolbar: Search and Filter Pills */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="relative w-full sm:w-72">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search institution..."
+                  value={boardSearchTerm}
+                  onChange={(e) => setBoardSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div className="flex items-center rounded-xl border border-gray-200 dark:border-slate-800 p-1 bg-gray-50 dark:bg-slate-900/60 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setBoardStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                    boardStatusFilter === 'all'
+                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
+                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                  }`}
+                >
+                  All ({institutionAccounts.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoardStatusFilter('with_balance')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                    boardStatusFilter === 'with_balance'
+                      ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-xs'
+                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                  }`}
+                >
+                  With Balance ({institutionAccounts.filter((i) => i.remainingBalance > 0).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoardStatusFilter('settled')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                    boardStatusFilter === 'settled'
+                      ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                  }`}
+                >
+                  Settled ({institutionAccounts.filter((i) => i.remainingBalance === 0).length})
+                </button>
+              </div>
+            </div>
+
+            {/* Board Table */}
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-800">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-gray-50/80 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800 text-[11px] uppercase tracking-wider font-bold text-gray-500 dark:text-slate-400">
+                  <tr>
+                    <th className="py-3 px-4">Institution Name</th>
+                    <th className="py-3 px-4">Total Amount</th>
+                    <th className="py-3 px-4">Partial Amount Paid</th>
+                    <th className="py-3 px-4">Remaining Balance</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60 font-medium">
+                  {filteredBoardAccounts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-400 dark:text-slate-500">
+                        No institutions match the current search or filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBoardAccounts.map((inst) => {
+                      const isSelected = selectedInstitutionFilter === inst.id;
+                      const percentPaid = inst.totalAmount > 0
+                        ? Math.min(100, Math.round((inst.partialAmountPaid / inst.totalAmount) * 100))
+                        : 0;
+
+                      return (
+                        <tr
+                          key={inst.id}
+                          className={`transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50/70 dark:bg-blue-950/30'
+                              : 'hover:bg-gray-50/60 dark:hover:bg-slate-900/40'
+                          }`}
+                        >
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-black text-xs shrink-0">
+                                {inst.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                                  {inst.name}
+                                  {isSelected && (
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                                      Active Filter
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-gray-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                  <span>{inst.headCount} member(s)</span>
+                                  <span>•</span>
+                                  <span>{inst.freeSlots} Free Slots</span>
+                                  {inst.email && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-gray-400">{inst.email}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-black text-indigo-700 dark:text-indigo-400 text-sm">
+                              ₱{inst.totalAmount.toLocaleString()}
+                            </div>
+                            <div className="text-[10px] text-gray-400">
+                              {inst.headCount} × ₱250
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-black text-amber-600 dark:text-amber-400 text-sm flex items-center gap-1.5">
+                              ₱{inst.partialAmountPaid.toLocaleString()}
+                              <span className="text-[10px] font-bold text-gray-400">
+                                ({percentPaid}%)
+                              </span>
+                            </div>
+                            <div className="w-28 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 mt-1 overflow-hidden">
+                              <div
+                                className="bg-amber-500 h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${percentPaid}%` }}
+                              />
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className={`font-black text-sm ${
+                              inst.remainingBalance > 0
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-emerald-600 dark:text-emerald-400'
+                            }`}>
+                              ₱{inst.remainingBalance.toLocaleString()}
+                            </div>
+                            <div className={`text-[10px] font-medium ${
+                              inst.remainingBalance > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
+                            }`}>
+                              {inst.remainingBalance > 0 ? 'Outstanding balance' : 'Fully Settled ✓'}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {inst.status === 'fully_paid' && (
+                              <Badge variant="success">Fully Settled</Badge>
+                            )}
+                            {inst.status === 'partial_paid' && (
+                              <Badge variant="warning">Partial Paid</Badge>
+                            )}
+                            {inst.status === 'unpaid' && (
+                              <Badge variant="error">Unpaid</Badge>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            {isSelected ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedInstitutionFilter('all')}
+                                className="text-xs border-blue-300 text-blue-700 dark:text-blue-300 hover:bg-blue-50"
+                              >
+                                <X size={13} /> Clear Filter
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedInstitutionFilter(inst.id);
+                                  setCurrentPage(1);
+                                }}
+                                className="text-xs hover:border-blue-400 hover:text-blue-600"
+                              >
+                                <Filter size={13} /> Filter Roster
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
         <Card>
+          {canViewAll && selectedInstitutionFilter !== 'all' && (
+            <div className="mx-6 mt-6 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center justify-between animate-fadeIn">
+              <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 dark:text-blue-200">
+                <Filter size={14} className="text-blue-600 dark:text-blue-400" />
+                <span>
+                  Showing members for: <strong>{currentSelectedInst?.name || 'Selected Institution'}</strong>
+                  {' '}({filteredMembers.length} records)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedInstitutionFilter('all')}
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <X size={13} />
+                Clear Filter (Show All Institutions)
+              </button>
+            </div>
+          )}
           <div className="p-6 border-b border-gray-200">
             <div className="relative w-full">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1388,6 +1937,235 @@ export const InstitutionMembersPage = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Institution Partial Payment Modal */}
+      <Modal
+        isOpen={showPartialPaymentModal}
+        onClose={() => {
+          if (!isSubmittingPartialPayment) {
+            setShowPartialPaymentModal(false);
+          }
+        }}
+        title="Institution Partial Payment"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Submit a partial payment to reduce your institution's registration balance. All submitted payments are recorded and will update your remaining balance immediately upon verification.
+          </p>
+
+          {/* Balance Overview Snapshot */}
+          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/60 p-4 space-y-2.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-medium">Institution Total Bill:</span>
+              <span className="font-bold text-gray-900 dark:text-white">₱{totalInstitutionBill.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-amber-600 dark:text-amber-400 font-medium">Total Paid So Far:</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">₱{partialPaidAmount.toLocaleString()}</span>
+            </div>
+            <div className="border-t border-gray-200 dark:border-slate-800 pt-2 flex justify-between items-center text-sm font-black">
+              <span className="text-rose-600 dark:text-rose-400">Current Outstanding Balance:</span>
+              <span className="text-rose-600 dark:text-rose-400 text-base">₱{remainingBalanceAmount.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {remainingBalanceAmount <= 0 ? (
+            <div className="py-6 text-center space-y-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                <CheckCircle2 size={28} />
+              </div>
+              <h4 className="font-bold text-gray-900 dark:text-white">All Balances Fully Settled</h4>
+              <p className="text-xs text-gray-500">
+                Your institution has no remaining balance due. Thank you for completing your payments!
+              </p>
+              <div className="pt-3">
+                <Button variant="primary" onClick={() => setShowPartialPaymentModal(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Payment Amount Input & Quick Select Chips */}
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                    Partial Payment Amount (₱) *
+                  </label>
+                  <span className="text-[11px] text-gray-400">
+                    Max: ₱{remainingBalanceAmount.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Quick Chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[500, 1000, 2000, 5000]
+                    .filter((amt) => amt < remainingBalanceAmount)
+                    .map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setPartialPaymentAmount(String(amt))}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
+                          partialPaymentAmount === String(amt)
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        ₱{amt.toLocaleString()}
+                      </button>
+                    ))}
+                  <button
+                    type="button"
+                    onClick={() => setPartialPaymentAmount(String(remainingBalanceAmount))}
+                    className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition-colors cursor-pointer ${
+                      partialPaymentAmount === String(remainingBalanceAmount)
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                    }`}
+                  >
+                    Pay Full Balance (₱{remainingBalanceAmount.toLocaleString()})
+                  </button>
+                </div>
+
+                <Input
+                  type="number"
+                  min="1"
+                  max={remainingBalanceAmount}
+                  step="any"
+                  placeholder="Enter amount to pay (e.g. 500)"
+                  value={partialPaymentAmount}
+                  onChange={(e) => setPartialPaymentAmount(e.target.value)}
+                />
+
+                {parseFloat(partialPaymentAmount) > 0 && (
+                  <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl space-y-1 text-xs">
+                    <div className="flex justify-between items-center text-blue-900 dark:text-blue-200">
+                      <span>Amount you are paying now:</span>
+                      <strong className="font-bold text-sm">₱{Number(partialPaymentAmount).toLocaleString()}</strong>
+                    </div>
+                    <div className="flex justify-between items-center text-amber-700 dark:text-amber-400 font-semibold">
+                      <span>Remaining balance after this payment:</span>
+                      <strong>₱{Math.max(0, remainingBalanceAmount - parseFloat(partialPaymentAmount)).toLocaleString()}</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Method Selector */}
+              <div className="space-y-3 pt-2">
+                <Select
+                  label="Payment Method"
+                  options={[
+                    { value: 'gcash', label: 'GCash' },
+                    { value: 'through_officer', label: 'Through Officer' },
+                    { value: 'bank_transfer', label: 'Bank Transfer' },
+                    { value: 'cheque', label: 'Cheque' },
+                  ]}
+                  value={partialPaymentMethod}
+                  onChange={(e) => setPartialPaymentMethod((e.target as HTMLSelectElement).value)}
+                />
+
+                <PaymentInstructionsCard method={partialPaymentMethod} />
+
+                {/* Reference Number Field */}
+                {partialPaymentMethod === 'gcash' ? (
+                  <Input
+                    label="GCash Reference Number *"
+                    placeholder="e.g. 100234567890"
+                    value={partialPaymentRefNumber}
+                    onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
+                    required
+                  />
+                ) : (
+                  <Input
+                    label={
+                      partialPaymentMethod === 'through_officer'
+                        ? 'Official Receipt (OR) Number (Optional)'
+                        : partialPaymentMethod === 'cheque'
+                        ? 'Cheque / Deposit Number (Optional)'
+                        : 'Bank Reference / Transaction Number (Optional)'
+                    }
+                    placeholder="Enter reference number from receipt if available"
+                    value={partialPaymentRefNumber}
+                    onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
+                  />
+                )}
+
+                {/* Receipt Upload Field per payment-verification rules */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                    {partialPaymentMethod === 'through_officer'
+                      ? 'Upload Official Receipt (OR) *'
+                      : 'Upload Receipt *'}
+                  </label>
+                  <p className="text-[11px] text-gray-500">
+                    {partialPaymentMethod === 'through_officer'
+                      ? 'Please upload a photo or scan of the Official Receipt (OR) issued by the PSITS officer.'
+                      : partialPaymentMethod === 'bank_transfer'
+                      ? 'Please upload your bank deposit slip or mobile banking transfer confirmation receipt.'
+                      : partialPaymentMethod === 'cheque'
+                      ? 'Please upload a photo of the cheque or bank deposit confirmation receipt.'
+                      : 'Please upload the full transaction receipt or screenshot from your GCash app.'}
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setPartialPaymentFile(file);
+                      const reader = new FileReader();
+                      reader.onload = () => setPartialPaymentPreview(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                    className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300"
+                  />
+                  {partialPaymentPreview && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <img src={partialPaymentPreview} alt="Receipt preview" className="h-12 w-12 object-cover rounded-lg border" />
+                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                        <CheckCircle2 size={14} /> Receipt attached
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowPartialPaymentModal(false)}
+                  disabled={isSubmittingPartialPayment}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  isLoading={isSubmittingPartialPayment}
+                  onClick={handleConfirmPartialPayment}
+                  disabled={
+                    isSubmittingPartialPayment ||
+                    !partialPaymentAmount ||
+                    parseFloat(partialPaymentAmount) <= 0 ||
+                    parseFloat(partialPaymentAmount) > remainingBalanceAmount ||
+                    !partialPaymentFile ||
+                    (partialPaymentMethod === 'gcash' && !partialPaymentRefNumber.trim())
+                  }
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
+                  <Coins size={16} />
+                  Submit Payment {parseFloat(partialPaymentAmount) > 0 ? `(₱${Number(partialPaymentAmount).toLocaleString()})` : ''}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </Modal>
     </MainLayout>
   );

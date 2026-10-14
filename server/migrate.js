@@ -655,6 +655,47 @@ async function migrate() {
   try { await pool.query("ALTER TABLE partners ADD COLUMN partnership_status VARCHAR(64) NOT NULL DEFAULT 'active'"); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE partners ADD COLUMN description TEXT NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE partners ADD COLUMN archived_at DATETIME NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE partners ADD COLUMN user_id INT UNSIGNED NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE partners ADD KEY idx_partners_user_id (user_id)'); } catch { /* ignore */ }
+  try {
+    await pool.query(
+      'ALTER TABLE partners ADD CONSTRAINT fk_partners_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL'
+    );
+  } catch { /* ignore */ }
+
+  // Auto-sync existing industry member accounts to partners table
+  try {
+    const [indUsers] = await pool.query(
+      `SELECT * FROM users WHERE (member_type = 'industry' OR sector = 'industry') AND role = 'member'`
+    );
+    for (const u of indUsers) {
+      const company = (u.sector_details && u.sector_details.trim()) || (u.full_name && u.full_name.trim()) || 'Industry Partner';
+      const contactPerson = (u.representative_name && u.representative_name.trim()) || (u.full_name && u.full_name.trim()) || '';
+      const location = (u.address && u.address.trim()) || 'Region XII';
+      const email = (u.company_email && u.company_email.trim()) || (u.email && u.email.trim()) || '';
+      const phone = (u.contact_number && u.contact_number.trim()) || '';
+      const website = (u.website && u.website.trim()) || null;
+
+      const [existing] = await pool.query(
+        'SELECT id FROM partners WHERE user_id = ? OR company = ? LIMIT 1',
+        [u.id, company]
+      );
+      if (existing.length) {
+        await pool.query(
+          `UPDATE partners SET user_id = ?, type = 'Industry', contact_person = ?, location = ?, email = ?, phone = ?, website = ? WHERE id = ?`,
+          [u.id, contactPerson, location, email, phone, website, existing[0].id]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO partners (user_id, company, type, contact_person, location, email, phone, website, created_by, partnership_status)
+           VALUES (?, ?, 'Industry', ?, ?, ?, ?, ?, ?, 'active')`,
+          [u.id, company, contactPerson, location, email, phone, website, u.id]
+        );
+      }
+    }
+  } catch (syncErr) {
+    console.error('Migration industry partners sync error:', syncErr);
+  }
 
   // Partner Contributions
   await pool.query(`

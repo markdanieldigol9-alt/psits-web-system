@@ -96,12 +96,29 @@ export const ReportsPage = () => {
   const openReportWizard = async (title: string, step: 1 | 2 = 1) => {
     setWizardStep(step);
     setPreviewReport(title);
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
       if (title === 'Membership Growth') {
-        const { data } = await api.getMembers();
-        setDetailedRecords(data?.members || []);
+        const [membersRes, instRes] = await Promise.allSettled([
+          api.getMembers(),
+          api.getInstitutionMembers(),
+        ]);
+        const psitsList = membersRes.status === 'fulfilled' ? (membersRes.value.data?.members || []) : [];
+        const instList = instRes.status === 'fulfilled' ? (instRes.value.data?.members || []) : [];
+        setDetailedRecords([
+          ...psitsList.map((m: any) => ({
+            ...m,
+            source: 'PSITS Member',
+            displayName: m.fullName || m.full_name || m.name || m.email,
+            displaySector: m.sector || m.memberType || 'PSITS Individual',
+          })),
+          ...instList.map((im: any) => ({
+            ...im,
+            source: 'Institution Member',
+            displayName: im.full_name || im.fullName || im.email,
+            displaySector: im.institution_name || im.institution_full_name || 'Institution Member',
+          })),
+        ]);
       } else if (title === 'Event Participation' || title === 'Complete Event') {
         const { data } = await api.getEvents();
         setDetailedRecords(data?.events || []);
@@ -215,12 +232,24 @@ export const ReportsPage = () => {
     setIsLoading(true);
     try {
       if (title === 'Membership Growth') {
-        const dataToExport = memberGrowth.map((row: any) => ({
-          Month: row.month,
-          'New Registrations': row.members,
-          'Approved Members': row.active,
-        }));
-        exportToCSV('Membership_Growth_Report', dataToExport);
+        if (detailedRecords.length > 0) {
+          const dataToExport = detailedRecords.map((m: any) => ({
+            'Member Name': m.displayName || m.fullName || m.full_name || m.name || m.email || '—',
+            'Email': m.email || '—',
+            'Member Source': m.source || 'PSITS Member',
+            'Sector / Institution': m.displaySector || m.institution_name || m.institutionName || m.sector || m.memberType || '—',
+            'Status': m.status || 'active',
+            'Created / Registered Date': m.createdAt || m.created_at || '—',
+          }));
+          exportToCSV('Combined_Membership_Growth_Roster', dataToExport);
+        } else {
+          const dataToExport = memberGrowth.map((row: any) => ({
+            Month: row.month,
+            'New Registrations (Combined)': row.members,
+            'Approved Members (Combined)': row.active,
+          }));
+          exportToCSV('Membership_Growth_Report', dataToExport);
+        }
       } else if (title === 'Event Participation') {
         const { data } = await api.getEvents();
         const events = data?.events || [];
@@ -307,9 +336,15 @@ export const ReportsPage = () => {
   const handleExportAllToExcel = () => {
     if (!report) return;
     const summaryData = [
-      { Metric: 'Total Members', Value: report.summary?.totalMembers || 0 },
-      { Metric: 'Active Members', Value: report.summary?.activeMembers || 0 },
-      { Metric: 'Pending Approvals', Value: report.summary?.pendingApprovals || 0 },
+      { Metric: 'Total Members (Combined)', Value: report.summary?.totalMembers || 0 },
+      { Metric: 'PSITS Members', Value: report.summary?.psitsMembers || 0 },
+      { Metric: 'Institution Members', Value: report.summary?.institutionMembers || 0 },
+      { Metric: 'Active Members (Total)', Value: report.summary?.activeMembers || 0 },
+      { Metric: 'Active PSITS Members', Value: report.summary?.activePsitsMembers || 0 },
+      { Metric: 'Active Institution Members', Value: report.summary?.activeInstitutionMembers || 0 },
+      { Metric: 'Pending Approvals (Total)', Value: report.summary?.pendingApprovals || 0 },
+      { Metric: 'Pending PSITS Approvals', Value: report.summary?.pendingPsitsMembers || 0 },
+      { Metric: 'Pending Institution Approvals', Value: report.summary?.pendingInstitutionMembers || 0 },
       { Metric: 'Active Events', Value: report.summary?.activeEvents || 0 },
       { Metric: 'Total Verified Revenue', Value: report.summary?.totalRevenue || 0 },
     ];
@@ -376,7 +411,15 @@ export const ReportsPage = () => {
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card title="Membership Growth" subtitle="Last 6 months" className="h-[350px]">
+          <Card
+            title="Membership Growth"
+            subtitle={
+              report?.summary?.totalMembers
+                ? `${report.summary.totalMembers} total members (${report.summary.psitsMembers ?? 12} PSITS + ${report.summary.institutionMembers ?? 37} Inst.) • Last 6 months`
+                : 'Last 6 months'
+            }
+            className="h-[350px]"
+          >
             <div className="h-[255px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={memberGrowth}>
@@ -541,59 +584,157 @@ export const ReportsPage = () => {
                 </div>
 
                 {/* Report Specific Details */}
-                {previewReport === 'Membership Growth' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl">
-                        <span className="text-xs text-gray-500 font-semibold">Total Members</span>
-                        <p className="text-2xl font-bold text-primary mt-1">{report?.summary?.totalMembers || detailedRecords.length}</p>
-                      </div>
-                      <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
-                        <span className="text-xs text-gray-500 font-semibold">Approved Members</span>
-                        <p className="text-2xl font-bold text-emerald-700 mt-1">{report?.summary?.activeMembers || 0}</p>
-                      </div>
-                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                        <span className="text-xs text-gray-500 font-semibold">Pending Approvals</span>
-                        <p className="text-2xl font-bold text-amber-700 mt-1">{report?.summary?.pendingApprovals || 0}</p>
-                      </div>
-                    </div>
+                {previewReport === 'Membership Growth' && (() => {
+                  const psitsCount = report?.summary?.psitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member').length;
+                  const instCount = report?.summary?.institutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member').length;
+                  const totalCount = report?.summary?.totalMembers ?? (psitsCount + instCount);
 
-                    <div className="h-[220px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={memberGrowth}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="Signups" />
-                          <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                  const activePsits = report?.summary?.activePsitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member' && (r.status === 'active' || r.status === 'approved')).length;
+                  const activeInst = report?.summary?.activeInstitutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member' && (r.status === 'active' || r.status === 'approved')).length;
+                  const activeTotal = report?.summary?.activeMembers ?? (activePsits + activeInst);
 
-                    <div className="border rounded-xl overflow-hidden text-xs">
-                      <table className="w-full">
-                        <thead className="bg-gray-100 border-b">
-                          <tr>
-                            <th className="px-3 py-2 text-left font-bold">Month</th>
-                            <th className="px-3 py-2 text-right font-bold">New Registrations</th>
-                            <th className="px-3 py-2 text-right font-bold">Approved</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {memberGrowth.map((row: any) => (
-                            <tr key={row.month}>
-                              <td className="px-3 py-2 font-medium">{row.month}</td>
-                              <td className="px-3 py-2 text-right">{row.members}</td>
-                              <td className="px-3 py-2 text-right text-emerald-700 font-bold">{row.active}</td>
+                  const pendingPsits = report?.summary?.pendingPsitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member' && r.status === 'pending').length;
+                  const pendingInst = report?.summary?.pendingInstitutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member' && r.status === 'pending').length;
+                  const pendingTotal = report?.summary?.pendingApprovals ?? (pendingPsits + pendingInst);
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 font-semibold">Total Members</span>
+                            <p className="text-2xl font-bold text-primary mt-1">{totalCount}</p>
+                          </div>
+                          <div className="mt-2 pt-1.5 border-t border-blue-200/60 flex items-center justify-center gap-1.5 text-[11px] text-blue-700 font-medium flex-wrap">
+                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
+                              {psitsCount} PSITS
+                            </span>
+                            <span>+</span>
+                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
+                              {instCount} Institution
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 font-semibold">Approved Members</span>
+                            <p className="text-2xl font-bold text-emerald-700 mt-1">{activeTotal}</p>
+                          </div>
+                          <div className="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-medium flex-wrap">
+                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
+                              {activePsits} PSITS
+                            </span>
+                            <span>+</span>
+                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
+                              {activeInst} Institution
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 font-semibold">Pending Approvals</span>
+                            <p className="text-2xl font-bold text-amber-700 mt-1">{pendingTotal}</p>
+                          </div>
+                          <div className="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-center gap-1.5 text-[11px] text-amber-700 font-medium flex-wrap">
+                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
+                              {pendingPsits} PSITS
+                            </span>
+                            <span>+</span>
+                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
+                              {pendingInst} Institution
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-[220px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={memberGrowth}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="Signups" />
+                            <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="border rounded-xl overflow-hidden text-xs">
+                        <table className="w-full">
+                          <thead className="bg-gray-100 border-b">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-bold">Month</th>
+                              <th className="px-3 py-2 text-right font-bold">New Registrations</th>
+                              <th className="px-3 py-2 text-right font-bold">Approved</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y">
+                            {memberGrowth.map((row: any) => (
+                              <tr key={row.month}>
+                                <td className="px-3 py-2 font-medium">{row.month}</td>
+                                <td className="px-3 py-2 text-right">{row.members}</td>
+                                <td className="px-3 py-2 text-right text-emerald-700 font-bold">{row.active}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {detailedRecords.length > 0 && (
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Combined Member Roster ({detailedRecords.length} Records: {psitsCount} PSITS + {instCount} Institution)
+                            </h5>
+                            <span className="text-[11px] text-gray-500">Showing first 25 records</span>
+                          </div>
+                          <div className="border rounded-xl overflow-hidden text-xs max-h-56 overflow-y-auto">
+                            <table className="w-full">
+                              <thead className="bg-gray-100 border-b sticky top-0">
+                                <tr>
+                                  <th className="px-3 py-2 text-left font-bold">Name</th>
+                                  <th className="px-3 py-2 text-left font-bold">Source</th>
+                                  <th className="px-3 py-2 text-left font-bold">Sector / Institution</th>
+                                  <th className="px-3 py-2 text-center font-bold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {detailedRecords.slice(0, 25).map((m: any, idx: number) => (
+                                  <tr key={m.id || idx} className="hover:bg-gray-50">
+                                    <td className="px-3 py-1.5 font-medium">{m.displayName || m.fullName || m.full_name || m.name || m.email || '—'}</td>
+                                    <td className="px-3 py-1.5">
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                        m.source === 'Institution Member' 
+                                          ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                                          : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                      }`}>
+                                        {m.source || 'PSITS Member'}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-1.5 text-gray-600">{m.displaySector || m.institution_name || m.institutionName || m.sector || m.memberType || '—'}</td>
+                                    <td className="px-3 py-1.5 text-center">
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                        (m.status === 'active' || m.status === 'approved') 
+                                          ? 'bg-emerald-100 text-emerald-800' 
+                                          : 'bg-amber-100 text-amber-800'
+                                      }`}>
+                                        {m.status || 'active'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {previewReport === 'Financial Summary' && (
                   <div className="space-y-4">

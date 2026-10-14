@@ -227,10 +227,8 @@ async function getInstitutionLeaderboard(req, res) {
       };
     });
 
-    // 6. Sort by inVenueCount DESC, attendanceRate DESC, registeredCount DESC, name ASC
+    // 6. Sort by registeredCount DESC, name ASC
     rawList.sort((a, b) => {
-      if (b.inVenueCount !== a.inVenueCount) return b.inVenueCount - a.inVenueCount;
-      if (b.attendanceRate !== a.attendanceRate) return b.attendanceRate - a.attendanceRate;
       if (b.registeredCount !== a.registeredCount) return b.registeredCount - a.registeredCount;
       return a.institutionName.localeCompare(b.institutionName);
     });

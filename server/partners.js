@@ -20,6 +20,84 @@ function requirePartnerManager(req, res, next) {
   });
 }
 
+async function syncIndustryPartner(userId) {
+  if (!userId) return null;
+  try {
+    const [userRows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (!userRows.length) return null;
+    const u = userRows[0];
+    const isIndustry = u.member_type === 'industry' || u.sector === 'industry';
+    if (!isIndustry) return null;
+
+    const company = (u.sector_details && u.sector_details.trim()) || (u.full_name && u.full_name.trim()) || 'Industry Partner';
+    const contactPerson = (u.representative_name && u.representative_name.trim()) || (u.full_name && u.full_name.trim()) || '';
+    const location = (u.address && u.address.trim()) || 'Region XII';
+    const email = (u.company_email && u.company_email.trim()) || (u.email && u.email.trim()) || '';
+    const phone = (u.contact_number && u.contact_number.trim()) || '';
+    const website = (u.website && u.website.trim()) || null;
+
+    // Check if partner exists by user_id
+    const [existingByUserId] = await pool.execute(
+      'SELECT id FROM partners WHERE user_id = ? LIMIT 1',
+      [u.id]
+    );
+
+    if (existingByUserId.length) {
+      const pId = existingByUserId[0].id;
+      await pool.execute(
+        `UPDATE partners 
+         SET company = ?, type = 'Industry', contact_person = ?, location = ?, email = ?, phone = ?, website = ?
+         WHERE id = ?`,
+        [company, contactPerson, location, email, phone, website, pId]
+      );
+      return pId;
+    }
+
+    // Check if partner exists by company name or email without user_id
+    const [existingByName] = await pool.execute(
+      'SELECT id FROM partners WHERE company = ? OR (email = ? AND email <> "") LIMIT 1',
+      [company, email]
+    );
+
+    if (existingByName.length) {
+      const pId = existingByName[0].id;
+      await pool.execute(
+        `UPDATE partners 
+         SET user_id = ?, type = 'Industry', contact_person = COALESCE(NULLIF(?, ''), contact_person), location = COALESCE(NULLIF(?, ''), location), phone = COALESCE(NULLIF(?, ''), phone), website = COALESCE(?, website)
+         WHERE id = ?`,
+        [u.id, contactPerson, location, phone, website, pId]
+      );
+      return pId;
+    }
+
+    // Insert new partner
+    const [result] = await pool.execute(
+      `INSERT INTO partners (user_id, company, type, contact_person, location, email, phone, website, created_by, partnership_status)
+       VALUES (?, ?, 'Industry', ?, ?, ?, ?, ?, ?, 'active')`,
+      [u.id, company, contactPerson, location, email, phone, website, u.id]
+    );
+    return result.insertId;
+  } catch (err) {
+    console.error('Error syncing industry partner for user ' + userId + ':', err);
+    return null;
+  }
+}
+
+async function syncAllIndustryPartners() {
+  try {
+    const [industryUsers] = await pool.query(
+      `SELECT id FROM users 
+       WHERE (member_type = 'industry' OR sector = 'industry')
+         AND role = 'member'`
+    );
+    for (const u of industryUsers) {
+      await syncIndustryPartner(u.id);
+    }
+  } catch (err) {
+    console.error('Error syncing all industry partners:', err);
+  }
+}
+
 function toPartnerDto(row) {
   return {
     id: String(row.id),
@@ -30,12 +108,15 @@ function toPartnerDto(row) {
     email: row.email,
     phone: row.phone,
     website: row.website,
+    userId: row.user_id ? String(row.user_id) : null,
+    createdBy: row.created_by ? String(row.created_by) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 async function listPartners(_req, res) {
+  await syncAllIndustryPartners();
   const [rows] = await pool.execute('SELECT * FROM partners ORDER BY created_at DESC');
   return res.json({ success: true, partners: rows.map(toPartnerDto) });
 }
@@ -49,17 +130,19 @@ async function createPartner(req, res) {
   const company = String(body.company || '').trim();
   if (!company) return res.status(400).json({ success: false, message: 'Company name is required.' });
 
-  const type = body.type ? String(body.type).trim() : '';
+  const type = body.type ? String(body.type).trim() : 'Industry';
   const contactPerson = body.contactPerson ? String(body.contactPerson).trim() : '';
   const location = body.location ? String(body.location).trim() : '';
   const email = body.email ? String(body.email).trim() : '';
   const phone = body.phone ? String(body.phone).trim() : '';
   const website = body.website ? String(body.website).trim() : null;
+  const isIndustryMember = req.user?.role === 'member' && (req.user?.member_type === 'industry' || req.user?.sector === 'industry');
+  const userId = isIndustryMember ? req.user.id : (body.userId ? Number(body.userId) : null);
 
   const [result] = await pool.execute(
-    `INSERT INTO partners (company, type, contact_person, location, email, phone, website, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [company, type, contactPerson, location, email, phone, website, req.user?.id || null]
+    `INSERT INTO partners (user_id, company, type, contact_person, location, email, phone, website, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [userId, company, type, contactPerson, location, email, phone, website, req.user?.id || null]
   );
 
   const [rows] = await pool.execute('SELECT * FROM partners WHERE id = ? LIMIT 1', [result.insertId]);
@@ -73,6 +156,18 @@ async function updatePartner(req, res) {
 
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const [partnerRows] = await pool.execute('SELECT * FROM partners WHERE id = ? LIMIT 1', [id]);
+  if (!partnerRows.length) return res.status(404).json({ success: false, message: 'Partner not found.' });
+  const partner = partnerRows[0];
+
+  const role = req.user?.role;
+  const isPrivileged = ['super_admin', 'admin', 'officer'].includes(role);
+  const isOwner = Number(partner.user_id) === Number(req.user?.id) || Number(partner.created_by) === Number(req.user?.id);
+
+  if (!isPrivileged && !isOwner) {
+    return res.status(403).json({ success: false, message: 'Forbidden: You can only update your own company partner details.' });
+  }
 
   const body = req.body || {};
   const sets = [];
@@ -90,8 +185,28 @@ async function updatePartner(req, res) {
   params.push(id);
 
   await pool.execute(`UPDATE partners SET ${sets.join(', ')} WHERE id = ?`, params);
+
+  // Sync back to linked user profile if applicable
+  if (partner.user_id) {
+    try {
+      const userSets = [];
+      const userParams = [];
+      if (typeof body.company === 'string' && body.company.trim()) { userSets.push('sector_details = ?'); userParams.push(body.company.trim()); }
+      if (typeof body.contactPerson === 'string' && body.contactPerson.trim()) { userSets.push('representative_name = ?'); userParams.push(body.contactPerson.trim()); }
+      if (typeof body.location === 'string' && body.location.trim()) { userSets.push('address = ?'); userParams.push(body.location.trim()); }
+      if (typeof body.email === 'string' && body.email.trim()) { userSets.push('company_email = ?'); userParams.push(body.email.trim()); }
+      if (typeof body.phone === 'string' && body.phone.trim()) { userSets.push('contact_number = ?'); userParams.push(body.phone.trim()); }
+      if (body.website !== undefined) { userSets.push('website = ?'); userParams.push(body.website ? String(body.website).trim() : null); }
+      if (userSets.length) {
+        userParams.push(partner.user_id);
+        await pool.execute(`UPDATE users SET ${userSets.join(', ')} WHERE id = ?`, userParams);
+      }
+    } catch (userSyncErr) {
+      console.error('Failed to sync partner changes back to user:', userSyncErr);
+    }
+  }
+
   const [rows] = await pool.execute('SELECT * FROM partners WHERE id = ? LIMIT 1', [id]);
-  if (!rows.length) return res.status(404).json({ success: false, message: 'Partner not found.' });
   return res.json({ success: true, partner: toPartnerDto(rows[0]) });
 }
 
@@ -102,6 +217,18 @@ async function deletePartner(req, res) {
 
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid id.' });
+
+  const [partnerRows] = await pool.execute('SELECT * FROM partners WHERE id = ? LIMIT 1', [id]);
+  if (!partnerRows.length) return res.status(404).json({ success: false, message: 'Partner not found.' });
+  const partner = partnerRows[0];
+
+  const role = req.user?.role;
+  const isPrivileged = ['super_admin', 'admin', 'officer'].includes(role);
+  const isOwner = Number(partner.user_id) === Number(req.user?.id) || Number(partner.created_by) === Number(req.user?.id);
+
+  if (!isPrivileged && !isOwner) {
+    return res.status(403).json({ success: false, message: 'Forbidden: You can only delete your own company partner details.' });
+  }
 
   const [result] = await pool.execute('DELETE FROM partners WHERE id = ?', [id]);
   if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Partner not found.' });
@@ -231,6 +358,8 @@ async function deletePartnerContribution(req, res) {
 module.exports = {
   canManagePartners,
   requirePartnerManager,
+  syncIndustryPartner,
+  syncAllIndustryPartners,
   listPartners,
   createPartner,
   updatePartner,

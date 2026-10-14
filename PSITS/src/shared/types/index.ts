@@ -198,7 +198,7 @@ export interface EventLeaderboardParticipant {
   contactNumber?: string;
   gender?: string;
   position?: string;
-  checkedIn: boolean;
+  checkedIn?: boolean;
   checkedInAt?: string | null;
   status?: string;
 }
@@ -211,19 +211,19 @@ export interface EventLeaderboardInstitution {
   institutionAvatar?: string | null;
   registrationId?: string | null;
   registeredCount: number;
-  inVenueCount: number;
-  attendanceRate: number;
-  allInVenue: boolean;
-  status: string;
+  inVenueCount?: number;
+  attendanceRate?: number;
+  allInVenue?: boolean;
+  status?: string;
   participants: EventLeaderboardParticipant[];
 }
 
 export interface EventLeaderboardSummary {
   totalInstitutions: number;
   totalRegisteredParticipants: number;
-  totalInVenue: number;
-  overallAttendanceRate: number;
-  fullyPresentInstitutions: number;
+  totalInVenue?: number;
+  overallAttendanceRate?: number;
+  fullyPresentInstitutions?: number;
 }
 
 export interface InstitutionLeaderboardData {

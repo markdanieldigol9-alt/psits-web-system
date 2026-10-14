@@ -287,12 +287,39 @@ export const PartnersPage = () => {
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {partners.map((p) => (
+          {partners.map((p) => {
+            const isPrivileged = Boolean(
+              user && ['admin', 'super_admin', 'officer'].includes(user.role)
+            );
+            const isMyCompany = Boolean(
+              user && (
+                (p.userId && String(p.userId) === String(user.id)) ||
+                (p.createdBy && String(p.createdBy) === String(user.id)) ||
+                (user.sectorDetails && p.company && user.sectorDetails.toLowerCase().trim() === p.company.toLowerCase().trim())
+              )
+            );
+            const canEdit = isPrivileged || isMyCompany;
+            const canDelete = isPrivileged || isMyCompany;
+            const canLogDeal = isPrivileged || isMyCompany;
+
+            return (
             <Card key={p.id} className="p-6 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-semibold text-lg text-gray-900">{p.company}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-lg text-gray-900">{p.company}</p>
+                      {isMyCompany && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2.5 py-0.5 border border-emerald-300">
+                          🏢 Your Company Profile
+                        </span>
+                      )}
+                      {p.userId && !isMyCompany && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold px-2 py-0.5 border border-blue-200">
+                          Industry Member
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600 mt-1">{p.type} Partner</p>
                   </div>
                   <div className="flex gap-2 items-center">
@@ -305,28 +332,28 @@ export const PartnersPage = () => {
                       {expandedPartnerId === p.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       Deals
                     </Button>
-                    {canManagePartners && (
-                      <>
-                        <button
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                          aria-label="Edit partner"
-                          title="Edit Partner Profile"
-                          onClick={() => {
-                            setEditingPartner(p);
-                            setIsModalOpen(true);
-                          }}
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                          aria-label="Delete partner"
-                          title="Delete Partner"
-                          onClick={() => setConfirmDelete({ id: p.id, company: p.company })}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </>
+                    {canEdit && (
+                      <button
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        aria-label="Edit partner"
+                        title={isMyCompany ? "Edit Your Company Profile" : "Edit Partner Profile"}
+                        onClick={() => {
+                          setEditingPartner(p);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <Pencil size={18} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        aria-label="Delete partner"
+                        title={isMyCompany ? "Delete Company Partner Entry" : "Delete Partner"}
+                        onClick={() => setConfirmDelete({ id: p.id, company: p.company })}
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -348,7 +375,7 @@ export const PartnersPage = () => {
                 <div className="border-t border-gray-150 pt-4 mt-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold text-gray-950">Deals & Contributions</p>
-                    {canManagePartners && (
+                    {canLogDeal && (
                       <Button
                         variant="primary"
                         size="sm"
@@ -410,7 +437,7 @@ export const PartnersPage = () => {
                                     )}
                                   </div>
                                 </div>
-                                {canManagePartners && (
+                                {canLogDeal && (
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
                                       className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition"
@@ -440,7 +467,8 @@ export const PartnersPage = () => {
                 </div>
               )}
             </Card>
-          ))}
+          );
+        })}
         </div>
       </div>
 

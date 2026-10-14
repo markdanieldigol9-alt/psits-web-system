@@ -1,6 +1,7 @@
 const { pool } = require('./db');
 const { isDbError } = require('./isDbError');
 const { sendRegistrationApprovedEmail } = require('./mailer');
+const { syncIndustryPartner } = require('./partners');
 const PASSWORD_RULES = {
   minLength: 10,
   requireUpper: true,
@@ -676,6 +677,14 @@ async function createMember(req, res) {
         }
       }
 
+      if (memberType === 'industry' || sector === 'industry') {
+        try {
+          await syncIndustryPartner(existingUser.id);
+        } catch (indErr) {
+          console.error('Failed to auto-sync industry partner on renew:', indErr);
+        }
+      }
+
       const [rows] = await pool.execute(
         `SELECT * FROM users WHERE id = ?`,
         [existingUser.id]
@@ -697,6 +706,15 @@ async function createMember(req, res) {
       );
 
       const insertedId = result.insertId;
+
+      if (memberType === 'industry' || sector === 'industry') {
+        try {
+          await syncIndustryPartner(insertedId);
+        } catch (indErr) {
+          console.error('Failed to auto-sync industry partner on member create:', indErr);
+        }
+      }
+
       const [rows] = await pool.execute(
         `SELECT * FROM users WHERE id = ?`,
         [insertedId]
@@ -793,6 +811,14 @@ async function updateMember(req, res) {
   if (!rows.length) return json(res, 404, { success: false, message: 'Member not found.' });
   const updated = rows[0];
 
+  if (updated.member_type === 'industry' || updated.sector === 'industry') {
+    try {
+      await syncIndustryPartner(id);
+    } catch (indErr) {
+      console.error('Failed to auto-sync industry partner on member update:', indErr);
+    }
+  }
+
   if (status && before.status !== updated.status) {
     await appendMemberStatusLog({
       memberId: id,
@@ -834,6 +860,12 @@ async function updateMember(req, res) {
 async function deleteMember(req, res) {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
+
+  try {
+    await pool.execute('DELETE FROM partners WHERE user_id = ?', [id]);
+  } catch (partErr) {
+    console.error('Failed to clean up partner on member delete:', partErr);
+  }
 
   const [result] = await pool.execute('DELETE FROM users WHERE id = ? AND role = \'member\'', [id]);
   if (result.affectedRows === 0) return json(res, 404, { success: false, message: 'Member not found.' });
