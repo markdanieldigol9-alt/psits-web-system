@@ -26,6 +26,8 @@ import {
   Filter,
   Eye,
   ShieldCheck,
+  ListFilter,
+  LayoutGrid,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -94,6 +96,10 @@ export const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<any | null>(null);
   const [previewReport, setPreviewReport] = useState<string | null>(null);
+
+  // Report Dropdown & View Mode State
+  const [selectedReportTitle, setSelectedReportTitle] = useState<string>(reportCards[0].title);
+  const [reportsViewMode, setReportsViewMode] = useState<'dropdown' | 'grid'>('dropdown');
 
   // Wizard Modal State
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
@@ -583,40 +589,139 @@ export const ReportsPage = () => {
     exportToCSV('Dashboard_Summary_Report', summaryData);
   };
 
+  const selectedReportObj = reportCards.find((r) => r.title === selectedReportTitle) || reportCards[0];
+  const SelectedReportIcon = selectedReportObj.icon;
+
   return (
     <MainLayout>
       <div className="space-y-6 pb-4">
 
-        <Card title="Reports">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {reportCards.map((report) => {
-              const Icon = report.icon;
-              return (
-                <div key={report.title} className="rounded-lg border border-gray-200 p-4 transition-colors hover:border-primary/40 hover:bg-blue-50/40">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-semibold text-gray-900">{report.title}</h3>
-                      <p className="text-sm text-gray-600">{report.description}</p>
-                    </div>
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button size="sm" variant="secondary" className="w-full" onClick={() => void openReportWizard(report.title, 2)}>
-                      <Eye size={14} /> View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      className="w-full"
-                      onClick={() => void openReportWizard(report.title, 1)}
+        <Card
+          title="Reports"
+          subtitle="Select and generate organization reports, financial summaries, and event audits."
+          headerAction={
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setReportsViewMode('dropdown')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+                  reportsViewMode === 'dropdown'
+                    ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'
+                }`}
+                title="Dropdown Selector View"
+              >
+                <ListFilter size={14} /> Dropdown
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportsViewMode('grid')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+                  reportsViewMode === 'grid'
+                    ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'
+                }`}
+                title="Grid Cards View"
+              >
+                <LayoutGrid size={14} /> Grid
+              </button>
+            </div>
+          }
+        >
+          {reportsViewMode === 'dropdown' ? (
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row items-stretch md:items-end justify-between gap-4 p-4 md:p-5 bg-gradient-to-r from-blue-50/60 via-slate-50 to-indigo-50/40 dark:from-slate-900/60 dark:via-slate-800/50 dark:to-indigo-950/20 rounded-xl border border-gray-200 dark:border-slate-700">
+                <div className="flex-1 space-y-1.5">
+                  <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    Select Report
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedReportTitle}
+                      onChange={(e) => setSelectedReportTitle(e.target.value)}
+                      className="w-full text-base font-semibold py-2.5 pl-3.5 pr-10 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
                     >
-                      <Sparkles size={14} /> Generate
-                    </Button>
+                      {reportCards.map((r) => (
+                        <option key={r.title} value={r.title}>
+                          {r.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <Button
+                    size="md"
+                    variant="secondary"
+                    onClick={() => void openReportWizard(selectedReportTitle, 2)}
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                  >
+                    <Eye size={16} /> View
+                  </Button>
+                  <Button
+                    size="md"
+                    variant="primary"
+                    onClick={() => void openReportWizard(selectedReportTitle, 1)}
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold shadow-sm"
+                  >
+                    <Sparkles size={16} /> Generate
+                  </Button>
+                </div>
+              </div>
+
+              {selectedReportObj && (
+                <div className="flex items-start gap-4 p-4 bg-white dark:bg-slate-800/80 rounded-xl border border-gray-200/80 dark:border-slate-700 shadow-sm transition-all">
+                  <div className="p-3 bg-blue-100 dark:bg-blue-950/60 text-primary dark:text-cyan-400 rounded-xl shrink-0">
+                    <SelectedReportIcon className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-base font-bold text-gray-900 dark:text-white">
+                        {selectedReportObj.title}
+                      </h4>
+                      <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        Official Report
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {selectedReportObj.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {reportCards.map((report) => {
+                const Icon = report.icon;
+                return (
+                  <div key={report.title} className="rounded-lg border border-gray-200 p-4 transition-colors hover:border-primary/40 hover:bg-blue-50/40">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <h3 className="text-base font-semibold text-gray-900">{report.title}</h3>
+                        <p className="text-sm text-gray-600">{report.description}</p>
+                      </div>
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <Button size="sm" variant="secondary" className="w-full" onClick={() => void openReportWizard(report.title, 2)}>
+                        <Eye size={14} /> View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        className="w-full"
+                        onClick={() => void openReportWizard(report.title, 1)}
+                      >
+                        <Sparkles size={14} /> Generate
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
 
         {(isLoading || isEventReportLoading) && (

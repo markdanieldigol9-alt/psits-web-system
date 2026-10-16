@@ -23,7 +23,7 @@ export const OfficersPage = () => {
   const { addNotification } = useNotification();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'past'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'past'>('active');
   const [officers, setOfficers] = useState<any[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,9 +57,10 @@ export const OfficersPage = () => {
   }, [filterStatus]);
 
   const filteredOfficers = useMemo(() => {
-    const list = officers.filter(
-      (officer) => filterStatus === 'all' || officer.officerStatus === filterStatus
-    );
+    const list = officers.filter((officer) => {
+      const status = officer.officerStatus || (officer.status === 'active' ? 'active' : 'inactive');
+      return filterStatus === 'all' || status === filterStatus;
+    });
     return list.slice().sort((a, b) => {
       const rankA = getPositionRank(a.position);
       const rankB = getPositionRank(b.position);
@@ -118,9 +119,9 @@ export const OfficersPage = () => {
             }}
             className="px-4 py-2.5 bg-white dark:bg-[#0B1326] border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
           >
-            <option value="all">All Officers ({officers.length})</option>
             <option value="active">Active Officers</option>
-            <option value="inactive">Inactive</option>
+            <option value="all">All Officers</option>
+            <option value="inactive">Inactive Officers</option>
             <option value="past">Past Officers / Alumni</option>
           </select>
         </div>
