@@ -9,7 +9,7 @@ interface ModalProps {
   title: string;
   subtitle?: string;
   children: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
   hideCloseButton?: boolean;
   accentColor?: string;
 }
@@ -38,6 +38,9 @@ export const Modal = ({
     sm: 'max-w-lg',
     md: 'max-w-2xl',
     lg: 'max-w-3xl',
+    xl: 'max-w-5xl',
+    '2xl': 'max-w-6xl',
+    full: 'max-w-[96vw]',
   };
 
   return (

@@ -4,7 +4,7 @@ import { MainLayout } from '@/shared/layouts';
 
 import { Card, Button, TextArea, Input, Select } from '@/shared/components/Form';
 import { Badge, Pagination, Modal } from '@/shared/components/Common';
-import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import api from '@/shared/services/api';
 import { useAuth } from '@/shared/context/AuthContext';
@@ -28,8 +28,12 @@ export const PaymentsPage = () => {
   const { addNotification } = useNotification();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get('search') || searchParams.get('member') || '';
+  const initialCategory = (searchParams.get('category') as any) || 'all';
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'institution' | 'individual' | 'event' | 'sponsorship'>(
+    ['institution', 'individual', 'event', 'sponsorship'].includes(initialCategory) ? initialCategory : 'all'
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [payments, setPayments] = useState<any[]>(mockPayments);
@@ -59,6 +63,40 @@ export const PaymentsPage = () => {
     amount: 250,
     paymentKind: 'membership_registration',
     referenceNumber: '',
+    file: null,
+    previewUrl: '',
+  });
+
+  // State for Admin / Officer offline & direct payment recording
+  const [showRecordModal, setShowRecordModal] = useState(false);
+  const [isSubmittingRecord, setIsSubmittingRecord] = useState(false);
+  const [recordError, setRecordError] = useState<string | null>(null);
+  const [recordForm, setRecordForm] = useState<{
+    entityType: 'institution' | 'member';
+    institutionName: string;
+    memberName: string;
+    category: 'institution_partial_payment' | 'institution_batch_registration' | 'membership_registration' | 'event' | 'partner_sponsorship';
+    eventTitle: string;
+    amount: number | '';
+    isPartial: boolean;
+    remainingBalance: number | '';
+    method: string;
+    referenceNumber: string;
+    markAsVerified: boolean;
+    file: File | null;
+    previewUrl: string;
+  }>({
+    entityType: 'institution',
+    institutionName: '',
+    memberName: '',
+    category: 'institution_partial_payment',
+    eventTitle: '',
+    amount: '',
+    isPartial: false,
+    remainingBalance: '',
+    method: 'through_officer',
+    referenceNumber: '',
+    markAsVerified: true,
     file: null,
     previewUrl: '',
   });
@@ -107,6 +145,17 @@ export const PaymentsPage = () => {
     };
   }, [viewing?.id]);
 
+  useEffect(() => {
+    const s = searchParams.get('search') || searchParams.get('member') || '';
+    if (s && s !== searchTerm) {
+      setSearchTerm(s);
+    }
+    const cat = searchParams.get('category');
+    if (cat && ['institution', 'individual', 'event', 'sponsorship'].includes(cat)) {
+      setFilterCategory(cat as any);
+    }
+  }, [searchParams]);
+
   const scopedPayments = isMember
     ? payments.filter((payment) => String(payment.memberId) === String(user?.id || ''))
     : payments;
@@ -117,21 +166,31 @@ export const PaymentsPage = () => {
   const filteredPayments = scopedPayments.filter((payment) => {
     const status = getVerificationStatus(payment);
     const matchesStatus = filterStatus === 'all' || status === filterStatus;
-    
-    if (!searchTerm.trim()) return matchesStatus;
+    if (!matchesStatus) return false;
+
+    if (filterCategory !== 'all') {
+      const kind = String(payment.paymentKind || '').toLowerCase();
+      const isInst = kind.includes('institution') || Boolean(payment.institutionName);
+      if (filterCategory === 'institution' && !isInst) return false;
+      if (filterCategory === 'individual' && (isInst || payment.eventId || kind === 'partner_sponsorship')) return false;
+      if (filterCategory === 'event' && (!payment.eventId && kind !== 'event')) return false;
+      if (filterCategory === 'sponsorship' && kind !== 'partner_sponsorship') return false;
+    }
+
+    if (!searchTerm.trim()) return true;
 
     const term = searchTerm.toLowerCase().trim();
-    const matchesSearch =
+    return (
       (payment.memberName && String(payment.memberName).toLowerCase().includes(term)) ||
+      (payment.institutionName && String(payment.institutionName).toLowerCase().includes(term)) ||
       (payment.memberEmail && String(payment.memberEmail).toLowerCase().includes(term)) ||
       (payment.event && String(payment.event).toLowerCase().includes(term)) ||
       (payment.paymentKind && String(payment.paymentKind).toLowerCase().includes(term)) ||
       (payment.referenceNumber && String(payment.referenceNumber).toLowerCase().includes(term)) ||
       (payment.method && String(payment.method).toLowerCase().includes(term)) ||
       (payment.paymentMethod && String(payment.paymentMethod).toLowerCase().includes(term)) ||
-      (payment.memberId && String(payment.memberId) === term);
-
-    return matchesStatus && matchesSearch;
+      (payment.memberId && String(payment.memberId) === term)
+    );
   });
 
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
@@ -215,12 +274,102 @@ export const PaymentsPage = () => {
     }
   };
 
+  const handleRecordOfflinePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecordError(null);
+
+    const amountNum = Number(recordForm.amount || 0);
+    if (!amountNum || amountNum <= 0) {
+      setRecordError('Please enter a valid amount greater than 0.');
+      return;
+    }
+
+    if (recordForm.entityType === 'institution' && !recordForm.institutionName.trim()) {
+      setRecordError('Please enter or select the institution name.');
+      return;
+    }
+
+    if (recordForm.entityType === 'member' && !recordForm.memberName.trim()) {
+      setRecordError('Please enter the member name.');
+      return;
+    }
+
+    setIsSubmittingRecord(true);
+    try {
+      let uploadedProofUrl: string | null = null;
+      if (recordForm.file) {
+        const dataUrl = await readAsDataUrl(recordForm.file);
+        const { data: uploadData } = await api.uploadPaymentProof(dataUrl);
+        uploadedProofUrl = uploadData?.url || null;
+      }
+
+      const generatedRef = recordForm.referenceNumber.trim() || `REC-${Date.now().toString(36).toUpperCase()}`;
+
+      const { data } = await api.createPayment({
+        paymentKind: recordForm.category,
+        eventTitle: recordForm.eventTitle.trim() || (recordForm.entityType === 'institution' ? `Institution Payment: ${recordForm.institutionName}` : undefined),
+        amount: amountNum,
+        method: recordForm.method,
+        paymentMethod: recordForm.method,
+        referenceNumber: generatedRef,
+        proofUrl: uploadedProofUrl || undefined,
+        institutionName: recordForm.entityType === 'institution' ? recordForm.institutionName.trim() : undefined,
+        memberName: recordForm.memberName.trim() || (recordForm.entityType === 'institution' ? recordForm.institutionName.trim() : undefined),
+        isPartial: recordForm.isPartial,
+        remainingBalance: recordForm.isPartial ? Number(recordForm.remainingBalance || 0) : 0,
+        verified: recordForm.markAsVerified,
+        isDirectlyVerified: recordForm.markAsVerified,
+      });
+
+      if (data?.success) {
+        addNotification({
+          userId: 'current',
+          title: 'Payment Recorded',
+          message: `Payment of ₱${amountNum.toLocaleString()} for ${recordForm.entityType === 'institution' ? recordForm.institutionName : recordForm.memberName} was successfully recorded in Payment Tracking.`,
+          type: 'success',
+          isRead: false,
+        });
+
+        // Refresh list
+        const res = await api.getPayments({ status: filterStatus });
+        if (res.data?.success) {
+          setPayments(res.data.payments || []);
+        }
+
+        setShowRecordModal(false);
+        setRecordForm({
+          entityType: 'institution',
+          institutionName: '',
+          memberName: '',
+          category: 'institution_partial_payment',
+          eventTitle: '',
+          amount: '',
+          isPartial: false,
+          remainingBalance: '',
+          method: 'through_officer',
+          referenceNumber: '',
+          markAsVerified: true,
+          file: null,
+          previewUrl: '',
+        });
+      } else {
+        throw new Error(data?.message || 'Failed to record payment.');
+      }
+    } catch (err: any) {
+      setRecordError(err?.response?.data?.message || err?.message || 'Failed to record payment.');
+    } finally {
+      setIsSubmittingRecord(false);
+    }
+  };
+
   const handleExportCSV = () => {
     const dataToExport = filteredPayments.map(p => ({
       'Member Name': p.memberName || 'N/A',
+      'Institution': p.institutionName || 'N/A',
       'Member Email': p.memberEmail || 'N/A',
       'Payment Type / Event': p.event || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : p.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee'),
       'Amount': p.amount || 0,
+      'Remaining Balance': p.remainingBalance || 0,
       'Payment Method': formatPaymentMethod(p.method || p.paymentMethod),
       'Reference Number': p.referenceNumber || '-',
       'Status': getVerificationStatus(p),
@@ -295,6 +444,17 @@ export const PaymentsPage = () => {
                   Submit Payment / Pay Fee
                 </Button>
               )}
+              {canVerify && (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => setShowRecordModal(true)}
+                  className="w-full sm:w-auto shrink-0 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                >
+                  <Plus size={18} />
+                  Record Payment
+                </Button>
+              )}
               <Button variant="cyber" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto shrink-0 font-medium">
                 <Download size={18} />
                 Export CSV Ledger
@@ -339,13 +499,40 @@ export const PaymentsPage = () => {
           </div>
         </div>
 
+        {/* Category Navigation Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { id: 'all', label: `All Transactions (${payments.length})` },
+            { id: 'institution', label: `🏛️ Institution Payments (${payments.filter(p => (p.paymentKind || '').includes('institution') || Boolean(p.institutionName)).length})` },
+            { id: 'individual', label: `👤 Individual Membership (${payments.filter(p => !((p.paymentKind || '').includes('institution') || Boolean(p.institutionName)) && !p.eventId && (p.paymentKind !== 'partner_sponsorship')).length})` },
+            { id: 'event', label: `🎯 Event Registrations (${payments.filter(p => Boolean(p.eventId) || p.paymentKind === 'event').length})` },
+            { id: 'sponsorship', label: `🤝 Partner Sponsorships (${payments.filter(p => p.paymentKind === 'partner_sponsorship').length})` },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                setFilterCategory(cat.id as any);
+                setCurrentPage(1);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                filterCategory === cat.id
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-obsidian-card text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
         {/* Filter and Search Bar */}
         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-obsidian-card/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
-              placeholder="Search by member, ref #, event, or method..."
+              placeholder="Search by member, institution, ref #, event, or method..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -367,7 +554,7 @@ export const PaymentsPage = () => {
             }}
             className="px-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-800 dark:text-slate-200 cursor-pointer"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">All Verification Statuses</option>
             <option value="pending">Pending Verification</option>
             <option value="verified">Verified (Settled)</option>
             <option value="rejected">Rejected (Flagged)</option>
@@ -382,7 +569,7 @@ export const PaymentsPage = () => {
                 <tr>
                   {!isMember && (
                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                      Member
+                      Member / Institution
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
@@ -445,6 +632,13 @@ export const PaymentsPage = () => {
                         </span>
                       );
                     }
+                    if (payment.paymentKind === 'institution_partial_payment') {
+                      return (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          🏛️ Institution Partial / Settlement
+                        </span>
+                      );
+                    }
                     return (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
                         {payment.event || 'Membership Fee'}
@@ -457,17 +651,30 @@ export const PaymentsPage = () => {
                     {!isMember && (
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-100">
                         <div className="font-semibold">{payment.memberName || 'Member'}</div>
+                        {payment.institutionName && (
+                          <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
+                            🏫 {payment.institutionName}
+                          </div>
+                        )}
                         {payment.memberEmail && (
-                          <div className="text-xs text-gray-500 font-normal">{payment.memberEmail}</div>
+                          <div className="text-xs text-gray-500 font-normal mt-0.5">{payment.memberEmail}</div>
                         )}
                       </td>
                     )}
                     <td className="px-6 py-4 text-sm">{renderPaymentKindBadge()}</td>
                     <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">
                       <div>₱{Number(payment.amount || 0).toLocaleString()}</div>
-                      {payment.paymentKind === 'institution_batch_registration' ? (
+                      {payment.isPartial && payment.remainingBalance ? (
+                        <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                          Remaining: ₱{Number(payment.remainingBalance).toLocaleString()}
+                        </div>
+                      ) : payment.paymentKind === 'institution_batch_registration' ? (
                         <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
                           ₱250/head • {payment.totalHeads || 'Batch'} heads
+                        </div>
+                      ) : (payment.paymentKind === 'institution_partial_payment') ? (
+                        <div className="text-[11px] font-normal text-amber-600 dark:text-amber-400">
+                          Partial Remittance
                         </div>
                       ) : (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership' || (!payment.eventId && !payment.paymentKind)) ? (
                         <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
@@ -548,7 +755,25 @@ export const PaymentsPage = () => {
                   {viewing.memberEmail && <span className="text-gray-500 text-xs block">{viewing.memberEmail}</span>}
                 </div>
               )}
-              <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'institution_batch_registration' ? 'Institution Batch Member Registration' : viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
+              <div>
+                <span className="font-semibold">Institution / Affiliation:</span>{' '}
+                {viewing.institutionName ? (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 text-xs">
+                      🏫 {viewing.institutionName}
+                    </span>
+                    <a
+                      href={`/institution-members?search=${encodeURIComponent(viewing.institutionName)}`}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                    >
+                      View in Roster ↗
+                    </a>
+                  </div>
+                ) : (
+                  <span className="text-gray-500 text-xs block italic">Individual / General Member</span>
+                )}
+              </div>
+              <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'institution_batch_registration' ? 'Institution Batch Member Registration' : viewing.paymentKind === 'institution_partial_payment' ? 'Institution Partial / Settlement' : viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
               <div><span className="font-semibold">Amount Paid:</span> <strong className="text-blue-600 dark:text-blue-400">₱{Number(viewing.amount || 0).toLocaleString()}</strong></div>
               <div><span className="font-semibold">Method:</span> {formatPaymentMethod(viewing.method || viewing.paymentMethod)}</div>
               <div><span className="font-semibold">Reference Number:</span> <span className="font-mono">{viewing.referenceNumber || 'N/A'}</span></div>
@@ -941,6 +1166,229 @@ export const PaymentsPage = () => {
             <Button type="submit" variant="primary" isLoading={isSubmittingFee}>
               <Upload size={16} />
               Submit Payment Proof
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Admin / Officer Record Payment Modal */}
+      <Modal
+        isOpen={showRecordModal}
+        onClose={() => {
+          if (!isSubmittingRecord) setShowRecordModal(false);
+        }}
+        title="Record Payment / Remittance (Admin & Officer Tracking)"
+        size="lg"
+      >
+        <form onSubmit={handleRecordOfflinePayment} className="space-y-4">
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Log official receipts, cheques, institution partial remittances, batch registrations, or direct member dues into the central Financial Ledger.
+          </p>
+
+          {recordError && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+              {recordError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">
+                Payor / Entity Type
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecordForm(prev => ({
+                      ...prev,
+                      entityType: 'institution',
+                      category: 'institution_partial_payment',
+                    }));
+                  }}
+                  className={`py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    recordForm.entityType === 'institution'
+                      ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/50 dark:border-blue-400 dark:text-blue-200'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-800'
+                  }`}
+                >
+                  <Building2 size={15} /> Institution
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecordForm(prev => ({
+                      ...prev,
+                      entityType: 'member',
+                      category: 'membership_registration',
+                    }));
+                  }}
+                  className={`py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    recordForm.entityType === 'member'
+                      ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/50 dark:border-blue-400 dark:text-blue-200'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-800'
+                  }`}
+                >
+                  <User size={15} /> Member
+                </button>
+              </div>
+            </div>
+
+            {recordForm.entityType === 'institution' ? (
+              <Input
+                label="Institution / School Name *"
+                placeholder="e.g. STI Gensan, Inc or Villamor College"
+                value={recordForm.institutionName}
+                onChange={(e) => setRecordForm(prev => ({ ...prev, institutionName: e.target.value }))}
+                required
+              />
+            ) : (
+              <Input
+                label="Member Full Name *"
+                placeholder="e.g. Juan Dela Cruz"
+                value={recordForm.memberName}
+                onChange={(e) => setRecordForm(prev => ({ ...prev, memberName: e.target.value }))}
+                required
+              />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Transaction Category"
+              value={recordForm.category}
+              options={
+                recordForm.entityType === 'institution'
+                  ? [
+                      { value: 'institution_partial_payment', label: '🏛️ Institution Partial / Settlement' },
+                      { value: 'institution_batch_registration', label: '🏫 Institution Batch Registration' },
+                      { value: 'event', label: '🎯 Event Delegation Fee' },
+                    ]
+                  : [
+                      { value: 'membership_registration', label: '👤 Membership Registration Fee' },
+                      { value: 'membership_renewal', label: '🔄 Membership Renewal' },
+                      { value: 'event', label: '🎯 Event Registration Fee' },
+                      { value: 'partner_sponsorship', label: '🤝 Partner Sponsorship' },
+                    ]
+              }
+              onChange={(e) => setRecordForm(prev => ({ ...prev, category: e.target.value as any }))}
+            />
+
+            <Input
+              label="Amount Paid (PHP) *"
+              type="number"
+              min={1}
+              step="any"
+              placeholder="e.g. 2500"
+              value={recordForm.amount}
+              onChange={(e) => setRecordForm(prev => ({ ...prev, amount: e.target.value ? Number(e.target.value) : '' }))}
+              required
+            />
+          </div>
+
+          {/* Partial payment toggle */}
+          <div className="p-3 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-gray-800 dark:text-slate-200 block">Is Partial Payment / Downpayment?</span>
+                <span className="text-[11px] text-gray-500">Record an installment with outstanding balance.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={recordForm.isPartial}
+                onChange={(e) => setRecordForm(prev => ({ ...prev, isPartial: e.target.checked }))}
+                className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+            {recordForm.isPartial && (
+              <Input
+                label="Remaining Balance (PHP)"
+                type="number"
+                min={0}
+                placeholder="e.g. 5000"
+                value={recordForm.remainingBalance}
+                onChange={(e) => setRecordForm(prev => ({ ...prev, remainingBalance: e.target.value ? Number(e.target.value) : '' }))}
+              />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Payment Method"
+              options={[
+                { value: 'through_officer', label: 'Cash via Officer (OR Issued)' },
+                { value: 'cheque', label: 'Cheque / Bank Draft' },
+                { value: 'bank_transfer', label: 'Bank Transfer' },
+                { value: 'gcash', label: 'GCash' },
+                { value: 'paymaya', label: 'PayMaya' },
+              ]}
+              value={recordForm.method}
+              onChange={(e) => setRecordForm(prev => ({ ...prev, method: e.target.value }))}
+            />
+
+            <Input
+              label="Official Receipt (OR) # / Reference No."
+              placeholder="e.g. OR-2026-0089 or Ref #"
+              value={recordForm.referenceNumber}
+              onChange={(e) => setRecordForm(prev => ({ ...prev, referenceNumber: e.target.value }))}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+            <input
+              type="checkbox"
+              id="markVerified"
+              checked={recordForm.markAsVerified}
+              onChange={(e) => setRecordForm(prev => ({ ...prev, markAsVerified: e.target.checked }))}
+              className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+            />
+            <label htmlFor="markVerified" className="text-xs font-semibold text-emerald-900 dark:text-emerald-200 cursor-pointer">
+              Directly mark transaction as Verified (Settled) in Financial Ledger
+            </label>
+          </div>
+
+          {/* Optional proof receipt */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-slate-300">
+              Attach Receipt / Cheque / Slip (Optional for Officers)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (!file) return;
+                setRecordForm((prev) => ({
+                  ...prev,
+                  file,
+                  previewUrl: URL.createObjectURL(file),
+                }));
+              }}
+              className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-gray-900 dark:text-slate-100"
+            />
+            {recordForm.previewUrl && (
+              <div className="mt-2 flex items-center gap-2">
+                <img src={recordForm.previewUrl} alt="Preview" className="h-12 w-12 object-cover rounded-lg border" />
+                <span className="text-xs text-emerald-600 font-medium">Receipt image attached</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-200 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmittingRecord}
+              onClick={() => {
+                setShowRecordModal(false);
+                setRecordError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isSubmittingRecord} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+              <CheckCircle2 size={16} />
+              Save to Ledger
             </Button>
           </div>
         </form>

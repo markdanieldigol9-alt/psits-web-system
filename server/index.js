@@ -35,7 +35,7 @@ const {
   resendApprovalEmail,
   triggerExpirationCheck,
 } = require('./members');
-const { getDashboardReport, getElectionReport, getPartnerContributionsReport } = require('./reports');
+const { getDashboardReport, getElectionReport, getPartnerContributionsReport, getAllMembersReport, getEventParticipationReport } = require('./reports');
 const { getMe, updateMe } = require('./me');
 const { listEvents, createEvent, updateEvent, deleteEvent } = require('./events');
 const { listAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } = require('./announcements');
@@ -960,6 +960,8 @@ app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_a
 app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
 
   app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getDashboardReport);
+  app.get('/api/reports/members', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getAllMembersReport);
+  app.get('/api/reports/event-participation', authMiddleware, requireRole(['super_admin', 'admin', 'officer', 'member']), getEventParticipationReport);
   app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getElectionReport);
   app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getPartnerContributionsReport);
 

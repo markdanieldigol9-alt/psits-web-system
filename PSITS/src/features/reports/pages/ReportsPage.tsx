@@ -8,6 +8,9 @@ import { exportToCSV } from '@/shared/utils/export';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import logo from '@/assets/image/PSITS_Logo.png';
+import { MemberDirectoryExportTable } from '../components/MemberDirectoryExportTable';
+import { FinancialReportView } from '../components/FinancialReportView';
+import { EventReportView } from '../components/EventReportView';
 import {
   FileDown,
   FileSpreadsheet,
@@ -22,6 +25,7 @@ import {
   Sparkles,
   Filter,
   Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -36,8 +40,18 @@ import {
 
 const reportCards = [
   {
+    title: 'Executive Summary',
+    description: 'Consolidated master statement across membership, finance, events, and industry alliances.',
+    icon: ShieldCheck,
+  },
+  {
     title: 'Membership Growth',
     description: 'Track member sign-ups and growth trend by month.',
+    icon: Users,
+  },
+  {
+    title: 'Member Directory & Roster',
+    description: 'Filter, view, and export member list by individual, institution, industry, and institution name.',
     icon: Users,
   },
   {
@@ -83,7 +97,7 @@ export const ReportsPage = () => {
 
   // Wizard Modal State
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
-  const [dateRangeFilter, setDateRangeFilter] = useState<'all' | 'this_month' | 'last_30_days' | 'custom'>('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState<'all' | 'this_month' | 'last_30_days' | 'this_quarter' | 'this_year' | 'custom'>('all');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
   const [detailedRecords, setDetailedRecords] = useState<any[]>([]);
@@ -93,33 +107,172 @@ export const ReportsPage = () => {
   const [electionReportData, setElectionReportData] = useState<any | null>(null);
   const [partnerReportData, setPartnerReportData] = useState<any | null>(null);
 
-  const openReportWizard = async (title: string, step: 1 | 2 = 1) => {
-    setWizardStep(step);
-    setPreviewReport(title);
+  // Unified Members Report State
+  const [allMembersData, setAllMembersData] = useState<any[]>([]);
+  const [institutionsList, setInstitutionsList] = useState<string[]>([]);
+  const [isMemberListLoading, setIsMemberListLoading] = useState(false);
+  const [memberCategoryFilter, setMemberCategoryFilter] = useState<'all' | 'individual' | 'institution' | 'industry'>('all');
+  const [memberInstitutionFilter, setMemberInstitutionFilter] = useState<string>('all');
+
+  // Event Participation Report State
+  const [eventReportData, setEventReportData] = useState<{
+    events: any[];
+    participants: any[];
+    institutions: string[];
+    summary: any;
+  } | null>(null);
+  const [isEventReportLoading, setIsEventReportLoading] = useState(false);
+
+  const loadEventReportData = async () => {
+    setIsEventReportLoading(true);
     try {
-      setIsLoading(true);
-      if (title === 'Membership Growth') {
+      const { data } = await api.getEventParticipationReport();
+      if (data?.success) {
+        setEventReportData(data);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setIsEventReportLoading(false);
+    }
+  };
+
+  const loadMembersData = async () => {
+    setIsMemberListLoading(true);
+    try {
+      const { data } = await api.getAllMembersReport();
+      if (data?.success) {
+        setAllMembersData(data.members || []);
+        setInstitutionsList(data.institutions || []);
+      }
+    } catch {
+      try {
         const [membersRes, instRes] = await Promise.allSettled([
           api.getMembers(),
           api.getInstitutionMembers(),
         ]);
         const psitsList = membersRes.status === 'fulfilled' ? (membersRes.value.data?.members || []) : [];
         const instList = instRes.status === 'fulfilled' ? (instRes.value.data?.members || []) : [];
-        setDetailedRecords([
+        const combined = [
           ...psitsList.map((m: any) => ({
-            ...m,
-            source: 'PSITS Member',
+            unique_id: `u-${m.id}`,
+            raw_id: m.id,
+            full_name: m.fullName || m.full_name,
             displayName: m.fullName || m.full_name || m.name || m.email,
+            email: m.email,
+            contact_number: m.contactNumber || m.contact_number,
+            category: m.memberType === 'industry' ? 'industry' : (m.memberType === 'institution' ? 'institution' : 'individual'),
+            institution_name: m.sectorDetails || m.institutionName || (m.memberType === 'institution' ? m.fullName : null),
             displaySector: m.sector || m.memberType || 'PSITS Individual',
+            position: m.occupation || m.sector || m.memberType || 'Member',
+            status: m.status,
+            created_at: m.createdAt || m.joinDate,
+            source: 'PSITS Member',
           })),
           ...instList.map((im: any) => ({
-            ...im,
-            source: 'Institution Member',
+            unique_id: `im-${im.id}`,
+            raw_id: im.id,
+            full_name: im.fullName || im.full_name,
             displayName: im.full_name || im.fullName || im.email,
+            email: im.email,
+            contact_number: im.contactNumber || im.contact_number,
+            category: 'institution',
+            institution_name: im.institutionName || 'Institution Member',
             displaySector: im.institution_name || im.institution_full_name || 'Institution Member',
+            position: im.position || 'Participant',
+            status: im.status,
+            created_at: im.createdAt || im.date,
+            source: 'Institution Member',
           })),
-        ]);
-      } else if (title === 'Event Participation' || title === 'Complete Event') {
+        ];
+        setAllMembersData(combined);
+        const iSet = new Set<string>();
+        combined.forEach((c) => { if (c.institution_name) iSet.add(c.institution_name); });
+        setInstitutionsList(Array.from(iSet));
+      } catch {
+        // ignore
+      }
+    } finally {
+      setIsMemberListLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadMembersData();
+  }, []);
+
+  const openReportWizard = async (title: string, step: 1 | 2 = 1) => {
+    setWizardStep(step);
+    setPreviewReport(title);
+    try {
+      setIsLoading(true);
+      if (title === 'Membership Growth' || title === 'Member Directory & Roster') {
+        try {
+          const { data } = await api.getAllMembersReport();
+          if (data?.success) {
+            setAllMembersData(data.members || []);
+            setInstitutionsList(data.institutions || []);
+            setDetailedRecords(data.members || []);
+          } else {
+            throw new Error('Fallback needed');
+          }
+        } catch {
+          const [membersRes, instRes] = await Promise.allSettled([
+            api.getMembers(),
+            api.getInstitutionMembers(),
+          ]);
+          const psitsList = membersRes.status === 'fulfilled' ? (membersRes.value.data?.members || []) : [];
+          const instList = instRes.status === 'fulfilled' ? (instRes.value.data?.members || []) : [];
+          const combined = [
+            ...psitsList.map((m: any) => ({
+              unique_id: `u-${m.id}`,
+              raw_id: m.id,
+              full_name: m.fullName || m.full_name,
+              displayName: m.fullName || m.full_name || m.name || m.email,
+              email: m.email,
+              contact_number: m.contactNumber || m.contact_number,
+              category: m.memberType === 'industry' ? 'industry' : (m.memberType === 'institution' ? 'institution' : 'individual'),
+              institution_name: m.sectorDetails || m.institutionName || (m.memberType === 'institution' ? m.fullName : null),
+              displaySector: m.sector || m.memberType || 'PSITS Individual',
+              position: m.occupation || m.sector || m.memberType || 'Member',
+              status: m.status,
+              created_at: m.createdAt || m.joinDate,
+              source: 'PSITS Member',
+            })),
+            ...instList.map((im: any) => ({
+              unique_id: `im-${im.id}`,
+              raw_id: im.id,
+              full_name: im.fullName || im.full_name,
+              displayName: im.full_name || im.fullName || im.email,
+              email: im.email,
+              contact_number: im.contactNumber || im.contact_number,
+              category: 'institution',
+              institution_name: im.institutionName || 'Institution Member',
+              displaySector: im.institution_name || im.institution_full_name || 'Institution Member',
+              position: im.position || 'Participant',
+              status: im.status,
+              created_at: im.createdAt || im.date,
+              source: 'Institution Member',
+            })),
+          ];
+          setAllMembersData(combined);
+          setDetailedRecords(combined);
+        }
+      } else if (title === 'Event Participation') {
+        try {
+          const { data } = await api.getEventParticipationReport();
+          if (data?.success) {
+            setEventReportData(data);
+            setDetailedRecords(data.events || []);
+          } else {
+            const { data: evData } = await api.getEvents();
+            setDetailedRecords(evData?.events || []);
+          }
+        } catch {
+          const { data: evData } = await api.getEvents();
+          setDetailedRecords(evData?.events || []);
+        }
+      } else if (title === 'Complete Event') {
         const { data } = await api.getEvents();
         setDetailedRecords(data?.events || []);
       } else if (title === 'Financial Summary' || title === 'Revenue by Method') {
@@ -157,10 +310,18 @@ export const ReportsPage = () => {
       }
     };
     void load();
+    void loadMembersData();
+    void loadEventReportData();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (previewReport === 'Event Participation') {
+      void loadEventReportData();
+    }
+  }, [previewReport]);
 
   useEffect(() => {
     const loadElections = async () => {
@@ -231,17 +392,40 @@ export const ReportsPage = () => {
   const handleGenerateExcel = async (title: string) => {
     setIsLoading(true);
     try {
-      if (title === 'Membership Growth') {
-        if (detailedRecords.length > 0) {
-          const dataToExport = detailedRecords.map((m: any) => ({
-            'Member Name': m.displayName || m.fullName || m.full_name || m.name || m.email || '—',
-            'Email': m.email || '—',
-            'Member Source': m.source || 'PSITS Member',
-            'Sector / Institution': m.displaySector || m.institution_name || m.institutionName || m.sector || m.memberType || '—',
-            'Status': m.status || 'active',
-            'Created / Registered Date': m.createdAt || m.created_at || '—',
+      if (title === 'Membership Growth' || title === 'Member Directory & Roster') {
+        const sourceList = allMembersData.length > 0 ? allMembersData : detailedRecords;
+        if (sourceList.length > 0) {
+          const filtered = sourceList.filter((m: any) => {
+            if (memberCategoryFilter !== 'all') {
+              const cat = (m.category || m.memberType || '').toLowerCase();
+              if (memberCategoryFilter === 'individual' && cat !== 'individual' && cat !== 'student') return false;
+              if (memberCategoryFilter === 'institution' && cat !== 'institution') return false;
+              if (memberCategoryFilter === 'industry' && cat !== 'industry') return false;
+            }
+            if (memberInstitutionFilter !== 'all') {
+              const inst = (m.institution_name || m.institutionName || m.sectorDetails || '').toLowerCase().trim();
+              const target = memberInstitutionFilter.toLowerCase().trim();
+              if (inst !== target && !inst.includes(target)) return false;
+            }
+            return true;
+          });
+
+          const dataToExport = filtered.map((m: any, idx: number) => ({
+            '#': idx + 1,
+            'Member ID': m.unique_id || m.raw_id || m.id || '—',
+            'Full Name': m.full_name || m.fullName || m.displayName || '—',
+            'Email Address': m.email || '—',
+            'Contact Number': m.contact_number || m.contactNumber || '—',
+            'Member Category': (m.category || m.memberType || 'individual').toUpperCase(),
+            'Institution / Affiliation': m.institution_name || m.institutionName || m.sectorDetails || 'Individual',
+            'Position / Role': m.position || m.occupation || 'Member',
+            'Status': (m.status === 'active' || m.status === 'approved') ? 'Active / Approved' : (m.status || 'Pending'),
+            'Registration Date': m.created_at ? new Date(m.created_at).toLocaleDateString() : '—',
           }));
-          exportToCSV('Combined_Membership_Growth_Roster', dataToExport);
+          const suffix = memberInstitutionFilter !== 'all'
+            ? `_${memberInstitutionFilter.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+            : (memberCategoryFilter !== 'all' ? `_${memberCategoryFilter}` : '');
+          exportToCSV(`PSITS_Member_Directory${suffix}`, dataToExport);
         } else {
           const dataToExport = memberGrowth.map((row: any) => ({
             Month: row.month,
@@ -251,51 +435,98 @@ export const ReportsPage = () => {
           exportToCSV('Membership_Growth_Report', dataToExport);
         }
       } else if (title === 'Event Participation') {
-        const { data } = await api.getEvents();
-        const events = data?.events || [];
-        const dataToExport = events.map((ev: any) => ({
-          'Event Title': ev.title,
-          'Category': ev.category,
-          'Status': ev.status,
-          'Capacity': ev.capacity || 'Unlimited',
-          'Participants Count': ev.participantsCount || 0,
-          'Start Date': ev.startDate,
-          'End Date': ev.endDate,
-        }));
-        exportToCSV('Event_Participation_Report', dataToExport);
-      } else if (title === 'Financial Summary') {
+        let participants = eventReportData?.participants || [];
+        let events = eventReportData?.events || [];
+        if (participants.length === 0) {
+          try {
+            const { data } = await api.getEventParticipationReport();
+            if (data?.success) {
+              participants = data.participants || [];
+              events = data.events || [];
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        if (participants.length > 0) {
+          const dataToExport = participants.map((p: any, idx: number) => ({
+            '#': idx + 1,
+            'Participant Name': p.full_name || '—',
+            'Event Title': p.event_title || '—',
+            'Event Category': (p.event_category || '—').toUpperCase(),
+            'Where They Belong (Institution / Affiliation)': p.institution_name || 'PSITS Individual Member',
+            'Role / Position': p.position || 'Participant',
+            'Email Address': p.email || '—',
+            'Contact Number': p.contact_number || '—',
+            'Registration Source': p.registration_source || 'Individual',
+            'Registration Status': (p.registration_status || 'Pending').toUpperCase(),
+            'In-Venue Attendance': p.is_checked_in ? 'PRESENT (CHECKED IN)' : 'NOT CHECKED IN',
+            'Registration Date': p.registered_at ? new Date(p.registered_at).toLocaleString() : '—',
+          }));
+          exportToCSV(`PSITS_Event_Participants_Roster_${new Date().toISOString().slice(0, 10)}`, dataToExport);
+        } else {
+          const dataToExport = events.map((ev: any, idx: number) => ({
+            '#': idx + 1,
+            'Event Title': ev.title,
+            'Category': (ev.category || 'Seminar').toUpperCase(),
+            'Status': (ev.status || 'Draft').toUpperCase(),
+            'Capacity': ev.capacity || 'Unlimited',
+            'Total Participants': ev.total_participants || 0,
+            'Direct Individual Registrations': ev.direct_registrations || 0,
+            'Institution Registrations': ev.institution_registrations || 0,
+            'Start Date': ev.start_at ? new Date(ev.start_at).toLocaleString() : '—',
+            'End Date': ev.end_at ? new Date(ev.end_at).toLocaleString() : '—',
+          }));
+          exportToCSV(`PSITS_Events_Overview_Report_${new Date().toISOString().slice(0, 10)}`, dataToExport);
+        }
+      } else if (title === 'Financial Summary' || title === 'Revenue by Method') {
         const { data } = await api.getPayments();
-        const payments = data?.payments || [];
+        const payments = data?.payments || detailedRecords || [];
+        const formatMethod = (m?: string) => {
+          const raw = String(m || '').toLowerCase();
+          if (raw.includes('gcash')) return 'GCash';
+          if (raw.includes('bank') || raw.includes('card')) return 'Bank Transfer';
+          if (raw.includes('officer') || raw.includes('cash')) return 'Through Officer (Official Receipt)';
+          if (raw.includes('cheque')) return 'Cheque';
+          if (raw.includes('paymaya')) return 'PayMaya';
+          return m || 'Other';
+        };
         const dataToExport = payments.map((p: any) => ({
-          'Payment ID': p.id,
-          'Member Name': p.memberName || p.fullName || p.userFullName || '—',
-          'Email': p.email || p.userEmail || '—',
-          'Amount': p.amount,
-          'Method': p.method,
-          'Status': p.status,
-          'Reference No': p.referenceNo || p.referenceNumber || '—',
-          'Payment Date': p.createdAt || p.paymentDate || '—',
+          'Transaction ID': p.id,
+          'Date & Time': p.createdAt || p.date || '—',
+          'Payor Full Name': p.memberName || p.fullName || p.userFullName || '—',
+          'Payor Email': p.memberEmail || p.email || p.userEmail || '—',
+          'Payment Purpose': p.event || p.eventTitle || (p.paymentKind?.replace(/_/g, ' ') || 'General Fee'),
+          'Revenue Stream': p.paymentKind || 'Standard Payment',
+          'Payment Channel / Method': formatMethod(p.method || p.paymentMethod),
+          'Reference / OR Number': p.referenceNumber || p.referenceNo || '—',
+          'Gross Amount (PHP)': Number(p.amount || 0).toFixed(2),
+          'Is Partial Payment': p.isPartial ? 'YES' : 'NO',
+          'Remaining Balance (PHP)': p.remainingBalance ? Number(p.remainingBalance).toFixed(2) : '0.00',
+          'Audit Verification Status': (p.status || p.paymentStatus || 'pending').toUpperCase(),
+          'Proof Document Uploaded': p.proofUrl ? 'YES' : 'NO',
+          'Verified By Officer ID': p.verifiedBy || '—',
+          'Verified Date': p.verifiedAt || '—',
         }));
-        exportToCSV('Financial_Summary_Report', dataToExport);
+        exportToCSV(`${title.replace(/\s+/g, '_')}_Official_Audit_Report`, dataToExport);
       } else if (title === 'Complete Event') {
         const { data } = await api.getEvents();
         const completed = (data?.events || []).filter((ev: any) => ev.status === 'completed' || ev.status === 'closed');
         const dataToExport = completed.map((ev: any) => ({
+          'Event ID': ev.id,
           'Event Title': ev.title,
-          'Category': ev.category,
+          'Category / Type': ev.eventType || ev.category || 'General',
+          'Status': 'COMPLETED',
           'Capacity': ev.capacity || 'Unlimited',
-          'Participants Count': ev.participantsCount || 0,
-          'Start Date': ev.startDate,
-          'End Date': ev.endDate,
+          'Registered Participants': ev.registrations || ev.participantsCount || 0,
+          'Registration Fee (PHP)': Number(ev.fee || 0).toFixed(2),
+          'Location': ev.location || '—',
+          'Start Date': ev.startDate || ev.date || '—',
+          'End Date': ev.endDate || '—',
           'Description': ev.description || '—',
         }));
         exportToCSV('Completed_Events_Report', dataToExport);
-      } else if (title === 'Revenue by Method') {
-        const dataToExport = revenueData.map((row: any) => ({
-          'Payment Method': row.month,
-          'Verified Revenue': row.value,
-        }));
-        exportToCSV('Revenue_By_Method_Report', dataToExport);
       } else if (title === 'Election Tally') {
         if (!selectedElectionId) return;
         const { data } = await api.getElectionReport(selectedElectionId);
@@ -387,7 +618,7 @@ export const ReportsPage = () => {
           </div>
         </Card>
 
-        {isLoading && (
+        {(isLoading || isEventReportLoading) && (
           <Card>
             <div className="text-sm text-gray-600">Loading report data...</div>
           </Card>
@@ -395,20 +626,55 @@ export const ReportsPage = () => {
 
         <Card title="Export">
           <div className="flex flex-wrap gap-3">
-            <Button className="min-w-[140px]">
+            <Button className="min-w-[140px]" onClick={() => window.print()}>
               <FileDown size={16} />
               PDF
             </Button>
-            <Button variant="success" className="min-w-[140px]" onClick={handleExportAllToExcel} disabled={!report || isLoading}>
+            <Button
+              variant="success"
+              className="min-w-[140px]"
+              onClick={() => {
+                const source = allMembersData.length > 0 ? allMembersData : detailedRecords;
+                if (source.length > 0) {
+                  const dataToExport = source.map((m: any, idx: number) => ({
+                    '#': idx + 1,
+                    'Member ID': m.unique_id || m.raw_id || m.id || '—',
+                    'Full Name': m.full_name || m.fullName || m.displayName || '—',
+                    'Email Address': m.email || '—',
+                    'Contact Number': m.contact_number || m.contactNumber || '—',
+                    'Category': (m.category || m.memberType || 'individual').toUpperCase(),
+                    'Institution / Affiliation': m.institution_name || m.institutionName || m.sectorDetails || 'Individual',
+                    'Position / Role': m.position || m.occupation || 'Member',
+                    'Status': (m.status === 'active' || m.status === 'approved') ? 'Active / Approved' : (m.status || 'Pending'),
+                    'Date Joined': m.created_at ? new Date(m.created_at).toLocaleDateString() : '—',
+                  }));
+                  exportToCSV('PSITS_All_Members_List', dataToExport);
+                } else {
+                  handleExportAllToExcel();
+                }
+              }}
+              disabled={isMemberListLoading && allMembersData.length === 0}
+            >
               <FileSpreadsheet size={16} />
-              Excel
+              Export Members Excel
             </Button>
-            <Button variant="secondary" className="min-w-[140px]">
+            <Button variant="secondary" className="min-w-[140px]" onClick={handleExportAllToExcel} disabled={!report || isLoading}>
+              <FileSpreadsheet size={16} />
+              Summary Excel
+            </Button>
+            <Button variant="outline" className="min-w-[140px]" onClick={() => window.print()}>
               <Printer size={16} />
               Print
             </Button>
           </div>
         </Card>
+
+        {/* Dedicated Members Export Table Section */}
+        <MemberDirectoryExportTable
+          members={allMembersData}
+          institutions={institutionsList}
+          isLoading={isMemberListLoading}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card
@@ -456,7 +722,7 @@ export const ReportsPage = () => {
         isOpen={!!previewReport}
         onClose={() => setPreviewReport(null)}
         title={previewReport ? `${previewReport} - Step ${wizardStep} of 3` : 'Report Wizard'}
-        size="lg"
+        size="2xl"
       >
         <div className="space-y-5">
           {/* Print Optimization Style Tag */}
@@ -523,14 +789,60 @@ export const ReportsPage = () => {
                 <Select
                   label="Date Range Filter"
                   options={[
-                    { value: 'all', label: 'All Time Records' },
-                    { value: 'this_month', label: 'This Month' },
-                    { value: 'last_30_days', label: 'Last 30 Days' },
-                    { value: 'custom', label: 'Custom Date Range' },
+                    { value: 'all', label: '📅 All Time Records' },
+                    { value: 'this_month', label: '📅 Current Month' },
+                    { value: 'last_30_days', label: '📅 Last 30 Days' },
+                    { value: 'this_quarter', label: '📅 Current Quarter' },
+                    { value: 'this_year', label: '📅 Fiscal Year-to-Date (YTD)' },
+                    { value: 'custom', label: '📅 Custom Date Range' },
                   ]}
                   value={dateRangeFilter}
                   onChange={(e) => setDateRangeFilter((e.target as HTMLSelectElement).value as any)}
                 />
+
+                {(previewReport === 'Financial Summary' || previewReport === 'Revenue by Method') && (
+                  <div className="bg-emerald-50/70 border border-emerald-200 p-3 rounded-xl text-xs space-y-1">
+                    <p className="font-bold text-emerald-900 flex items-center gap-1.5">
+                      <Wallet size={15} className="text-emerald-700" />
+                      Official Accounting & Audit Configuration
+                    </p>
+                    <p className="text-emerald-800 leading-relaxed">
+                      Compiling statement for verified collections, payment channels (GCash, Bank Transfer, Through Officer, Cheque), and partial balance receivables.
+                    </p>
+                  </div>
+                )}
+
+                {(previewReport === 'Membership Growth' || previewReport === 'Member Directory & Roster') && (
+                  <>
+                    <Select
+                      label="Member Category Filter"
+                      options={[
+                        { value: 'all', label: '👥 All Categories (Individual, Institution, Industry)' },
+                        { value: 'individual', label: '👤 Individual Members' },
+                        { value: 'institution', label: '🏛️ Institution Members' },
+                        { value: 'industry', label: '💼 Industry Members' },
+                      ]}
+                      value={memberCategoryFilter}
+                      onChange={(e) => setMemberCategoryFilter((e.target as HTMLSelectElement).value as any)}
+                    />
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Institution Name</label>
+                      <select
+                        value={memberInstitutionFilter}
+                        onChange={(e) => setMemberInstitutionFilter(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">🏛️ All Institutions ({institutionsList.length} registered)</option>
+                        {institutionsList.map((inst) => (
+                          <option key={inst} value={inst}>
+                            {inst}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
 
                 {previewReport === 'Election Tally' && (
                   <div>
@@ -567,21 +879,23 @@ export const ReportsPage = () => {
           {wizardStep === 2 && (
             <div className="space-y-4 animate-fadeIn">
               <div id="printable-report-area" className="bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
-                {/* Official Letterhead Header */}
-                <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
-                  <div className="flex items-center gap-3">
-                    <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
-                    <div>
-                      <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
-                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
+                {/* Official Letterhead Header (for general reports) */}
+                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && (
+                  <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
+                    <div className="flex items-center gap-3">
+                      <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
+                      <div>
+                        <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
+                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-gray-500 space-y-0.5">
+                      <p><strong>Report:</strong> {previewReport}</p>
+                      <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
+                      <p><strong>Prepared By:</strong> {user?.fullName || 'Administrator'}</p>
                     </div>
                   </div>
-                  <div className="text-right text-xs text-gray-500 space-y-0.5">
-                    <p><strong>Report:</strong> {previewReport}</p>
-                    <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
-                    <p><strong>Prepared By:</strong> {user?.fullName || 'Administrator'}</p>
-                  </div>
-                </div>
+                )}
 
                 {/* Report Specific Details */}
                 {previewReport === 'Membership Growth' && (() => {
@@ -684,100 +998,59 @@ export const ReportsPage = () => {
                         </table>
                       </div>
 
-                      {detailedRecords.length > 0 && (
-                        <div className="space-y-2 pt-2">
-                          <div className="flex items-center justify-between">
-                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                              Combined Member Roster ({detailedRecords.length} Records: {psitsCount} PSITS + {instCount} Institution)
-                            </h5>
-                            <span className="text-[11px] text-gray-500">Showing first 25 records</span>
-                          </div>
-                          <div className="border rounded-xl overflow-hidden text-xs max-h-56 overflow-y-auto">
-                            <table className="w-full">
-                              <thead className="bg-gray-100 border-b sticky top-0">
-                                <tr>
-                                  <th className="px-3 py-2 text-left font-bold">Name</th>
-                                  <th className="px-3 py-2 text-left font-bold">Source</th>
-                                  <th className="px-3 py-2 text-left font-bold">Sector / Institution</th>
-                                  <th className="px-3 py-2 text-center font-bold">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y">
-                                {detailedRecords.slice(0, 25).map((m: any, idx: number) => (
-                                  <tr key={m.id || idx} className="hover:bg-gray-50">
-                                    <td className="px-3 py-1.5 font-medium">{m.displayName || m.fullName || m.full_name || m.name || m.email || '—'}</td>
-                                    <td className="px-3 py-1.5">
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                        m.source === 'Institution Member' 
-                                          ? 'bg-purple-100 text-purple-800 border border-purple-200' 
-                                          : 'bg-blue-100 text-blue-800 border border-blue-200'
-                                      }`}>
-                                        {m.source || 'PSITS Member'}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-1.5 text-gray-600">{m.displaySector || m.institution_name || m.institutionName || m.sector || m.memberType || '—'}</td>
-                                    <td className="px-3 py-1.5 text-center">
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                        (m.status === 'active' || m.status === 'approved') 
-                                          ? 'bg-emerald-100 text-emerald-800' 
-                                          : 'bg-amber-100 text-amber-800'
-                                      }`}>
-                                        {m.status || 'active'}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
+                      <div className="pt-2">
+                        <MemberDirectoryExportTable
+                          members={allMembersData.length > 0 ? allMembersData : detailedRecords}
+                          institutions={institutionsList}
+                          initialCategory={memberCategoryFilter}
+                          initialInstitution={memberInstitutionFilter}
+                          title="Combined Member Directory Table"
+                          subtitle="Filter by Individual, Institution, Industry, and specific Institution Name"
+                        />
+                      </div>
                     </div>
                   );
                 })()}
 
-                {previewReport === 'Financial Summary' && (
+                {previewReport === 'Member Directory & Roster' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3 text-center">
-                      <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
-                        <span className="text-xs text-gray-500 font-semibold">Total Verified Collections</span>
-                        <p className="text-2xl font-bold text-emerald-700 mt-1">₱{Number(report?.summary?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                      </div>
-                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl">
-                        <span className="text-xs text-gray-500 font-semibold">Transactions Logged</span>
-                        <p className="text-2xl font-bold text-primary mt-1">{detailedRecords.length} records</p>
-                      </div>
-                    </div>
-
-                    <div className="border rounded-xl overflow-hidden text-xs">
-                      <table className="w-full">
-                        <thead className="bg-gray-100 border-b">
-                          <tr>
-                            <th className="px-3 py-2 text-left font-bold">Member</th>
-                            <th className="px-3 py-2 text-left font-bold">Method</th>
-                            <th className="px-3 py-2 text-left font-bold">Ref No</th>
-                            <th className="px-3 py-2 text-right font-bold">Amount (₱)</th>
-                            <th className="px-3 py-2 text-center font-bold">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {detailedRecords.slice(0, 15).map((p: any) => (
-                            <tr key={p.id}>
-                              <td className="px-3 py-2 font-medium">{p.memberName || p.fullName || 'Member'}</td>
-                              <td className="px-3 py-2 uppercase">{p.method}</td>
-                              <td className="px-3 py-2 font-mono text-[11px]">{p.referenceNo || p.referenceNumber || '—'}</td>
-                              <td className="px-3 py-2 text-right font-bold">₱{Number(p.amount || 0).toLocaleString()}</td>
-                              <td className="px-3 py-2 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                                  {p.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <MemberDirectoryExportTable
+                      members={allMembersData.length > 0 ? allMembersData : detailedRecords}
+                      institutions={institutionsList}
+                      initialCategory={memberCategoryFilter}
+                      initialInstitution={memberInstitutionFilter}
+                      title="PSITS Member Directory & Roster"
+                      subtitle="Official verified registry of individual, institution, and industry members"
+                    />
                   </div>
+                )}
+
+                {(previewReport === 'Financial Summary' || previewReport === 'Revenue by Method') && (
+                  <FinancialReportView
+                    payments={detailedRecords}
+                    reportTitle={previewReport}
+                    dateRangeFilter={dateRangeFilter as any}
+                    startDateFilter={startDateFilter}
+                    endDateFilter={endDateFilter}
+                    preparedBy={user?.fullName || 'Financial Officer'}
+                    userRole={user?.role || 'Officer'}
+                    onExportCSV={() => handleGenerateExcel(previewReport)}
+                  />
+                )}
+
+                {(previewReport === 'Event Participation' || previewReport === 'Complete Event') && (
+                  isEventReportLoading ? (
+                    <div className="flex items-center justify-center p-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : (
+                    <EventReportView
+                      events={eventReportData?.events || detailedRecords}
+                      reportTitle={previewReport}
+                      preparedBy={user?.fullName || 'Events Coordinator'}
+                      userRole={user?.role || 'Officer'}
+                    />
+                  )
                 )}
 
                 {previewReport === 'Election Tally' && (
@@ -859,28 +1132,37 @@ export const ReportsPage = () => {
                   </div>
                 )}
 
-                {previewReport !== 'Membership Growth' && previewReport !== 'Financial Summary' && previewReport !== 'Election Tally' && previewReport !== 'Partner Contributions' && (
+                {previewReport !== 'Membership Growth' &&
+                  previewReport !== 'Member Directory & Roster' &&
+                  previewReport !== 'Financial Summary' &&
+                  previewReport !== 'Revenue by Method' &&
+                  previewReport !== 'Event Participation' &&
+                  previewReport !== 'Complete Event' &&
+                  previewReport !== 'Election Tally' &&
+                  previewReport !== 'Partner Contributions' && (
                   <div className="border rounded-xl p-4 text-xs space-y-2">
                     <h4 className="font-bold text-gray-900">{previewReport} Data Summary</h4>
                     <p className="text-gray-600">Total records compiled: {detailedRecords.length} entries.</p>
                   </div>
                 )}
 
-                {/* Signatures & Certification Section */}
-                <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600">
-                  <div>
-                    <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
-                    <div className="mt-8 border-b border-gray-400 w-48"></div>
-                    <p className="mt-1 font-bold text-gray-900">{user?.fullName || 'Authorized Administrator'}</p>
-                    <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'Officer'} / Reporter</p>
+                {/* Signatures & Certification Section (for general reports) */}
+                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && (
+                  <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600">
+                    <div>
+                      <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
+                      <div className="mt-8 border-b border-gray-400 w-48"></div>
+                      <p className="mt-1 font-bold text-gray-900">{user?.fullName || 'Authorized Administrator'}</p>
+                      <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'Officer'} / Reporter</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-800">Approved By Organization:</p>
+                      <div className="mt-8 border-b border-gray-400 w-48 ml-auto"></div>
+                      <p className="mt-1 font-bold text-gray-900">PSITS Regional Secretariat</p>
+                      <p className="text-[11px] text-gray-500">Official Stamp & Date</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-800">Approved By Organization:</p>
-                    <div className="mt-8 border-b border-gray-400 w-48 ml-auto"></div>
-                    <p className="mt-1 font-bold text-gray-900">PSITS Regional Secretariat</p>
-                    <p className="text-[11px] text-gray-500">Official Stamp & Date</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Navigation Footer */}

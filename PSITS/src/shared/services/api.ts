@@ -495,6 +495,14 @@ class ApiService {
     return this.client.get('/reports/partners/contributions');
   }
 
+  getAllMembersReport(filters?: { category?: string; institution?: string; search?: string; status?: string }) {
+    return this.client.get('/reports/members', { params: filters });
+  }
+
+  getEventParticipationReport(filters?: { eventId?: string; institution?: string; search?: string; status?: string }) {
+    return this.client.get('/reports/event-participation', { params: filters });
+  }
+
   // Audit logs
   getAuditLogs(filters?: any) {
     return this.client.get('/audit-logs', { params: filters });

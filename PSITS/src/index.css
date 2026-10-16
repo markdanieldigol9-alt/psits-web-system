@@ -436,3 +436,109 @@ button {
   color: #9ca3af !important;
 }
 
+/* ─── Official Printable Reports Styles ─────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 15mm 10mm;
+  }
+
+  html, body, #root {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Reset modal containers so they expand across pages */
+  [role="dialog"],
+  [role="dialog"] > div,
+  [role="dialog"] > div > div,
+  .print-expand {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide app navigation chrome, modal header buttons, overlays */
+  header,
+  nav,
+  aside,
+  .no-print,
+  button,
+  input,
+  select,
+  [aria-label="Close modal"] {
+    display: none !important;
+  }
+
+  /* Make sure printable report area and all children are visible */
+  #printable-report-area,
+  #printable-report-area * {
+    visibility: visible !important;
+  }
+
+  #printable-report-area {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  /* Table print optimization */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tbody {
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  th, td {
+    padding: 5px 8px !important;
+    border-color: #e5e7eb !important;
+    color: #111827 !important;
+  }
+
+  /* Certification & Signatures */
+  .certification-block,
+  .signature-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 24px !important;
+  }
+}
+
+

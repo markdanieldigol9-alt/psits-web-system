@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Input, Button, Badge, Select, TextArea } from '@/shared/components/Form';
@@ -85,6 +86,7 @@ const parseSpreadsheetFile = async (file: File) => {
 };
 
 export const InstitutionMembersPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,6 +95,7 @@ export const InstitutionMembersPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [boardTargetInstitution, setBoardTargetInstitution] = useState<any | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [singleForm, setSingleForm] = useState({
@@ -631,11 +634,16 @@ export const InstitutionMembersPage = () => {
       return;
     }
 
-    if (amountNum > remainingBalanceAmount) {
+    const targetInst = boardTargetInstitution;
+    const effectiveRemaining = targetInst ? targetInst.remainingBalance : remainingBalanceAmount;
+    const targetInstName = targetInst?.name || user?.fullName || 'Institution';
+    const targetUserId = targetInst?.id || user?.id;
+
+    if (amountNum > effectiveRemaining) {
       addNotification({
         userId: 'current',
         title: 'Validation Error',
-        message: `Payment amount cannot exceed the remaining balance of ₱${remainingBalanceAmount.toLocaleString()}.`,
+        message: `Payment amount cannot exceed the remaining balance of ₱${effectiveRemaining.toLocaleString()}.`,
         type: 'error',
         isRead: false,
       });
@@ -653,7 +661,7 @@ export const InstitutionMembersPage = () => {
       return;
     }
 
-    if (!partialPaymentFile) {
+    if (!partialPaymentFile && !canViewAll) {
       addNotification({
         userId: 'current',
         title: 'Receipt Required',
@@ -669,28 +677,30 @@ export const InstitutionMembersPage = () => {
     setIsSubmittingPartialPayment(true);
     try {
       let uploadedProofUrl: string | null = null;
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(partialPaymentFile);
-      const base64 = await base64Promise;
+      if (partialPaymentFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(partialPaymentFile);
+        const base64 = await base64Promise;
 
-      try {
-        const uploadRes = await api.uploadPaymentProof(base64);
-        if (uploadRes?.data?.url) {
-          uploadedProofUrl = uploadRes.data.url;
-        } else {
+        try {
+          const uploadRes = await api.uploadPaymentProof(base64);
+          if (uploadRes?.data?.url) {
+            uploadedProofUrl = uploadRes.data.url;
+          } else {
+            uploadedProofUrl = base64;
+          }
+        } catch {
           uploadedProofUrl = base64;
         }
-      } catch {
-        uploadedProofUrl = base64;
       }
 
       const generatedRef = partialPaymentRefNumber.trim() || `PARTIAL-${Date.now().toString(36).toUpperCase()}`;
-      const isStillPartial = amountNum < remainingBalanceAmount;
-      const newRemaining = Math.max(0, remainingBalanceAmount - amountNum);
+      const isStillPartial = amountNum < effectiveRemaining;
+      const newRemaining = Math.max(0, effectiveRemaining - amountNum);
 
       await api.createPayment({
         amount: amountNum,
@@ -699,16 +709,20 @@ export const InstitutionMembersPage = () => {
         referenceNumber: generatedRef,
         proofUrl: uploadedProofUrl,
         paymentKind: 'institution_partial_payment',
-        eventTitle: `Partial Payment - ${user?.fullName || 'Institution'}`,
+        eventTitle: `Partial Payment - ${targetInstName}`,
         isPartial: isStillPartial,
         partialAmount: amountNum,
         remainingBalance: newRemaining,
-        totalHeads: totalInstitutionHeads,
+        totalHeads: targetInst ? targetInst.headCount : totalInstitutionHeads,
         ratePerHead: 250,
-        grossAmount: grossInstitutionAmount,
-        discountAmount: discountInstitutionAmount,
-        netAmount: totalInstitutionBill,
-        notes: `Partial payment submitted by institution ${user?.fullName || ''}.`,
+        grossAmount: targetInst ? (targetInst.headCount * 250) : grossInstitutionAmount,
+        discountAmount: targetInst ? (targetInst.freeSlots * 250) : discountInstitutionAmount,
+        netAmount: targetInst ? targetInst.totalAmount : totalInstitutionBill,
+        institutionName: targetInstName,
+        memberId: targetUserId,
+        verified: canViewAll ? true : false,
+        isDirectlyVerified: canViewAll ? true : false,
+        notes: `Partial payment recorded for ${targetInstName}.`,
       });
 
       // Reload members & payments
@@ -724,6 +738,7 @@ export const InstitutionMembersPage = () => {
       }
 
       setShowPartialPaymentModal(false);
+      setBoardTargetInstitution(null);
       setPartialPaymentAmount('');
       setPartialPaymentRefNumber('');
       setPartialPaymentFile(null);
@@ -732,7 +747,7 @@ export const InstitutionMembersPage = () => {
       addNotification({
         userId: 'current',
         title: 'Payment Submitted',
-        message: `Partial payment of ₱${amountNum.toLocaleString()} submitted successfully! Your remaining balance is now ₱${newRemaining.toLocaleString()}.`,
+        message: `Partial payment of ₱${amountNum.toLocaleString()} for ${targetInstName} submitted successfully! Outstanding balance is now ₱${newRemaining.toLocaleString()}.`,
         type: 'success',
         isRead: false,
       });
@@ -1077,21 +1092,32 @@ export const InstitutionMembersPage = () => {
         {/* ── Admin Institution Payment List Board ────────────────── */}
         {canViewAll && (
           <Card className="p-6">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                <Building2 size={20} />
-              </div>
-              <div>
-                <div className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
-                  Institution Payment List Board
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                    Admin Tracking
-                  </span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                  <Building2 size={20} />
                 </div>
-                <div className="text-xs text-gray-500 dark:text-slate-400 font-normal">
-                  Track each institution's total amount, partial amount paid, and remaining balance in real time.
+                <div>
+                  <div className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    Institution Payment List Board
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                      Admin Tracking
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400 font-normal">
+                    Track each institution's total amount, partial amount paid, and remaining balance in real time.
+                  </div>
                 </div>
               </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/payments?category=institution')}
+                className="text-xs font-bold text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 shrink-0"
+              >
+                <Receipt size={14} /> Open Payment Tracking Ledger ↗
+              </Button>
             </div>
             {/* Top Toolbar: Search and Filter Pills */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -1255,28 +1281,56 @@ export const InstitutionMembersPage = () => {
                             )}
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            {isSelected ? (
+                            <div className="flex items-center justify-end gap-1.5">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setSelectedInstitutionFilter('all')}
-                                className="text-xs border-blue-300 text-blue-700 dark:text-blue-300 hover:bg-blue-50"
+                                onClick={() => navigate(`/payments?category=institution&search=${encodeURIComponent(inst.name)}`)}
+                                className="text-xs text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-50"
+                                title="View all payments for this institution in Payment Tracking"
                               >
-                                <X size={13} /> Clear Filter
+                                <Receipt size={13} /> Ledger
                               </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedInstitutionFilter(inst.id);
-                                  setCurrentPage(1);
-                                }}
-                                className="text-xs hover:border-blue-400 hover:text-blue-600"
-                              >
-                                <Filter size={13} /> Filter Roster
-                              </Button>
-                            )}
+
+                              {inst.remainingBalance > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  onClick={() => {
+                                    setBoardTargetInstitution(inst);
+                                    setPartialPaymentAmount(String(inst.remainingBalance));
+                                    setShowPartialPaymentModal(true);
+                                  }}
+                                  className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  title="Record or submit payment for this institution"
+                                >
+                                  <Coins size={13} /> Pay
+                                </Button>
+                              )}
+
+                              {isSelected ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedInstitutionFilter('all')}
+                                  className="text-xs border-blue-300 text-blue-700 dark:text-blue-300 hover:bg-blue-50"
+                                >
+                                  <X size={13} /> Clear
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedInstitutionFilter(inst.id);
+                                    setCurrentPage(1);
+                                  }}
+                                  className="text-xs hover:border-blue-400 hover:text-blue-600"
+                                >
+                                  <Filter size={13} /> Filter
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1945,227 +1999,238 @@ export const InstitutionMembersPage = () => {
         onClose={() => {
           if (!isSubmittingPartialPayment) {
             setShowPartialPaymentModal(false);
+            setBoardTargetInstitution(null);
           }
         }}
-        title="Institution Partial Payment"
+        title={boardTargetInstitution ? `Record Payment - ${boardTargetInstitution.name}` : "Institution Partial Payment"}
         size="lg"
       >
-        <div className="space-y-4">
-          <p className="text-xs text-gray-500 dark:text-slate-400">
-            Submit a partial payment to reduce your institution's registration balance. All submitted payments are recorded and will update your remaining balance immediately upon verification.
-          </p>
+        {(() => {
+          const modalTargetBill = boardTargetInstitution ? boardTargetInstitution.totalAmount : totalInstitutionBill;
+          const modalPaidAmount = boardTargetInstitution ? boardTargetInstitution.paidAmount : partialPaidAmount;
+          const modalRemainingBalance = boardTargetInstitution ? boardTargetInstitution.remainingBalance : remainingBalanceAmount;
 
-          {/* Balance Overview Snapshot */}
-          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/60 p-4 space-y-2.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-500 font-medium">Institution Total Bill:</span>
-              <span className="font-bold text-gray-900 dark:text-white">₱{totalInstitutionBill.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-amber-600 dark:text-amber-400 font-medium">Total Paid So Far:</span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">₱{partialPaidAmount.toLocaleString()}</span>
-            </div>
-            <div className="border-t border-gray-200 dark:border-slate-800 pt-2 flex justify-between items-center text-sm font-black">
-              <span className="text-rose-600 dark:text-rose-400">Current Outstanding Balance:</span>
-              <span className="text-rose-600 dark:text-rose-400 text-base">₱{remainingBalanceAmount.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {remainingBalanceAmount <= 0 ? (
-            <div className="py-6 text-center space-y-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
-                <CheckCircle2 size={28} />
-              </div>
-              <h4 className="font-bold text-gray-900 dark:text-white">All Balances Fully Settled</h4>
-              <p className="text-xs text-gray-500">
-                Your institution has no remaining balance due. Thank you for completing your payments!
+          return (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {boardTargetInstitution
+                  ? `Record or submit a payment for ${boardTargetInstitution.name} to reduce their registration balance. All submitted payments are reflected directly in Payment Tracking.`
+                  : "Submit a partial payment to reduce your institution's registration balance. All submitted payments are recorded and will update your remaining balance immediately upon verification."}
               </p>
-              <div className="pt-3">
-                <Button variant="primary" onClick={() => setShowPartialPaymentModal(false)}>
-                  Close
-                </Button>
+
+              {/* Balance Overview Snapshot */}
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/60 p-4 space-y-2.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Institution Total Bill:</span>
+                  <span className="font-bold text-gray-900 dark:text-white">₱{modalTargetBill.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">Total Paid So Far:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">₱{modalPaidAmount.toLocaleString()}</span>
+                </div>
+                <div className="border-t border-gray-200 dark:border-slate-800 pt-2 flex justify-between items-center text-sm font-black">
+                  <span className="text-rose-600 dark:text-rose-400">Current Outstanding Balance:</span>
+                  <span className="text-rose-600 dark:text-rose-400 text-base">₱{modalRemainingBalance.toLocaleString()}</span>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              {/* Payment Amount Input & Quick Select Chips */}
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
-                    Partial Payment Amount (₱) *
-                  </label>
-                  <span className="text-[11px] text-gray-400">
-                    Max: ₱{remainingBalanceAmount.toLocaleString()}
-                  </span>
-                </div>
 
-                {/* Quick Chips */}
-                <div className="flex flex-wrap gap-1.5">
-                  {[500, 1000, 2000, 5000]
-                    .filter((amt) => amt < remainingBalanceAmount)
-                    .map((amt) => (
-                      <button
-                        key={amt}
-                        type="button"
-                        onClick={() => setPartialPaymentAmount(String(amt))}
-                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
-                          partialPaymentAmount === String(amt)
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        ₱{amt.toLocaleString()}
-                      </button>
-                    ))}
-                  <button
-                    type="button"
-                    onClick={() => setPartialPaymentAmount(String(remainingBalanceAmount))}
-                    className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition-colors cursor-pointer ${
-                      partialPaymentAmount === String(remainingBalanceAmount)
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
-                    }`}
-                  >
-                    Pay Full Balance (₱{remainingBalanceAmount.toLocaleString()})
-                  </button>
-                </div>
-
-                <Input
-                  type="number"
-                  min="1"
-                  max={remainingBalanceAmount}
-                  step="any"
-                  placeholder="Enter amount to pay (e.g. 500)"
-                  value={partialPaymentAmount}
-                  onChange={(e) => setPartialPaymentAmount(e.target.value)}
-                />
-
-                {parseFloat(partialPaymentAmount) > 0 && (
-                  <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl space-y-1 text-xs">
-                    <div className="flex justify-between items-center text-blue-900 dark:text-blue-200">
-                      <span>Amount you are paying now:</span>
-                      <strong className="font-bold text-sm">₱{Number(partialPaymentAmount).toLocaleString()}</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-amber-700 dark:text-amber-400 font-semibold">
-                      <span>Remaining balance after this payment:</span>
-                      <strong>₱{Math.max(0, remainingBalanceAmount - parseFloat(partialPaymentAmount)).toLocaleString()}</strong>
-                    </div>
+              {modalRemainingBalance <= 0 ? (
+                <div className="py-6 text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                    <CheckCircle2 size={28} />
                   </div>
-                )}
-              </div>
-
-              {/* Payment Method Selector */}
-              <div className="space-y-3 pt-2">
-                <Select
-                  label="Payment Method"
-                  options={[
-                    { value: 'gcash', label: 'GCash' },
-                    { value: 'through_officer', label: 'Through Officer' },
-                    { value: 'bank_transfer', label: 'Bank Transfer' },
-                    { value: 'cheque', label: 'Cheque' },
-                  ]}
-                  value={partialPaymentMethod}
-                  onChange={(e) => setPartialPaymentMethod((e.target as HTMLSelectElement).value)}
-                />
-
-                <PaymentInstructionsCard method={partialPaymentMethod} />
-
-                {/* Reference Number Field */}
-                {partialPaymentMethod === 'gcash' ? (
-                  <Input
-                    label="GCash Reference Number *"
-                    placeholder="e.g. 100234567890"
-                    value={partialPaymentRefNumber}
-                    onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
-                    required
-                  />
-                ) : (
-                  <Input
-                    label={
-                      partialPaymentMethod === 'through_officer'
-                        ? 'Official Receipt (OR) Number (Optional)'
-                        : partialPaymentMethod === 'cheque'
-                        ? 'Cheque / Deposit Number (Optional)'
-                        : 'Bank Reference / Transaction Number (Optional)'
-                    }
-                    placeholder="Enter reference number from receipt if available"
-                    value={partialPaymentRefNumber}
-                    onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
-                  />
-                )}
-
-                {/* Receipt Upload Field per payment-verification rules */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
-                    {partialPaymentMethod === 'through_officer'
-                      ? 'Upload Official Receipt (OR) *'
-                      : 'Upload Receipt *'}
-                  </label>
-                  <p className="text-[11px] text-gray-500">
-                    {partialPaymentMethod === 'through_officer'
-                      ? 'Please upload a photo or scan of the Official Receipt (OR) issued by the PSITS officer.'
-                      : partialPaymentMethod === 'bank_transfer'
-                      ? 'Please upload your bank deposit slip or mobile banking transfer confirmation receipt.'
-                      : partialPaymentMethod === 'cheque'
-                      ? 'Please upload a photo of the cheque or bank deposit confirmation receipt.'
-                      : 'Please upload the full transaction receipt or screenshot from your GCash app.'}
+                  <h4 className="font-bold text-gray-900 dark:text-white">All Balances Fully Settled</h4>
+                  <p className="text-xs text-gray-500">
+                    {boardTargetInstitution
+                      ? `${boardTargetInstitution.name} has no remaining balance due.`
+                      : 'Your institution has no remaining balance due. Thank you for completing your payments!'}
                   </p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setPartialPaymentFile(file);
-                      const reader = new FileReader();
-                      reader.onload = () => setPartialPaymentPreview(reader.result as string);
-                      reader.readAsDataURL(file);
-                    }}
-                    className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300"
-                  />
-                  {partialPaymentPreview && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <img src={partialPaymentPreview} alt="Receipt preview" className="h-12 w-12 object-cover rounded-lg border" />
-                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                        <CheckCircle2 size={14} /> Receipt attached
+                  <div className="pt-3">
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        setShowPartialPaymentModal(false);
+                        setBoardTargetInstitution(null);
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Payment Amount Input & Quick Select Chips */}
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                        Payment Amount (₱) *
+                      </label>
+                      <span className="text-[11px] text-gray-400">
+                        Max: ₱{modalRemainingBalance.toLocaleString()}
                       </span>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-slate-800">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowPartialPaymentModal(false)}
-                  disabled={isSubmittingPartialPayment}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  isLoading={isSubmittingPartialPayment}
-                  onClick={handleConfirmPartialPayment}
-                  disabled={
-                    isSubmittingPartialPayment ||
-                    !partialPaymentAmount ||
-                    parseFloat(partialPaymentAmount) <= 0 ||
-                    parseFloat(partialPaymentAmount) > remainingBalanceAmount ||
-                    !partialPaymentFile ||
-                    (partialPaymentMethod === 'gcash' && !partialPaymentRefNumber.trim())
-                  }
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  <Coins size={16} />
-                  Submit Payment {parseFloat(partialPaymentAmount) > 0 ? `(₱${Number(partialPaymentAmount).toLocaleString()})` : ''}
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+                    {/* Quick Chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {[500, 1000, 2000, 5000]
+                        .filter((amt) => amt < modalRemainingBalance)
+                        .map((amt) => (
+                          <button
+                            key={amt}
+                            type="button"
+                            onClick={() => setPartialPaymentAmount(String(amt))}
+                            className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
+                              partialPaymentAmount === String(amt)
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            ₱{amt.toLocaleString()}
+                          </button>
+                        ))}
+                      <button
+                        type="button"
+                        onClick={() => setPartialPaymentAmount(String(modalRemainingBalance))}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition-colors cursor-pointer ${
+                          partialPaymentAmount === String(modalRemainingBalance)
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                        }`}
+                      >
+                        Pay Full Balance (₱{modalRemainingBalance.toLocaleString()})
+                      </button>
+                    </div>
+
+                    <Input
+                      type="number"
+                      min="1"
+                      max={modalRemainingBalance}
+                      step="any"
+                      placeholder="Enter amount to pay (e.g. 500)"
+                      value={partialPaymentAmount}
+                      onChange={(e) => setPartialPaymentAmount(e.target.value)}
+                    />
+
+                    {parseFloat(partialPaymentAmount) > 0 && (
+                      <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl space-y-1 text-xs">
+                        <div className="flex justify-between items-center text-blue-900 dark:text-blue-200">
+                          <span>Amount paying now:</span>
+                          <strong className="font-bold text-sm">₱{Number(partialPaymentAmount).toLocaleString()}</strong>
+                        </div>
+                        <div className="flex justify-between items-center text-amber-700 dark:text-amber-400 font-semibold">
+                          <span>Remaining balance after this payment:</span>
+                          <strong>₱{Math.max(0, modalRemainingBalance - parseFloat(partialPaymentAmount)).toLocaleString()}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Method Selector */}
+                  <div className="space-y-3 pt-2">
+                    <Select
+                      label="Payment Method"
+                      options={[
+                        { value: 'through_officer', label: 'Cash via Officer / On-site' },
+                        { value: 'gcash', label: 'GCash' },
+                        { value: 'bank_transfer', label: 'Bank Transfer' },
+                        { value: 'cheque', label: 'Cheque' },
+                      ]}
+                      value={partialPaymentMethod}
+                      onChange={(e) => setPartialPaymentMethod((e.target as HTMLSelectElement).value)}
+                    />
+
+                    <PaymentInstructionsCard method={partialPaymentMethod} />
+
+                    {/* Reference Number Field */}
+                    {partialPaymentMethod === 'gcash' ? (
+                      <Input
+                        label="GCash Reference Number *"
+                        placeholder="e.g. 100234567890"
+                        value={partialPaymentRefNumber}
+                        onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
+                        required
+                      />
+                    ) : (
+                      <Input
+                        label={
+                          partialPaymentMethod === 'through_officer'
+                            ? 'Official Receipt (OR) Number' + (canViewAll ? ' (Optional)' : ' (Required)')
+                            : partialPaymentMethod === 'cheque'
+                            ? 'Cheque / Deposit Number (Optional)'
+                            : 'Bank Reference / Transaction Number (Optional)'
+                        }
+                        placeholder="Enter reference or OR number"
+                        value={partialPaymentRefNumber}
+                        onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
+                      />
+                    )}
+
+                    {/* Receipt Upload Field */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                        {canViewAll ? 'Attach Receipt / Slip (Optional for Admin)' : 'Upload Receipt / Proof *'}
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setPartialPaymentFile(file);
+                          const reader = new FileReader();
+                          reader.onload = () => setPartialPaymentPreview(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }}
+                        className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300"
+                      />
+                      {partialPaymentPreview && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <img src={partialPaymentPreview} alt="Receipt preview" className="h-12 w-12 object-cover rounded-lg border" />
+                          <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                            <CheckCircle2 size={14} /> Receipt attached
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-slate-800">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowPartialPaymentModal(false);
+                        setBoardTargetInstitution(null);
+                      }}
+                      disabled={isSubmittingPartialPayment}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      isLoading={isSubmittingPartialPayment}
+                      onClick={handleConfirmPartialPayment}
+                      disabled={
+                        isSubmittingPartialPayment ||
+                        !partialPaymentAmount ||
+                        parseFloat(partialPaymentAmount) <= 0 ||
+                        parseFloat(partialPaymentAmount) > modalRemainingBalance ||
+                        (!canViewAll && !partialPaymentFile) ||
+                        (partialPaymentMethod === 'gcash' && !partialPaymentRefNumber.trim())
+                      }
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                    >
+                      <Coins size={16} />
+                      {canViewAll ? 'Record Payment' : 'Submit Payment'} {parseFloat(partialPaymentAmount) > 0 ? `(₱${Number(partialPaymentAmount).toLocaleString()})` : ''}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </Modal>
     </MainLayout>
   );

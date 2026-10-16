@@ -31,11 +31,17 @@ function toPaymentDto(row) {
     }
   }
 
+  const institutionName = row.institution_name
+    || (billingBreakdown && billingBreakdown.institutionName)
+    || null;
+
   return {
     id: String(row.id),
     memberId: String(row.member_id),
     memberName: row.member_name || 'Member',
     memberEmail: row.member_email || '',
+    institutionName,
+    memberType: row.member_type || null,
     eventId: row.event_id ? String(row.event_id) : null,
     event: eventTitle,
     amount: Number(row.amount || 0),
@@ -125,6 +131,9 @@ async function listPayments(req, res) {
   const method = req.query.method ? String(req.query.method) : null;
   const eventId = req.query.eventId ? Number(req.query.eventId) : null;
   const memberId = req.query.memberId ? Number(req.query.memberId) : null;
+  const category = req.query.category ? String(req.query.category).toLowerCase() : null;
+  const paymentKind = req.query.paymentKind ? String(req.query.paymentKind).toLowerCase() : null;
+  const search = req.query.search ? String(req.query.search).trim() : null;
   const where = [];
   const params = [];
 
@@ -148,7 +157,7 @@ async function listPayments(req, res) {
     params.push(status);
   }
 
-  if (paymentStatus && paymentStatus !== 'all' && ['unpaid', 'pending', 'paid', 'rejected', 'refunded'].includes(paymentStatus)) {
+  if (paymentStatus && paymentStatus !== 'all' && ['unpaid', 'pending', 'paid', 'partial', 'rejected', 'refunded'].includes(paymentStatus)) {
     where.push('p.payment_status = ?');
     params.push(paymentStatus);
   }
@@ -163,11 +172,40 @@ async function listPayments(req, res) {
     params.push(method, method);
   }
 
+  if (paymentKind && paymentKind !== 'all') {
+    where.push('p.payment_kind = ?');
+    params.push(paymentKind);
+  }
+
+  if (category && category !== 'all') {
+    if (category === 'institution') {
+      where.push("(p.payment_kind IN ('institution_batch_registration', 'institution_partial_payment') OR COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name) IS NOT NULL)");
+    } else if (category === 'individual' || category === 'membership') {
+      where.push("(p.payment_kind IN ('membership_registration', 'membership_renewal', 'membership') OR (p.event_id IS NULL AND p.payment_kind NOT IN ('institution_batch_registration', 'institution_partial_payment', 'partner_sponsorship')))");
+    } else if (category === 'event') {
+      where.push("(p.payment_kind = 'event' OR p.event_id IS NOT NULL)");
+    } else if (category === 'sponsorship') {
+      where.push("p.payment_kind = 'partner_sponsorship'");
+    }
+  }
+
+  if (search) {
+    const searchWildcard = `%${search}%`;
+    where.push('(p.reference_number LIKE ? OR p.event LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR u.sector_details LIKE ? OR inst_owner.sector_details LIKE ? OR inst_owner.full_name LIKE ?)');
+    params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
+  }
+
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.execute(
-    `SELECT p.*, u.full_name AS member_name, u.email AS member_email, e.title AS event_title
+    `SELECT p.*,
+            COALESCE(u.full_name, p.member_name, 'Member') AS member_name,
+            u.email AS member_email,
+            COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name, NULL) AS institution_name,
+            u.member_type,
+            e.title AS event_title
      FROM payments p
      LEFT JOIN users u ON u.id = p.member_id
+     LEFT JOIN users inst_owner ON inst_owner.id = u.institution_owner_id
      LEFT JOIN events e ON e.id = p.event_id
      ${sqlWhere}
      ORDER BY p.created_at DESC`,
@@ -213,15 +251,19 @@ async function createPayment(req, res) {
     });
   }
 
-  if (!proofUrl) {
-    const proofMsg = (method === 'through_officer' || method === 'cash_officer')
-      ? 'Official Receipt (OR) image is required for verification.'
-      : 'Transaction receipt image is required for verification.';
-    return res.status(400).json({ success: false, message: proofMsg });
-  }
+  const canManage = ['admin', 'super_admin', 'officer'].includes(req.user?.role);
+  const targetMemberId = (canManage && body.memberId) ? Number(body.memberId) : req.user?.id;
+  if (!targetMemberId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
 
-  const memberId = req.user?.id;
-  if (!memberId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
+  if (!proofUrl) {
+    const isOfficerRecording = canManage && (Boolean(referenceNumber) || ['cash_officer', 'through_officer', 'cheque'].includes(method));
+    if (!isOfficerRecording) {
+      const proofMsg = (method === 'through_officer' || method === 'cash_officer')
+        ? 'Official Receipt (OR) image is required for verification.'
+        : 'Transaction receipt image is required for verification.';
+      return res.status(400).json({ success: false, message: proofMsg });
+    }
+  }
 
   if (req.user?.status === 'suspended') {
     return res.status(403).json({
@@ -233,7 +275,7 @@ async function createPayment(req, res) {
   if (eventId && Number.isFinite(eventId)) {
     const [paymentRows] = await pool.execute(
       "SELECT SUM(amount) AS total_paid FROM payments WHERE event_id = ? AND member_id = ? AND status = 'verified'",
-      [eventId, memberId]
+      [eventId, targetMemberId]
     );
     const totalPaid = Number(paymentRows[0]?.total_paid || 0);
     const remainingBalance = eventFee - totalPaid;
@@ -251,7 +293,7 @@ async function createPayment(req, res) {
   }
 
   // Ensure legacy members table row exists for FK compatibility.
-  await ensureLegacyMemberRow(memberId);
+  await ensureLegacyMemberRow(targetMemberId);
 
   // Legacy schema compatibility: build columns dynamically.
   const [columnRows] = await pool.execute('SHOW COLUMNS FROM payments');
@@ -259,9 +301,9 @@ async function createPayment(req, res) {
 
   const [userRows] = await pool.execute(
     'SELECT full_name FROM users WHERE id = ? LIMIT 1',
-    [memberId]
+    [targetMemberId]
   );
-  const memberName = userRows[0]?.full_name || '';
+  const memberName = userRows[0]?.full_name || body.memberName || '';
 
   let eventTitle = '';
   if (eventId && Number.isFinite(eventId)) {
@@ -270,8 +312,15 @@ async function createPayment(req, res) {
   } else if ((paymentKind === 'institution_batch_registration' || paymentKind === 'institution_partial_payment') && body.eventTitle) {
     eventTitle = String(body.eventTitle).trim();
   } else if (paymentKind === 'institution_partial_payment') {
-    eventTitle = 'Institution Partial Payment';
+    eventTitle = body.institutionName ? `Institution Payment: ${body.institutionName}` : 'Institution Partial Payment';
+  } else if (paymentKind === 'institution_batch_registration') {
+    eventTitle = body.institutionName ? `Batch Registration: ${body.institutionName}` : 'Institution Batch Member Registration';
   }
+
+  const isDirectlyVerified = canManage && (body.verified === true || body.isDirectlyVerified === true);
+  const initialStatus = isDirectlyVerified ? 'verified' : 'pending';
+  const initialPaymentStatus = body.isPartial ? 'partial' : (isDirectlyVerified ? 'paid' : 'pending');
+  const initialProcessStatus = isDirectlyVerified ? 'verified' : 'submitted';
 
   const columns = [];
   const values = [];
@@ -283,7 +332,7 @@ async function createPayment(req, res) {
   };
 
   add('event_id', eventId && Number.isFinite(eventId) ? eventId : null);
-  add('member_id', memberId);
+  add('member_id', targetMemberId);
   add('member_name', memberName);
   add('event', eventTitle);
   add('amount', amount);
@@ -292,9 +341,14 @@ async function createPayment(req, res) {
   add('reference_number', referenceNumber);
   add('method', method); // legacy
   add('proof_url', proofUrl);
-  add('status', 'pending');
-  add('payment_status', body.isPartial ? 'partial' : 'pending');
-  add('process_status', 'submitted');
+  add('status', initialStatus);
+  add('payment_status', initialPaymentStatus);
+  add('process_status', initialProcessStatus);
+
+  if (isDirectlyVerified) {
+    add('verified_by', req.user.id);
+    add('verified_at', new Date());
+  }
 
   // Billing calculation fields
   if (body.totalHeads !== undefined && body.totalHeads !== null) add('total_heads', Number(body.totalHeads));
@@ -306,9 +360,27 @@ async function createPayment(req, res) {
   if (body.partialAmount !== undefined && body.partialAmount !== null) add('partial_amount', Number(body.partialAmount));
   if (body.remainingBalance !== undefined && body.remainingBalance !== null) add('remaining_balance', Number(body.remainingBalance));
   if (body.isPartial !== undefined) add('is_partial', body.isPartial ? 1 : 0);
+
+  // Billing breakdown and institution name persistence
+  let breakdownObj = null;
   if (body.billingBreakdown) {
-    add('billing_breakdown_json', typeof body.billingBreakdown === 'string' ? body.billingBreakdown : JSON.stringify(body.billingBreakdown));
+    try {
+      breakdownObj = typeof body.billingBreakdown === 'string'
+        ? JSON.parse(body.billingBreakdown)
+        : { ...body.billingBreakdown };
+    } catch {
+      breakdownObj = {};
+    }
+  } else if (body.institutionName) {
+    breakdownObj = {};
   }
+  if (body.institutionName && breakdownObj) {
+    breakdownObj.institutionName = body.institutionName;
+  }
+  if (breakdownObj) {
+    add('billing_breakdown_json', JSON.stringify(breakdownObj));
+  }
+
   if (columnSet.has('date')) {
     const today = new Date().toISOString().slice(0, 10);
     add('date', today);
