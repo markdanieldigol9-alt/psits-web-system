@@ -65,7 +65,7 @@ async function getDashboardReport(_req, res) {
   );
 
   const [revenueRows] = await pool.query(
-    "SELECT method, COALESCE(SUM(amount), 0) AS total FROM payments WHERE status='verified' GROUP BY method"
+    "SELECT method, COALESCE(SUM(amount), 0) AS total FROM payments WHERE status IN ('verified', 'approved') GROUP BY method"
   );
   const methodLabelMap = {
     gcash: 'GCash',

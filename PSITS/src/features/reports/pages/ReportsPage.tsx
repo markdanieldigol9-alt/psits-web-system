@@ -100,6 +100,7 @@ export const ReportsPage = () => {
   const [dateRangeFilter, setDateRangeFilter] = useState<'all' | 'this_month' | 'last_30_days' | 'this_quarter' | 'this_year' | 'custom'>('all');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
+  const [selectedMethodFocus, setSelectedMethodFocus] = useState<string>('all');
   const [detailedRecords, setDetailedRecords] = useState<any[]>([]);
 
   const [elections, setElections] = useState<any[]>([]);
@@ -812,6 +813,24 @@ export const ReportsPage = () => {
                   </div>
                 )}
 
+                {previewReport === 'Revenue by Method' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Primary Payment Channel Focus</label>
+                    <select
+                      value={selectedMethodFocus}
+                      onChange={(e) => setSelectedMethodFocus(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                    >
+                      <option value="all">💳 All Payment Channels (Complete Reconciliation)</option>
+                      <option value="GCash">📱 GCash E-Wallet</option>
+                      <option value="Bank Transfer">🏛️ Bank Transfer / Deposit</option>
+                      <option value="Through Officer (OR)">🏢 Through Officer (Official Receipt)</option>
+                      <option value="Cheque">🧾 Cheque / Bank Draft</option>
+                      <option value="PayMaya">💳 PayMaya</option>
+                    </select>
+                  </div>
+                )}
+
                 {(previewReport === 'Membership Growth' || previewReport === 'Member Directory & Roster') && (
                   <>
                     <Select
@@ -1032,6 +1051,7 @@ export const ReportsPage = () => {
                     dateRangeFilter={dateRangeFilter as any}
                     startDateFilter={startDateFilter}
                     endDateFilter={endDateFilter}
+                    initialMethodFilter={selectedMethodFocus}
                     preparedBy={user?.fullName || 'Financial Officer'}
                     userRole={user?.role || 'Officer'}
                     onExportCSV={() => handleGenerateExcel(previewReport)}

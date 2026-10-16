@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
@@ -17,6 +17,8 @@ import {
   DollarSign,
   CreditCard,
   Layers,
+  Smartphone,
+  Filter,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -72,6 +74,7 @@ interface FinancialReportViewProps {
   dateRangeFilter?: 'all' | 'this_month' | 'last_30_days' | 'this_quarter' | 'this_year' | 'custom';
   startDateFilter?: string;
   endDateFilter?: string;
+  initialMethodFilter?: string;
   preparedBy?: string;
   userRole?: string;
   onExportCSV?: (records: PaymentRecord[]) => void;
@@ -83,6 +86,7 @@ export const FinancialReportView = ({
   dateRangeFilter = 'all',
   startDateFilter = '',
   endDateFilter = '',
+  initialMethodFilter = 'all',
   preparedBy = 'Finance Officer',
   userRole = 'Officer',
   onExportCSV,
@@ -90,10 +94,16 @@ export const FinancialReportView = ({
   // In-document Interactive Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'verified' | 'pending' | 'partial' | 'rejected'>('all');
-  const [selectedMethod, setSelectedMethod] = useState<string>('all');
+  const [selectedMethod, setSelectedMethod] = useState<string>(initialMethodFilter || 'all');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(15);
+
+  useEffect(() => {
+    if (initialMethodFilter) {
+      setSelectedMethod(initialMethodFilter);
+    }
+  }, [initialMethodFilter]);
 
   // Helper formatters
   const formatPHP = (val: number | string | null | undefined) => {
@@ -225,17 +235,59 @@ export const FinancialReportView = ({
     };
   }, [dateFilteredPayments]);
 
-  // 3. Breakdown by Payment Method
+  // 3. Detailed Breakdown by Payment Method
   const methodBreakdown = useMemo(() => {
-    const map = new Map<string, { count: number; totalGross: number; verifiedTotal: number }>();
+    const channelConfigs: Record<string, { instrument: string; icon: string }> = {
+      'GCash': { instrument: 'GCash E-Wallet (Ref # & App Receipt)', icon: '📱' },
+      'Bank Transfer': { instrument: 'Bank Deposit Slip / Fund Transfer Conf.', icon: '🏛️' },
+      'Through Officer (OR)': { instrument: 'Official Receipt (OR Booklet)', icon: '🏢' },
+      'Cheque': { instrument: 'Commercial / Corporate Cheque Draft', icon: '🧾' },
+      'PayMaya': { instrument: 'Maya Mobile E-Wallet (Ref # & Receipt)', icon: '💳' },
+      'Other': { instrument: 'Other Financial Remittance Instrument', icon: '💰' },
+    };
 
-    // Initial buckets
-    const channels = ['GCash', 'Bank Transfer', 'Through Officer (OR)', 'Cheque', 'PayMaya', 'Other'];
-    channels.forEach((c) => map.set(c, { count: 0, totalGross: 0, verifiedTotal: 0 }));
+    const map = new Map<string, {
+      count: number;
+      verifiedCount: number;
+      pendingCount: number;
+      rejectedCount: number;
+      totalGross: number;
+      verifiedTotal: number;
+      pendingTotal: number;
+      rejectedTotal: number;
+      instrument: string;
+      icon: string;
+    }>();
+
+    Object.keys(channelConfigs).forEach((c) => {
+      map.set(c, {
+        count: 0,
+        verifiedCount: 0,
+        pendingCount: 0,
+        rejectedCount: 0,
+        totalGross: 0,
+        verifiedTotal: 0,
+        pendingTotal: 0,
+        rejectedTotal: 0,
+        instrument: channelConfigs[c].instrument,
+        icon: channelConfigs[c].icon,
+      });
+    });
 
     dateFilteredPayments.forEach((p) => {
       const methodLabel = normalizeMethod(p.method || p.paymentMethod);
-      const existing = map.get(methodLabel) || { count: 0, totalGross: 0, verifiedTotal: 0 };
+      const existing = map.get(methodLabel) || {
+        count: 0,
+        verifiedCount: 0,
+        pendingCount: 0,
+        rejectedCount: 0,
+        totalGross: 0,
+        verifiedTotal: 0,
+        pendingTotal: 0,
+        rejectedTotal: 0,
+        instrument: 'Remittance Record',
+        icon: '💳',
+      };
       const amt = Number(p.amount || 0);
 
       existing.count += 1;
@@ -244,6 +296,13 @@ export const FinancialReportView = ({
       const cat = getStatusCategory(p);
       if (cat === 'verified' || cat === 'partial') {
         existing.verifiedTotal += amt;
+        existing.verifiedCount += 1;
+      } else if (cat === 'pending') {
+        existing.pendingTotal += amt;
+        existing.pendingCount += 1;
+      } else if (cat === 'rejected') {
+        existing.rejectedTotal += amt;
+        existing.rejectedCount += 1;
       }
       map.set(methodLabel, existing);
     });
@@ -253,16 +312,89 @@ export const FinancialReportView = ({
         const shareOfVerified = executiveMetrics.verifiedTotal > 0
           ? (data.verifiedTotal / executiveMetrics.verifiedTotal) * 100
           : 0;
+        const clearanceRate = data.totalGross > 0
+          ? (data.verifiedTotal / data.totalGross) * 100
+          : 0;
+        const avgTransaction = data.verifiedCount > 0
+          ? data.verifiedTotal / data.verifiedCount
+          : (data.count > 0 ? data.totalGross / data.count : 0);
+
         return {
           channel,
+          instrument: data.instrument,
+          icon: data.icon,
           count: data.count,
+          verifiedCount: data.verifiedCount,
+          pendingCount: data.pendingCount,
+          rejectedCount: data.rejectedCount,
           totalGross: data.totalGross,
           verifiedTotal: data.verifiedTotal,
+          pendingTotal: data.pendingTotal,
+          rejectedTotal: data.rejectedTotal,
           sharePercentage: shareOfVerified,
+          clearanceRate,
+          avgTransaction,
         };
       })
       .filter((m) => m.count > 0 || ['GCash', 'Bank Transfer', 'Through Officer (OR)'].includes(m.channel));
   }, [dateFilteredPayments, executiveMetrics.verifiedTotal]);
+
+  // Channel Category Aggregates for Revenue by Method Executive KPIs
+  const channelMetrics = useMemo(() => {
+    let digitalVerified = 0;
+    let digitalGross = 0;
+    let digitalCount = 0;
+
+    let officerVerified = 0;
+    let officerGross = 0;
+    let officerCount = 0;
+
+    let chequeVerified = 0;
+    let chequeGross = 0;
+    let chequeCount = 0;
+
+    dateFilteredPayments.forEach((p) => {
+      const m = normalizeMethod(p.method || p.paymentMethod);
+      const amt = Number(p.amount || 0);
+      const cat = getStatusCategory(p);
+      const isCleared = cat === 'verified' || cat === 'partial';
+
+      if (m === 'GCash' || m === 'Bank Transfer' || m === 'PayMaya' || m === 'PayPal') {
+        digitalGross += amt;
+        digitalCount += 1;
+        if (isCleared) digitalVerified += amt;
+      } else if (m.includes('Officer')) {
+        officerGross += amt;
+        officerCount += 1;
+        if (isCleared) officerVerified += amt;
+      } else if (m === 'Cheque') {
+        chequeGross += amt;
+        chequeCount += 1;
+        if (isCleared) chequeVerified += amt;
+      }
+    });
+
+    const sortedByVerified = [...methodBreakdown].sort((a, b) => b.verifiedTotal - a.verifiedTotal);
+    const topChannel = sortedByVerified[0] || {
+      channel: 'GCash',
+      verifiedTotal: 0,
+      sharePercentage: 0,
+      verifiedCount: 0,
+    };
+
+    return {
+      digitalVerified,
+      digitalGross,
+      digitalCount,
+      officerVerified,
+      officerGross,
+      officerCount,
+      chequeVerified,
+      chequeGross,
+      chequeCount,
+      topChannel,
+    };
+  }, [dateFilteredPayments, methodBreakdown]);
 
   // 4. Breakdown by Purpose / Activity
   const purposeBreakdown = useMemo(() => {
@@ -322,29 +454,41 @@ export const FinancialReportView = ({
 
       // Method filter
       if (selectedMethod !== 'all') {
-        const m = normalizeMethod(p.method || p.paymentMethod);
-        if (m !== selectedMethod) return false;
+        const methodLabel = normalizeMethod(p.method || p.paymentMethod);
+        if (methodLabel !== selectedMethod && !methodLabel.toLowerCase().includes(selectedMethod.toLowerCase())) {
+          return false;
+        }
       }
 
       // Purpose filter
       if (selectedPurpose !== 'all') {
         const purpose = getPurposeLabel(p).toLowerCase();
-        if (selectedPurpose === 'membership' && !purpose.includes('member')) return false;
-        if (selectedPurpose === 'events' && !purpose.includes('event') && !p.eventId) return false;
+        if (selectedPurpose === 'membership' && !purpose.includes('member') && !purpose.includes('renewal')) {
+          return false;
+        }
+        if (selectedPurpose === 'events' && !purpose.includes('event')) {
+          return false;
+        }
       }
 
       // Search query
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const name = String(p.memberName || p.fullName || p.userFullName || '').toLowerCase();
-        const email = String(p.memberEmail || p.email || p.userEmail || '').toLowerCase();
-        const refNo = String(p.referenceNumber || p.referenceNo || '').toLowerCase();
+        const q = searchQuery.toLowerCase().trim();
+        const payorName = (p.memberName || p.fullName || p.userFullName || '').toLowerCase();
+        const payorEmail = (p.memberEmail || p.email || p.userEmail || '').toLowerCase();
+        const refNum = (p.referenceNumber || p.referenceNo || '').toLowerCase();
         const purpose = getPurposeLabel(p).toLowerCase();
         const method = normalizeMethod(p.method || p.paymentMethod).toLowerCase();
+        const idStr = String(p.id).toLowerCase();
 
-        if (!name.includes(q) && !email.includes(q) && !refNo.includes(q) && !purpose.includes(q) && !method.includes(q)) {
-          return false;
-        }
+        return (
+          payorName.includes(q) ||
+          payorEmail.includes(q) ||
+          refNum.includes(q) ||
+          purpose.includes(q) ||
+          method.includes(q) ||
+          idStr.includes(q)
+        );
       }
 
       return true;
@@ -421,6 +565,7 @@ export const FinancialReportView = ({
   const methodChartData = methodBreakdown.map((m) => ({
     name: m.channel,
     'Verified Collections': m.verifiedTotal,
+    'Pending In-Flight': m.pendingTotal,
     'Total Volume': m.totalGross,
   }));
 
@@ -436,14 +581,14 @@ export const FinancialReportView = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary/80 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                  Official Accounting Document
+                  {isRevenueByMethodReport ? 'Payment Channel Audit & Reconciliation' : 'Official Accounting Document'}
                 </span>
                 <span className="text-[10px] text-gray-500 font-mono">
-                  REF: PSITS-FIN-{new Date().getFullYear()}-{String(payments.length).padStart(4, '0')}
+                  REF: {isRevenueByMethodReport ? `PSITS-REV-METHOD-${new Date().getFullYear()}-${String(payments.length).padStart(4, '0')}` : `PSITS-FIN-${new Date().getFullYear()}-${String(payments.length).padStart(4, '0')}`}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5">
-                PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
+                {isRevenueByMethodReport ? 'REVENUE BY PAYMENT METHOD STATEMENT' : 'PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS'}
               </h1>
               <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
                 Regional Executive Council • Financial Audit & Treasury Office
@@ -472,12 +617,20 @@ export const FinancialReportView = ({
         <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-xs bg-primary/5 border border-primary/15 px-3 py-1.5 rounded-lg">
           <div className="flex items-center gap-2 text-primary font-medium">
             <FileCheck2 size={15} />
-            <span>Review total collections, approved payments, and balances.</span>
+            <span>
+              {isRevenueByMethodReport
+                ? 'Analyze verified revenue grouped by payment method.'
+                : 'Review total collections, approved payments, and balances.'}
+            </span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-gray-500">
             <span>Ledger Scope: <strong>{dateFilteredPayments.length} transactions</strong></span>
             <span>•</span>
-            <span>Clearance Rate: <strong className="text-emerald-700">{executiveMetrics.clearanceRate.toFixed(1)}%</strong></span>
+            {isRevenueByMethodReport ? (
+              <span>Top Channel: <strong className="text-emerald-700">{channelMetrics.topChannel.channel} ({channelMetrics.topChannel.sharePercentage.toFixed(1)}%)</strong></span>
+            ) : (
+              <span>Clearance Rate: <strong className="text-emerald-700">{executiveMetrics.clearanceRate.toFixed(1)}%</strong></span>
+            )}
           </div>
         </div>
       </div>
@@ -485,116 +638,381 @@ export const FinancialReportView = ({
       {/* ============================================================== */}
       {/* 2. EXECUTIVE FINANCIAL KPIS SCOREBOARD                         */}
       {/* ============================================================== */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* Gross Inflows Logged */}
-        <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wide">Gross Inflows</span>
-            <Wallet size={16} className="text-primary" />
+      {isRevenueByMethodReport ? (
+        /* Channel Intelligence KPIs for Revenue by Method */
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Card 1: Verified Net Collections */}
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wide">Cleared Revenue</span>
+              <CheckCircle2 size={16} className="text-emerald-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight">
+                {formatPHP(executiveMetrics.verifiedTotal)}
+              </p>
+              <p className="text-[11px] text-emerald-700 mt-0.5">
+                Cleared across all payment channels
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium flex items-center justify-between">
+              <span>Settlement Rate</span>
+              <strong className="text-emerald-900">{executiveMetrics.clearanceRate.toFixed(1)}%</strong>
+            </div>
           </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black text-primary tracking-tight">
-              {formatPHP(executiveMetrics.grossTotal)}
-            </p>
-            <p className="text-[11px] text-blue-700 mt-0.5">
-              Across <strong>{executiveMetrics.totalCount}</strong> transactions
-            </p>
+
+          {/* Card 2: Leading Channel */}
+          <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wide">Leading Channel</span>
+              <TrendingUp size={16} className="text-primary" />
+            </div>
+            <div className="mt-2">
+              <p className="text-lg sm:text-xl font-black text-primary truncate">
+                {channelMetrics.topChannel.channel}
+              </p>
+              <p className="text-xs font-bold text-blue-800 mt-0.5">
+                {formatPHP(channelMetrics.topChannel.verifiedTotal)}
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-blue-200/60 text-[10px] text-blue-800 font-medium flex items-center justify-between">
+              <span>Channel Share</span>
+              <strong className="text-blue-900">{channelMetrics.topChannel.sharePercentage.toFixed(1)}%</strong>
+            </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-blue-200/60 text-[10px] text-blue-800 font-medium">
-            Total submissions logged
+
+          {/* Card 3: Digital & E-Wallets */}
+          <div className="bg-sky-50/70 border border-sky-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-sky-900 uppercase tracking-wide">Digital & E-Wallets</span>
+              <Smartphone size={16} className="text-sky-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-sky-800 tracking-tight">
+                {formatPHP(channelMetrics.digitalVerified)}
+              </p>
+              <p className="text-[11px] text-sky-700 mt-0.5">
+                GCash, Bank Transfer & PayMaya
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-sky-200/60 text-[10px] text-sky-800 font-medium flex items-center justify-between">
+              <span>Digital Volume</span>
+              <strong className="text-sky-900">{channelMetrics.digitalCount} txns</strong>
+            </div>
+          </div>
+
+          {/* Card 4: Official Receipts / Officer Cash */}
+          <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wide">Officer Cash (OR)</span>
+              <Receipt size={16} className="text-purple-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-purple-800 tracking-tight">
+                {formatPHP(channelMetrics.officerVerified)}
+              </p>
+              <p className="text-[11px] text-purple-700 mt-0.5">
+                Official Receipts (OR) issued
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-purple-200/60 text-[10px] text-purple-800 font-medium flex items-center justify-between">
+              <span>OR Volume</span>
+              <strong className="text-purple-900">{channelMetrics.officerCount} txns</strong>
+            </div>
+          </div>
+
+          {/* Card 5: In-Flight Pending Collections */}
+          <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs col-span-2 lg:col-span-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Pending Review</span>
+              <Clock size={16} className="text-amber-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight">
+                {formatPHP(executiveMetrics.pendingTotal)}
+              </p>
+              <p className="text-[11px] text-amber-700 mt-0.5">
+                Awaiting officer verification
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 font-medium flex items-center justify-between">
+              <span>Unverified Items</span>
+              <strong className="text-amber-900">{executiveMetrics.pendingCount} txns</strong>
+            </div>
           </div>
         </div>
+      ) : (
+        /* Standard Financial Summary Scoreboard */
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Gross Inflows Logged */}
+          <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wide">Gross Inflows</span>
+              <Wallet size={16} className="text-primary" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-primary tracking-tight">
+                {formatPHP(executiveMetrics.grossTotal)}
+              </p>
+              <p className="text-[11px] text-blue-700 mt-0.5">
+                Across <strong>{executiveMetrics.totalCount}</strong> transactions
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-blue-200/60 text-[10px] text-blue-800 font-medium">
+              Total submissions logged
+            </div>
+          </div>
 
-        {/* Verified Net Revenue */}
-        <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wide">Verified Net</span>
-            <CheckCircle2 size={16} className="text-emerald-600" />
+          {/* Verified Net Revenue */}
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wide">Verified Net Revenue</span>
+              <CheckCircle2 size={16} className="text-emerald-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight">
+                {formatPHP(executiveMetrics.verifiedTotal)}
+              </p>
+              <p className="text-[11px] text-emerald-700 mt-0.5">
+                Cleared in organization accounts
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium">
+              {executiveMetrics.clearanceRate.toFixed(1)}% of gross collections
+            </div>
           </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight">
-              {formatPHP(executiveMetrics.verifiedTotal)}
-            </p>
-            <p className="text-[11px] text-emerald-700 mt-0.5">
-              <strong>{executiveMetrics.verifiedCount + executiveMetrics.partialCount}</strong> cleared receipts
-            </p>
+
+          {/* Pending Clearance */}
+          <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Pending Review</span>
+              <Clock size={16} className="text-amber-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight">
+                {formatPHP(executiveMetrics.pendingTotal)}
+              </p>
+              <p className="text-[11px] text-amber-700 mt-0.5">
+                <strong>{executiveMetrics.pendingCount}</strong> awaiting officer verification
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 font-medium">
+              Unverified remittances
+            </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium">
-            {executiveMetrics.clearanceRate.toFixed(1)}% of gross collections
+
+          {/* Outstanding Receivables */}
+          <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wide">Receivables Balance</span>
+              <DollarSign size={16} className="text-purple-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-purple-800 tracking-tight">
+                {formatPHP(executiveMetrics.remainingReceivables)}
+              </p>
+              <p className="text-[11px] text-purple-700 mt-0.5">
+                <strong>{executiveMetrics.partialCount}</strong> partial payments active
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-purple-200/60 text-[10px] text-purple-800 font-medium">
+              Outstanding balance due
+            </div>
+          </div>
+
+          {/* Voided / Rejected */}
+          <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs col-span-2 lg:col-span-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wide">Voided / Rejected</span>
+              <AlertCircle size={16} className="text-rose-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xl sm:text-2xl font-black text-rose-700 tracking-tight">
+                {formatPHP(executiveMetrics.rejectedTotal)}
+              </p>
+              <p className="text-[11px] text-rose-700 mt-0.5">
+                <strong>{executiveMetrics.rejectedCount}</strong> invalid proofs flagged
+              </p>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-rose-200/60 text-[10px] text-rose-800 font-medium">
+              Disapproved submissions
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Pending Clearance (In-Review Exposure) */}
-        <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Pending Review</span>
-            <Clock size={16} className="text-amber-600" />
-          </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight">
-              {formatPHP(executiveMetrics.pendingTotal)}
+      {/* ============================================================== */}
+      {/* 3. DEDICATED PAYMENT CHANNEL RECONCILIATION MATRIX TABLE       */}
+      {/* ============================================================== */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2.5">
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <CreditCard size={17} className="text-primary" /> Payment Channel Performance & Reconciliation Matrix
+            </h3>
+            <p className="text-xs text-gray-500">
+              Audit analysis of collection instruments, transaction volumes, settlement rates, and share of regional revenue.
             </p>
-            <p className="text-[11px] text-amber-700 mt-0.5">
-              <strong>{executiveMetrics.pendingCount}</strong> awaiting officer verification
-            </p>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 font-medium">
-            Unverified remittances
-          </div>
+          <span className="text-[11px] text-gray-500 font-mono bg-gray-100 px-2.5 py-1 rounded-md self-start sm:self-auto">
+            {methodBreakdown.filter(m => m.count > 0).length} Active Channels
+          </span>
         </div>
 
-        {/* Outstanding Receivables (Partial Balance) */}
-        <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wide">Receivables Balance</span>
-            <DollarSign size={16} className="text-purple-600" />
-          </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black text-purple-800 tracking-tight">
-              {formatPHP(executiveMetrics.remainingReceivables)}
-            </p>
-            <p className="text-[11px] text-purple-700 mt-0.5">
-              <strong>{executiveMetrics.partialCount}</strong> partial payments active
-            </p>
-          </div>
-          <div className="mt-2 pt-1.5 border-t border-purple-200/60 text-[10px] text-purple-800 font-medium">
-            Outstanding balance due
-          </div>
-        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold">
+                <th className="px-3 py-2.5">Payment Channel & Instrument</th>
+                <th className="px-3 py-2.5 text-center">Txns (Clr/Pnd)</th>
+                <th className="px-3 py-2.5 text-right">Gross Inflows (₱)</th>
+                <th className="px-3 py-2.5 text-right text-emerald-800">Cleared Revenue (₱)</th>
+                <th className="px-3 py-2.5 text-right text-amber-800">In-Flight / Pending (₱)</th>
+                <th className="px-3 py-2.5 text-right">Avg Txn (₱)</th>
+                <th className="px-3 py-2.5 text-center min-w-[130px]">Revenue Share</th>
+                <th className="px-3 py-2.5 text-center">Clearance Rate</th>
+                <th className="px-3 py-2.5 text-center no-print">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {methodBreakdown.map((m, idx) => (
+                <tr key={m.channel} className="hover:bg-blue-50/40 transition-colors">
+                  {/* Channel & Instrument */}
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{m.icon}</span>
+                      <div>
+                        <span className="font-bold text-gray-900 block leading-tight">{m.channel}</span>
+                        <span className="text-[10px] text-gray-500 block">{m.instrument}</span>
+                      </div>
+                    </div>
+                  </td>
 
-        {/* Rejected / Disapproved */}
-        <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs col-span-2 lg:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wide">Voided / Rejected</span>
-            <AlertCircle size={16} className="text-rose-600" />
-          </div>
-          <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black text-rose-700 tracking-tight">
-              {formatPHP(executiveMetrics.rejectedTotal)}
-            </p>
-            <p className="text-[11px] text-rose-700 mt-0.5">
-              <strong>{executiveMetrics.rejectedCount}</strong> invalid proofs flagged
-            </p>
-          </div>
-          <div className="mt-2 pt-1.5 border-t border-rose-200/60 text-[10px] text-rose-800 font-medium">
-            Disapproved submissions
-          </div>
+                  {/* Txn Count */}
+                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                    <span className="font-bold text-gray-800">{m.count}</span>
+                    <span className="text-[10px] text-gray-400 block">
+                      ({m.verifiedCount} clr / {m.pendingCount} pnd)
+                    </span>
+                  </td>
+
+                  {/* Gross Inflows */}
+                  <td className="px-3 py-2.5 text-right font-semibold text-gray-800 whitespace-nowrap">
+                    {formatPHP(m.totalGross)}
+                  </td>
+
+                  {/* Cleared Revenue */}
+                  <td className="px-3 py-2.5 text-right font-black text-emerald-700 whitespace-nowrap">
+                    {formatPHP(m.verifiedTotal)}
+                  </td>
+
+                  {/* Pending In-Flight */}
+                  <td className="px-3 py-2.5 text-right font-medium text-amber-700 whitespace-nowrap">
+                    {formatPHP(m.pendingTotal)}
+                  </td>
+
+                  {/* Avg Txn */}
+                  <td className="px-3 py-2.5 text-right text-gray-600 whitespace-nowrap font-mono text-[11px]">
+                    {formatPHP(m.avgTransaction)}
+                  </td>
+
+                  {/* Share % */}
+                  <td className="px-3 py-2.5">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-semibold text-gray-700">
+                        <span>{m.sharePercentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="h-1.5 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, m.sharePercentage))}%`,
+                            backgroundColor: chartColors[idx % chartColors.length],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Clearance Rate */}
+                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                        m.clearanceRate >= 90
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : m.clearanceRate >= 50
+                          ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}
+                    >
+                      {m.clearanceRate.toFixed(1)}%
+                    </span>
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-3 py-2.5 text-center no-print">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedMethod(m.channel);
+                        setCurrentPage(1);
+                      }}
+                      className="px-2 py-1 text-[10px] font-semibold text-primary hover:bg-primary/10 rounded border border-primary/20 transition-colors cursor-pointer"
+                    >
+                      Filter Ledger
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            {/* Total Row */}
+            <tfoot className="bg-gray-100 border-t-2 border-gray-300 font-bold text-gray-900">
+              <tr>
+                <td className="px-3 py-2.5 uppercase tracking-wide text-[11px]">
+                  Total Reconciliation (All Channels):
+                </td>
+                <td className="px-3 py-2.5 text-center">
+                  {executiveMetrics.totalCount} txns
+                </td>
+                <td className="px-3 py-2.5 text-right font-black">
+                  {formatPHP(executiveMetrics.grossTotal)}
+                </td>
+                <td className="px-3 py-2.5 text-right font-black text-emerald-800">
+                  {formatPHP(executiveMetrics.verifiedTotal)}
+                </td>
+                <td className="px-3 py-2.5 text-right font-black text-amber-800">
+                  {formatPHP(executiveMetrics.pendingTotal)}
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono text-[11px]">
+                  {formatPHP(executiveMetrics.verifiedCount > 0 ? executiveMetrics.verifiedTotal / executiveMetrics.verifiedCount : 0)}
+                </td>
+                <td className="px-3 py-2.5 text-center text-primary">
+                  100.0%
+                </td>
+                <td className="px-3 py-2.5 text-center text-emerald-800">
+                  {executiveMetrics.clearanceRate.toFixed(1)}%
+                </td>
+                <td className="px-3 py-2.5 no-print"></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
       {/* ============================================================== */}
-      {/* 3. VISUAL ANALYTICS & BREAKDOWN SECTION                       */}
+      {/* 4. VISUAL COMPARISON CHART & STREAM DISTRIBUTION               */}
       {/* ============================================================== */}
-      {isRevenueByMethodReport && (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Payment Channel Comparison Chart */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp size={18} className="text-primary" />
               <h3 className="text-sm font-bold text-gray-900">Payment Channel Settlement Comparison</h3>
             </div>
-            <span className="text-xs text-gray-500">Verified Collections vs Total Inflows</span>
+            <span className="text-xs text-gray-500">Verified vs In-Flight Collections</span>
           </div>
-          <div className="h-[240px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={methodChartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -603,61 +1021,23 @@ export const FinancialReportView = ({
                 <Tooltip formatter={(value: any) => [formatPHP(value), '']} />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Bar dataKey="Verified Collections" fill="#10B981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Pending In-Flight" fill="#F59E0B" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Total Volume" fill="#003D82" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Payment Channel Settlement Breakdown Table */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-              <CreditCard size={15} className="text-primary" /> Payment Channel Distribution
-            </h4>
-            <span className="text-[11px] text-gray-500">By Cleared Inflows</span>
-          </div>
-          <div className="space-y-2.5">
-            {methodBreakdown.map((m, idx) => (
-              <div key={m.channel} className="text-xs space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-800 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartColors[idx % chartColors.length] }}></span>
-                    {m.channel}
-                    <span className="text-[10px] text-gray-500 font-normal">({m.count} txns)</span>
-                  </span>
-                  <div className="text-right">
-                    <span className="font-bold text-gray-900">{formatPHP(m.verifiedTotal)}</span>
-                    <span className="text-[10px] text-gray-500 ml-1.5 font-medium">({m.sharePercentage.toFixed(1)}%)</span>
-                  </div>
-                </div>
-                {/* Visual Progress Bar */}
-                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="h-1.5 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, Math.max(0, m.sharePercentage))}%`,
-                      backgroundColor: chartColors[idx % chartColors.length],
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Revenue Stream Breakdown by Purpose */}
+        {/* Revenue Stream by Purpose Table */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b pb-2">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
               <Layers size={15} className="text-primary" /> Revenue Stream by Purpose
             </h4>
-            <span className="text-[11px] text-gray-500">By Gross Inflows</span>
+            <span className="text-[11px] text-gray-500">Cross-Purpose Inflows</span>
           </div>
           <div className="space-y-2.5">
-            {purposeBreakdown.map((p) => (
+            {purposeBreakdown.map((p, idx) => (
               <div key={p.category} className="text-xs space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-800">
@@ -674,7 +1054,10 @@ export const FinancialReportView = ({
                 <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                   <div
                     className="h-1.5 rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(0, p.sharePercentage))}%` }}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, p.sharePercentage))}%`,
+                      backgroundColor: chartColors[idx % chartColors.length],
+                    }}
                   />
                 </div>
               </div>
@@ -684,7 +1067,7 @@ export const FinancialReportView = ({
       </div>
 
       {/* ============================================================== */}
-      {/* 4. ITEMIZED TRANSACTION AUDIT LEDGER                          */}
+      {/* 5. ITEMIZED TRANSACTION AUDIT LEDGER                          */}
       {/* ============================================================== */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden space-y-0">
         {/* Ledger Control & In-Document Filtering Header */}
@@ -738,8 +1121,48 @@ export const FinancialReportView = ({
             </div>
           </div>
 
-          {/* Quick Filter Tabs */}
+          {/* Quick Filter Channel Pills */}
           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs no-print">
+            <span className="text-[11px] font-semibold text-gray-500 mr-1 flex items-center gap-1">
+              <Filter size={12} /> Channel Filter:
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedMethod('all');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                selectedMethod === 'all'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              All Channels ({dateFilteredPayments.length})
+            </button>
+            {methodBreakdown.map((m) => (
+              <button
+                key={m.channel}
+                type="button"
+                onClick={() => {
+                  setSelectedMethod(m.channel);
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                  selectedMethod === m.channel
+                    ? 'bg-primary text-white shadow-xs font-bold'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <span>{m.icon}</span>
+                <span>{m.channel}</span>
+                <span className="text-[10px] opacity-75">({m.count})</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Filter Status Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs no-print border-t border-gray-200">
             <span className="text-[11px] font-semibold text-gray-500 mr-1">Status Filter:</span>
             {[
               { id: 'all', label: `All (${dateFilteredPayments.length})` },
@@ -755,9 +1178,9 @@ export const FinancialReportView = ({
                   setSelectedStatus(tab.id as any);
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
                   selectedStatus === tab.id
-                    ? 'bg-primary text-white shadow-2xs'
+                    ? 'bg-emerald-700 text-white shadow-2xs font-bold'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                 }`}
               >
@@ -767,24 +1190,7 @@ export const FinancialReportView = ({
 
             <div className="hidden sm:block border-l border-gray-300 h-4 mx-1"></div>
 
-            <span className="text-[11px] font-semibold text-gray-500 mr-1">Method:</span>
-            <select
-              value={selectedMethod}
-              onChange={(e) => {
-                setSelectedMethod(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-2 py-0.5 rounded border border-gray-300 text-[11px] bg-white text-gray-700 focus:outline-none focus:border-primary"
-            >
-              <option value="all">All Channels</option>
-              <option value="GCash">GCash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Through Officer (OR)">Through Officer (OR)</option>
-              <option value="Cheque">Cheque</option>
-              <option value="PayMaya">PayMaya</option>
-            </select>
-
-            <span className="text-[11px] font-semibold text-gray-500 ml-2 mr-1">Purpose:</span>
+            <span className="text-[11px] font-semibold text-gray-500 mr-1">Purpose:</span>
             <select
               value={selectedPurpose}
               onChange={(e) => {
@@ -809,7 +1215,7 @@ export const FinancialReportView = ({
                 <th className="px-3 py-2.5">Date & Time</th>
                 <th className="px-3 py-2.5">Payor Information</th>
                 <th className="px-3 py-2.5">Particulars / Purpose</th>
-                <th className="px-3 py-2.5">Method</th>
+                <th className="px-3 py-2.5">Channel / Method</th>
                 <th className="px-3 py-2.5 text-right">Amount (₱)</th>
                 <th className="px-3 py-2.5 text-center">Settlement Status</th>
                 <th className="px-3 py-2.5 text-center">Audit Verification</th>
@@ -827,6 +1233,8 @@ export const FinancialReportView = ({
                   const statusCat = getStatusCategory(p);
                   const isOfficerMethod = normalizeMethod(p.method || p.paymentMethod).includes('Officer');
                   const isGcashMethod = normalizeMethod(p.method || p.paymentMethod).includes('GCash');
+                  const isBankMethod = normalizeMethod(p.method || p.paymentMethod).includes('Bank');
+                  const isChequeMethod = normalizeMethod(p.method || p.paymentMethod).includes('Cheque');
 
                   return (
                     <tr key={p.id || idx} className="hover:bg-blue-50/40 transition-colors">
@@ -834,12 +1242,20 @@ export const FinancialReportView = ({
                       <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-gray-900 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           {isOfficerMethod ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                               OR
                             </span>
                           ) : isGcashMethod ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-900 border border-blue-300">
                               GCASH
+                            </span>
+                          ) : isBankMethod ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                              BANK
+                            </span>
+                          ) : isChequeMethod ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                              CHEQUE
                             </span>
                           ) : null}
                           <span>{p.referenceNumber || p.referenceNo || `TX-${String(p.id).padStart(5, '0')}`}</span>
@@ -959,7 +1375,7 @@ export const FinancialReportView = ({
                   setPageSize(sz as any);
                   setCurrentPage(1);
                 }}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                className={`px-2 py-0.5 rounded text-[11px] font-medium cursor-pointer ${
                   pageSize === sz ? 'bg-primary text-white' : 'bg-white border text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -979,7 +1395,7 @@ export const FinancialReportView = ({
                 type="button"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="p-1.5 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100 disabled:hover:bg-white"
+                className="p-1.5 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100 disabled:hover:bg-white cursor-pointer"
               >
                 <ChevronLeft size={14} />
               </button>
@@ -990,7 +1406,7 @@ export const FinancialReportView = ({
                 type="button"
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100 disabled:hover:bg-white"
+                className="p-1.5 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100 disabled:hover:bg-white cursor-pointer"
               >
                 <ChevronRight size={14} />
               </button>
@@ -1000,14 +1416,14 @@ export const FinancialReportView = ({
       </div>
 
       {/* ============================================================== */}
-      {/* 5. OFFICIAL AUDIT CERTIFICATION & TRIPLE SIGN-OFF             */}
+      {/* 6. OFFICIAL AUDIT CERTIFICATION & TRIPLE SIGN-OFF             */}
       {/* ============================================================== */}
       <div className="border border-gray-300 rounded-xl p-5 bg-gray-50/50 space-y-4 certification-block">
         <div className="text-xs text-gray-700 italic border-l-4 border-primary pl-3">
           <p className="font-semibold text-gray-900 not-italic uppercase tracking-wide text-[11px] mb-0.5">
             Official Certification Statement
           </p>
-          "I hereby certify under official oath that this financial statement, revenue distribution, and itemized transaction ledger represent a true, faithful, and accurate record of all monetary collections, verified bank remittances, official receipts (OR), and outstanding balances recorded in the PSITS Regional Information System for the specified accounting period."
+          "I hereby certify under official oath that this Revenue by Payment Method Statement, channel reconciliation matrix, and itemized transaction ledger represent a true, faithful, and accurate record of all monetary collections, verified bank remittances, official receipts (OR), and electronic payment channels recorded in the PSITS Regional Information System for the specified accounting period."
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 text-xs">
