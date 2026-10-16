@@ -149,7 +149,15 @@ async function listMembers(req, res) {
   }
 
   const [rows] = await pool.execute(
-    `SELECT * FROM users
+    `SELECT
+       id, full_name, email, sector, member_type, contact_number, birthdate,
+       address, gender, occupation, representative_name, representative_name_2,
+       position, representative_position_2, company_email, website,
+       membership_mode, status, banned_reason, suspended_reason, archived_at,
+       status_updated_at, status_updated_by, membership_started_at,
+       membership_expires_at, approval_email_status, approval_email_sent_at,
+       approval_email_error, created_at
+     FROM users
      WHERE ${where.join(' AND ')}
      ORDER BY created_at DESC`,
     params
@@ -165,7 +173,7 @@ async function listMemberStatusLogs(req, res) {
   try {
     const [rows] = await pool.execute(
       `SELECT
-         l.*,
+         l.id, l.member_id, l.old_status, l.new_status, l.reason, l.changed_by, l.created_at,
          u.full_name AS changed_by_name,
          u.email AS changed_by_email
        FROM member_status_logs l
@@ -199,7 +207,15 @@ async function getMemberDetails(req, res) {
   if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
 
   const [rows] = await pool.execute(
-    `SELECT * FROM users WHERE id = ? AND role = 'member' LIMIT 1`,
+    `SELECT
+       id, full_name, email, sector, sector_details, member_type, contact_number, birthdate,
+       address, gender, occupation, representative_name, representative_name_2,
+       position, representative_position_2, company_email, website,
+       membership_mode, status, banned_reason, suspended_reason, archived_at,
+       status_updated_at, status_updated_by, membership_started_at,
+       membership_expires_at, approval_email_status, approval_email_sent_at,
+       approval_email_error, created_at, updated_at
+     FROM users WHERE id = ? AND role = 'member' LIMIT 1`,
     [id]
   );
   if (!rows.length) return json(res, 404, { success: false, message: 'Member not found.' });

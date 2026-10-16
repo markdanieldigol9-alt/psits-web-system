@@ -197,7 +197,12 @@ async function listPayments(req, res) {
 
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.execute(
-    `SELECT p.*,
+    `SELECT p.id, p.member_id, p.event_id, p.event, p.amount, p.payment_method, p.method,
+            p.payment_kind, p.reference_number, p.payment_status, p.process_status, p.status,
+            p.proof_url, p.rejection_reason, p.verified_by, p.verified_at, p.total_heads,
+            p.rate_per_head, p.free_slots, p.gross_amount, p.discount_amount, p.net_amount,
+            p.partial_amount, p.remaining_balance, p.is_partial, p.billing_breakdown_json,
+            p.created_at, p.updated_at,
             COALESCE(u.full_name, p.member_name, 'Member') AS member_name,
             u.email AS member_email,
             COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name, NULL) AS institution_name,

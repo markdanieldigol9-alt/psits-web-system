@@ -1421,6 +1421,95 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 
+  // Create slow_query_logs table for query performance observability & threshold monitoring
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS slow_query_logs (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      query_fingerprint VARCHAR(255) NOT NULL,
+      duration_ms DECIMAL(10, 2) NOT NULL,
+      query_sql TEXT NOT NULL,
+      params_json TEXT NULL,
+      caller_route VARCHAR(255) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_slow_duration (duration_ms),
+      INDEX idx_slow_created_at (created_at),
+      INDEX idx_slow_fingerprint (query_fingerprint)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
+  // Step 1 Database Index Optimization:
+  // Add indexes to columns used in WHERE, ORDER BY, JOIN, and GROUP BY to eliminate full table scans
+  const ensureIndex = async (tableName, indexName, columnsSql) => {
+    try {
+      const [existing] = await pool.query(
+        `SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS 
+         WHERE TABLE_SCHEMA = DATABASE() 
+           AND TABLE_NAME = ? 
+           AND INDEX_NAME = ? LIMIT 1`,
+        [tableName, indexName]
+      );
+      if (!existing.length) {
+        await pool.query(`ALTER TABLE \`${tableName}\` ADD INDEX \`${indexName}\` (${columnsSql})`);
+      }
+    } catch {
+      // Ignore if table or columns do not exist yet in older schemas
+    }
+  };
+
+  // Indexes on users
+  await ensureIndex('users', 'idx_users_role', 'role');
+  await ensureIndex('users', 'idx_users_status', 'status');
+  await ensureIndex('users', 'idx_users_member_type', 'member_type');
+  await ensureIndex('users', 'idx_users_inst_owner', 'institution_owner_id');
+  await ensureIndex('users', 'idx_users_sector', 'sector');
+  await ensureIndex('users', 'idx_users_created_at', 'created_at');
+  await ensureIndex('users', 'idx_users_role_status', 'role, status');
+  await ensureIndex('users', 'idx_users_role_member_type', 'role, member_type');
+
+  // Indexes on events
+  await ensureIndex('events', 'idx_events_status', 'status');
+  await ensureIndex('events', 'idx_events_event_type', 'event_type');
+  await ensureIndex('events', 'idx_events_start_at', 'start_at');
+  await ensureIndex('events', 'idx_events_end_at', 'end_at');
+  await ensureIndex('events', 'idx_events_created_at', 'created_at');
+  await ensureIndex('events', 'idx_events_status_start_at', 'status, start_at');
+
+  // Indexes on event_registrations
+  await ensureIndex('event_registrations', 'idx_event_reg_event_id', 'event_id');
+  await ensureIndex('event_registrations', 'idx_event_reg_member_id', 'member_id');
+  await ensureIndex('event_registrations', 'idx_event_reg_status', 'status');
+  await ensureIndex('event_registrations', 'idx_event_reg_event_status', 'event_id, status');
+  await ensureIndex('event_registrations', 'idx_event_reg_member_status', 'member_id, status');
+  await ensureIndex('event_registrations', 'idx_event_reg_created_at', 'created_at');
+
+  // Indexes on institution_members
+  await ensureIndex('institution_members', 'idx_inst_members_inst_user', 'institution_user_id');
+  await ensureIndex('institution_members', 'idx_inst_members_event_id', 'event_id');
+  await ensureIndex('institution_members', 'idx_inst_members_status', 'status');
+  await ensureIndex('institution_members', 'idx_inst_members_inst_status', 'institution_user_id, status');
+  await ensureIndex('institution_members', 'idx_inst_members_event_status', 'event_id, status');
+  await ensureIndex('institution_members', 'idx_inst_members_created_at', 'created_at');
+
+  // Indexes on payments
+  await ensureIndex('payments', 'idx_payments_member_id', 'member_id');
+  await ensureIndex('payments', 'idx_payments_event_id', 'event_id');
+  await ensureIndex('payments', 'idx_payments_status', 'status');
+  await ensureIndex('payments', 'idx_payments_payment_status', 'payment_status');
+  await ensureIndex('payments', 'idx_payments_payment_kind', 'payment_kind');
+  await ensureIndex('payments', 'idx_payments_created_at', 'created_at');
+  await ensureIndex('payments', 'idx_payments_member_kind', 'member_id, payment_kind');
+  await ensureIndex('payments', 'idx_payments_status_created', 'status, created_at');
+
+  // Indexes on announcements
+  await ensureIndex('announcements', 'idx_announcements_status', 'status');
+  await ensureIndex('announcements', 'idx_announcements_created_by', 'created_by');
+  await ensureIndex('announcements', 'idx_announcements_created_at', 'created_at');
+
+  // Indexes on partner_contributions
+  await ensureIndex('partner_contributions', 'idx_partner_contrib_partner', 'partner_id');
+  await ensureIndex('partner_contributions', 'idx_partner_contrib_type', 'contribution_type');
+  await ensureIndex('partner_contributions', 'idx_partner_contrib_created', 'created_at');
+
   // Seed default GCash QR code setting if not exists
   const [existingSettings] = await pool.execute(
     'SELECT key_name FROM settings WHERE key_name = ? LIMIT 1',
@@ -1430,6 +1519,18 @@ async function migrate() {
     await pool.execute(
       'INSERT INTO settings (key_name, value_text) VALUES (?, ?)',
       ['gcash_qr_code', '']
+    );
+  }
+
+  // Seed default slow query threshold (100ms) setting if not exists
+  const [existingSlowThreshold] = await pool.execute(
+    'SELECT key_name FROM settings WHERE key_name = ? LIMIT 1',
+    ['slow_query_threshold_ms']
+  );
+  if (!existingSlowThreshold.length) {
+    await pool.execute(
+      'INSERT INTO settings (key_name, value_text) VALUES (?, ?)',
+      ['slow_query_threshold_ms', '100']
     );
   }
 

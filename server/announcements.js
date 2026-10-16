@@ -88,7 +88,7 @@ async function listAnnouncements(req, res) {
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.execute(
     `SELECT
-       a.*,
+       a.id, a.title, a.content, a.status, a.image_url, a.audience_json, a.created_by, a.archived_at, a.created_at, a.updated_at,
        u.full_name AS created_by_name,
        u.role AS created_by_role,
        COALESCE(c.comment_count, 0) AS comment_count,

@@ -93,6 +93,13 @@ const { importDataIntoPool } = require('./dataSync');
 const { archiveExpiredContent, purgeArchivedAnnouncements, purgeArchivedForumPosts } = require('./services/archiveService');
 const { buildRedisClient, createRateLimiter } = require('./rateLimiter');
 const { attachLiveRealtime } = require('./liveRealtime');
+const {
+  getQueryPerformanceSummary,
+  updateSlowQueryThreshold,
+  clearQueryPerformanceLogs,
+  triggerTestSlowQuery,
+  initializeThresholdFromDb,
+} = require('./queryLogger');
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 const trustProxy = String(process.env.TRUST_PROXY || '').toLowerCase() === 'true';
@@ -965,6 +972,12 @@ app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['
   app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getElectionReport);
   app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getPartnerContributionsReport);
 
+// Database Query Performance & Slow Query Logging Dashboard (super_admin & admin)
+app.get('/api/admin/query-performance', authMiddleware, requireRole(['super_admin', 'admin']), getQueryPerformanceSummary);
+app.post('/api/admin/query-performance/threshold', authMiddleware, requireRole(['super_admin', 'admin']), updateSlowQueryThreshold);
+app.post('/api/admin/query-performance/clear', authMiddleware, requireRole(['super_admin', 'admin']), clearQueryPerformanceLogs);
+app.post('/api/admin/query-performance/test-slow', authMiddleware, requireRole(['super_admin', 'admin']), triggerTestSlowQuery);
+
 // SMTP test (admin/super_admin only)
 app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin']), sendSmtpTest);
 
@@ -1139,6 +1152,7 @@ setInterval(async () => {
 migrate()
   .then(() => {
     migrationReady = true;
+    initializeThresholdFromDb(pool).catch(() => {});
     startReminderService();
   })
   .catch((err) => {

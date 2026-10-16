@@ -78,7 +78,12 @@ async function listEvents(req, res) {
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.execute(
     `SELECT
-       e.*,
+       e.id, e.title, e.description, e.guidelines, e.guidelines_file_url, e.guidelines_file_name,
+       e.registration_mode, e.registration_start_at, e.registration_end_at, e.registration_override,
+       e.event_type, e.start_at, e.end_at, e.location, e.registration_fee, e.capacity, e.status,
+       e.is_esports, e.esports_game, e.esports_bracket_format, e.banner_url, e.theme_color,
+       e.custom_badge, e.requires_coach, e.has_moderator, e.moderator_officer_id,
+       e.moderator_officer_name, e.moderator_ids, e.moderator_names, e.created_at, e.updated_at,
        (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) AS registrations_count
      FROM events e
      ${sqlWhere}

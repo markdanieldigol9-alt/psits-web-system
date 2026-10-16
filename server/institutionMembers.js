@@ -167,7 +167,10 @@ async function listInstitutionMembers(req, res) {
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.execute(
     `SELECT
-       im.*,
+       im.id, im.institution_user_id, im.event_id, im.full_name, im.email,
+       im.contact_number, im.gender, im.position, im.event_title, im.status,
+       im.approved_by, im.approved_at, im.rejection_reason, im.notes,
+       im.created_at, im.updated_at,
        i.full_name AS institution_full_name,
        i.email AS institution_email,
        i.sector_details AS institution_name,
@@ -414,7 +417,10 @@ async function approveInstitutionMember(req, res) {
 
   const [rows] = await pool.execute(
     `SELECT
-       im.*,
+       im.id, im.institution_user_id, im.event_id, im.full_name, im.email,
+       im.contact_number, im.gender, im.position, im.event_title, im.status,
+       im.approved_by, im.approved_at, im.rejection_reason, im.notes,
+       im.created_at, im.updated_at, im.password_hash,
        i.full_name AS institution_full_name,
        i.email AS institution_email,
        i.sector_details AS institution_name,
