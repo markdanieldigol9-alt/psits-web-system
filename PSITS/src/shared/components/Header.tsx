@@ -277,7 +277,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{getUserDisplayName(user)}</p>
-                        {user?.memberType === 'institution' && user?.representativeName && (
+                        {(user?.memberType === 'institution' || user?.sector === 'institution') && user?.representativeName && (
                           <p className="text-[11px] font-medium text-blue-600 dark:text-cyan-400 truncate">Rep: {user.representativeName}</p>
                         )}
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">{user?.email}</p>

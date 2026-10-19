@@ -323,12 +323,12 @@ async function getAllMembersReport(req, res) {
         u.email,
         u.contact_number,
         CASE 
-          WHEN u.member_type = 'industry' THEN 'industry'
-          WHEN u.member_type = 'institution' THEN 'institution'
+          WHEN u.member_type = 'industry' OR u.sector = 'industry' THEN 'industry'
+          WHEN u.member_type = 'institution' OR u.sector = 'institution' THEN 'institution'
           ELSE 'individual'
         END AS category,
         COALESCE(u.sector_details, 
-          CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE NULL END
+          CASE WHEN u.member_type = 'institution' OR u.sector = 'institution' THEN u.full_name ELSE NULL END
         ) AS institution_name,
         COALESCE(u.occupation, u.sector, u.member_type) AS position,
         u.status,

@@ -38,12 +38,12 @@ export function getUserInterfaceLabel(user: User | null | undefined): string {
   }
 }
 
-export function getUserDisplayName(user: { fullName?: string; sectorDetails?: string; memberType?: string; representativeName?: string } | null | undefined): string {
+export function getUserDisplayName(user: { fullName?: string; sectorDetails?: string; sector?: string; memberType?: string; representativeName?: string } | null | undefined): string {
   if (!user) return 'User';
-  if (user.memberType === 'institution') {
+  if (user.memberType === 'institution' || user.sector === 'institution') {
     return user.sectorDetails?.trim() || user.fullName?.trim() || user.representativeName?.trim() || 'Institution Member';
   }
-  if (user.memberType === 'industry') {
+  if (user.memberType === 'industry' || user.sector === 'industry') {
     return user.sectorDetails?.trim() || user.fullName?.trim() || user.representativeName?.trim() || 'Industry Member';
   }
   return user.fullName?.trim() || user.representativeName?.trim() || user.sectorDetails?.trim() || 'Member';

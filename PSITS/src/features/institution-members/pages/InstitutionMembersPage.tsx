@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
+import { getUserInterfaceKey } from '@/shared/utils/userInterface';
 
 type InstitutionMember = {
   id: string;
@@ -206,7 +207,9 @@ export const InstitutionMembersPage = () => {
     }
   };
 
-  const isInstitutionMember = user?.role === 'member' && user?.memberType === 'institution';
+  const isInstitutionMember =
+    user?.role === 'member' &&
+    (user?.memberType === 'institution' || user?.sector === 'institution' || getUserInterfaceKey(user) === 'member_institutional');
   const canViewAll = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const canApprove = canViewAll;
 
@@ -880,8 +883,23 @@ export const InstitutionMembersPage = () => {
   if (!isInstitutionMember && !canViewAll) {
     return (
       <MainLayout>
-        <Card className="p-6">
-          <p className="text-gray-700">You do not have access to Institution Members.</p>
+        <Card className="p-8 text-center max-w-md mx-auto my-12 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-2xl">
+              <Building2 size={36} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Access Restricted</h2>
+            <p className="text-gray-600 dark:text-slate-400 text-sm max-w-sm">
+              You do not have access to Institution Members. This section is reserved for institutional member accounts and administrators.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-2"
+              onClick={() => navigate('/dashboard')}
+            >
+              Return to Dashboard
+            </Button>
+          </div>
         </Card>
       </MainLayout>
     );
