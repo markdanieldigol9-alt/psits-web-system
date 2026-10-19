@@ -106,10 +106,22 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
     window.location.href = '/login';
   };
 
-  const filteredSearchItems = QUICK_SEARCH_ITEMS.filter((item) =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const isOfficerOrAdmin = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+
+  const filteredSearchItems = QUICK_SEARCH_ITEMS.filter((item) => {
+    if (user?.status === 'suspended') {
+      return item.path === '/settings';
+    }
+    if (!isOfficerOrAdmin) {
+      if (item.path === '/reports' || item.path === '/members' || item.path === '/institution-members') {
+        return false;
+      }
+    }
+    return (
+      item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   const initial = getUserInitial(user);
 

@@ -15,12 +15,10 @@ function addMonths(date, delta) {
 async function getDashboardReport(_req, res) {
   const user = _req?.user;
   const role = String(user?.role || '');
-  const memberType = String(user?.member_type || '').toLowerCase();
 
   const isModerator = role === 'super_admin' || role === 'admin' || role === 'officer';
-  const isIndustryMember = role === 'member' && memberType === 'industry';
 
-  if (!isModerator && !isIndustryMember) {
+  if (!isModerator) {
     return res.status(403).json({ success: false, message: 'Forbidden.' });
   }
 
@@ -220,6 +218,13 @@ async function getDashboardReport(_req, res) {
 }
 
 async function getElectionReport(req, res) {
+  const user = req?.user;
+  const role = String(user?.role || '');
+  const isModerator = role === 'super_admin' || role === 'admin' || role === 'officer';
+  if (!isModerator) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+
   const electionId = Number(req.params.id);
   if (!Number.isFinite(electionId)) {
     return res.status(400).json({ success: false, message: 'Invalid election ID.' });
@@ -261,6 +266,13 @@ async function getElectionReport(req, res) {
 }
 
 async function getPartnerContributionsReport(req, res) {
+  const user = req?.user;
+  const role = String(user?.role || '');
+  const isModerator = role === 'super_admin' || role === 'admin' || role === 'officer';
+  if (!isModerator) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+
   try {
     const [contributionRows] = await pool.execute(
       `SELECT pc.id, pc.deal_title, pc.contribution_type, pc.value_amount, pc.description, pc.created_at,
@@ -293,6 +305,13 @@ async function getPartnerContributionsReport(req, res) {
 }
 
 async function getAllMembersReport(req, res) {
+  const user = req?.user;
+  const role = String(user?.role || '');
+  const isModerator = role === 'super_admin' || role === 'admin' || role === 'officer';
+  if (!isModerator) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+
   try {
     const { category, institution, search, status } = req.query;
 
@@ -404,6 +423,13 @@ async function getAllMembersReport(req, res) {
 }
 
 async function getEventParticipationReport(req, res) {
+  const user = req?.user;
+  const role = String(user?.role || '');
+  const isModerator = role === 'super_admin' || role === 'admin' || role === 'officer';
+  if (!isModerator) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+
   try {
     const { eventId, institution, search, status } = req.query;
 

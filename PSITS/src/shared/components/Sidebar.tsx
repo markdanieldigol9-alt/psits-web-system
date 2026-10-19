@@ -205,7 +205,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Partners', icon: Briefcase, href: '/partners' },
         { label: 'Officers', icon: Briefcase, href: '/officers' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
-        { label: 'Reports', icon: FileText, href: '/reports' },
       ],
     },
   ],

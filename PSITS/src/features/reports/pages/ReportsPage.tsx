@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 import { Button, Card, Input, Select } from '@/shared/components/Form';
 
@@ -304,6 +305,7 @@ export const ReportsPage = () => {
 
 
   useEffect(() => {
+    if (user?.role === 'member') return;
     let cancelled = false;
     const load = async () => {
       setIsLoading(true);
@@ -571,6 +573,10 @@ export const ReportsPage = () => {
     }
   };
 
+
+  if (user && user.role === 'member') {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   const selectedReportObj = reportCards.find((r) => r.title === selectedReportTitle) || reportCards[0];
   const SelectedReportIcon = selectedReportObj.icon;

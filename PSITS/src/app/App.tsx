@@ -200,7 +200,7 @@ export const App = () => {
               <Route
                 path="/reports"
                 element={
-                  <ProtectedRoute requiredRoles={['super_admin', 'admin', 'officer', 'member']}>
+                  <ProtectedRoute requiredRoles={['super_admin', 'admin', 'officer']}>
                     <ReportsPage />
                   </ProtectedRoute>
                 }
