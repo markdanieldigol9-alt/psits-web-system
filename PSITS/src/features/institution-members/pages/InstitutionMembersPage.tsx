@@ -963,36 +963,27 @@ export const InstitutionMembersPage = () => {
         </div>
 
         {(isInstitutionMember || canViewAll) && (
-          <Card
-            title="Upload Institution Members & Portal Login Setup"
-            subtitle="Standard Fee: ₱250.00 / person • Supported Formats: CSV (.csv), Excel (.xlsx, .xls) • Columns: fullName, email, password (optional), contactNumber, gender, position, eventTitle, notes"
-          >
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-700">
-                  Upload your institution participants in bulk via Excel or CSV at <strong>₱250.00 per person</strong> (includes <strong>2 Free Slots</strong> discount per batch registration). Include an <strong>email</strong> and <strong>password</strong> so members can log in directly as <strong>Individual Members</strong> to the PSITS portal.
-                </p>
-                <div className="flex flex-wrap gap-4 pt-1">
-                  <button
-                    type="button"
-                    onClick={handleDownloadTemplate}
-                    className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <FileSpreadsheet size={14} /> Download Excel Template (.xlsx)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDownloadCsvTemplate}
-                    className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Download size={14} /> Download CSV Template (.csv)
-                  </button>
-                </div>
+          <Card className="p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex flex-wrap gap-4">
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <FileSpreadsheet size={14} /> Download Excel Template (.xlsx)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadCsvTemplate}
+                  className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Download size={14} /> Download CSV Template (.csv)
+                </button>
               </div>
             </div>
 
             {/* Institution Live Billing & Financial Status Breakdown */}
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-800">
               {canViewAll && selectedInstitutionFilter !== 'all' && (
                 <div className="mb-3 flex items-center justify-between bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-900 dark:text-blue-200">
                   <span>Filtered Financials: <strong>{currentSelectedInst?.name}</strong></span>
@@ -1085,7 +1076,6 @@ export const InstitutionMembersPage = () => {
                   )}
                 </div>
               </div>
-            </div>
           </Card>
         )}
 
