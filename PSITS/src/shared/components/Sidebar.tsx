@@ -17,7 +17,6 @@ import {
   Vote,
   MessageSquareText,
   ChevronRight,
-  Database,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,7 +44,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
         { label: 'Institution Members', icon: Upload, href: '/institution-members' },
         { label: 'Reports', icon: FileText, href: '/reports' },
-        { label: 'Query Performance', icon: Database, href: '/admin/query-performance' },
       ],
     },
     {
@@ -72,7 +70,6 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
         { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
         { label: 'Institution Members', icon: Upload, href: '/institution-members' },
         { label: 'Reports', icon: FileText, href: '/reports' },
-        { label: 'Query Performance', icon: Database, href: '/admin/query-performance' },
       ],
     },
     {

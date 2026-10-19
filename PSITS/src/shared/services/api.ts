@@ -754,69 +754,6 @@ class ApiService {
       data
     );
   }
-
-  // Database Query Performance & Slow Query Logging
-  getQueryPerformance() {
-    return this.client.get<QueryPerformanceResponse>('/admin/query-performance');
-  }
-
-  updateSlowQueryThreshold(thresholdMs: number) {
-    return this.client.post<{ success: boolean; message: string; thresholdMs: number }>(
-      '/admin/query-performance/threshold',
-      { thresholdMs }
-    );
-  }
-
-  clearQueryPerformanceLogs() {
-    return this.client.post<{ success: boolean; message: string }>('/admin/query-performance/clear');
-  }
-
-  triggerTestSlowQuery(delaySeconds: number = 0.2) {
-    return this.client.post<{ success: boolean; message: string }>('/admin/query-performance/test-slow', {
-      delaySeconds,
-    });
-  }
-}
-
-export interface QueryPerformanceSummary {
-  thresholdMs: number;
-  totalQueriesTracked: number;
-  totalSlowQueries: number;
-  slowQueryPercentage: number;
-  totalExecutionTimeMs: number;
-  avgQueryDurationMs: number;
-  maxExecutionTimeObserved: number;
-  trackingStartedAt: string;
-  uniqueQueryPatterns: number;
-}
-
-export interface QueryFingerprintStat {
-  fingerprint: string;
-  count: number;
-  totalDurationMs: number;
-  avgDurationMs: number;
-  minDurationMs: number;
-  maxDurationMs: number;
-  slowCount: number;
-  sampleSql: string;
-  firstSeen: string;
-  lastSeen: string;
-}
-
-export interface SlowQueryLogItem {
-  id: string;
-  fingerprint: string;
-  durationMs: number;
-  sql: string;
-  params: string | null;
-  timestamp: string;
-}
-
-export interface QueryPerformanceResponse {
-  success: boolean;
-  summary: QueryPerformanceSummary;
-  topResourceConsumingQueries: QueryFingerprintStat[];
-  recentSlowLogs: SlowQueryLogItem[];
 }
 
 const api = new ApiService();

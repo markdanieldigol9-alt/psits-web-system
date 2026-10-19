@@ -1437,6 +1437,44 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 
+  // Database-native views: Analyze slow query execution frequency & total resource consumption
+  try {
+    await pool.query(`
+      CREATE OR REPLACE VIEW v_slow_query_frequency AS
+      SELECT 
+        query_fingerprint,
+        COUNT(*) AS execution_count,
+        ROUND(AVG(duration_ms), 2) AS avg_duration_ms,
+        ROUND(MIN(duration_ms), 2) AS min_duration_ms,
+        ROUND(MAX(duration_ms), 2) AS max_duration_ms,
+        MAX(created_at) AS last_executed_at
+      FROM slow_query_logs
+      GROUP BY query_fingerprint
+    `);
+
+    await pool.query(`
+      CREATE OR REPLACE VIEW v_slow_query_resource_consumption AS
+      SELECT 
+        query_fingerprint,
+        ROUND(SUM(duration_ms), 2) AS total_resource_time_ms,
+        COUNT(*) AS execution_count,
+        ROUND(AVG(duration_ms), 2) AS avg_duration_ms,
+        ROUND(MAX(duration_ms), 2) AS max_duration_ms
+      FROM slow_query_logs
+      GROUP BY query_fingerprint
+    `);
+  } catch {
+    // Ignore if views creation is restricted on target database engine
+  }
+
+  // Attempt to enable native MySQL slow query log if server user permissions allow
+  try {
+    await pool.query("SET GLOBAL slow_query_log = 'ON'");
+    await pool.query("SET GLOBAL long_query_time = 0.1");
+  } catch {
+    // Ignore if running under non-SUPER cloud database user
+  }
+
   // Step 1 Database Index Optimization:
   // Add indexes to columns used in WHERE, ORDER BY, JOIN, and GROUP BY to eliminate full table scans
   const ensureIndex = async (tableName, indexName, columnsSql) => {

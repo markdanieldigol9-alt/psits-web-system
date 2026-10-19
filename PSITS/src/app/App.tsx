@@ -84,9 +84,6 @@ const PrivacyPolicyPage = lazy(() =>
 const TermsPage = lazy(() =>
   import('@/features/legal/pages/TermsPage').then((m) => ({ default: m.TermsPage }))
 );
-const QueryPerformancePage = lazy(() =>
-  import('@/features/admin/pages/QueryPerformancePage').then((m) => ({ default: m.QueryPerformancePage }))
-);
 
 
 export const App = () => {
@@ -205,14 +202,6 @@ export const App = () => {
                 element={
                   <ProtectedRoute requiredRoles={['super_admin', 'admin', 'officer', 'member']}>
                     <ReportsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/query-performance"
-                element={
-                  <ProtectedRoute requiredRoles={['super_admin', 'admin']}>
-                    <QueryPerformancePage />
                   </ProtectedRoute>
                 }
               />

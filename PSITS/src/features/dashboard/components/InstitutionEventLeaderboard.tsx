@@ -169,9 +169,6 @@ export const InstitutionEventLeaderboard = () => {
                   <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
                     Institution Event Leaderboard
                   </h2>
-                  <p className="text-blue-100 text-xs sm:text-sm mt-0.5">
-                    Track registered institutions and participant headcounts in real time.
-                  </p>
                 </div>
               </div>
             </div>

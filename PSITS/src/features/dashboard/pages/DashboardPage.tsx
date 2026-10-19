@@ -464,9 +464,6 @@ export const DashboardPage = () => {
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
                 Welcome back, {getUserDisplayName(user)}!
               </h1>
-              <p className="text-blue-100 text-sm sm:text-base max-w-2xl leading-relaxed">
-                Here is your organizational telemetry for today. Monitor member growth, approve registrations, and manage regional IT summits.
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-2 shrink-0">
