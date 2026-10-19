@@ -645,7 +645,9 @@ async function login(req, res) {
 
 async function authMiddleware(req, res, next) {
   const header = req.header('authorization') || '';
-  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+  const token =
+    (header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '') ||
+    String(req.query?.token || '').trim();
   if (!token) return json(res, 401, { success: false, message: 'Missing token.' });
 
   const [rows] = await pool.execute(

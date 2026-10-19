@@ -1398,6 +1398,22 @@ async function streamLiveEventRecording(req, res) {
     };
     const mimeType = mimeMap[ext] || 'video/mp4';
 
+    // Set streaming and cross-origin exposure headers
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type, Accept');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length, Content-Type');
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    if (req.method === 'HEAD') {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': mimeType,
+        'Accept-Ranges': 'bytes',
+      });
+      return res.end();
+    }
+
     const range = req.headers.range;
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');

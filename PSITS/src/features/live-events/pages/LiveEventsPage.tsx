@@ -9,7 +9,7 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { LiveSessionModal } from '@/features/live-events/components/LiveSessionModal';
 import type { LiveSession, LiveSessionFormState } from '@/features/live-events/types/liveSessions';
-import { Download, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Video } from 'lucide-react';
+import { Download, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Video, AlertCircle, Loader2, RotateCcw } from 'lucide-react';
 
 function createEmptySessionFormState(hostLabel: string): LiveSessionFormState {
   return {
@@ -63,6 +63,43 @@ export const LiveEventsPage = () => {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [isUploadingRecording, setIsUploadingRecording] = useState(false);
   const [recordingUploadPct, setRecordingUploadPct] = useState(0);
+
+  const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null);
+  const [isVideoLoadingBlob, setIsVideoLoadingBlob] = useState(false);
+  const [videoPlayError, setVideoPlayError] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (videoBlobUrl) {
+        URL.revokeObjectURL(videoBlobUrl);
+      }
+    };
+  }, [videoBlobUrl]);
+
+  useEffect(() => {
+    setVideoBlobUrl(null);
+    setVideoPlayError(false);
+    setIsVideoLoadingBlob(false);
+  }, [activeSession?.id, activeSession?.recordingUrl]);
+
+  const handleVideoError = async () => {
+    if (!activeSession || videoBlobUrl || isVideoLoadingBlob) {
+      setVideoPlayError(true);
+      return;
+    }
+    try {
+      setIsVideoLoadingBlob(true);
+      const res = await api.downloadLiveEventRecording(activeSession.id);
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      setVideoBlobUrl(url);
+      setVideoPlayError(false);
+    } catch {
+      setVideoPlayError(true);
+    } finally {
+      setIsVideoLoadingBlob(false);
+    }
+  };
 
   const refresh = async () => {
     const { data } = await api.getLiveSessions();
@@ -360,20 +397,6 @@ export const LiveEventsPage = () => {
                   <p className="text-sm text-gray-600 leading-relaxed">{e.description}</p>
                 )}
 
-                {e.recordingUrl && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2 font-medium text-amber-900">
-                      <Film size={14} className="text-amber-700" />
-                      <span>Video clip stored for 1 month</span>
-                    </div>
-                    {e.recordingExpiresAt && (
-                      <span className="text-amber-800 font-medium">
-                        Expires: {new Date(e.recordingExpiresAt).toLocaleDateString()} ({Math.max(0, Math.ceil((new Date(e.recordingExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days remaining before permanent deletion)
-                      </span>
-                    )}
-                  </div>
-                )}
-
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
                     type="button"
@@ -429,14 +452,51 @@ export const LiveEventsPage = () => {
                 </div>
 
                 {activeSession.recordingUrl ? (
-                  <div className="aspect-video w-full overflow-hidden rounded-xl border border-gray-200 bg-black">
+                  <div className="aspect-video w-full overflow-hidden rounded-xl border border-gray-200 bg-black relative">
+                    {isVideoLoadingBlob ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 text-white gap-2">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                        <span className="text-xs font-medium text-slate-300">Buffering video stream...</span>
+                      </div>
+                    ) : videoPlayError ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 text-white p-4 text-center">
+                        <AlertCircle className="w-8 h-8 text-rose-400 mb-2" />
+                        <p className="text-sm font-semibold">Video Stream Unavailable</p>
+                        <p className="text-xs text-slate-400 mt-1 mb-3 max-w-xs">
+                          Browser could not stream this clip directly. You can download the video file or retry playback.
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void downloadRecording(activeSession)}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Download size={14} /> Download File
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVideoPlayError(false);
+                              void handleVideoError();
+                            }}
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <RotateCcw size={14} /> Retry
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
                     <video
-                      key={activeSession.recordingUrl}
+                      key={videoBlobUrl || activeSession.recordingUrl}
                       controls
                       autoPlay
                       playsInline
+                      preload="metadata"
+                      crossOrigin="anonymous"
                       className="h-full w-full object-contain"
-                      src={api.getLiveEventRecordingStreamUrl(activeSession.id)}
+                      src={videoBlobUrl || api.getLiveEventRecordingStreamUrl(activeSession.id)}
+                      onError={handleVideoError}
                     >
                       Your browser does not support HTML5 video streaming.
                     </video>
@@ -466,7 +526,6 @@ export const LiveEventsPage = () => {
                       <Film size={16} className="text-primary" />
                       Video Clip Info
                     </span>
-                    <span className="text-xs font-normal text-gray-500">1-month retention</span>
                   </div>
                   <div className="space-y-3 px-4 py-4 text-sm text-gray-700">
                     {activeSession.recordingUrl ? (
@@ -481,10 +540,7 @@ export const LiveEventsPage = () => {
                             )}
                           </div>
                           <div className="mt-1 text-xs text-gray-600">
-                            Expires: {activeSession.recordingExpiresAt ? new Date(activeSession.recordingExpiresAt).toLocaleDateString() : '1 month after upload'}
-                          </div>
-                          <div className="text-[11px] text-gray-500 mt-0.5">
-                            Permanently deleted once the 1-month period ends.
+                            Expires: {activeSession.recordingExpiresAt ? new Date(activeSession.recordingExpiresAt).toLocaleDateString() : 'Active'}
                           </div>
                         </div>
 
@@ -519,7 +575,7 @@ export const LiveEventsPage = () => {
                           {activeSession.recordingUrl ? 'Replace Video Clip' : 'Upload Video Clip'}
                         </label>
                         <p className="text-[11px] text-gray-500 mt-0.5">
-                          Only video clips (.mp4, .webm, .mov) are allowed. Stored for 1 month then permanently deleted.
+                          Only video clips (.mp4, .webm, .mov) are allowed.
                         </p>
                         <div className="mt-2">
                           <input

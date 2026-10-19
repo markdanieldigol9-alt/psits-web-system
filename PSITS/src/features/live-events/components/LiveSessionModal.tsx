@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Modal } from '@/shared/components/Common';
 import { Button, Input, TextArea } from '@/shared/components/Form';
 import type { LiveSession, LiveSessionFormState } from '@/features/live-events/types/liveSessions';
-import { Film, Upload, X, Clock, CheckCircle2 } from 'lucide-react';
+import { Film, Upload, X, CheckCircle2 } from 'lucide-react';
 
 type LiveSessionModalProps = {
   isOpen: boolean;
@@ -155,8 +155,8 @@ export function LiveSessionModal({
                   <div className="text-sm font-semibold text-blue-900">Current Video Available</div>
                   <div className="text-xs text-blue-700">
                     {editing.recordingExpiresAt
-                      ? `Expires: ${new Date(editing.recordingExpiresAt).toLocaleDateString()} (1-month retention)`
-                      : 'Stored for 1 month'}
+                      ? `Expires: ${new Date(editing.recordingExpiresAt).toLocaleDateString()}`
+                      : 'Active'}
                   </div>
                 </div>
               </div>
@@ -226,14 +226,6 @@ export function LiveSessionModal({
           {formErrors.videoFile && (
             <p className="text-xs text-red-600 font-medium">{formErrors.videoFile}</p>
           )}
-
-          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 flex items-start gap-2.5 text-xs text-amber-900">
-            <Clock size={16} className="text-amber-700 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold">1-Month Storage Policy: </span>
-              Uploaded video clips are stored on the server for <strong>1 month</strong>. After 1 month, the video file will be permanently deleted automatically.
-            </div>
-          </div>
         </div>
 
         {/* Access Control */}

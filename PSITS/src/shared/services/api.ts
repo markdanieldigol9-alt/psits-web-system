@@ -349,8 +349,16 @@ class ApiService {
   }
 
   getLiveEventRecordingStreamUrl(id: string) {
-    const base = this.client.defaults.baseURL || '/api';
-    return `${base}/live-events/${id}/recording/stream`;
+    let base = this.client.defaults.baseURL || '/api';
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const envApiUrl = (import.meta as any)?.env?.VITE_API_URL || (globalThis as any).__VITE_API_URL__ || '';
+      const serverBase = envApiUrl ? String(envApiUrl).replace(/\/api\/?$/, '') : 'https://psits-web-system.onrender.com';
+      if (!base.startsWith('http://') && !base.startsWith('https://')) {
+        base = `${serverBase}/api`;
+      }
+    }
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return `${base}/live-events/${id}/recording/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   }
 
   // Event Registration
