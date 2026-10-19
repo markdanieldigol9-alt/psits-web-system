@@ -89,7 +89,7 @@ const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEv
 const { sendSmtpTest } = require('./emailTest');
 const { resendFailedApprovalEmails, sendReactivationRequestEmail } = require('./mailer');
 const { checkExpiringMemberships } = require('./services/expirationService');
-const { importDataIntoPool } = require('./dataSync');
+const { importDataIntoPool, exportDataFromPool } = require('./dataSync');
 const { archiveExpiredContent, purgeArchivedAnnouncements, purgeArchivedForumPosts } = require('./services/archiveService');
 const { buildRedisClient, createRateLimiter } = require('./rateLimiter');
 const { attachLiveRealtime } = require('./liveRealtime');
@@ -889,6 +889,17 @@ app.post('/api/admin/data-sync', requireMigrationReady, authMiddleware, requireR
   } catch (err) {
     console.error('Data sync error:', err);
     return res.status(500).json({ success: false, message: 'Data sync failed', error: err.message });
+  }
+});
+
+// Administrative data export endpoint (online to local database export)
+app.get('/api/admin/data-export', requireMigrationReady, authMiddleware, requireRole(['super_admin']), async (req, res) => {
+  try {
+    const data = await exportDataFromPool();
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('Data export error:', err);
+    return res.status(500).json({ success: false, message: 'Data export failed', error: err.message });
   }
 });
 

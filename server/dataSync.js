@@ -4,18 +4,42 @@ function normalizeStr(str) {
   return String(str || '').trim().toLowerCase();
 }
 
+async function safeQuery(targetPool, sql, params = []) {
+  try {
+    const [rows] = await targetPool.query(sql, params);
+    return rows;
+  } catch (err) {
+    console.warn(`[exportDataFromPool] safeQuery note for "${sql}": ${err.message}`);
+    return [];
+  }
+}
+
 /**
  * Exports data from the currently connected database pool.
  */
 async function exportDataFromPool(targetPool = pool) {
-  const [users] = await targetPool.query('SELECT * FROM users ORDER BY id ASC');
-  const [partners] = await targetPool.query('SELECT * FROM partners ORDER BY id ASC');
-  const [partnerContribs] = await targetPool.query('SELECT * FROM partner_contributions ORDER BY id ASC');
-  const [events] = await targetPool.query('SELECT * FROM events ORDER BY id ASC');
-  const [eventDetails] = await targetPool.query('SELECT * FROM event_details ORDER BY id ASC');
-  const [eventRegistrations] = await targetPool.query('SELECT * FROM event_registrations ORDER BY id ASC');
-  const [payments] = await targetPool.query('SELECT * FROM payments ORDER BY id ASC');
-  const [paymentStatusLogs] = await targetPool.query('SELECT * FROM payment_status_logs ORDER BY id ASC');
+  const users = await safeQuery(targetPool, 'SELECT * FROM users ORDER BY id ASC');
+  const partners = await safeQuery(targetPool, 'SELECT * FROM partners ORDER BY id ASC');
+  const partnerContribs = await safeQuery(targetPool, 'SELECT * FROM partner_contributions ORDER BY id ASC');
+  const events = await safeQuery(targetPool, 'SELECT * FROM events ORDER BY id ASC');
+  const eventDetails = await safeQuery(targetPool, 'SELECT * FROM event_details ORDER BY id ASC');
+  const eventRegistrations = await safeQuery(targetPool, 'SELECT * FROM event_registrations ORDER BY id ASC');
+  const payments = await safeQuery(targetPool, 'SELECT * FROM payments ORDER BY id ASC');
+  const paymentStatusLogs = await safeQuery(targetPool, 'SELECT * FROM payment_status_logs ORDER BY id ASC');
+  const institutionMembers = await safeQuery(targetPool, 'SELECT * FROM institution_members ORDER BY id ASC');
+  const officers = await safeQuery(targetPool, 'SELECT * FROM officers ORDER BY id ASC');
+  const officerPositions = await safeQuery(targetPool, 'SELECT * FROM officer_positions ORDER BY id ASC');
+  const elections = await safeQuery(targetPool, 'SELECT * FROM elections ORDER BY id ASC');
+  const electionCandidates = await safeQuery(targetPool, 'SELECT * FROM election_candidates ORDER BY id ASC');
+  const electionVotes = await safeQuery(targetPool, 'SELECT * FROM election_votes ORDER BY election_id ASC');
+  const announcements = await safeQuery(targetPool, 'SELECT * FROM announcements ORDER BY id ASC');
+  const announcementComments = await safeQuery(targetPool, 'SELECT * FROM announcement_comments ORDER BY id ASC');
+  const announcementLikes = await safeQuery(targetPool, 'SELECT * FROM announcement_likes ORDER BY announcement_id ASC');
+  const forumPosts = await safeQuery(targetPool, 'SELECT * FROM forum_posts ORDER BY id ASC');
+  const forumComments = await safeQuery(targetPool, 'SELECT * FROM forum_comments ORDER BY id ASC');
+  const forumLikes = await safeQuery(targetPool, 'SELECT * FROM forum_likes ORDER BY post_id ASC');
+  const liveEvents = await safeQuery(targetPool, 'SELECT * FROM live_events ORDER BY id ASC');
+  const memberStatusLogs = await safeQuery(targetPool, 'SELECT * FROM member_status_logs ORDER BY id ASC');
 
   // Create email lookup for users
   const userEmailMap = {};
@@ -43,6 +67,31 @@ async function exportDataFromPool(targetPool = pool) {
     _event_title: eventTitleMap[r.event_id] || null,
   }));
 
+  // Enrich institution_members with institution_email and event_title
+  const enrichedInstitutionMembers = institutionMembers.map((m) => ({
+    ...m,
+    _institution_email: userEmailMap[m.institution_user_id] || null,
+    _event_title: m.event_id ? (eventTitleMap[m.event_id] || m.event_title || null) : (m.event_title || null),
+  }));
+
+  // Enrich officers with user_email
+  const enrichedOfficers = officers.map((o) => ({
+    ...o,
+    _user_email: userEmailMap[o.user_id] || null,
+  }));
+
+  // Enrich election candidates with member_email
+  const enrichedCandidates = electionCandidates.map((c) => ({
+    ...c,
+    _member_email: userEmailMap[c.member_id] || null,
+  }));
+
+  // Enrich election votes with user_email
+  const enrichedVotes = electionVotes.map((v) => ({
+    ...v,
+    _user_email: userEmailMap[v.user_id] || null,
+  }));
+
   return {
     exportedAt: new Date().toISOString(),
     users,
@@ -53,6 +102,20 @@ async function exportDataFromPool(targetPool = pool) {
     event_registrations: enrichedRegistrations,
     payments: enrichedPayments,
     payment_status_logs: paymentStatusLogs,
+    institution_members: enrichedInstitutionMembers,
+    officers: enrichedOfficers,
+    officer_positions: officerPositions,
+    elections,
+    election_candidates: enrichedCandidates,
+    election_votes: enrichedVotes,
+    announcements,
+    announcement_comments: announcementComments,
+    announcement_likes: announcementLikes,
+    forum_posts: forumPosts,
+    forum_comments: forumComments,
+    forum_likes: forumLikes,
+    live_events: liveEvents,
+    member_status_logs: memberStatusLogs,
   };
 }
 

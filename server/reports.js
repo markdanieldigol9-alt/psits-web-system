@@ -441,18 +441,28 @@ async function getEventParticipationReport(req, res) {
         e.id,
         e.title,
         e.event_type AS category,
+        e.event_type AS eventType,
         e.status,
         e.location,
         e.capacity,
         e.registration_fee,
+        e.registration_fee AS fee,
         e.start_at,
+        e.start_at AS startDate,
         e.end_at,
+        e.end_at AS endDate,
+        e.is_esports AS isEsports,
+        e.esports_game AS esportsGame,
         (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) AS direct_registrations,
         (SELECT COUNT(*) FROM institution_members im WHERE im.event_id = e.id OR (im.event_id IS NULL AND im.event_title = e.title)) AS institution_registrations,
         (
           (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) +
           (SELECT COUNT(*) FROM institution_members im WHERE im.event_id = e.id OR (im.event_id IS NULL AND im.event_title = e.title))
-        ) AS total_participants
+        ) AS total_participants,
+        (
+          (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) +
+          (SELECT COUNT(*) FROM institution_members im WHERE im.event_id = e.id OR (im.event_id IS NULL AND im.event_title = e.title))
+        ) AS registrations
       FROM events e
       ORDER BY e.start_at DESC
     `);
