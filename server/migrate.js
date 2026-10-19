@@ -1598,6 +1598,18 @@ async function migrate() {
     // ignore
   }
 
+  // Ensure individual members do not have sector set to 'institution'
+  try {
+    await pool.query(`
+      UPDATE users 
+      SET sector = 'school' 
+      WHERE member_type = 'individual' 
+        AND sector = 'institution'
+    `);
+  } catch {
+    // ignore
+  }
+
   // Seed initial Super Admin if missing (matches credentials in PSITS/README)
   const adminEmail = 'admin@psits.com';
   const [existingAdmins] = await pool.execute(

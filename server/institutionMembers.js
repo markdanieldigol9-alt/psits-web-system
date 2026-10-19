@@ -196,7 +196,10 @@ async function bulkCreateInstitutionMembers(req, res) {
     const incoming = Array.isArray(body.members) ? body.members : [];
 
     const sector = req.user?.sector;
-    const isInstitutionalMember = role === 'member' && (memberType === 'institution' || sector === 'institution');
+    const isInstitutionalMember =
+      role === 'member' &&
+      memberType !== 'individual' &&
+      (memberType === 'institution' || (!memberType && sector === 'institution' && Boolean(req.user?.sector_details)));
 
     if (!isInstitutionalMember && !canViewAll(role)) {
       return json(res, 403, { success: false, message: 'Only institutional members and officers/admins can upload participants.' });

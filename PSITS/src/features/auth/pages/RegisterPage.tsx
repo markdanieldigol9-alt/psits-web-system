@@ -132,7 +132,7 @@ export const RegisterPage = () => {
 
     let sector: 'school' | 'industry' | 'institution' = 'institution';
     if (formData.memberType === 'industry') sector = 'industry';
-    if (formData.memberType === 'student') sector = 'school';
+    if (formData.memberType === 'student' || formData.memberType === 'individual') sector = 'school';
 
     const fallbackFullName =
       formData.memberType === 'institution'

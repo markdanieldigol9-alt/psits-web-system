@@ -160,13 +160,17 @@ async function register(req, res) {
     return json(res, 400, { success: false, message: 'Birthdate must be in YYYY-MM-DD format.' });
   }
 
-  const allowedSectors = ['school', 'industry', 'institution'];
-  const sector = allowedSectors.includes(body.sector) ? body.sector : 'institution';
-  const sectorDetails = body.sectorDetails ? String(body.sectorDetails).trim() : null;
   const allowedMemberTypes = ['student', 'school', 'individual', 'industry', 'institution'];
   let memberType = body.memberType ? String(body.memberType).trim() : null;
   if (memberType === 'school') memberType = 'student';
   if (memberType && !allowedMemberTypes.includes(memberType)) memberType = null;
+
+  const allowedSectors = ['school', 'industry', 'institution'];
+  let sector = allowedSectors.includes(body.sector) ? body.sector : 'school';
+  if (memberType === 'individual' || memberType === 'student') sector = 'school';
+  if (memberType === 'industry') sector = 'industry';
+  if (memberType === 'institution') sector = 'institution';
+  const sectorDetails = body.sectorDetails ? String(body.sectorDetails).trim() : null;
 
   if (memberType === 'individual') {
     const birthDateObj = parseDateOnly(birthdate);

@@ -209,7 +209,8 @@ export const InstitutionMembersPage = () => {
 
   const isInstitutionMember =
     user?.role === 'member' &&
-    (user?.memberType === 'institution' || user?.sector === 'institution' || getUserInterfaceKey(user) === 'member_institutional');
+    user?.memberType !== 'individual' &&
+    (user?.memberType === 'institution' || getUserInterfaceKey(user) === 'member_institutional');
   const canViewAll = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const canApprove = canViewAll;
 
