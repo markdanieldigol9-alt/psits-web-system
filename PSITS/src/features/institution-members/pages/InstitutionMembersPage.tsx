@@ -340,7 +340,12 @@ export const InstitutionMembersPage = () => {
         );
       });
 
-      const totalPaid = instPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const totalPaid = instPayments.reduce((sum, p) => {
+        if (p.paymentKind === 'institution_batch_registration') {
+          return sum + (Number(p.partialAmount) || (p.isPartial ? 0 : Number(p.amount)) || 0);
+        }
+        return sum + (Number(p.amount) || 0);
+      }, 0);
       const remainingBalance = Math.max(0, totalAmount - totalPaid);
       const hasPartial = totalPaid > 0 && totalPaid < totalAmount;
 

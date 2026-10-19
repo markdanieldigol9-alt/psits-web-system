@@ -15,8 +15,8 @@ export function getUserInterfaceKey(user: User | null | undefined): UserInterfac
   if (user.role === 'admin') return 'admin';
   if (user.role === 'officer') return 'officer';
 
-  if (user.memberType === 'institution') return 'member_institutional';
-  if (user.memberType === 'industry') return 'member_industry';
+  if (user.memberType === 'institution' || user.sector === 'institution') return 'member_institutional';
+  if (user.memberType === 'industry' || user.sector === 'industry') return 'member_industry';
   return 'member_individual';
 }
 

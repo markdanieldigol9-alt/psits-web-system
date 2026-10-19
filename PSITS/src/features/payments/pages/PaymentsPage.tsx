@@ -364,12 +364,14 @@ export const PaymentsPage = () => {
 
   const handleExportCSV = () => {
     const dataToExport = filteredPayments.map(p => ({
-      'Member Name': p.memberName || 'N/A',
-      'Institution': p.institutionName || 'N/A',
+      'Member / Institution': p.institutionName || p.memberName || 'N/A',
+      'Affiliation / School': p.institutionName || 'Individual',
       'Member Email': p.memberEmail || 'N/A',
-      'Payment Type / Event': p.event || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : p.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee'),
-      'Amount': p.amount || 0,
+      'Payment Type / Event': p.event || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : p.paymentKind === 'membership_registration' ? 'Membership Registration' : p.paymentKind === 'institution_batch_registration' ? `Batch Registration (${p.totalHeads || 'Batch'} Heads)` : 'Membership Fee'),
+      'Total Amount / Bill': p.netAmount || p.amount || 0,
+      'Amount Paid': (p.paymentKind === 'institution_batch_registration' ? (p.partialAmount || (p.isPartial ? 0 : p.amount)) : p.amount) || 0,
       'Remaining Balance': p.remainingBalance || 0,
+      'Total Heads': p.totalHeads || '-',
       'Payment Method': formatPaymentMethod(p.method || p.paymentMethod),
       'Reference Number': p.referenceNumber || '-',
       'Status': getVerificationStatus(p),
@@ -404,9 +406,35 @@ export const PaymentsPage = () => {
     }
   };
 
-  const totalRevenue = payments
-    .filter((p) => getVerificationStatus(p) === 'verified')
+  // 1. Collections from individual memberships, renewals, events, sponsorships
+  const verifiedIndividualAndEventRevenue = payments
+    .filter((p) => getVerificationStatus(p) === 'verified' && !((p.paymentKind || '').includes('institution')))
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  // 2. All payments belonging to institutions
+  const institutionPaymentsList = payments.filter((p) => (p.paymentKind || '').includes('institution') || Boolean(p.institutionName));
+
+  // 3. Institution total assessed bill (the batch registration billing net amount)
+  const institutionTotalBilled = institutionPaymentsList
+    .filter((p) => p.paymentKind === 'institution_batch_registration')
+    .reduce((sum, p) => sum + Number(p.netAmount || p.grossAmount || p.amount || 0), 0);
+
+  // 4. Institution amount paid/verified so far
+  const institutionTotalPaid = institutionPaymentsList
+    .reduce((sum, p) => {
+      const isVerified = getVerificationStatus(p) === 'verified' || p.paymentStatus === 'paid';
+      if (!isVerified) return sum;
+      if (p.paymentKind === 'institution_batch_registration') {
+        return sum + (Number(p.partialAmount) || (p.isPartial ? 0 : Number(p.amount)) || 0);
+      }
+      return sum + Number(p.amount || 0);
+    }, 0);
+
+  const institutionRemainingBalance = Math.max(0, institutionTotalBilled - institutionTotalPaid);
+
+  // Total Verified Revenue: reflects all verified collections (individual + institution)
+  const totalVerifiedRevenue = verifiedIndividualAndEventRevenue + institutionTotalPaid;
+  const totalFinancialVolume = verifiedIndividualAndEventRevenue + (institutionTotalBilled > 0 ? institutionTotalBilled : institutionTotalPaid);
 
   const canVerify = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
@@ -464,16 +492,41 @@ export const PaymentsPage = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-cyber-blue/30 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Verified Revenue</span>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue dark:text-cyber-cyan font-bold">SYS.REV</span>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold font-display text-cyber-blue dark:text-cyber-cyan mt-3">
-              PHP {totalRevenue.toLocaleString()}
+              PHP {totalVerifiedRevenue.toLocaleString()}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Audited real-time platform collections</p>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
+              <span>Audited platform & institution collections</span>
+              {institutionTotalBilled > 0 && (
+                <span className="text-blue-600 dark:text-blue-400 font-medium">
+                  Includes ₱{institutionTotalPaid.toLocaleString()} paid • ₱{totalFinancialVolume.toLocaleString()} total volume
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-indigo-500/30 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Institution Members Total</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold">INST.BILL</span>
+            </div>
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-indigo-600 dark:text-indigo-400 mt-3">
+              ₱{institutionTotalBilled.toLocaleString()}
+            </p>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                ₱{institutionTotalPaid.toLocaleString()} Paid & Verified
+              </span>
+              <span className="text-rose-600 dark:text-rose-400 font-medium">
+                ₱{institutionRemainingBalance.toLocaleString()} Outstanding Balance
+              </span>
+            </div>
           </div>
 
           <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-amber-500/30 shadow-sm relative overflow-hidden group">
@@ -663,24 +716,55 @@ export const PaymentsPage = () => {
                     )}
                     <td className="px-6 py-4 text-sm">{renderPaymentKindBadge()}</td>
                     <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">
-                      <div>₱{Number(payment.amount || 0).toLocaleString()}</div>
-                      {payment.isPartial && payment.remainingBalance ? (
-                        <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                          Remaining: ₱{Number(payment.remainingBalance).toLocaleString()}
+                      {payment.paymentKind === 'institution_batch_registration' ? (
+                        <div>
+                          <div className="text-sm font-black text-gray-900 dark:text-white">
+                            ₱{Number(payment.netAmount || payment.amount || 0).toLocaleString()}
+                          </div>
+                          <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Paid: ₱{Number(payment.partialAmount || (payment.isPartial ? 0 : payment.amount) || 0).toLocaleString()}
+                          </div>
+                          {Number(payment.remainingBalance) > 0 ? (
+                            <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                              Balance: ₱{Number(payment.remainingBalance).toLocaleString()}
+                            </div>
+                          ) : (
+                            <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              ✓ Fully Settled
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 font-normal mt-0.5">
+                            ₱250/head • {payment.totalHeads || 'Batch'} heads
+                          </div>
                         </div>
-                      ) : payment.paymentKind === 'institution_batch_registration' ? (
-                        <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
-                          ₱250/head • {payment.totalHeads || 'Batch'} heads
+                      ) : payment.paymentKind === 'institution_partial_payment' ? (
+                        <div>
+                          <div className="text-sm font-black text-amber-600 dark:text-amber-400">
+                            ₱{Number(payment.amount || 0).toLocaleString()}
+                          </div>
+                          {Number(payment.remainingBalance) > 0 && (
+                            <div className="text-[11px] font-medium text-rose-600 dark:text-rose-400">
+                              Balance left: ₱{Number(payment.remainingBalance).toLocaleString()}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 font-normal">
+                            Partial Remittance
+                          </div>
                         </div>
-                      ) : (payment.paymentKind === 'institution_partial_payment') ? (
-                        <div className="text-[11px] font-normal text-amber-600 dark:text-amber-400">
-                          Partial Remittance
+                      ) : (
+                        <div>
+                          <div>₱{Number(payment.amount || 0).toLocaleString()}</div>
+                          {payment.isPartial && payment.remainingBalance ? (
+                            <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                              Remaining: ₱{Number(payment.remainingBalance).toLocaleString()}
+                            </div>
+                          ) : (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership' || (!payment.eventId && !payment.paymentKind)) ? (
+                            <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
+                              ₱250 / person
+                            </div>
+                          ) : null}
                         </div>
-                      ) : (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership' || (!payment.eventId && !payment.paymentKind)) ? (
-                        <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
-                          ₱250 / person
-                        </div>
-                      ) : null}
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className="text-gray-950 font-medium">{formattedMethod}</span>

@@ -33,6 +33,8 @@ function toPaymentDto(row) {
 
   const institutionName = row.institution_name
     || (billingBreakdown && billingBreakdown.institutionName)
+    || (row.payment_kind && String(row.payment_kind).includes('institution') ? row.member_name : null)
+    || (row.member_type === 'institution' ? row.member_name : null)
     || null;
 
   return {
@@ -73,58 +75,150 @@ function toPaymentDto(row) {
   };
 }
 
-async function ensureLegacyMemberRow(userId) {
+async function ensureInstitutionBatchPayments() {
   try {
-    const [tables] = await pool.execute("SHOW TABLES LIKE 'members'");
+    const [tables] = await pool.execute("SHOW TABLES LIKE 'institution_members'");
     if (!tables.length) return;
 
-    const [rows] = await pool.execute('SELECT id FROM members WHERE id = ? LIMIT 1', [userId]);
-    if (rows.length) return;
+    const [instGroups] = await pool.execute(`
+      SELECT im.institution_user_id,
+             COUNT(*) AS total_heads,
+             MIN(im.created_at) AS first_created,
+             COALESCE(u.sector_details, u.full_name, 'Institution') AS institution_name,
+             COALESCE(u.email, '') AS institution_email
+      FROM institution_members im
+      LEFT JOIN users u ON u.id = im.institution_user_id
+      GROUP BY im.institution_user_id, u.sector_details, u.full_name, u.email
+    `);
 
-    const [userRows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
-    const user = userRows[0];
-    if (!user) return;
+    if (!instGroups.length) return;
 
-    const username = user.username || (user.email ? String(user.email).split('@')[0] : `member${userId}`);
-    const memberType = user.member_type === 'school' ? 'student' : (user.member_type || 'individual');
-    const sector = user.sector || 'institution';
-    const joinDate = new Date().toISOString().slice(0, 10);
+    const [columns] = await pool.execute('SHOW COLUMNS FROM payments');
+    const colSet = new Set(columns.map((c) => String(c.Field)));
 
-    await pool.execute(
-      `INSERT INTO members
-        (id, full_name, username, email, password, member_type, sector, sector_details, address, gender, occupation,
-         representative_name, representative_name2, position, company_email, website, contact_number, membership_mode,
-         terms_accepted, events, role, status, join_date)
-       VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 1, 0, 'member', ?, ?)`,
-      [
-        userId,
-        user.full_name || 'Member',
-        username,
-        user.email || `${username}@example.com`,
-        user.password_hash || 'imported',
-        memberType,
-        sector,
-        user.sector_details || null,
-        user.address || null,
-        user.gender || null,
-        user.occupation || null,
-        user.representative_name || null,
-        user.representative_name_2 || null,
-        user.position || null,
-        user.company_email || null,
-        user.website || null,
-        user.contact_number || '',
-        user.status || 'active',
-        joinDate,
-      ]
-    );
-  } catch {
-    // best-effort; do not block payment
+    for (const inst of instGroups) {
+      const instUserId = inst.institution_user_id;
+      if (!instUserId) continue;
+
+      const instName = inst.institution_name || `Institution #${instUserId}`;
+      const heads = Number(inst.total_heads || 0);
+      const rate = 250;
+      const gross = heads * rate;
+      const free = heads > 0 ? Math.min(heads, 2) : 0;
+      const discount = free * rate;
+      const net = Math.max(0, gross - discount);
+
+      const [existingPayments] = await pool.execute(
+        `SELECT id, amount, payment_kind, status, payment_status, is_partial, partial_amount, remaining_balance
+         FROM payments
+         WHERE member_id = ?`,
+        [instUserId]
+      );
+
+      const batchPayment = existingPayments.find((p) => p.payment_kind === 'institution_batch_registration');
+      const partialPayments = existingPayments.filter((p) => p.payment_kind === 'institution_partial_payment');
+      const totalPartialPaid = partialPayments.reduce((s, p) => {
+        const isVerifiedOrPaid = p.status === 'verified' || p.payment_status === 'paid' || p.payment_status === 'partial';
+        return isVerifiedOrPaid ? s + (Number(p.amount || p.partial_amount) || 0) : s;
+      }, 0);
+
+      const billingBreakdown = {
+        institutionName: instName,
+        institutionEmail: inst.institution_email || '',
+        totalHeads: heads,
+        ratePerHead: rate,
+        grossAmount: gross,
+        freeSlots: free,
+        discountAmount: discount,
+        netAmount: net,
+        totalPaid: totalPartialPaid,
+      };
+
+      if (!batchPayment) {
+        const paidAmount = totalPartialPaid;
+        const remaining = Math.max(0, net - paidAmount);
+        const isPartial = remaining > 0 && paidAmount > 0;
+        const status = (paidAmount >= net && net > 0) ? 'verified' : (paidAmount > 0 ? 'verified' : 'pending');
+        const paymentStatus = (remaining === 0 && net > 0) ? 'paid' : (paidAmount > 0 ? 'partial' : 'unpaid');
+        const processStatus = (remaining === 0 && net > 0) ? 'verified' : (paidAmount > 0 ? 'verified' : 'submitted');
+
+        const refNum = `BATCH-REG-${instUserId}`;
+        const createdAt = inst.first_created || new Date();
+
+        const insertCols = [];
+        const insertVals = [];
+        const add = (col, val) => {
+          if (colSet.has(col)) {
+            insertCols.push('`' + col + '`');
+            insertVals.push(val);
+          }
+        };
+
+        add('member_id', instUserId);
+        add('member_name', instName);
+        add('event', `Institution Batch Member Registration (${heads} Members)`);
+        add('amount', paidAmount > 0 ? paidAmount : net);
+        add('payment_kind', 'institution_batch_registration');
+        add('payment_method', 'through_officer');
+        add('method', 'through_officer');
+        add('reference_number', refNum);
+        add('status', status);
+        add('payment_status', paymentStatus);
+        add('process_status', processStatus);
+        add('total_heads', heads);
+        add('rate_per_head', rate);
+        add('free_slots', free);
+        add('gross_amount', gross);
+        add('discount_amount', discount);
+        add('net_amount', net);
+        add('partial_amount', paidAmount > 0 ? paidAmount : null);
+        add('remaining_balance', remaining);
+        add('is_partial', isPartial ? 1 : 0);
+        add('billing_breakdown_json', JSON.stringify(billingBreakdown));
+        add('created_at', createdAt);
+        add('updated_at', new Date());
+
+        const sql = `INSERT INTO payments (${insertCols.join(', ')}) VALUES (${insertCols.map(() => '?').join(', ')})`;
+        await pool.execute(sql, insertVals);
+      } else {
+        const currentBatchPaid = (Number(batchPayment.partial_amount) || (batchPayment.status === 'verified' && !batchPayment.is_partial ? Number(batchPayment.amount) : 0));
+        const effectivePaid = Math.max(totalPartialPaid, currentBatchPaid);
+        const remaining = Math.max(0, net - effectivePaid);
+        const isPartial = remaining > 0 && effectivePaid > 0;
+        const status = (effectivePaid >= net && net > 0) ? 'verified' : (batchPayment.status === 'verified' ? 'verified' : (effectivePaid > 0 ? 'verified' : 'pending'));
+        const paymentStatus = (remaining === 0 && net > 0) ? 'paid' : (effectivePaid > 0 ? 'partial' : batchPayment.payment_status || 'unpaid');
+        const processStatus = (remaining === 0 && net > 0) ? 'verified' : (effectivePaid > 0 ? 'verified' : batchPayment.process_status || 'submitted');
+
+        const updates = [];
+        const updateParams = [];
+
+        if (colSet.has('member_name')) { updates.push('member_name = ?'); updateParams.push(instName); }
+        if (colSet.has('event')) { updates.push('event = ?'); updateParams.push(`Institution Batch Member Registration (${heads} Members)`); }
+        if (colSet.has('total_heads')) { updates.push('total_heads = ?'); updateParams.push(heads); }
+        if (colSet.has('gross_amount')) { updates.push('gross_amount = ?'); updateParams.push(gross); }
+        if (colSet.has('discount_amount')) { updates.push('discount_amount = ?'); updateParams.push(discount); }
+        if (colSet.has('net_amount')) { updates.push('net_amount = ?'); updateParams.push(net); }
+        if (colSet.has('remaining_balance')) { updates.push('remaining_balance = ?'); updateParams.push(remaining); }
+        if (colSet.has('is_partial')) { updates.push('is_partial = ?'); updateParams.push(isPartial ? 1 : 0); }
+        if (colSet.has('partial_amount') && effectivePaid > 0) { updates.push('partial_amount = ?'); updateParams.push(effectivePaid); }
+        if (colSet.has('status')) { updates.push('status = ?'); updateParams.push(status); }
+        if (colSet.has('payment_status')) { updates.push('payment_status = ?'); updateParams.push(paymentStatus); }
+        if (colSet.has('process_status')) { updates.push('process_status = ?'); updateParams.push(processStatus); }
+        if (colSet.has('billing_breakdown_json')) { updates.push('billing_breakdown_json = ?'); updateParams.push(JSON.stringify(billingBreakdown)); }
+
+        if (updates.length > 0) {
+          updateParams.push(batchPayment.id);
+          await pool.execute(`UPDATE payments SET ${updates.join(', ')} WHERE id = ?`, updateParams);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('ensureInstitutionBatchPayments error:', err);
   }
 }
 
 async function listPayments(req, res) {
+  await ensureInstitutionBatchPayments();
   const status = req.query.status ? String(req.query.status) : null; // legacy verification status
   const paymentStatus = req.query.paymentStatus ? String(req.query.paymentStatus) : null;
   const processStatus = req.query.processStatus ? String(req.query.processStatus) : null;
@@ -179,7 +273,7 @@ async function listPayments(req, res) {
 
   if (category && category !== 'all') {
     if (category === 'institution') {
-      where.push("(p.payment_kind IN ('institution_batch_registration', 'institution_partial_payment') OR COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name) IS NOT NULL)");
+      where.push("(p.payment_kind IN ('institution_batch_registration', 'institution_partial_payment') OR u.member_type = 'institution' OR COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name) IS NOT NULL)");
     } else if (category === 'individual' || category === 'membership') {
       where.push("(p.payment_kind IN ('membership_registration', 'membership_renewal', 'membership') OR (p.event_id IS NULL AND p.payment_kind NOT IN ('institution_batch_registration', 'institution_partial_payment', 'partner_sponsorship')))");
     } else if (category === 'event') {
@@ -191,8 +285,8 @@ async function listPayments(req, res) {
 
   if (search) {
     const searchWildcard = `%${search}%`;
-    where.push('(p.reference_number LIKE ? OR p.event LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR u.sector_details LIKE ? OR inst_owner.sector_details LIKE ? OR inst_owner.full_name LIKE ?)');
-    params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
+    where.push('(p.reference_number LIKE ? OR p.event LIKE ? OR p.member_name LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR u.sector_details LIKE ? OR inst_owner.sector_details LIKE ? OR inst_owner.full_name LIKE ?)');
+    params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
   }
 
   const sqlWhere = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -205,7 +299,14 @@ async function listPayments(req, res) {
             p.created_at, p.updated_at,
             COALESCE(u.full_name, p.member_name, 'Member') AS member_name,
             u.email AS member_email,
-            COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name, NULL) AS institution_name,
+            COALESCE(
+              u.sector_details,
+              inst_owner.sector_details,
+              inst_owner.full_name,
+              CASE WHEN u.member_type = 'institution' THEN u.full_name END,
+              CASE WHEN p.payment_kind LIKE '%institution%' THEN p.member_name END,
+              NULL
+            ) AS institution_name,
             u.member_type,
             e.title AS event_title
      FROM payments p
@@ -218,6 +319,57 @@ async function listPayments(req, res) {
   );
 
   return res.json({ success: true, payments: rows.map(toPaymentDto) });
+}
+
+async function ensureLegacyMemberRow(userId) {
+  try {
+    const [tables] = await pool.execute("SHOW TABLES LIKE 'members'");
+    if (!tables.length) return;
+
+    const [rows] = await pool.execute('SELECT id FROM members WHERE id = ? LIMIT 1', [userId]);
+    if (rows.length) return;
+
+    const [userRows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+    const user = userRows[0];
+    if (!user) return;
+
+    const username = user.username || (user.email ? String(user.email).split('@')[0] : `member${userId}`);
+    const memberType = user.member_type === 'school' ? 'student' : (user.member_type || 'individual');
+    const sector = user.sector || 'institution';
+    const joinDate = new Date().toISOString().slice(0, 10);
+
+    await pool.execute(
+      `INSERT INTO members
+        (id, full_name, username, email, password, member_type, sector, sector_details, address, gender, occupation,
+         representative_name, representative_name2, position, company_email, website, contact_number, membership_mode,
+         terms_accepted, events, role, status, join_date)
+       VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 1, 0, 'member', ?, ?)`,
+      [
+        userId,
+        user.full_name || 'Member',
+        username,
+        user.email || `${username}@example.com`,
+        user.password_hash || 'imported',
+        memberType,
+        sector,
+        user.sector_details || null,
+        user.address || null,
+        user.gender || null,
+        user.occupation || null,
+        user.representative_name || null,
+        user.representative_name_2 || null,
+        user.position || null,
+        user.company_email || null,
+        user.website || null,
+        user.contact_number || '',
+        user.status || 'active',
+        joinDate,
+      ]
+    );
+  } catch {
+    // best-effort; do not block payment
+  }
 }
 
 async function createPayment(req, res) {
