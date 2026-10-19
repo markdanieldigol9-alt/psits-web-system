@@ -571,23 +571,6 @@ export const ReportsPage = () => {
     }
   };
 
-  const handleExportAllToExcel = () => {
-    if (!report) return;
-    const summaryData = [
-      { Metric: 'Total Members (Combined)', Value: report.summary?.totalMembers || 0 },
-      { Metric: 'PSITS Members', Value: report.summary?.psitsMembers || 0 },
-      { Metric: 'Institution Members', Value: report.summary?.institutionMembers || 0 },
-      { Metric: 'Active Members (Total)', Value: report.summary?.activeMembers || 0 },
-      { Metric: 'Active PSITS Members', Value: report.summary?.activePsitsMembers || 0 },
-      { Metric: 'Active Institution Members', Value: report.summary?.activeInstitutionMembers || 0 },
-      { Metric: 'Pending Approvals (Total)', Value: report.summary?.pendingApprovals || 0 },
-      { Metric: 'Pending PSITS Approvals', Value: report.summary?.pendingPsitsMembers || 0 },
-      { Metric: 'Pending Institution Approvals', Value: report.summary?.pendingInstitutionMembers || 0 },
-      { Metric: 'Active Events', Value: report.summary?.activeEvents || 0 },
-      { Metric: 'Total Verified Revenue', Value: report.summary?.totalRevenue || 0 },
-    ];
-    exportToCSV('Dashboard_Summary_Report', summaryData);
-  };
 
   const selectedReportObj = reportCards.find((r) => r.title === selectedReportTitle) || reportCards[0];
   const SelectedReportIcon = selectedReportObj.icon;
@@ -730,50 +713,6 @@ export const ReportsPage = () => {
           </Card>
         )}
 
-        <Card title="Export">
-          <div className="flex flex-wrap gap-3">
-            <Button className="min-w-[140px]" onClick={() => window.print()}>
-              <FileDown size={16} />
-              PDF
-            </Button>
-            <Button
-              variant="success"
-              className="min-w-[140px]"
-              onClick={() => {
-                const source = allMembersData.length > 0 ? allMembersData : detailedRecords;
-                if (source.length > 0) {
-                  const dataToExport = source.map((m: any, idx: number) => ({
-                    '#': idx + 1,
-                    'Member ID': m.unique_id || m.raw_id || m.id || '—',
-                    'Full Name': m.full_name || m.fullName || m.displayName || '—',
-                    'Email Address': m.email || '—',
-                    'Contact Number': m.contact_number || m.contactNumber || '—',
-                    'Category': (m.category || m.memberType || 'individual').toUpperCase(),
-                    'Institution / Affiliation': m.institution_name || m.institutionName || m.sectorDetails || 'Individual',
-                    'Position / Role': m.position || m.occupation || 'Member',
-                    'Status': (m.status === 'active' || m.status === 'approved') ? 'Active / Approved' : (m.status || 'Pending'),
-                    'Date Joined': m.created_at ? new Date(m.created_at).toLocaleDateString() : '—',
-                  }));
-                  exportToCSV('PSITS_All_Members_List', dataToExport);
-                } else {
-                  handleExportAllToExcel();
-                }
-              }}
-              disabled={isMemberListLoading && allMembersData.length === 0}
-            >
-              <FileSpreadsheet size={16} />
-              Export Members Excel
-            </Button>
-            <Button variant="secondary" className="min-w-[140px]" onClick={handleExportAllToExcel} disabled={!report || isLoading}>
-              <FileSpreadsheet size={16} />
-              Summary Excel
-            </Button>
-            <Button variant="outline" className="min-w-[140px]" onClick={() => window.print()}>
-              <Printer size={16} />
-              Print
-            </Button>
-          </div>
-        </Card>
 
         {/* Dedicated Members Export Table Section */}
         <MemberDirectoryExportTable
