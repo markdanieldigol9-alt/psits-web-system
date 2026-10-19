@@ -43,12 +43,15 @@ export type RegisterPayload = RegisterData;
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isLoading: false,
-    error: null,
+  const [authState, setAuthState] = useState<AuthState>(() => {
+    const savedToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return {
+      user: null,
+      token: savedToken,
+      isAuthenticated: false,
+      isLoading: Boolean(savedToken),
+      error: null,
+    };
   });
 
   useEffect(() => {
@@ -59,8 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Modern auth UX: if a token exists, verify it with the server and refresh user data.
     // This prevents "phantom logins" when the token/session has expired server-side.
     if (!savedToken) return;
-
-    setAuthState((prev) => ({ ...prev, isLoading: true }));
 
     (async () => {
       try {
