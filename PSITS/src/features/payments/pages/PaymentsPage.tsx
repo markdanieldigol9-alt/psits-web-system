@@ -163,6 +163,17 @@ export const PaymentsPage = () => {
   const getVerificationStatus = (payment: any) =>
     String(payment?.verificationStatus || payment?.status || 'pending').toLowerCase();
 
+  const isInstitutionPayment = (payment: any) => {
+    const kind = String(payment?.paymentKind || '').toLowerCase();
+    return (
+      kind.includes('institution') ||
+      Boolean(payment?.institutionName) ||
+      payment?.memberType === 'institution' ||
+      (payment?.event || '').toLowerCase().includes('institution') ||
+      (payment?.eventTitle || '').toLowerCase().includes('institution')
+    );
+  };
+
   const filteredPayments = scopedPayments.filter((payment) => {
     const status = getVerificationStatus(payment);
     const matchesStatus = filterStatus === 'all' || status === filterStatus;
@@ -170,7 +181,7 @@ export const PaymentsPage = () => {
 
     if (filterCategory !== 'all') {
       const kind = String(payment.paymentKind || '').toLowerCase();
-      const isInst = kind.includes('institution') || Boolean(payment.institutionName);
+      const isInst = isInstitutionPayment(payment);
       if (filterCategory === 'institution' && !isInst) return false;
       if (filterCategory === 'individual' && (isInst || payment.eventId || kind === 'partner_sponsorship')) return false;
       if (filterCategory === 'event' && (!payment.eventId && kind !== 'event')) return false;
@@ -406,20 +417,25 @@ export const PaymentsPage = () => {
     }
   };
 
-  // 1. Collections from individual memberships, renewals, events, sponsorships
+  // 1. All payments belonging to institutions
+  const institutionPaymentsList = payments.filter(isInstitutionPayment);
+
+  // 2. Collections from individual memberships, renewals, events, sponsorships
   const verifiedIndividualAndEventRevenue = payments
-    .filter((p) => getVerificationStatus(p) === 'verified' && !((p.paymentKind || '').includes('institution')))
+    .filter((p) => getVerificationStatus(p) === 'verified' && !isInstitutionPayment(p))
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-  // 2. All payments belonging to institutions
-  const institutionPaymentsList = payments.filter((p) => (p.paymentKind || '').includes('institution') || Boolean(p.institutionName));
+  // 3. Explicit remaining balance logged on institution transactions
+  const explicitRemainingBalance = institutionPaymentsList.reduce((sum, p) => {
+    return sum + Math.max(0, Number(p.remainingBalance || 0));
+  }, 0);
 
-  // 3. Institution total assessed bill (the batch registration billing net amount)
-  const institutionTotalBilled = institutionPaymentsList
+  // 4. Assessed batch registration net bill (if batch registration records exist)
+  const batchRegistrationBilled = institutionPaymentsList
     .filter((p) => p.paymentKind === 'institution_batch_registration')
     .reduce((sum, p) => sum + Number(p.netAmount || p.grossAmount || p.amount || 0), 0);
 
-  // 4. Institution amount paid/verified so far
+  // 5. Institution amount paid/verified so far
   const institutionTotalPaid = institutionPaymentsList
     .reduce((sum, p) => {
       const isVerified = getVerificationStatus(p) === 'verified' || p.paymentStatus === 'paid';
@@ -430,11 +446,21 @@ export const PaymentsPage = () => {
       return sum + Number(p.amount || 0);
     }, 0);
 
-  const institutionRemainingBalance = Math.max(0, institutionTotalBilled - institutionTotalPaid);
+  // 6. Total Assessed Institution Bill: always at least the amount collected/verified + remaining balance,
+  // or the batch billing assessed total (whichever is greater).
+  const institutionTotalBilled = Math.max(
+    batchRegistrationBilled,
+    institutionTotalPaid + explicitRemainingBalance
+  );
+
+  const institutionRemainingBalance = Math.max(
+    explicitRemainingBalance,
+    Math.max(0, institutionTotalBilled - institutionTotalPaid)
+  );
 
   // Total Verified Revenue: reflects all verified collections (individual + institution)
   const totalVerifiedRevenue = verifiedIndividualAndEventRevenue + institutionTotalPaid;
-  const totalFinancialVolume = verifiedIndividualAndEventRevenue + (institutionTotalBilled > 0 ? institutionTotalBilled : institutionTotalPaid);
+  const totalFinancialVolume = verifiedIndividualAndEventRevenue + institutionTotalBilled;
 
   const canVerify = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
@@ -556,8 +582,8 @@ export const PaymentsPage = () => {
         <div className="flex flex-wrap items-center gap-2">
           {[
             { id: 'all', label: `All Transactions (${payments.length})` },
-            { id: 'institution', label: `🏛️ Institution Payments (${payments.filter(p => (p.paymentKind || '').includes('institution') || Boolean(p.institutionName)).length})` },
-            { id: 'individual', label: `👤 Individual Membership (${payments.filter(p => !((p.paymentKind || '').includes('institution') || Boolean(p.institutionName)) && !p.eventId && (p.paymentKind !== 'partner_sponsorship')).length})` },
+            { id: 'institution', label: `🏛️ Institution Payments (${payments.filter(isInstitutionPayment).length})` },
+            { id: 'individual', label: `👤 Individual Membership (${payments.filter(p => !isInstitutionPayment(p) && !p.eventId && (p.paymentKind !== 'partner_sponsorship')).length})` },
             { id: 'event', label: `🎯 Event Registrations (${payments.filter(p => Boolean(p.eventId) || p.paymentKind === 'event').length})` },
             { id: 'sponsorship', label: `🤝 Partner Sponsorships (${payments.filter(p => p.paymentKind === 'partner_sponsorship').length})` },
           ].map((cat) => (
