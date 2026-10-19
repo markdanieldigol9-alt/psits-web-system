@@ -281,8 +281,19 @@ export const ReportsPage = () => {
           setDetailedRecords(evData?.events || []);
         }
       } else if (title === 'Complete Event') {
-        const { data } = await api.getEvents();
-        setDetailedRecords(data?.events || []);
+        try {
+          const { data } = await api.getEventParticipationReport();
+          if (data?.success) {
+            setEventReportData(data);
+            setDetailedRecords(data.events || []);
+          } else {
+            const { data: evData } = await api.getEvents();
+            setDetailedRecords(evData?.events || []);
+          }
+        } catch {
+          const { data: evData } = await api.getEvents();
+          setDetailedRecords(evData?.events || []);
+        }
       } else if (title === 'Financial Summary' || title === 'Revenue by Method') {
         const { data } = await api.getPayments();
         setDetailedRecords(data?.payments || []);
@@ -1116,6 +1127,7 @@ export const ReportsPage = () => {
                   ) : (
                     <EventReportView
                       events={eventReportData?.events || detailedRecords}
+                      participants={eventReportData?.participants || []}
                       reportTitle={previewReport}
                       preparedBy={user?.fullName || 'Events Coordinator'}
                       userRole={user?.role || 'Officer'}
