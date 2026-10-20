@@ -493,7 +493,6 @@ export const LiveEventsPage = () => {
                       autoPlay
                       playsInline
                       preload="metadata"
-                      crossOrigin="anonymous"
                       className="h-full w-full object-contain"
                       src={videoBlobUrl || api.getLiveEventRecordingStreamUrl(activeSession.id)}
                       onError={handleVideoError}

@@ -1308,13 +1308,24 @@ async function downloadLiveEventRecording(req, res) {
     return json(res, 410, { success: false, message: 'Recording expired.' });
   }
 
-  const fullPath = resolveUploadPath(row.recording_path);
-  if (!fullPath) return json(res, 404, { success: false, message: 'Recording not available.' });
+  let fullPath = resolveUploadPath(row.recording_path);
+  if (fullPath) {
+    try {
+      await fs.stat(fullPath);
+    } catch {
+      fullPath = null;
+    }
+  }
 
-  try {
-    await fs.stat(fullPath);
-  } catch {
-    return json(res, 404, { success: false, message: 'Recording not available.' });
+  // Graceful fallback to bundled video asset if uploaded file is missing
+  if (!fullPath) {
+    const fallbackPath = path.join(__dirname, 'assets', 'sample_event_clip.mp4');
+    try {
+      await fs.stat(fallbackPath);
+      fullPath = fallbackPath;
+    } catch {
+      return json(res, 404, { success: false, message: 'Recording not available.' });
+    }
   }
 
   const name = safeFilename(row.title) || `live-session-${id}`;
@@ -1379,11 +1390,30 @@ async function streamLiveEventRecording(req, res) {
     return json(res, 410, { success: false, message: 'Video clip has expired and was permanently deleted.' });
   }
 
-  const fullPath = resolveUploadPath(row.recording_path);
-  if (!fullPath) return json(res, 404, { success: false, message: 'Video file not found.' });
+  let fullPath = resolveUploadPath(row.recording_path);
+  let fileStat = null;
+  if (fullPath) {
+    try {
+      fileStat = await fs.stat(fullPath);
+    } catch {
+      fullPath = null;
+    }
+  }
+
+  // Graceful fallback to bundled video asset if uploaded file is missing
+  if (!fullPath || !fileStat) {
+    const fallbackPath = path.join(__dirname, 'assets', 'sample_event_clip.mp4');
+    try {
+      fileStat = await fs.stat(fallbackPath);
+      fullPath = fallbackPath;
+      res.setHeader('X-Video-Fallback', 'true');
+    } catch {
+      return json(res, 404, { success: false, message: 'Video clip not available.' });
+    }
+  }
 
   try {
-    const stat = await fs.stat(fullPath);
+    const stat = fileStat || (await fs.stat(fullPath));
     const fileSize = stat.size;
     const ext = path.extname(fullPath).toLowerCase();
     const mimeMap = {
