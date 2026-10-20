@@ -13,4 +13,6 @@
 **/test-results/
 server/exports/
 ~$*
+*.backup.docx
+
 
