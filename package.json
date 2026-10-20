@@ -7,6 +7,7 @@
     "api:dev": "node server/index.js",
     "api:watch": "nodemon server/index.js",
     "api:migrate": "node server/migrate.js",
+    "db:clean": "node server/cleanup_database.js",
     "smoke:login": "node scripts/smoke-login.mjs",
     "test:api": "node scripts/test-api-suite.mjs",
     "test": "npm --prefix PSITS test",
