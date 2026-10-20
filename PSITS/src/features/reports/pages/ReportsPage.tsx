@@ -12,6 +12,7 @@ import logo from '@/assets/image/PSITS_Logo.png';
 import { MemberDirectoryExportTable } from '../components/MemberDirectoryExportTable';
 import { FinancialReportView } from '../components/FinancialReportView';
 import { EventReportView } from '../components/EventReportView';
+import { ExecutiveSummaryReportView } from '../components/ExecutiveSummaryReportView';
 import {
   FileDown,
   FileSpreadsheet,
@@ -214,7 +215,32 @@ export const ReportsPage = () => {
     setPreviewReport(title);
     try {
       setIsLoading(true);
-      if (title === 'Membership Growth' || title === 'Member Directory & Roster') {
+      if (title === 'Executive Summary') {
+        try {
+          const [dashRes, membersRes, eventsRes, partnersRes] = await Promise.allSettled([
+            api.getReports('dashboard'),
+            api.getAllMembersReport(),
+            api.getEventParticipationReport(),
+            api.getPartnerContributionsReport(),
+          ]);
+          if (dashRes.status === 'fulfilled' && dashRes.value.data?.success) {
+            setReport(dashRes.value.data);
+          }
+          if (membersRes.status === 'fulfilled' && membersRes.value.data?.success) {
+            setAllMembersData(membersRes.value.data.members || []);
+            setInstitutionsList(membersRes.value.data.institutions || []);
+            setDetailedRecords(membersRes.value.data.members || []);
+          }
+          if (eventsRes.status === 'fulfilled' && eventsRes.value.data?.success) {
+            setEventReportData(eventsRes.value.data);
+          }
+          if (partnersRes.status === 'fulfilled' && partnersRes.value.data?.success) {
+            setPartnerReportData(partnersRes.value.data);
+          }
+        } catch {
+          // ignore
+        }
+      } else if (title === 'Membership Growth' || title === 'Member Directory & Roster') {
         try {
           const { data } = await api.getAllMembersReport();
           if (data?.success) {
@@ -576,6 +602,36 @@ export const ReportsPage = () => {
           }));
           exportToCSV('Partner_Contributions_Report', dataToExport);
         }
+      } else if (title === 'Executive Summary') {
+        const summary = report?.summary || {};
+        const psitsCount = report?.summary?.psitsMembers ?? allMembersData.filter((r: any) => r.source === 'PSITS Member').length;
+        const instCount = report?.summary?.institutionMembers ?? allMembersData.filter((r: any) => r.source === 'Institution Member').length;
+        const totalCount = report?.summary?.totalMembers ?? (psitsCount + instCount);
+        const activeTotal = report?.summary?.activeMembers ?? ((summary.activePsitsMembers || 0) + (summary.activeInstitutionMembers || 0));
+        const pendingTotal = report?.summary?.pendingApprovals ?? ((summary.pendingPsitsMembers || 0) + (summary.pendingInstitutionMembers || 0));
+        const indCount = allMembersData.filter((m: any) => String(m.category || m.memberType || '').toLowerCase() === 'individual').length;
+        const corpCount = allMembersData.filter((m: any) => String(m.category || m.memberType || '').toLowerCase() === 'industry').length;
+        const dataToExport = [
+          { 'Operational Domain': 'Executive Overview', 'Key Performance Indicator': 'Reporting Organization', 'Recorded Figures': 'PSITS Regional Organization', 'Audit Status': 'Official' },
+          { 'Operational Domain': 'Executive Overview', 'Key Performance Indicator': 'Generated Timestamp', 'Recorded Figures': new Date().toLocaleString(), 'Audit Status': 'Certified' },
+          { 'Operational Domain': 'Executive Overview', 'Key Performance Indicator': 'Prepared By', 'Recorded Figures': `${user?.fullName || 'Administrator'} (${user?.role || 'Officer'})`, 'Audit Status': 'Executive Reporter' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Total Combined Members', 'Recorded Figures': String(totalCount), 'Audit Status': 'Recorded' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Approved / Active Members', 'Recorded Figures': `${activeTotal} (${totalCount > 0 ? Math.round((activeTotal / totalCount) * 100) : 0}%)`, 'Audit Status': 'Verified' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Pending Approvals Queue', 'Recorded Figures': String(pendingTotal), 'Audit Status': 'Pending Action' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Individual Members (Students & Faculty)', 'Recorded Figures': String(indCount || psitsCount), 'Audit Status': 'Active Registry' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Institution Roster Delegates', 'Recorded Figures': String(instCount), 'Audit Status': 'Institutional' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Industry Members', 'Recorded Figures': String(corpCount), 'Audit Status': 'Corporate' },
+          { 'Operational Domain': 'Membership Recruitment', 'Key Performance Indicator': 'Affiliated Higher Education Institutions', 'Recorded Figures': `${institutionsList.length} schools`, 'Audit Status': 'Regional Network' },
+          { 'Operational Domain': 'Financial Treasury', 'Key Performance Indicator': 'Total Verified Collections (PHP)', 'Recorded Figures': `PHP ${Number(summary.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Audit Status': 'Audited Funds' },
+          { 'Operational Domain': 'Financial Treasury', 'Key Performance Indicator': 'Gross Collections Billed (PHP)', 'Recorded Figures': `PHP ${Number(summary.grossCollections || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Audit Status': 'Recorded' },
+          { 'Operational Domain': 'Financial Treasury', 'Key Performance Indicator': 'Pending Verification Collections (PHP)', 'Recorded Figures': `PHP ${Number(summary.pendingCollections || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Audit Status': 'Under Audit' },
+          { 'Operational Domain': 'Financial Treasury', 'Key Performance Indicator': 'Outstanding Receivables (PHP)', 'Recorded Figures': `PHP ${Number(summary.remainingReceivables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Audit Status': 'Receivable' },
+          { 'Operational Domain': 'Summit & Event Program', 'Key Performance Indicator': 'Total Events Hosted / Programmed', 'Recorded Figures': String(eventReportData?.events?.length || summary.activeEvents || 0), 'Audit Status': 'Programmed' },
+          { 'Operational Domain': 'Summit & Event Program', 'Key Performance Indicator': 'Total Registered Attendees', 'Recorded Figures': String(eventReportData?.participants?.length || 0), 'Audit Status': 'Enrolled' },
+          { 'Operational Domain': 'Corporate Alliances', 'Key Performance Indicator': 'Total Sponsorship & Grant Capital (PHP)', 'Recorded Figures': `PHP ${Number(partnerReportData?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Audit Status': 'Contracted' },
+          { 'Operational Domain': 'Corporate Alliances', 'Key Performance Indicator': 'Total Strategic Partnerships / Deals', 'Recorded Figures': `${partnerReportData?.contributions?.length || 0} deals`, 'Audit Status': 'Active Network' },
+        ];
+        exportToCSV(`PSITS_Executive_Summary_Official_Report_${new Date().toISOString().slice(0, 10)}`, dataToExport);
       }
     } catch {
       // ignore
@@ -960,7 +1016,7 @@ export const ReportsPage = () => {
             <div className="space-y-4 animate-fadeIn">
               <div id="printable-report-area" className="bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
                 {/* Official Letterhead Header (for general reports) */}
-                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && (
+                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && (
                   <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
                     <div className="flex items-center gap-3">
                       <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
@@ -978,6 +1034,23 @@ export const ReportsPage = () => {
                 )}
 
                 {/* Report Specific Details */}
+                {previewReport === 'Executive Summary' && (
+                  <ExecutiveSummaryReportView
+                    summary={report?.summary}
+                    memberGrowth={report?.memberGrowth || memberGrowth}
+                    revenueByMethod={report?.revenueByMethod || []}
+                    allMembers={allMembersData.length > 0 ? allMembersData : detailedRecords}
+                    institutionsList={institutionsList}
+                    eventReportData={eventReportData}
+                    partnerReportData={partnerReportData}
+                    dateRangeFilter={dateRangeFilter}
+                    startDateFilter={startDateFilter}
+                    endDateFilter={endDateFilter}
+                    preparedBy={user?.fullName || 'Administrator'}
+                    userRole={user?.role || 'Officer'}
+                    onExportCSV={() => handleGenerateExcel('Executive Summary')}
+                  />
+                )}
                 {previewReport === 'Membership Growth' && (() => {
                   const psitsCount = report?.summary?.psitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member').length;
                   const instCount = report?.summary?.institutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member').length;
@@ -1221,7 +1294,7 @@ export const ReportsPage = () => {
                   previewReport !== 'Event Participation' &&
                   previewReport !== 'Complete Event' &&
                   previewReport !== 'Election Tally' &&
-                  previewReport !== 'Partner Contributions' && (
+                  previewReport !== 'Partner Contributions' && previewReport !== 'Executive Summary' && (
                   <div className="border rounded-xl p-4 text-xs space-y-2">
                     <h4 className="font-bold text-gray-900">{previewReport} Data Summary</h4>
                     <p className="text-gray-600">Total records compiled: {detailedRecords.length} entries.</p>
@@ -1229,7 +1302,7 @@ export const ReportsPage = () => {
                 )}
 
                 {/* Signatures & Certification Section (for general reports) */}
-                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && (
+                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && (
                   <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600">
                     <div>
                       <p className="font-semibold text-gray-800">Prepared & Verified By:</p>

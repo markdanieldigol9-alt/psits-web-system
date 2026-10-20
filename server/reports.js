@@ -232,7 +232,7 @@ async function getElectionReport(req, res) {
 
   try {
     const [electionRows] = await pool.execute(
-      'SELECT id, title, description, start_date, end_date, status FROM elections WHERE id = ? LIMIT 1',
+      'SELECT id, title, description, start_date, end_date, status, allowed_positions, created_by, created_at, updated_at FROM elections WHERE id = ? LIMIT 1',
       [electionId]
     );
 
@@ -241,11 +241,12 @@ async function getElectionReport(req, res) {
     }
 
     const [candidateRows] = await pool.execute(
-      `SELECT ec.id, ec.position, ec.platform, ec.status, ec.votes_count, u.full_name AS name
+      `SELECT ec.id, ec.position, ec.platform, ec.status, ec.votes_count, ec.member_id,
+              u.full_name AS name, u.email, u.member_type, u.sector, u.sector_details, u.avatar_url
        FROM election_candidates ec
        JOIN users u ON u.id = ec.member_id
        WHERE ec.election_id = ?
-       ORDER BY ec.position, ec.votes_count DESC`,
+       ORDER BY ec.position, ec.votes_count DESC, ec.id ASC`,
       [electionId]
     );
 
@@ -254,11 +255,107 @@ async function getElectionReport(req, res) {
       [electionId]
     );
 
+    const [voterRows] = await pool.execute(
+      `SELECT ev.user_id, ev.created_at AS voted_at,
+              u.full_name AS voter_name, u.email AS voter_email, u.member_type, u.sector, u.sector_details
+       FROM election_votes ev
+       JOIN users u ON u.id = ev.user_id
+       WHERE ev.election_id = ?
+       ORDER BY ev.created_at DESC`,
+      [electionId]
+    );
+
+    let totalEligibleVoters = 0;
+    try {
+      const [[{ eligibleCount }]] = await pool.execute(
+        "SELECT COUNT(*) AS eligibleCount FROM users WHERE role = 'member' AND status = 'active'"
+      );
+      totalEligibleVoters = Number(eligibleCount || 0);
+    } catch {
+      totalEligibleVoters = 0;
+    }
+
+    // Positions analysis (determining current/elected officers, losers/runners-up, and vote distribution)
+    const positionMap = new Map();
+    for (const c of candidateRows) {
+      const pos = c.position || 'General Position';
+      if (!positionMap.has(pos)) {
+        positionMap.set(pos, {
+          position: pos,
+          totalVotes: 0,
+          candidates: []
+        });
+      }
+      const pData = positionMap.get(pos);
+      pData.totalVotes += Number(c.votes_count || 0);
+      pData.candidates.push(c);
+    }
+
+    const positions = [];
+    const winners = [];
+    const defeated = [];
+
+    for (const [pos, pData] of positionMap.entries()) {
+      pData.candidates.sort((a, b) => Number(b.votes_count || 0) - Number(a.votes_count || 0));
+
+      // Candidate with status === 'winner' is explicitly winning; fallback to top votes if votes > 0
+      let winnerCandidates = pData.candidates.filter(c => c.status === 'winner');
+      if (!winnerCandidates.length && pData.candidates.length > 0) {
+        const topCandidate = pData.candidates[0];
+        if (Number(topCandidate.votes_count || 0) > 0) {
+          winnerCandidates = [topCandidate];
+        }
+      }
+
+      const winnerIds = new Set(winnerCandidates.map(w => w.id));
+      const topVotes = winnerCandidates.length > 0 ? Number(winnerCandidates[0].votes_count || 0) : 0;
+
+      pData.candidates.forEach((c) => {
+        const isWinner = winnerIds.has(c.id);
+        const candidateShare = pData.totalVotes > 0 
+          ? ((Number(c.votes_count || 0) / pData.totalVotes) * 100) 
+          : 0;
+        const deficit = isWinner ? 0 : Math.max(0, topVotes - Number(c.votes_count || 0));
+
+        const candidateWithMetrics = {
+          ...c,
+          isWinner,
+          voteShare: candidateShare,
+          positionTotalVotes: pData.totalVotes,
+          deficit
+        };
+
+        if (isWinner) {
+          winners.push(candidateWithMetrics);
+        } else {
+          defeated.push(candidateWithMetrics);
+        }
+      });
+
+      positions.push({
+        position: pos,
+        totalVotes: pData.totalVotes,
+        candidatesCount: pData.candidates.length,
+        winners: pData.candidates.filter(c => winnerIds.has(c.id)),
+        runnersUp: pData.candidates.filter(c => !winnerIds.has(c.id))
+      });
+    }
+
+    const maxPositionVotes = Math.max(0, ...positions.map(p => p.totalVotes));
+    const effectiveTotalBallots = Math.max(Number(totalVotes || 0), maxPositionVotes);
+
     return res.json({
       success: true,
       election: electionRows[0],
       candidates: candidateRows,
-      totalVotes: Number(totalVotes || 0)
+      positions,
+      winners,
+      defeated,
+      voters: voterRows,
+      totalVotes: effectiveTotalBallots,
+      totalBallotsCast: Number(totalVotes || 0),
+      totalEligibleVoters,
+      turnoutRate: totalEligibleVoters > 0 ? (effectiveTotalBallots / totalEligibleVoters) * 100 : 0
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
