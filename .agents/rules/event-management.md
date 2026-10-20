@@ -23,3 +23,13 @@ When designing or updating event forms and backend handlers:
    - Do NOT display a separate "This is for Esports Events" checkbox card.
    - Esports settings (game selection, tournament bracket format) are activated naturally when the user selects `Esports` in the Event Category dropdown.
 
+5. **Dual-Sourced Participant Rosters & Reporting**:
+   - Participant counts and rosters across event operations and reports must aggregate both individual self-registrations (`event_registrations`) and school/institution batch rosters (`institution_members`).
+   - When calculating registration counts in UI components, always support fallback aliases: `total_participants ?? registrations ?? participantsCount ?? 0`.
+   - In event participation reports and registries, always provide administrators an interactive participant roster modal showing:
+     - Full participant name, affiliation/school, role/position, and contact info (email/phone).
+     - Registration source badge (`Individual Registration` vs `Institution Roster`).
+     - Real-time in-venue attendance status (`Checked In` vs `Not in Venue`).
+     - In-modal search, source/status filtering, and dedicated CSV export.
+
+

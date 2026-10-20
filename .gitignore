@@ -12,3 +12,5 @@
 **/*.out.log
 **/test-results/
 server/exports/
+~$*
+
