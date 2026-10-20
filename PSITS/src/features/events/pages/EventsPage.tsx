@@ -13,7 +13,6 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 
 type EventStatus = 'draft' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
-type LiveSessionStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 type RegistrationOverride = '' | 'open' | 'closed';
 
 export const EVENT_CATEGORIES = [
@@ -36,22 +35,6 @@ export const getParticipantCapacityLabel = (mode?: string) => {
   if (m === 'pair') return 'Pair Participant';
   if (m === 'team') return 'Team Participant';
   return 'Participant';
-};
-
-type LiveSession = {
-  id: string;
-  eventId?: string | null;
-  title: string;
-  description?: string | null;
-  hostLabel?: string | null;
-  startAt?: string | null;
-  durationMinutes?: number;
-  sessionType: 'livestream';
-  privacy: 'public' | 'private' | 'event_registered_only';
-  status: LiveSessionStatus;
-  roomCode?: string | null;
-  participantCount?: number;
-  activeViewerCount?: number;
 };
 
 const PARTICIPANT_TEMPLATE =
@@ -169,7 +152,6 @@ export const EventsPage = () => {
   const [memberStatusByEvent, setMemberStatusByEvent] = useState<Record<string, string>>({});
   const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
   const [eventParticipants, setEventParticipants] = useState<any[]>([]);
-  const [eventLiveSessions, setEventLiveSessions] = useState<LiveSession[]>([]);
   const [isLoadingDetailsLists, setIsLoadingDetailsLists] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{
     kind: 'registration' | 'participant';
@@ -411,30 +393,6 @@ export const EventsPage = () => {
       cancelled = true;
     };
   }, [detailsEvent, canManageEvents]);
-
-  useEffect(() => {
-    if (!detailsEvent) {
-      setEventLiveSessions([]);
-      return;
-    }
-
-    let cancelled = false;
-    const loadLiveSessions = async () => {
-      try {
-        const { data } = await api.getLiveEventsByEvent(String(detailsEvent.id));
-        if (!cancelled && data?.success) {
-          setEventLiveSessions(data.liveEvents || []);
-        }
-      } catch {
-        if (!cancelled) setEventLiveSessions([]);
-      }
-    };
-
-    void loadLiveSessions();
-    return () => {
-      cancelled = true;
-    };
-  }, [detailsEvent]);
 
   useEffect(() => {
     if (!detailsEvent || !isInstitution) {
@@ -1062,28 +1020,6 @@ export const EventsPage = () => {
       return;
     }
     await registerForEvent(event);
-  };
-
-  const openLiveSessionFromEvent = async (session: LiveSession) => {
-    try {
-      await api.joinLiveEvent(session.id);
-      addNotification({
-        userId: 'current',
-        title: 'Livestream Ready',
-        message: `${session.title} is ready in the Stream Events module.`,
-        type: 'success',
-        isRead: false,
-      });
-      window.location.href = `/stream-events?session=${encodeURIComponent(session.id)}`;
-    } catch (err) {
-      addNotification({
-        userId: 'current',
-        title: 'Access Denied',
-        message: err instanceof Error ? err.message : 'Unable to open this live session.',
-        type: 'error',
-        isRead: false,
-      });
-    }
   };
 
   const runApproval = async (approval: { kind: 'registration' | 'participant'; id: string; approve: boolean }) => {
@@ -2367,73 +2303,6 @@ export const EventsPage = () => {
                 <p className="text-xs text-gray-500 mt-1">Open the guidelines in a separate view.</p>
               </div>
             )}
-
-            <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Live Sessions</p>
-                  <p className="text-xs text-gray-500">Livestream sessions linked to this event.</p>
-                </div>
-                {canManageEvents && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      localStorage.setItem('psits_live_event_manage_event', String(detailsEvent.id));
-                      window.location.href = '/stream-events';
-                    }}
-                  >
-                    Manage in Stream Events
-                  </Button>
-                )}
-              </div>
-
-              {eventLiveSessions.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-                  No live sessions are linked to this event yet.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {eventLiveSessions.map((session) => (
-                    <div key={session.id} className="rounded-lg border border-gray-200 p-3">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-gray-900">{session.title}</p>
-                            <Badge variant={getStatusColor(session.status)}>
-                              {String(session.status || '').replace(/^./, (x: string) => x.toUpperCase())}
-                            </Badge>
-                            <Badge variant="info">
-                              Livestream
-                            </Badge>
-                          </div>
-                          {session.description && (
-                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{session.description}</p>
-                          )}
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                            {session.startAt && <span>Schedule: {new Date(session.startAt).toLocaleString()}</span>}
-                            <span>Privacy: {String(session.privacy || 'public').replace(/_/g, ' ')}</span>
-                            {session.roomCode && <span>Room Code: {session.roomCode}</span>}
-                            <span>Viewers: {Number(session.activeViewerCount || session.participantCount || 0)}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => void openLiveSessionFromEvent(session)}
-                            disabled={session.status === 'ended' || session.status === 'cancelled'}
-                          >
-                            {session.sessionType === 'livestream' ? 'Watch Livestream' : 'Join Session'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {canManageEvents && (
               <div className="rounded-lg border border-gray-200 p-4 space-y-3">
