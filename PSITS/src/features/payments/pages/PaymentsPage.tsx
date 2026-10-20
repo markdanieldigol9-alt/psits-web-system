@@ -21,8 +21,6 @@ const readAsDataUrl = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-const mockPayments: any[] = [];
-
 export const PaymentsPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
@@ -36,7 +34,7 @@ export const PaymentsPage = () => {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [payments, setPayments] = useState<any[]>(mockPayments);
+  const [payments, setPayments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewing, setViewing] = useState<any | null>(null);
   const [rejecting, setRejecting] = useState<any | null>(null);

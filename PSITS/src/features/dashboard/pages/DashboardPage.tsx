@@ -326,7 +326,7 @@ export const DashboardPage = () => {
             </Card>
           </div>
 
-          {/* Institution Event Attendance & Registration Leaderboard */}
+          {/* Institution Event Delegation Leaderboard */}
           <InstitutionEventLeaderboard />
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -502,7 +502,7 @@ export const DashboardPage = () => {
           })}
         </div>
 
-        {/* Institution Event Attendance & Registration Leaderboard */}
+        {/* Institution Event Delegation Leaderboard */}
         <InstitutionEventLeaderboard />
 
         {canManageMembers && (

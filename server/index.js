@@ -84,7 +84,7 @@ const {
   deleteInstitutionMember,
   cleanupTestInstitutionMembers,
 } = require('./institutionMembers');
-const { getInstitutionLeaderboard, toggleParticipantAttendance, checkAllInstitutionParticipants } = require('./institutionLeaderboard');
+const { getInstitutionLeaderboard } = require('./institutionLeaderboard');
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
 const { sendSmtpTest } = require('./emailTest');
 const { resendFailedApprovalEmails, sendReactivationRequestEmail } = require('./mailer');
@@ -803,10 +803,8 @@ app.get('/api/events/:id/registrations', requireMigrationReady, authMiddleware, 
 app.get('/api/events/registrations/my', requireMigrationReady, authMiddleware, requireRole(['member']), listMyRegistrations);
 app.put('/api/events/registrations/:id/approval', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), approveEventRegistration);
 
-// Event Institution Leaderboard & Venue Attendance
+// Event Institution Leaderboard
 app.get('/api/events/institution-leaderboard', requireMigrationReady, authMiddleware, getInstitutionLeaderboard);
-app.post('/api/events/institution-attendance/toggle', requireMigrationReady, authMiddleware, toggleParticipantAttendance);
-app.post('/api/events/institution-attendance/check-all', requireMigrationReady, authMiddleware, checkAllInstitutionParticipants);
 
 // Announcements
 app.get('/api/announcements', authMiddleware, listAnnouncements);

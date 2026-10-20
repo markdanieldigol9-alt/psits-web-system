@@ -60,9 +60,6 @@ const PartnersPage = lazy(() =>
 const LiveEventsPage = lazy(() =>
   import('@/features/live-events/pages/LiveEventsPage').then((m) => ({ default: m.LiveEventsPage }))
 );
-const LiveStudioPage = lazy(() =>
-  import('@/features/live-events/pages/LiveStudioPage').then((m) => ({ default: m.LiveStudioPage }))
-);
 const MyEventsPage = lazy(() =>
   import('@/features/my-events/pages/MyEventsPage').then((m) => ({ default: m.MyEventsPage }))
 );
@@ -246,26 +243,10 @@ export const App = () => {
                 }
               />
               <Route
-                path="/stream-events/studio/:sessionId"
-                element={
-                  <ProtectedRoute>
-                    <LiveStudioPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/live-events"
                 element={
                   <ProtectedRoute>
                     <LiveEventsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/live-events/studio/:sessionId"
-                element={
-                  <ProtectedRoute>
-                    <LiveStudioPage />
                   </ProtectedRoute>
                 }
               />

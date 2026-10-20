@@ -190,7 +190,7 @@ export interface ReportData {
   revenueByMethod: Record<PaymentMethod, number>;
 }
 
-// Event Institution Leaderboard & Attendance Types
+// Event Institution Delegation Leaderboard Types
 export interface EventLeaderboardParticipant {
   id: string;
   fullName: string;
@@ -198,8 +198,6 @@ export interface EventLeaderboardParticipant {
   contactNumber?: string;
   gender?: string;
   position?: string;
-  checkedIn?: boolean;
-  checkedInAt?: string | null;
   status?: string;
 }
 
@@ -211,19 +209,12 @@ export interface EventLeaderboardInstitution {
   institutionAvatar?: string | null;
   registrationId?: string | null;
   registeredCount: number;
-  inVenueCount?: number;
-  attendanceRate?: number;
-  allInVenue?: boolean;
-  status?: string;
   participants: EventLeaderboardParticipant[];
 }
 
 export interface EventLeaderboardSummary {
   totalInstitutions: number;
   totalRegisteredParticipants: number;
-  totalInVenue?: number;
-  overallAttendanceRate?: number;
-  fullyPresentInstitutions?: number;
 }
 
 export interface InstitutionLeaderboardData {

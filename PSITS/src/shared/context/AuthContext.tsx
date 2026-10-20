@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { User, AuthState, UserRole } from '@/shared/types';
 import type { ReactNode } from 'react';
-import { initializeSystem } from '@/shared/utils/seedAdmin';
 import api from '@/shared/services/api';
 
 const getApiErrorMessage = (err: unknown, fallback: string) => {
@@ -55,8 +54,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
-    initializeSystem();
-
     const savedToken = localStorage.getItem('auth_token');
 
     // Modern auth UX: if a token exists, verify it with the server and refresh user data.

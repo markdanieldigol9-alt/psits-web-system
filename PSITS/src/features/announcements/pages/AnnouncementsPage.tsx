@@ -8,7 +8,6 @@ import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 
-const mockAnnouncements: any[] = [];
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -24,7 +23,7 @@ export const AnnouncementsPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
-  const [announcements, setAnnouncements] = useState<any[]>(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInteractionLoading, setIsInteractionLoading] = useState(false);

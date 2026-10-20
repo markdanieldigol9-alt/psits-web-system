@@ -84,20 +84,6 @@ class ApiService {
     return this.client.post('/auth/logout');
   }
 
-  // Admin Account Management
-  createSuperAdmin(email: string, password: string, fullName: string) {
-    return this.client.post('/auth/create-admin', { 
-      email, 
-      password, 
-      fullName,
-      role: 'super_admin'
-    });
-  }
-
-  createAdmin(data: any) {
-    return this.client.post('/auth/create-admin', data);
-  }
-
   // Profile
   getMe() {
     return this.client.get('/me');
@@ -224,10 +210,6 @@ class ApiService {
     return this.client.get('/live-sessions', { params: filters });
   }
 
-  getLiveEventsByEvent(eventId: string) {
-    return this.client.get(`/events/${eventId}/live-sessions`);
-  }
-
   getLiveSession(id: string) {
     return this.client.get(`/live-sessions/${id}`);
   }
@@ -260,68 +242,12 @@ class ApiService {
     return this.client.delete(`/live-sessions/${id}`);
   }
 
-  startLiveEvent(id: string) {
-    return this.client.post(`/live-events/${id}/start`);
-  }
-
-  startLiveSession(id: string) {
-    return this.client.post(`/live-sessions/${id}/start`);
-  }
-
-  endLiveEvent(id: string) {
-    return this.client.post(`/live-events/${id}/end`);
-  }
-
-  endLiveSession(id: string) {
-    return this.client.post(`/live-sessions/${id}/end`);
-  }
-
-  cancelLiveEvent(id: string) {
-    return this.client.post(`/live-events/${id}/cancel`);
-  }
-
-  cancelLiveSession(id: string) {
-    return this.client.post(`/live-sessions/${id}/cancel`);
-  }
-
-  joinLiveEvent(id: string) {
-    return this.client.post(`/live-events/${id}/join`);
-  }
-
-  joinLiveSession(id: string) {
-    return this.client.post(`/live-sessions/${id}/join`);
-  }
-
-  leaveLiveEvent(id: string) {
-    return this.client.post(`/live-events/${id}/leave`);
-  }
-
-  getLiveEventParticipants(id: string) {
-    return this.client.get(`/live-events/${id}/participants`);
-  }
-
-  updateLiveEventParticipant(id: string, userId: string, data: any) {
-    return this.client.put(`/live-events/${id}/participants/${userId}`, data);
-  }
-
-  updateLiveEventPermissions(id: string, data: any) {
-    return this.client.put(`/live-events/${id}/permissions`, data);
-  }
-
   getLiveEventChatMessages(id: string) {
     return this.client.get(`/live-events/${id}/chat`);
   }
 
   createLiveEventChatMessage(id: string, message: string) {
     return this.client.post(`/live-events/${id}/chat`, { message });
-  }
-
-  validateLiveEventRoomCode(roomCode: string) {
-    return this.client.post('/live-events/validate-room-code', { roomCode });
-  }
-
-  getLiveEventCounts(id: string) {
-    return this.client.get(`/live-events/${id}/counts`);
   }
 
   async uploadLiveEventRecording(id: string, file: File, onProgress?: (pct: number) => void) {
@@ -684,7 +610,7 @@ class ApiService {
     return this.client.delete('/notifications');
   }
 
-  // Institution Event Attendance & Leaderboard
+  // Institution Event Delegation Leaderboard
   getInstitutionLeaderboard(eventId?: string) {
     return this.client.get<{
       success: boolean;
@@ -707,9 +633,6 @@ class ApiService {
       summary: {
         totalInstitutions: number;
         totalRegisteredParticipants: number;
-        totalInVenue: number;
-        overallAttendanceRate: number;
-        fullyPresentInstitutions: number;
       };
       leaderboard: Array<{
         rank: number;
@@ -719,10 +642,6 @@ class ApiService {
         institutionAvatar?: string | null;
         registrationId?: string | null;
         registeredCount: number;
-        inVenueCount: number;
-        attendanceRate: number;
-        allInVenue: boolean;
-        status: string;
         participants: Array<{
           id: string;
           fullName: string;
@@ -730,37 +649,12 @@ class ApiService {
           contactNumber?: string;
           gender?: string;
           position?: string;
-          checkedIn: boolean;
-          checkedInAt?: string | null;
           status?: string;
         }>;
       }>;
     }>('/events/institution-leaderboard', {
       params: eventId ? { eventId } : undefined,
     });
-  }
-
-  toggleParticipantAttendance(data: {
-    participantId?: string | number;
-    registrationId?: string | number;
-    checkedIn: boolean;
-    count?: number;
-  }) {
-    return this.client.post<{ success: boolean; message: string; checkedIn?: boolean; checkedInCount?: number }>(
-      '/events/institution-attendance/toggle',
-      data
-    );
-  }
-
-  checkAllInstitutionParticipants(data: {
-    eventId: string | number;
-    institutionUserId: string | number;
-    checkedIn: boolean;
-  }) {
-    return this.client.post<{ success: boolean; message: string }>(
-      '/events/institution-attendance/check-all',
-      data
-    );
   }
 }
 
