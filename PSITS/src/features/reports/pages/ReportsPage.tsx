@@ -13,6 +13,7 @@ import { MemberDirectoryExportTable } from '../components/MemberDirectoryExportT
 import { FinancialReportView } from '../components/FinancialReportView';
 import { EventReportView } from '../components/EventReportView';
 import { ExecutiveSummaryReportView } from '../components/ExecutiveSummaryReportView';
+import { ElectionReportView } from '../components/ElectionReportView';
 import {
   FileDown,
   FileSpreadsheet,
@@ -328,8 +329,10 @@ export const ReportsPage = () => {
         if (data?.success) setPartnerReportData(data);
         setDetailedRecords(data?.contributions || []);
       } else if (title === 'Election Tally') {
-        if (selectedElectionId) {
-          const { data } = await api.getElectionReport(selectedElectionId);
+        const electionIdToFetch = selectedElectionId || (elections.length > 0 ? String(elections[0].id) : '');
+        if (electionIdToFetch) {
+          if (!selectedElectionId) setSelectedElectionId(electionIdToFetch);
+          const { data } = await api.getElectionReport(electionIdToFetch);
           if (data?.success) setElectionReportData(data);
         }
       }
@@ -577,16 +580,28 @@ export const ReportsPage = () => {
         if (!selectedElectionId) return;
         const { data } = await api.getElectionReport(selectedElectionId);
         if (data?.success) {
-          const dataToExport = (data.candidates || []).map((c: any) => ({
-            'Election Title': data.election?.title || '—',
-            'Candidate Name': c.name,
-            'Position': c.position,
-            'Platform': c.platform || '—',
-            'Status': c.status,
-            'Votes Count': c.votes_count,
-            'Total Votes Cast': data.totalVotes || 0,
-          }));
-          exportToCSV(`${data.election?.title || 'Election'}_Tally_Report`, dataToExport);
+          const winnersMap = new Set((data.winners || []).map((w: any) => String(w.id)));
+          const dataToExport = (data.candidates || []).map((c: any, index: number) => {
+            const isWinner = winnersMap.has(String(c.id)) || c.is_winner || c.status === 'winner';
+            const positionTotal = data.candidates
+              ?.filter((x: any) => x.position === c.position)
+              .reduce((sum: number, x: any) => sum + Number(x.votes_count || 0), 0) || 0;
+            const voteShare = positionTotal > 0 ? ((c.votes_count / positionTotal) * 100).toFixed(1) + '%' : '0.0%';
+
+            return {
+              '#': index + 1,
+              'Election Title': data.election?.title || '—',
+              'Contested Office / Position': c.position,
+              'Candidate Full Name': c.name,
+              'Affiliation / School': c.institution || c.sector_details || c.sector || '—',
+              'Votes Garnered': Number(c.votes_count || 0),
+              'Position Vote Share': voteShare,
+              'Outcome Status': isWinner ? 'PROCLAIMED ELECTED OFFICER' : 'RUNNER-UP / DEFEATED',
+              'Platform Manifesto': c.platform || '—',
+              'Total Ballots Cast': data.totalVotes || 0,
+            };
+          });
+          exportToCSV(`${(data.election?.title || 'Election').replace(/[^a-zA-Z0-9_-]/g, '_')}_Official_Canvass_Report`, dataToExport);
         }
       } else if (title === 'Partner Contributions') {
         const { data } = await api.getPartnerContributionsReport();
@@ -1016,7 +1031,7 @@ export const ReportsPage = () => {
             <div className="space-y-4 animate-fadeIn">
               <div id="printable-report-area" className="bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
                 {/* Official Letterhead Header (for general reports) */}
-                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && (
+                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && previewReport !== 'Election Tally' && (
                   <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
                     <div className="flex items-center gap-3">
                       <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
@@ -1209,44 +1224,12 @@ export const ReportsPage = () => {
                 )}
 
                 {previewReport === 'Election Tally' && (
-                  <div className="space-y-4">
-                    <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl flex items-center justify-between">
-                      <div>
-                        <h4 className="text-base font-bold text-purple-900">{electionReportData?.election?.title || 'Election Tally'}</h4>
-                        <p className="text-xs text-purple-700">Status: <span className="font-bold uppercase">{electionReportData?.election?.status}</span></p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs text-gray-500 font-semibold">Total Votes Cast</span>
-                        <p className="text-2xl font-extrabold text-purple-900">{electionReportData?.totalVotes || 0}</p>
-                      </div>
-                    </div>
-
-                    <div className="border rounded-xl overflow-hidden text-xs">
-                      <table className="w-full">
-                        <thead className="bg-gray-100 border-b">
-                          <tr>
-                            <th className="px-3 py-2 text-left font-bold">Candidate Name</th>
-                            <th className="px-3 py-2 text-left font-bold">Position</th>
-                            <th className="px-3 py-2 text-right font-bold">Votes</th>
-                            <th className="px-3 py-2 text-right font-bold">Share %</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {(electionReportData?.candidates || []).map((c: any) => {
-                            const pct = electionReportData?.totalVotes > 0 ? ((c.votes_count / electionReportData.totalVotes) * 100).toFixed(1) : '0.0';
-                            return (
-                              <tr key={c.id}>
-                                <td className="px-3 py-2 font-bold text-gray-900">{c.name}</td>
-                                <td className="px-3 py-2 text-gray-600">{c.position}</td>
-                                <td className="px-3 py-2 text-right font-extrabold text-primary">{c.votes_count}</td>
-                                <td className="px-3 py-2 text-right font-semibold">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <ElectionReportView
+                    electionData={electionReportData}
+                    preparedBy={user?.fullName || 'COMELEC Canvassing Officer'}
+                    userRole={user?.role || 'Officer'}
+                    onExportCSV={() => handleGenerateExcel(previewReport)}
+                  />
                 )}
 
                 {previewReport === 'Partner Contributions' && (
@@ -1302,7 +1285,7 @@ export const ReportsPage = () => {
                 )}
 
                 {/* Signatures & Certification Section (for general reports) */}
-                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && (
+                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && previewReport !== 'Election Tally' && (
                   <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600">
                     <div>
                       <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
