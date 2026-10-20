@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
+import { printReportDocument } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   CalendarCheck2,
@@ -387,7 +388,7 @@ export const EventReportView = ({
             </div>
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => printReportDocument(reportTitle)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-black text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
             >
               <Printer size={14} /> Print

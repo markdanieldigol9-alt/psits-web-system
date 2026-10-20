@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
+import { printReportDocument } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   Trophy,
@@ -338,8 +339,7 @@ export const ElectionReportView = ({
             <button
               type="button"
               onClick={() => {
-                setPageSize('all');
-                setTimeout(() => window.print(), 150);
+                printReportDocument(election?.title ? `${election.title} - Election Tally` : 'Election Tally Report', () => setPageSize('all'));
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-800 hover:bg-black text-white rounded-md text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
             >

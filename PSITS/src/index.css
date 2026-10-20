@@ -475,6 +475,11 @@ button {
     margin: 0 !important;
   }
 
+  /* Hide modal dialog title/close header when printing reports */
+  [role="dialog"] > div > div > div:first-child:not(#printable-report-area):not(.printable-report-area) {
+    display: none !important;
+  }
+
   /* Hide app navigation chrome, modal header buttons, overlays */
   header,
   nav,
@@ -489,11 +494,14 @@ button {
 
   /* Make sure printable report area and all children are visible */
   #printable-report-area,
-  #printable-report-area * {
+  .printable-report-area,
+  #printable-report-area *,
+  .printable-report-area * {
     visibility: visible !important;
   }
 
-  #printable-report-area {
+  #printable-report-area,
+  .printable-report-area {
     position: static !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -504,6 +512,7 @@ button {
     border: none !important;
     box-shadow: none !important;
     overflow: visible !important;
+    display: block !important;
   }
 
   /* Table print optimization */

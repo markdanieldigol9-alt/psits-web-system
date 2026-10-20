@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
+import { printReportDocument } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   Wallet,
@@ -1102,8 +1103,7 @@ export const FinancialReportView = ({
               <button
                 type="button"
                 onClick={() => {
-                  setPageSize('all');
-                  setTimeout(() => window.print(), 150);
+                  printReportDocument(reportTitle || 'Financial Summary', () => setPageSize('all'));
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-black text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
               >

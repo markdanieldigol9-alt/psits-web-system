@@ -14,6 +14,7 @@ import { FinancialReportView } from '../components/FinancialReportView';
 import { EventReportView } from '../components/EventReportView';
 import { ExecutiveSummaryReportView } from '../components/ExecutiveSummaryReportView';
 import { ElectionReportView } from '../components/ElectionReportView';
+import { printReportDocument } from '../utils/printReport';
 import {
   FileDown,
   FileSpreadsheet,
@@ -329,7 +330,18 @@ export const ReportsPage = () => {
         if (data?.success) setPartnerReportData(data);
         setDetailedRecords(data?.contributions || []);
       } else if (title === 'Election Tally') {
-        const electionIdToFetch = selectedElectionId || (elections.length > 0 ? String(elections[0].id) : '');
+        let electionIdToFetch = selectedElectionId || (elections.length > 0 ? String(elections[0].id) : '');
+        if (!electionIdToFetch) {
+          try {
+            const { data: elData } = await api.getElections();
+            if (elData?.elections?.length > 0) {
+              setElections(elData.elections);
+              electionIdToFetch = String(elData.elections[0].id);
+            }
+          } catch {
+            // ignore
+          }
+        }
         if (electionIdToFetch) {
           if (!selectedElectionId) setSelectedElectionId(electionIdToFetch);
           const { data } = await api.getElectionReport(electionIdToFetch);
@@ -342,7 +354,6 @@ export const ReportsPage = () => {
       setIsLoading(false);
     }
   };
-
 
   useEffect(() => {
     if (user?.role === 'member') return;
@@ -367,7 +378,7 @@ export const ReportsPage = () => {
   }, []);
 
   useEffect(() => {
-    if (previewReport === 'Event Participation') {
+    if (previewReport === 'Event Participation' || previewReport === 'Complete Event') {
       void loadEventReportData();
     }
   }, [previewReport]);
@@ -655,6 +666,291 @@ export const ReportsPage = () => {
     }
   };
 
+  const renderReportDocument = () => {
+    const isSpecialReport =
+      previewReport === 'Financial Summary' ||
+      previewReport === 'Revenue by Method' ||
+      previewReport === 'Event Participation' ||
+      previewReport === 'Complete Event' ||
+      previewReport === 'Executive Summary' ||
+      previewReport === 'Election Tally';
+
+    return (
+      <div className="space-y-6">
+        {/* Official Letterhead Header (for general reports) */}
+        {!isSpecialReport && (
+          <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
+              <div>
+                <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
+              </div>
+            </div>
+            <div className="text-right text-xs text-gray-500 space-y-0.5">
+              <p><strong>Report:</strong> {previewReport}</p>
+              <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
+              <p><strong>Prepared By:</strong> {user?.fullName || 'Administrator'}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Report Specific Details */}
+        {previewReport === 'Executive Summary' && (
+          <ExecutiveSummaryReportView
+            summary={report?.summary}
+            memberGrowth={report?.memberGrowth || memberGrowth}
+            revenueByMethod={report?.revenueByMethod || []}
+            allMembers={allMembersData.length > 0 ? allMembersData : detailedRecords}
+            institutionsList={institutionsList}
+            eventReportData={eventReportData}
+            partnerReportData={partnerReportData}
+            dateRangeFilter={dateRangeFilter}
+            startDateFilter={startDateFilter}
+            endDateFilter={endDateFilter}
+            preparedBy={user?.fullName || 'Administrator'}
+            userRole={user?.role || 'Officer'}
+            onExportCSV={() => handleGenerateExcel('Executive Summary')}
+          />
+        )}
+
+        {previewReport === 'Membership Growth' && (() => {
+          const psitsCount = report?.summary?.psitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member').length;
+          const instCount = report?.summary?.institutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member').length;
+          const totalCount = report?.summary?.totalMembers ?? (psitsCount + instCount);
+
+          const activePsits = report?.summary?.activePsitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member' && (r.status === 'active' || r.status === 'approved')).length;
+          const activeInst = report?.summary?.activeInstitutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member' && (r.status === 'active' || r.status === 'approved')).length;
+          const activeTotal = report?.summary?.activeMembers ?? (activePsits + activeInst);
+
+          const pendingPsits = report?.summary?.pendingPsitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member' && r.status === 'pending').length;
+          const pendingInst = report?.summary?.pendingInstitutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member' && r.status === 'pending').length;
+          const pendingTotal = report?.summary?.pendingApprovals ?? (pendingPsits + pendingInst);
+
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500 font-semibold">Total Members</span>
+                    <p className="text-2xl font-bold text-primary mt-1">{totalCount}</p>
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-blue-200/60 flex items-center justify-center gap-1.5 text-[11px] text-blue-700 font-medium flex-wrap">
+                    <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
+                      {psitsCount} PSITS
+                    </span>
+                    <span>+</span>
+                    <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
+                      {instCount} Institution
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500 font-semibold">Approved Members</span>
+                    <p className="text-2xl font-bold text-emerald-700 mt-1">{activeTotal}</p>
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-medium flex-wrap">
+                    <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
+                      {activePsits} PSITS
+                    </span>
+                    <span>+</span>
+                    <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
+                      {activeInst} Institution
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500 font-semibold">Pending Approvals</span>
+                    <p className="text-2xl font-bold text-amber-700 mt-1">{pendingTotal}</p>
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-center gap-1.5 text-[11px] text-amber-700 font-medium flex-wrap">
+                    <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
+                      {pendingPsits} PSITS
+                    </span>
+                    <span>+</span>
+                    <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
+                      {pendingInst} Institution
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={memberGrowth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="Signups" />
+                    <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden text-xs">
+                <table className="w-full">
+                  <thead className="bg-gray-100 border-b">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-bold">Month</th>
+                      <th className="px-3 py-2 text-right font-bold">New Registrations</th>
+                      <th className="px-3 py-2 text-right font-bold">Approved</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {memberGrowth.map((row: any) => (
+                      <tr key={row.month}>
+                        <td className="px-3 py-2 font-medium">{row.month}</td>
+                        <td className="px-3 py-2 text-right">{row.members}</td>
+                        <td className="px-3 py-2 text-right text-emerald-700 font-bold">{row.active}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="pt-2">
+                <MemberDirectoryExportTable
+                  members={allMembersData.length > 0 ? allMembersData : detailedRecords}
+                  institutions={institutionsList}
+                  initialCategory={memberCategoryFilter}
+                  initialInstitution={memberInstitutionFilter}
+                  title="Combined Member Directory Table"
+                  subtitle="Filter by Individual, Institution, Industry, and specific Institution Name"
+                  hideHeaderCard={true}
+                />
+              </div>
+            </div>
+          );
+        })()}
+
+        {previewReport === 'Member Directory & Roster' && (
+          <div className="space-y-4">
+            <MemberDirectoryExportTable
+              members={allMembersData.length > 0 ? allMembersData : detailedRecords}
+              institutions={institutionsList}
+              initialCategory={memberCategoryFilter}
+              initialInstitution={memberInstitutionFilter}
+              title="PSITS Member Directory & Roster"
+              subtitle="Official verified registry of individual, institution, and industry members"
+              hideHeaderCard={true}
+            />
+          </div>
+        )}
+
+        {(previewReport === 'Financial Summary' || previewReport === 'Revenue by Method') && (
+          <FinancialReportView
+            payments={detailedRecords}
+            reportTitle={previewReport}
+            dateRangeFilter={dateRangeFilter as any}
+            startDateFilter={startDateFilter}
+            endDateFilter={endDateFilter}
+            initialMethodFilter={selectedMethodFocus}
+            preparedBy={user?.fullName || 'Financial Officer'}
+            userRole={user?.role || 'Officer'}
+            onExportCSV={() => handleGenerateExcel(previewReport)}
+          />
+        )}
+
+        {(previewReport === 'Event Participation' || previewReport === 'Complete Event') && (
+          isEventReportLoading ? (
+            <div className="flex items-center justify-center p-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <EventReportView
+              events={eventReportData?.events || detailedRecords}
+              participants={eventReportData?.participants || []}
+              reportTitle={previewReport}
+              preparedBy={user?.fullName || 'Events Coordinator'}
+              userRole={user?.role || 'Officer'}
+            />
+          )
+        )}
+
+        {previewReport === 'Election Tally' && (
+          <ElectionReportView
+            electionData={electionReportData}
+            preparedBy={user?.fullName || 'COMELEC Canvassing Officer'}
+            userRole={user?.role || 'Officer'}
+            onExportCSV={() => handleGenerateExcel(previewReport)}
+          />
+        )}
+
+        {previewReport === 'Partner Contributions' && (
+          <div className="space-y-4">
+            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center text-center">
+              <div>
+                <span className="text-xs font-semibold text-gray-500">Total Sponsorship Value</span>
+                <p className="text-2xl font-extrabold text-emerald-700">₱{(partnerReportData?.totalValue || 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-gray-500">Total Deals</span>
+                <p className="text-2xl font-extrabold text-primary">{partnerReportData?.contributions?.length || 0}</p>
+              </div>
+            </div>
+
+            <div className="border rounded-xl overflow-hidden text-xs">
+              <table className="w-full">
+                <thead className="bg-gray-100 border-b">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-bold">Partner</th>
+                    <th className="px-3 py-2 text-left font-bold">Deal Title</th>
+                    <th className="px-3 py-2 text-left font-bold">Type</th>
+                    <th className="px-3 py-2 text-right font-bold">Value (₱)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {(partnerReportData?.contributions || []).map((pc: any) => (
+                    <tr key={pc.id}>
+                      <td className="px-3 py-2 font-bold">{pc.partner_name}</td>
+                      <td className="px-3 py-2">{pc.deal_title}</td>
+                      <td className="px-3 py-2 capitalize">{pc.contribution_type}</td>
+                      <td className="px-3 py-2 text-right font-bold text-emerald-700">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {!isSpecialReport &&
+          previewReport !== 'Membership Growth' &&
+          previewReport !== 'Member Directory & Roster' &&
+          previewReport !== 'Partner Contributions' && (
+          <div className="border rounded-xl p-4 text-xs space-y-2">
+            <h4 className="font-bold text-gray-900">{previewReport} Data Summary</h4>
+            <p className="text-gray-600">Total records compiled: {detailedRecords.length} entries.</p>
+          </div>
+        )}
+
+        {/* Signatures & Certification Section (for general reports) */}
+        {!isSpecialReport && (
+          <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600 certification-block">
+            <div>
+              <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
+              <div className="mt-8 border-b border-gray-400 w-48"></div>
+              <p className="mt-1 font-bold text-gray-900">{user?.fullName || 'Authorized Administrator'}</p>
+              <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'Officer'} / Reporter</p>
+            </div>
+            <div className="text-right">
+              <p className="font-semibold text-gray-800">Approved By Organization:</p>
+              <div className="mt-8 border-b border-gray-400 w-48 ml-auto"></div>
+              <p className="mt-1 font-bold text-gray-900">PSITS Regional Secretariat</p>
+              <p className="text-[11px] text-gray-500">Official Stamp & Date</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
   if (user && user.role === 'member') {
     return <Navigate to="/unauthorized" replace />;
@@ -665,10 +961,11 @@ export const ReportsPage = () => {
 
   return (
     <MainLayout>
-      <div className="space-y-6 pb-4">
+      <div className={`space-y-6 pb-4 ${previewReport ? 'no-print' : ''}`}>
 
         <Card
           title="Reports"
+          className="no-print"
           subtitle="Select and generate organization reports, financial summaries, and event audits."
           headerAction={
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
@@ -809,7 +1106,7 @@ export const ReportsPage = () => {
           isLoading={isMemberListLoading}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 no-print">
           <Card
             title="Membership Growth"
             subtitle={
@@ -858,25 +1155,8 @@ export const ReportsPage = () => {
         size="2xl"
       >
         <div className="space-y-5">
-          {/* Print Optimization Style Tag */}
-          <style>{`
-            @media print {
-              body * { visibility: hidden; }
-              #printable-report-area, #printable-report-area * { visibility: visible; }
-              #printable-report-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white;
-                color: black;
-                padding: 24px;
-              }
-            }
-          `}</style>
-
           {/* Wizard Step Navigation Indicator */}
-          <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1.5 rounded-xl text-center text-xs font-semibold">
+          <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1.5 rounded-xl text-center text-xs font-semibold no-print">
             <button
               type="button"
               onClick={() => setWizardStep(1)}
@@ -1018,7 +1298,7 @@ export const ReportsPage = () => {
                 </div>
               )}
 
-              <div className="border-t border-gray-200 pt-4 flex justify-end">
+              <div className="border-t border-gray-200 pt-4 flex justify-end no-print">
                 <Button variant="primary" size="lg" onClick={() => setWizardStep(2)} className="px-6">
                   Preview Detailed Report <ChevronRight size={18} />
                 </Button>
@@ -1029,282 +1309,49 @@ export const ReportsPage = () => {
           {/* STEP 2: INTERACTIVE DETAILED DOCUMENT PREVIEW */}
           {wizardStep === 2 && (
             <div className="space-y-4 animate-fadeIn">
-              <div id="printable-report-area" className="bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
-                {/* Official Letterhead Header (for general reports) */}
-                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && previewReport !== 'Election Tally' && (
-                  <div className="flex items-center justify-between border-b-2 border-primary/80 pb-4">
-                    <div className="flex items-center gap-3">
-                      <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
-                      <div>
-                        <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
-                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
-                      </div>
-                    </div>
-                    <div className="text-right text-xs text-gray-500 space-y-0.5">
-                      <p><strong>Report:</strong> {previewReport}</p>
-                      <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
-                      <p><strong>Prepared By:</strong> {user?.fullName || 'Administrator'}</p>
-                    </div>
-                  </div>
-                )}
+              {/* Quick Action Toolbar */}
+              <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
+                    <ChevronLeft size={16} /> Parameters
+                  </Button>
+                  <span className="text-xs font-bold text-gray-700">Detailed Report Document</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => printReportDocument(previewReport || selectedReportTitle)}
+                    className="flex items-center gap-1.5 font-semibold text-gray-800 cursor-pointer"
+                  >
+                    <Printer size={15} /> Print / Save PDF
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleGenerateExcel(previewReport || '')}
+                    className="flex items-center gap-1.5 font-semibold text-emerald-700 cursor-pointer"
+                  >
+                    <FileSpreadsheet size={15} /> Export CSV
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setWizardStep(3)}
+                    className="flex items-center gap-1.5 font-semibold cursor-pointer"
+                  >
+                    Proceed to Export & Submit <ChevronRight size={15} />
+                  </Button>
+                </div>
+              </div>
 
-                {/* Report Specific Details */}
-                {previewReport === 'Executive Summary' && (
-                  <ExecutiveSummaryReportView
-                    summary={report?.summary}
-                    memberGrowth={report?.memberGrowth || memberGrowth}
-                    revenueByMethod={report?.revenueByMethod || []}
-                    allMembers={allMembersData.length > 0 ? allMembersData : detailedRecords}
-                    institutionsList={institutionsList}
-                    eventReportData={eventReportData}
-                    partnerReportData={partnerReportData}
-                    dateRangeFilter={dateRangeFilter}
-                    startDateFilter={startDateFilter}
-                    endDateFilter={endDateFilter}
-                    preparedBy={user?.fullName || 'Administrator'}
-                    userRole={user?.role || 'Officer'}
-                    onExportCSV={() => handleGenerateExcel('Executive Summary')}
-                  />
-                )}
-                {previewReport === 'Membership Growth' && (() => {
-                  const psitsCount = report?.summary?.psitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member').length;
-                  const instCount = report?.summary?.institutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member').length;
-                  const totalCount = report?.summary?.totalMembers ?? (psitsCount + instCount);
-
-                  const activePsits = report?.summary?.activePsitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member' && (r.status === 'active' || r.status === 'approved')).length;
-                  const activeInst = report?.summary?.activeInstitutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member' && (r.status === 'active' || r.status === 'approved')).length;
-                  const activeTotal = report?.summary?.activeMembers ?? (activePsits + activeInst);
-
-                  const pendingPsits = report?.summary?.pendingPsitsMembers ?? detailedRecords.filter((r: any) => r.source === 'PSITS Member' && r.status === 'pending').length;
-                  const pendingInst = report?.summary?.pendingInstitutionMembers ?? detailedRecords.filter((r: any) => r.source === 'Institution Member' && r.status === 'pending').length;
-                  const pendingTotal = report?.summary?.pendingApprovals ?? (pendingPsits + pendingInst);
-
-                  return (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-3 text-center">
-                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex flex-col justify-between">
-                          <div>
-                            <span className="text-xs text-gray-500 font-semibold">Total Members</span>
-                            <p className="text-2xl font-bold text-primary mt-1">{totalCount}</p>
-                          </div>
-                          <div className="mt-2 pt-1.5 border-t border-blue-200/60 flex items-center justify-center gap-1.5 text-[11px] text-blue-700 font-medium flex-wrap">
-                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
-                              {psitsCount} PSITS
-                            </span>
-                            <span>+</span>
-                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
-                              {instCount} Institution
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col justify-between">
-                          <div>
-                            <span className="text-xs text-gray-500 font-semibold">Approved Members</span>
-                            <p className="text-2xl font-bold text-emerald-700 mt-1">{activeTotal}</p>
-                          </div>
-                          <div className="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-medium flex-wrap">
-                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
-                              {activePsits} PSITS
-                            </span>
-                            <span>+</span>
-                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
-                              {activeInst} Institution
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex flex-col justify-between">
-                          <div>
-                            <span className="text-xs text-gray-500 font-semibold">Pending Approvals</span>
-                            <p className="text-2xl font-bold text-amber-700 mt-1">{pendingTotal}</p>
-                          </div>
-                          <div className="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-center gap-1.5 text-[11px] text-amber-700 font-medium flex-wrap">
-                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
-                              {pendingPsits} PSITS
-                            </span>
-                            <span>+</span>
-                            <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
-                              {pendingInst} Institution
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="h-[220px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={memberGrowth}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="Signups" />
-                            <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      <div className="border rounded-xl overflow-hidden text-xs">
-                        <table className="w-full">
-                          <thead className="bg-gray-100 border-b">
-                            <tr>
-                              <th className="px-3 py-2 text-left font-bold">Month</th>
-                              <th className="px-3 py-2 text-right font-bold">New Registrations</th>
-                              <th className="px-3 py-2 text-right font-bold">Approved</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y">
-                            {memberGrowth.map((row: any) => (
-                              <tr key={row.month}>
-                                <td className="px-3 py-2 font-medium">{row.month}</td>
-                                <td className="px-3 py-2 text-right">{row.members}</td>
-                                <td className="px-3 py-2 text-right text-emerald-700 font-bold">{row.active}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="pt-2">
-                        <MemberDirectoryExportTable
-                          members={allMembersData.length > 0 ? allMembersData : detailedRecords}
-                          institutions={institutionsList}
-                          initialCategory={memberCategoryFilter}
-                          initialInstitution={memberInstitutionFilter}
-                          title="Combined Member Directory Table"
-                          subtitle="Filter by Individual, Institution, Industry, and specific Institution Name"
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {previewReport === 'Member Directory & Roster' && (
-                  <div className="space-y-4">
-                    <MemberDirectoryExportTable
-                      members={allMembersData.length > 0 ? allMembersData : detailedRecords}
-                      institutions={institutionsList}
-                      initialCategory={memberCategoryFilter}
-                      initialInstitution={memberInstitutionFilter}
-                      title="PSITS Member Directory & Roster"
-                      subtitle="Official verified registry of individual, institution, and industry members"
-                    />
-                  </div>
-                )}
-
-                {(previewReport === 'Financial Summary' || previewReport === 'Revenue by Method') && (
-                  <FinancialReportView
-                    payments={detailedRecords}
-                    reportTitle={previewReport}
-                    dateRangeFilter={dateRangeFilter as any}
-                    startDateFilter={startDateFilter}
-                    endDateFilter={endDateFilter}
-                    initialMethodFilter={selectedMethodFocus}
-                    preparedBy={user?.fullName || 'Financial Officer'}
-                    userRole={user?.role || 'Officer'}
-                    onExportCSV={() => handleGenerateExcel(previewReport)}
-                  />
-                )}
-
-                {(previewReport === 'Event Participation' || previewReport === 'Complete Event') && (
-                  isEventReportLoading ? (
-                    <div className="flex items-center justify-center p-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                  ) : (
-                    <EventReportView
-                      events={eventReportData?.events || detailedRecords}
-                      participants={eventReportData?.participants || []}
-                      reportTitle={previewReport}
-                      preparedBy={user?.fullName || 'Events Coordinator'}
-                      userRole={user?.role || 'Officer'}
-                    />
-                  )
-                )}
-
-                {previewReport === 'Election Tally' && (
-                  <ElectionReportView
-                    electionData={electionReportData}
-                    preparedBy={user?.fullName || 'COMELEC Canvassing Officer'}
-                    userRole={user?.role || 'Officer'}
-                    onExportCSV={() => handleGenerateExcel(previewReport)}
-                  />
-                )}
-
-                {previewReport === 'Partner Contributions' && (
-                  <div className="space-y-4">
-                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center text-center">
-                      <div>
-                        <span className="text-xs font-semibold text-gray-500">Total Sponsorship Value</span>
-                        <p className="text-2xl font-extrabold text-emerald-700">₱{(partnerReportData?.totalValue || 0).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-semibold text-gray-500">Total Deals</span>
-                        <p className="text-2xl font-extrabold text-primary">{partnerReportData?.contributions?.length || 0}</p>
-                      </div>
-                    </div>
-
-                    <div className="border rounded-xl overflow-hidden text-xs">
-                      <table className="w-full">
-                        <thead className="bg-gray-100 border-b">
-                          <tr>
-                            <th className="px-3 py-2 text-left font-bold">Partner</th>
-                            <th className="px-3 py-2 text-left font-bold">Deal Title</th>
-                            <th className="px-3 py-2 text-left font-bold">Type</th>
-                            <th className="px-3 py-2 text-right font-bold">Value (₱)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {(partnerReportData?.contributions || []).map((pc: any) => (
-                            <tr key={pc.id}>
-                              <td className="px-3 py-2 font-bold">{pc.partner_name}</td>
-                              <td className="px-3 py-2">{pc.deal_title}</td>
-                              <td className="px-3 py-2 capitalize">{pc.contribution_type}</td>
-                              <td className="px-3 py-2 text-right font-bold text-emerald-700">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {previewReport !== 'Membership Growth' &&
-                  previewReport !== 'Member Directory & Roster' &&
-                  previewReport !== 'Financial Summary' &&
-                  previewReport !== 'Revenue by Method' &&
-                  previewReport !== 'Event Participation' &&
-                  previewReport !== 'Complete Event' &&
-                  previewReport !== 'Election Tally' &&
-                  previewReport !== 'Partner Contributions' && previewReport !== 'Executive Summary' && (
-                  <div className="border rounded-xl p-4 text-xs space-y-2">
-                    <h4 className="font-bold text-gray-900">{previewReport} Data Summary</h4>
-                    <p className="text-gray-600">Total records compiled: {detailedRecords.length} entries.</p>
-                  </div>
-                )}
-
-                {/* Signatures & Certification Section (for general reports) */}
-                {previewReport !== 'Financial Summary' && previewReport !== 'Revenue by Method' && previewReport !== 'Event Participation' && previewReport !== 'Complete Event' && previewReport !== 'Executive Summary' && previewReport !== 'Election Tally' && (
-                  <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600">
-                    <div>
-                      <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
-                      <div className="mt-8 border-b border-gray-400 w-48"></div>
-                      <p className="mt-1 font-bold text-gray-900">{user?.fullName || 'Authorized Administrator'}</p>
-                      <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'Officer'} / Reporter</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-800">Approved By Organization:</p>
-                      <div className="mt-8 border-b border-gray-400 w-48 ml-auto"></div>
-                      <p className="mt-1 font-bold text-gray-900">PSITS Regional Secretariat</p>
-                      <p className="text-[11px] text-gray-500">Official Stamp & Date</p>
-                    </div>
-                  </div>
-                )}
+              {/* Printable Report Document Container */}
+              <div id="printable-report-area" className="printable-report-area bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
+                {renderReportDocument()}
               </div>
 
               {/* Navigation Footer */}
-              <div className="border-t border-gray-200 pt-4 flex items-center justify-between">
+              <div className="border-t border-gray-200 pt-4 flex items-center justify-between no-print">
                 <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
                   <ChevronLeft size={16} /> Edit Parameters
                 </Button>
@@ -1318,68 +1365,80 @@ export const ReportsPage = () => {
           {/* STEP 3: PRINT, EXPORT & SUBMIT */}
           {wizardStep === 3 && (
             <div className="space-y-5 animate-fadeIn">
-              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-                <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
-                  <CheckCircle2 size={18} className="text-emerald-600" /> Report Ready for Action
-                </h4>
-                <p className="text-xs text-emerald-700 mt-1">
-                  You can now print this official document directly, export to PDF or Excel, or submit the record into system archives.
-                </p>
+              <div className="no-print space-y-4">
+                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                  <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                    <CheckCircle2 size={18} className="text-emerald-600" /> Report Ready for Action
+                  </h4>
+                  <p className="text-xs text-emerald-700 mt-1">
+                    You can now print this official document directly, save as PDF, export to CSV spreadsheet, or submit into system archives.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => printReportDocument(previewReport || selectedReportTitle)}
+                    className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
+                  >
+                    <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-bold text-gray-900">🖨️ Print Report</span>
+                    <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateExcel(previewReport || '')}
+                    className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
+                  >
+                    <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-bold text-gray-900">📊 Export Excel</span>
+                    <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => printReportDocument(previewReport || selectedReportTitle)}
+                    className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
+                  >
+                    <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-bold text-gray-900">📄 Save PDF</span>
+                    <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
+                  </button>
+                </div>
+
+                <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                  <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
+                    <ChevronLeft size={16} /> Back to Preview
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => {
+                      addNotification({
+                        userId: 'current',
+                        title: 'Report Submitted',
+                        message: `${previewReport} report has been recorded and submitted.`,
+                        type: 'success',
+                        isRead: false,
+                      });
+                      setPreviewReport(null);
+                    }}
+                    className="px-6"
+                  >
+                    <CheckCircle2 size={18} /> Submit & Record Report
+                  </Button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
-                >
-                  <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-gray-900">🖨️ Print Report</span>
-                  <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleGenerateExcel(previewReport || '')}
-                  className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
-                >
-                  <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-gray-900">📊 Export Excel</span>
-                  <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
-                >
-                  <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-gray-900">📄 Save PDF</span>
-                  <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
-                </button>
-              </div>
-
-              <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
-                <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
-                  <ChevronLeft size={16} /> Back to Preview
-                </Button>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => {
-                    addNotification({
-                      userId: 'current',
-                      title: 'Report Submitted',
-                      message: `${previewReport} report has been recorded and submitted.`,
-                      type: 'success',
-                      isRead: false,
-                    });
-                    setPreviewReport(null);
-                  }}
-                  className="px-6"
-                >
-                  <CheckCircle2 size={18} /> Submit & Record Report
-                </Button>
+              {/* Live printable document area (Always mounted in Step 3 so Print & Save PDF work seamlessly!) */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="no-print mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye size={14} /> Document Preview (Will be printed / saved):
+                </div>
+                <div id="printable-report-area" className="printable-report-area bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
+                  {renderReportDocument()}
+                </div>
               </div>
             </div>
           )}

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
+import { printReportDocument } from '../utils/printReport';
+import logo from '@/assets/image/PSITS_Logo.png';
 import {
   FileSpreadsheet,
   Printer,
@@ -186,10 +188,31 @@ export const MemberDirectoryExportTable = ({
     selectedStatus !== 'all';
 
   return (
-    <div className={`space-y-4 ${hideHeaderCard ? '' : 'rounded-2xl border border-gray-200 bg-white p-5 shadow-xs'}`}>
-      {/* Optional Header */}
+    <div
+      id={hideHeaderCard ? undefined : "printable-report-area"}
+      className={`space-y-4 printable-report-area ${hideHeaderCard ? '' : 'rounded-2xl border border-gray-200 bg-white p-5 shadow-xs'}`}
+    >
+      {/* Print-Only Official Letterhead (Visible only when printed from main page) */}
       {!hideHeaderCard && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-gray-100">
+        <div className="hidden print:flex items-center justify-between border-b-2 border-primary/80 pb-4 mb-3">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
+            <div>
+              <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Membership Directory & Registry</p>
+            </div>
+          </div>
+          <div className="text-right text-xs text-gray-500 space-y-0.5">
+            <p><strong>Report:</strong> {title}</p>
+            <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
+            <p><strong>Total Listed Members:</strong> {filteredMembers.length} records</p>
+          </div>
+        </div>
+      )}
+
+      {/* Optional Header (Screen View) */}
+      {!hideHeaderCard && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-gray-100 no-print">
           <div>
             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Users className="text-primary h-5 w-5" />
@@ -211,8 +234,7 @@ export const MemberDirectoryExportTable = ({
             <button
               type="button"
               onClick={() => {
-                setPageSize('all');
-                setTimeout(() => window.print(), 150);
+                printReportDocument(title || 'Member Directory & Roster', () => setPageSize('all'));
               }}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-all cursor-pointer"
             >
@@ -551,6 +573,26 @@ export const MemberDirectoryExportTable = ({
           </div>
         )}
       </div>
+
+      {/* Print-Only Official Certification & Signatures (Visible only when printed from main page) */}
+      {!hideHeaderCard && (
+        <div className="hidden print:grid grid-cols-2 gap-8 pt-6 mt-6 border-t-2 border-gray-300 text-xs text-gray-700 certification-block">
+          <div>
+            <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Prepared & Certified By:</p>
+            <div className="mt-10 border-b-2 border-gray-400 w-56"></div>
+            <p className="mt-1.5 font-bold text-gray-900 text-sm">Membership Committee Chairperson</p>
+            <p className="text-[11px] text-gray-500">PSITS Regional Secretariat</p>
+            <p className="text-[10px] text-gray-400 font-mono mt-0.5">Signed on {new Date().toLocaleDateString()}</p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Approved & Attested By:</p>
+            <div className="mt-10 border-b-2 border-gray-400 w-56 ml-auto"></div>
+            <p className="mt-1.5 font-bold text-gray-900 text-sm">PSITS Regional President</p>
+            <p className="text-[11px] text-gray-500">Executive Council & Board of Officers</p>
+            <p className="text-[10px] text-gray-400 font-mono mt-0.5">Official Stamp & Date</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
