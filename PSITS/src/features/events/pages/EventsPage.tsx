@@ -162,6 +162,7 @@ export const EventsPage = () => {
   } | null>(null);
 
   const [memberPayments, setMemberPayments] = useState<any[]>([]);
+  const [failedBanners, setFailedBanners] = useState<Record<string, boolean>>({});
 
   const [paymentForm, setPaymentForm] = useState<{
     method: 'through_officer' | 'bank_transfer' | 'cheque' | 'gcash' | string;
@@ -1287,14 +1288,17 @@ export const EventsPage = () => {
             const cardThemeColor = event.themeColor || '#2563eb';
             return (
               <Card key={event.id} variant="cyber" className="overflow-hidden transition-all duration-300 hover:border-cyan-500/40 hover:shadow-cyan-500/10 border-l-4" style={{ borderLeftColor: cardThemeColor }}>
-                {event.bannerUrl && (
-                  <div className="w-full h-44 sm:h-52 bg-gray-100 relative overflow-hidden border-b border-gray-200">
+                {event.bannerUrl && !failedBanners[String(event.id)] && (
+                  <div className="w-full h-44 sm:h-52 bg-slate-900/10 dark:bg-slate-800/40 relative overflow-hidden border-b border-gray-200 dark:border-slate-800">
                     <img
                       src={event.bannerUrl}
                       alt={event.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-opacity duration-300"
+                      onError={() => {
+                        setFailedBanners((prev) => ({ ...prev, [String(event.id)]: true }));
+                      }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
                     {event.customBadge && (
                       <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-white/20">
                         <Sparkles size={12} className="text-amber-400" />
@@ -1323,7 +1327,7 @@ export const EventsPage = () => {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {event.customBadge && !event.bannerUrl && (
+                      {event.customBadge && (!event.bannerUrl || failedBanners[String(event.id)]) && (
                         <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-amber-200">
                           <Sparkles size={12} /> {event.customBadge}
                         </span>

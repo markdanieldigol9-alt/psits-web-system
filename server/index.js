@@ -210,6 +210,44 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   },
 }));
 
+// Database-backed upload recovery: if an asset is not on disk (e.g. after cloud server restart), fetch from system_uploads
+app.use('/uploads', async (req, res, next) => {
+  try {
+    const rawPath = req.path.replace(/^\/+/, '');
+    const filename = path.basename(rawPath);
+    if (!filename) return next();
+
+    const [rows] = await pool.query(
+      'SELECT mime_type, file_data FROM system_uploads WHERE filename = ? OR file_path = ? LIMIT 1',
+      [filename, rawPath]
+    );
+
+    if (rows && rows.length > 0) {
+      const row = rows[0];
+      const buffer = Buffer.isBuffer(row.file_data) ? row.file_data : Buffer.from(row.file_data);
+
+      try {
+        const fullLocalPath = path.join(__dirname, 'uploads', rawPath);
+        await fs.mkdir(path.dirname(fullLocalPath), { recursive: true });
+        await fs.writeFile(fullLocalPath, buffer);
+      } catch (cacheErr) {
+        // Non-fatal if local disk is read-only
+      }
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      if (row.mime_type) {
+        res.setHeader('Content-Type', row.mime_type);
+      }
+      return res.send(buffer);
+    }
+  } catch (err) {
+    // If table doesn't exist yet or query fails, continue to next
+  }
+  return next();
+});
+
 let migrationReady = false;
 let migrationError = null;
 
@@ -249,6 +287,19 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
+async function persistUploadToDatabase(filename, relativePath, mime, buffer) {
+  try {
+    await pool.query(
+      `INSERT INTO system_uploads (filename, file_path, mime_type, file_data)
+       VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE file_data = VALUES(file_data), mime_type = VALUES(mime_type)`,
+      [filename, relativePath, mime, buffer]
+    );
+  } catch (err) {
+    // Non-fatal if table not initialized yet
+  }
+}
+
 app.post(['/api/uploads/payment-proof', '/uploads/payment-proof'], authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
@@ -273,6 +324,7 @@ app.post(['/api/uploads/payment-proof', '/uploads/payment-proof'], authMiddlewar
 
   const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
   await fs.writeFile(path.join(dir, filename), buffer);
+  await persistUploadToDatabase(filename, `payment-proofs/${filename}`, mime, buffer);
 
   return res.status(201).json({ success: true, url: `/uploads/payment-proofs/${filename}` });
 });
@@ -324,6 +376,7 @@ app.post(['/api/uploads/team-profile', '/uploads/team-profile'], authMiddleware,
 
   const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
   await fs.writeFile(path.join(dir, filename), buffer);
+  await persistUploadToDatabase(filename, `team-profiles/${filename}`, mime, buffer);
 
   return res.status(201).json({ success: true, url: `/uploads/team-profiles/${filename}` });
 });
@@ -352,6 +405,7 @@ app.post(['/api/uploads/announcement-image', '/uploads/announcement-image'], aut
 
   const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
   await fs.writeFile(path.join(dir, filename), buffer);
+  await persistUploadToDatabase(filename, `announcement-images/${filename}`, mime, buffer);
 
   return res.status(201).json({ success: true, url: `/uploads/announcement-images/${filename}` });
 });
@@ -380,6 +434,7 @@ app.post(['/api/uploads/event-banner', '/uploads/event-banner'], authMiddleware,
 
   const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
   await fs.writeFile(path.join(dir, filename), buffer);
+  await persistUploadToDatabase(filename, `event-banners/${filename}`, mime, buffer);
 
   return res.status(201).json({ success: true, url: `/uploads/event-banners/${filename}` });
 });
@@ -451,6 +506,7 @@ app.post(['/api/uploads/event-guidelines', '/uploads/event-guidelines'], authMid
     const filename = safeOriginalName ? `${uniquePrefix}-${safeOriginalName}` : `${uniquePrefix}-guidelines.${ext}`;
 
     await fs.writeFile(path.join(dir, filename), buffer);
+    await persistUploadToDatabase(filename, `event-guidelines/${filename}`, mime, buffer);
 
     return res.status(201).json({
       success: true,

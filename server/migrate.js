@@ -1484,6 +1484,42 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
 
+  // Create system_uploads table for persistent cloud storage backup of all uploaded files (banners, receipts, etc.)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS system_uploads (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      filename VARCHAR(255) NOT NULL UNIQUE,
+      file_path VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(100) NULL,
+      file_data LONGBLOB NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_sys_up_path (file_path)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
+
+  // Pre-seed any existing committed event banners into system_uploads
+  try {
+    const bannersDir = require('path').join(__dirname, 'uploads', 'event-banners');
+    const fs = require('fs');
+    if (fs.existsSync(bannersDir)) {
+      const bannerFiles = fs.readdirSync(bannersDir);
+      for (const bf of bannerFiles) {
+        if (bf.endsWith('.jpg') || bf.endsWith('.png') || bf.endsWith('.webp')) {
+          const buf = fs.readFileSync(require('path').join(bannersDir, bf));
+          const mime = bf.endsWith('.png') ? 'image/png' : bf.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+          await pool.query(
+            `INSERT INTO system_uploads (filename, file_path, mime_type, file_data)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE file_data = VALUES(file_data), mime_type = VALUES(mime_type)`,
+            [bf, `event-banners/${bf}`, mime, buf]
+          );
+        }
+      }
+    }
+  } catch (seedUploadErr) {
+    console.warn('[migrate] Note pre-seeding system_uploads:', seedUploadErr.message);
+  }
+
   // Database-native views: Analyze slow query execution frequency & total resource consumption
   try {
     await pool.query(`
