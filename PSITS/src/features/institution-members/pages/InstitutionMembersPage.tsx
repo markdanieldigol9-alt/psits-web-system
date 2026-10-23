@@ -28,6 +28,11 @@ import {
   Building2,
   Filter,
   X,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import { getUserInterfaceKey } from '@/shared/utils/userInterface';
@@ -42,12 +47,22 @@ type InstitutionMember = {
   institution_email?: string;
   fullName: string;
   email?: string;
+  password?: string;
   contactNumber?: string;
   gender?: string;
   position?: string;
   eventTitle?: string;
   status?: 'pending' | 'approved' | 'rejected';
   date: string;
+};
+
+const generateClientRandomPassword = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let randomPart = '';
+  for (let i = 0; i < 6; i += 1) {
+    randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `Psits#${randomPart}`;
 };
 
 const parseSpreadsheetFile = async (file: File) => {
@@ -72,10 +87,15 @@ const parseSpreadsheetFile = async (file: File) => {
         return '';
       };
 
+      let parsedPw = findField('password', 'pass', 'initialpassword', 'userpassword', 'loginpassword');
+      if (!parsedPw) {
+        parsedPw = generateClientRandomPassword();
+      }
+
       return {
         fullName: findField('fullname', 'name', 'participantname', 'membername', 'studentname'),
         email: findField('email', 'emailaddress', 'institutionemail', 'useremail'),
-        password: findField('password', 'pass', 'initialpassword', 'userpassword', 'loginpassword'),
+        password: parsedPw,
         contactNumber: findField('contactnumber', 'contact', 'phone', 'phonenumber', 'mobile', 'mobilenumber', 'contactno'),
         gender: findField('gender', 'sex') || 'Male',
         position: findField('position', 'role', 'membertype', 'designation') || 'Student',
@@ -99,16 +119,71 @@ export const InstitutionMembersPage = () => {
   const [boardTargetInstitution, setBoardTargetInstitution] = useState<any | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [singleForm, setSingleForm] = useState({
     fullName: '',
     email: '',
-    password: '',
+    password: generateClientRandomPassword(),
     contactNumber: '',
     gender: 'Male',
     position: 'Student',
     eventTitle: '',
     notes: '',
   });
+
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleCopyPassword = async (id: string, pw: string) => {
+    try {
+      await navigator.clipboard.writeText(pw);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+      addNotification({
+        userId: 'current',
+        title: 'Password Copied',
+        message: 'Password copied to clipboard.',
+        type: 'info',
+        isRead: false,
+      });
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleRegeneratePassword = async (id: string, memberName: string) => {
+    try {
+      setRegeneratingId(id);
+      const res = await api.generateInstitutionMemberPassword(id);
+      if (res.data?.success && res.data.password) {
+        const newPw = res.data.password;
+        setMembers((prev) =>
+          prev.map((m) => (String(m.id) === String(id) ? { ...m, password: newPw } : m))
+        );
+        setVisiblePasswords((prev) => ({ ...prev, [id]: true }));
+        addNotification({
+          userId: 'current',
+          title: 'Password Generated',
+          message: `New random password generated for ${memberName}: ${newPw}`,
+          type: 'success',
+          isRead: false,
+        });
+      }
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        title: 'Generation Failed',
+        message: err?.response?.data?.message || 'Could not generate password.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
 
   const handleDownloadTemplate = () => {
     const templateRows = [
@@ -186,7 +261,7 @@ export const InstitutionMembersPage = () => {
       setSingleForm({
         fullName: '',
         email: '',
-        password: '',
+        password: generateClientRandomPassword(),
         contactNumber: '',
         gender: 'Male',
         position: 'Student',
@@ -831,6 +906,7 @@ export const InstitutionMembersPage = () => {
       'Member Name': m.fullName || 'N/A',
       'Institution': m.institutionName || 'N/A',
       'Email': m.email || 'N/A',
+      'Password': m.password || 'N/A',
       'Contact Number': m.contactNumber || 'N/A',
       'Position': m.position || 'N/A',
       'Fee / Rate': 'PHP 250.00',
@@ -881,7 +957,14 @@ export const InstitutionMembersPage = () => {
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             {(isInstitutionMember || canViewAll) && (
               <>
-                <Button variant="primary" size="lg" onClick={() => setShowAddModal(true)}>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    setSingleForm((prev) => ({ ...prev, password: prev.password || generateClientRandomPassword() }));
+                    setShowAddModal(true);
+                  }}
+                >
                   <Plus size={20} />
                   Add Member
                 </Button>
@@ -1349,6 +1432,7 @@ export const InstitutionMembersPage = () => {
                     <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Institution</th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Password</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Contact</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Position</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Fee / Rate</th>
@@ -1364,6 +1448,50 @@ export const InstitutionMembersPage = () => {
                     <td className="px-6 py-4 font-medium text-gray-900">{member.fullName}</td>
                     {canViewAll && <td className="px-6 py-4 text-sm text-gray-600">{member.institutionName || '-'}</td>}
                     <td className="px-6 py-4 text-sm text-gray-600">{member.email || '-'}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {member.password ? (
+                        <div className="flex items-center gap-1.5 font-mono">
+                          <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-800 dark:text-slate-200 select-all border border-slate-200 dark:border-slate-700">
+                            {visiblePasswords[member.id] ? member.password : '••••••••'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility(member.id)}
+                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                            title={visiblePasswords[member.id] ? 'Hide password' : 'Show password'}
+                          >
+                            {visiblePasswords[member.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyPassword(member.id, member.password!)}
+                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                            title="Copy password"
+                          >
+                            {copiedId === member.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={regeneratingId === member.id}
+                            onClick={() => handleRegeneratePassword(member.id, member.fullName)}
+                            className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors disabled:opacity-50"
+                            title="Regenerate random password"
+                          >
+                            <RefreshCw size={14} className={regeneratingId === member.id ? 'animate-spin' : ''} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={regeneratingId === member.id}
+                          onClick={() => handleRegeneratePassword(member.id, member.fullName)}
+                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 rounded hover:underline"
+                        >
+                          <Key size={12} />
+                          {regeneratingId === member.id ? 'Generating...' : 'Generate Password'}
+                        </button>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{member.contactNumber || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{member.position || '-'}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">
@@ -1437,7 +1565,7 @@ export const InstitutionMembersPage = () => {
             <Key size={20} className="text-blue-600 shrink-0 mt-0.5" />
             <div className="text-xs text-blue-900 leading-relaxed">
               <strong>Individual Member Login Account:</strong> Members added here automatically receive an Individual Member portal login account.
-              Set an optional initial password below (or leave blank to allow login using the institution password).
+              A random password has been generated below for individual login (you may regenerate or customize it anytime).
             </div>
           </div>
 
@@ -1458,14 +1586,35 @@ export const InstitutionMembersPage = () => {
               value={singleForm.email}
               onChange={(e) => setSingleForm((p) => ({ ...p, email: e.target.value }))}
             />
-            <Input
-              label="Login Password (optional)"
-              type="password"
-              placeholder="Set custom login password..."
-              value={singleForm.password}
-              onChange={(e) => setSingleForm((p) => ({ ...p, password: e.target.value }))}
-              helperText="If blank, member can log in using institution password."
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Login Password *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  placeholder="Generated password..."
+                  value={singleForm.password}
+                  onChange={(e) => setSingleForm((p) => ({ ...p, password: e.target.value }))}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSingleForm((p) => ({ ...p, password: generateClientRandomPassword() }))}
+                  title="Generate New Random Password"
+                  className="whitespace-nowrap flex items-center gap-1.5 shrink-0"
+                >
+                  <RefreshCw size={14} />
+                  Random
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Random password generated for individual member portal login.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1841,8 +1990,18 @@ export const InstitutionMembersPage = () => {
                       <div className="font-semibold text-gray-900 dark:text-white truncate">
                         {idx + 1}. {m.fullName}
                       </div>
-                      <div className="text-gray-500 dark:text-slate-400 text-[11px] truncate">
-                        {m.email || 'No email'} • {m.contactNumber || 'No contact'}
+                      <div className="text-gray-500 dark:text-slate-400 text-[11px] truncate flex items-center gap-1.5 flex-wrap">
+                        <span>{m.email || 'No email'}</span>
+                        <span>•</span>
+                        <span>{m.contactNumber || 'No contact'}</span>
+                        {m.password && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                              Pass: {m.password}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div>
