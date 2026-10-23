@@ -231,7 +231,48 @@ async function listPayments(req, res) {
   const where = [];
   const params = [];
 
-  if (req.user?.role === 'member') {
+  const userRole = req.user?.role;
+  const userMemberType = req.user?.member_type;
+  const userSector = req.user?.sector;
+
+  const isAdminOrOfficer = ['super_admin', 'admin', 'officer'].includes(userRole);
+  const isInstitution = !isAdminOrOfficer && (
+    userRole === 'institution' ||
+    userMemberType === 'institution' ||
+    (userSector === 'institution' && userMemberType !== 'individual')
+  );
+  const isIndustry = !isAdminOrOfficer && !isInstitution && (
+    userRole === 'industry' ||
+    userMemberType === 'industry' ||
+    userSector === 'industry'
+  );
+  const isIndividual = !isAdminOrOfficer && !isInstitution && !isIndustry;
+
+  if (isAdminOrOfficer) {
+    // Admin and Officer: All transactions across all members, institutions, and industry partners are visible
+  } else if (isInstitution) {
+    // Institutional Member: Only their institution's transactions and delegate payments are visible
+    const instName = req.user.sector_details || req.user.full_name || '';
+    where.push(`(
+      p.member_id = ?
+      OR u.institution_owner_id = ?
+      OR (u.sector_details IS NOT NULL AND LOWER(u.sector_details) = LOWER(?))
+      OR u.email IN (SELECT email FROM institution_members WHERE institution_user_id = ?)
+      OR (p.payment_kind LIKE '%institution%' AND (p.member_id = ? OR p.member_name LIKE ?))
+    )`);
+    params.push(req.user.id, req.user.id, instName, req.user.id, req.user.id, `%${instName}%`);
+  } else if (isIndustry) {
+    // Industry Partner: Only their corporate sponsorships and partner transactions are visible
+    const compName = req.user.sector_details || req.user.full_name || '';
+    where.push(`(
+      p.member_id = ?
+      OR (p.payment_kind = 'partner_sponsorship' AND (p.member_id = ? OR p.member_name LIKE ?))
+      OR (u.member_type = 'industry' AND p.member_id = ?)
+      OR (u.sector = 'industry' AND p.member_id = ?)
+    )`);
+    params.push(req.user.id, req.user.id, `%${compName}%`, req.user.id, req.user.id);
+  } else if (isIndividual) {
+    // Individual Member: Only their own personal transactions are visible
     where.push('p.member_id = ?');
     params.push(req.user.id);
   }
@@ -273,9 +314,9 @@ async function listPayments(req, res) {
 
   if (category && category !== 'all') {
     if (category === 'institution') {
-      where.push("(p.payment_kind IN ('institution_batch_registration', 'institution_partial_payment') OR u.member_type = 'institution' OR COALESCE(u.sector_details, inst_owner.sector_details, inst_owner.full_name) IS NOT NULL)");
+      where.push("(p.payment_kind IN ('institution_batch_registration', 'institution_partial_payment') OR u.member_type = 'institution' OR p.payment_kind LIKE '%institution%' OR p.event LIKE '%institution%')");
     } else if (category === 'individual' || category === 'membership') {
-      where.push("(p.payment_kind IN ('membership_registration', 'membership_renewal', 'membership') OR (p.event_id IS NULL AND p.payment_kind NOT IN ('institution_batch_registration', 'institution_partial_payment', 'partner_sponsorship')))");
+      where.push("(p.payment_kind IN ('membership_registration', 'membership_renewal', 'membership') AND p.payment_kind NOT IN ('institution_batch_registration', 'institution_partial_payment') AND (u.member_type != 'institution' OR u.member_type IS NULL))");
     } else if (category === 'event') {
       where.push("(p.payment_kind = 'event' OR p.event_id IS NOT NULL)");
     } else if (category === 'sponsorship') {
@@ -622,53 +663,62 @@ async function verifyPayment(req, res) {
 
   const rejectionReason = status === 'rejected' ? (body.rejectionReason ? String(body.rejectionReason).trim() : '') : null;
 
-  const [beforeRows] = await pool.execute(
-    'SELECT id, status, member_id, payment_kind FROM payments WHERE id = ? LIMIT 1',
-    [id]
-  );
-  if (!beforeRows.length) return res.status(404).json({ success: false, message: 'Payment not found.' });
-  const oldStatus = String(beforeRows[0].status || '');
-  const paymentKind = String(beforeRows[0].payment_kind || 'event');
-  const memberId = beforeRows[0].member_id ? Number(beforeRows[0].member_id) : null;
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
 
-  const [columnRows] = await pool.execute('SHOW COLUMNS FROM payments');
-  const columnSet = new Set(columnRows.map((row) => String(row.Field)));
+    const [beforeRows] = await conn.execute(
+      'SELECT id, amount, status, member_id, payment_kind FROM payments WHERE id = ? FOR UPDATE',
+      [id]
+    );
+    if (!beforeRows.length) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Payment not found.' });
+    }
+    const paymentRow = beforeRows[0];
+    const oldStatus = String(paymentRow.status || '');
+    const paymentKind = String(paymentRow.payment_kind || 'event');
+    const memberId = paymentRow.member_id ? Number(paymentRow.member_id) : null;
+    const amount = Number(paymentRow.amount || 0);
 
-  const sets = ['status = ?', 'verified_by = ?', 'rejection_reason = ?'];
-  const params = [status, req.user?.id || null, rejectionReason];
-  if (columnSet.has('verified_at')) {
-    sets.push('verified_at = NOW()');
-  }
+    const [columnRows] = await conn.execute('SHOW COLUMNS FROM payments');
+    const columnSet = new Set(columnRows.map((row) => String(row.Field)));
 
-  if (columnSet.has('payment_status')) {
-    sets.push('payment_status = ?');
-    params.push(status === 'verified' ? 'paid' : 'rejected');
-  }
-  if (columnSet.has('process_status')) {
-    sets.push('process_status = ?');
-    params.push(status === 'verified' ? 'verified' : 'rejected');
-  }
+    const sets = ['status = ?', 'verified_by = ?', 'rejection_reason = ?'];
+    const params = [status, req.user?.id || null, rejectionReason];
+    if (columnSet.has('verified_at')) {
+      sets.push('verified_at = NOW()');
+    }
 
-  params.push(id);
-  await pool.execute(
-    `UPDATE payments
-     SET ${sets.join(', ')}
-     WHERE id = ?`,
-    params
-  );
+    if (columnSet.has('payment_status')) {
+      sets.push('payment_status = ?');
+      params.push(status === 'verified' ? 'paid' : 'rejected');
+    }
+    if (columnSet.has('process_status')) {
+      sets.push('process_status = ?');
+      params.push(status === 'verified' ? 'verified' : 'rejected');
+    }
 
-  // If this is a verified membership payment (registration, renewal, or membership fee), activate member & extend validity.
-  if (status === 'verified' && ['membership_renewal', 'membership_registration', 'membership'].includes(paymentKind) && memberId && Number.isFinite(memberId)) {
-    try {
-      const [uRows] = await pool.execute(
+    params.push(id);
+    await conn.execute(
+      `UPDATE payments
+       SET ${sets.join(', ')}
+       WHERE id = ?`,
+      params
+    );
+
+    // If this is a verified membership payment (registration, renewal, or membership fee), activate member & extend validity atomically
+    if (status === 'verified' && ['membership_renewal', 'membership_registration', 'membership'].includes(paymentKind) && memberId && Number.isFinite(memberId)) {
+      const [uRows] = await conn.execute(
         `SELECT id, status, member_type, membership_started_at, membership_expires_at
          FROM users
          WHERE id = ? AND role = 'member'
-         LIMIT 1`,
+         LIMIT 1
+         FOR UPDATE`,
         [memberId]
       );
       if (uRows.length) {
-        await pool.execute(
+        await conn.execute(
           `UPDATE users
            SET status = 'active',
                status_updated_at = NOW(),
@@ -684,32 +734,52 @@ async function verifyPayment(req, res) {
           [req.user?.id || null, memberId]
         );
       }
-    } catch (memErr) {
-      console.error('Membership payment verification user update error:', memErr);
     }
-  }
 
-  if (oldStatus !== status) {
-    try {
-      await pool.execute(
+    if (oldStatus !== status) {
+      await conn.execute(
         `INSERT INTO payment_status_logs (payment_id, old_status, new_status, remarks, changed_by)
          VALUES (?, ?, ?, ?, ?)`,
         [id, oldStatus, status, rejectionReason || null, req.user?.id || null]
       );
-    } catch {
-      // best effort
     }
-  }
 
-  const [rows] = await pool.execute(
-    `SELECT p.*, u.full_name AS member_name, e.title AS event_title
-     FROM payments p
-     JOIN users u ON u.id = p.member_id
-     LEFT JOIN events e ON e.id = p.event_id
-     WHERE p.id = ? LIMIT 1`,
-    [id]
-  );
-  return res.json({ success: true, payment: toPaymentDto(rows[0]) });
+    // In-app notification to member on status change
+    if (memberId && Number.isFinite(memberId) && oldStatus !== status) {
+      try {
+        const notifTitle = status === 'verified' ? 'Payment Verified' : 'Payment Rejected';
+        const formattedAmount = amount > 0 ? `₱${amount.toLocaleString()}` : 'dues';
+        const notifMessage = status === 'verified'
+          ? `Your payment of ${formattedAmount} has been verified and confirmed.`
+          : `Your payment of ${formattedAmount} was rejected: ${rejectionReason || 'Please review your receipt and resubmit.'}`;
+        await conn.execute(
+          `INSERT INTO notifications (user_id, title, message, type, is_read)
+           VALUES (?, ?, ?, ?, 0)`,
+          [memberId, notifTitle, notifMessage, status === 'verified' ? 'payment' : 'warning']
+        );
+      } catch {
+        // Notification is non-blocking for payment transaction
+      }
+    }
+
+    await conn.commit();
+
+    const [rows] = await pool.execute(
+      `SELECT p.*, u.full_name AS member_name, e.title AS event_title
+       FROM payments p
+       JOIN users u ON u.id = p.member_id
+       LEFT JOIN events e ON e.id = p.event_id
+       WHERE p.id = ? LIMIT 1`,
+      [id]
+    );
+    return res.json({ success: true, payment: toPaymentDto(rows[0]) });
+  } catch (err) {
+    await conn.rollback();
+    console.error('verifyPayment transaction error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to verify payment.', error: err.message });
+  } finally {
+    conn.release();
+  }
 }
 
 async function getPaymentStatusLogs(req, res) {

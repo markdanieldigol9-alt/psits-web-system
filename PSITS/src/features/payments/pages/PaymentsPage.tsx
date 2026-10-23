@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 
 import { Card, Button, TextArea, Input, Select } from '@/shared/components/Form';
 import { Badge, Pagination, Modal } from '@/shared/components/Common';
-import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus, RotateCcw, Receipt } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import api from '@/shared/services/api';
 import { useAuth } from '@/shared/context/AuthContext';
@@ -13,6 +13,7 @@ import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
 import { formatPaymentMethod, PAYMENT_METHOD_OPTIONS } from '@/shared/utils/helpers';
+import { getUserInterfaceKey } from '@/shared/utils/userInterface';
 
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -34,7 +35,7 @@ export const PaymentsPage = () => {
     ['institution', 'individual', 'event', 'sponsorship'].includes(initialCategory) ? initialCategory : 'all'
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(10);
   const [payments, setPayments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewing, setViewing] = useState<any | null>(null);
@@ -44,7 +45,26 @@ export const PaymentsPage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [paymentLogs, setPaymentLogs] = useState<any[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
-  const isMember = user?.role === 'member';
+  const uiKey = getUserInterfaceKey(user);
+  const isAdminOrOfficer =
+    ['super_admin', 'admin', 'officer'].includes(user?.role || '') ||
+    ['super_admin', 'admin', 'officer'].includes(uiKey);
+  const isInstitution =
+    !isAdminOrOfficer &&
+    (uiKey === 'member_institutional' ||
+      (user?.role as string) === 'institution' ||
+      user?.memberType === 'institution' ||
+      (user as any)?.member_type === 'institution' ||
+      (user?.sector === 'institution' && user?.memberType !== 'individual'));
+  const isIndustry =
+    !isAdminOrOfficer &&
+    !isInstitution &&
+    (uiKey === 'member_industry' ||
+      (user?.role as string) === 'industry' ||
+      user?.memberType === 'industry' ||
+      (user as any)?.member_type === 'industry' ||
+      user?.sector === 'industry');
+  const isIndividualMember = !isAdminOrOfficer && !isInstitution && !isIndustry;
 
   // State for submitting a new payment / membership dues
   const [showPayFeeModal, setShowPayFeeModal] = useState(false);
@@ -59,12 +79,33 @@ export const PaymentsPage = () => {
     previewUrl: string;
   }>({
     method: 'gcash',
-    amount: 250,
-    paymentKind: 'membership_registration',
+    amount: isIndustry ? 5000 : isInstitution ? 1000 : 250,
+    paymentKind: isIndustry
+      ? 'partner_sponsorship'
+      : isInstitution
+      ? 'institution_partial_payment'
+      : 'membership_registration',
     referenceNumber: '',
     file: null,
     previewUrl: '',
   });
+
+  const handleOpenPayModal = () => {
+    setFeeForm({
+      method: 'gcash',
+      amount: isIndustry ? 5000 : isInstitution ? 1000 : 250,
+      paymentKind: isIndustry
+        ? 'partner_sponsorship'
+        : isInstitution
+        ? 'institution_partial_payment'
+        : 'membership_registration',
+      referenceNumber: '',
+      file: null,
+      previewUrl: '',
+    });
+    setFeeError(null);
+    setShowPayFeeModal(true);
+  };
 
   // State for Admin / Officer offline & direct payment recording
   const [showRecordModal, setShowRecordModal] = useState(false);
@@ -155,23 +196,82 @@ export const PaymentsPage = () => {
     }
   }, [searchParams]);
 
-  const scopedPayments = isMember
-    ? payments.filter((payment) => String(payment.memberId) === String(user?.id || ''))
-    : payments;
+  const scopedPayments = useMemo(() => {
+    if (isAdminOrOfficer) return payments;
+    if (isIndividualMember) {
+      return payments.filter(
+        (payment) => !payment.memberId || String(payment.memberId) === String(user?.id || '')
+      );
+    }
+    // Institutional and Industry collections are already precisely scoped by the server
+    return payments;
+  }, [isAdminOrOfficer, isIndividualMember, payments, user?.id]);
 
   const getVerificationStatus = (payment: any) =>
     String(payment?.verificationStatus || payment?.status || 'pending').toLowerCase();
 
   const isInstitutionPayment = (payment: any) => {
     const kind = String(payment?.paymentKind || '').toLowerCase();
+    const event = String(payment?.event || payment?.eventTitle || '').toLowerCase();
     return (
       kind.includes('institution') ||
-      Boolean(payment?.institutionName) ||
       payment?.memberType === 'institution' ||
-      (payment?.event || '').toLowerCase().includes('institution') ||
-      (payment?.eventTitle || '').toLowerCase().includes('institution')
+      event.includes('institution')
     );
   };
+
+  const isEventPayment = (payment: any) => {
+    const kind = String(payment?.paymentKind || '').toLowerCase();
+    return Boolean(payment?.eventId) || kind === 'event';
+  };
+
+  const isSponsorshipPayment = (payment: any) => {
+    const kind = String(payment?.paymentKind || '').toLowerCase();
+    return kind === 'partner_sponsorship';
+  };
+
+  const isIndividualPayment = (payment: any) => {
+    return !isInstitutionPayment(payment) && !isEventPayment(payment) && !isSponsorshipPayment(payment);
+  };
+
+  const categoryTabs = useMemo(() => {
+    if (isAdminOrOfficer) {
+      return [
+        { id: 'all', label: `All Transactions (${scopedPayments.length})` },
+        { id: 'institution', label: `🏛️ Institution Payments (${scopedPayments.filter(isInstitutionPayment).length})` },
+        { id: 'individual', label: `👤 Individual Membership (${scopedPayments.filter(isIndividualPayment).length})` },
+        { id: 'event', label: `🎯 Event Registrations (${scopedPayments.filter(isEventPayment).length})` },
+        { id: 'sponsorship', label: `🤝 Partner Sponsorships (${scopedPayments.filter(isSponsorshipPayment).length})` },
+      ];
+    }
+    if (isInstitution) {
+      return [
+        { id: 'all', label: `All Institution Transactions (${scopedPayments.length})` },
+        { id: 'institution', label: `🏛️ Batch & Partial Remittances (${scopedPayments.filter(isInstitutionPayment).length})` },
+        { id: 'event', label: `🎯 Member Event Registrations (${scopedPayments.filter(isEventPayment).length})` },
+      ];
+    }
+    if (isIndustry) {
+      return [
+        { id: 'all', label: `All Contributions (${scopedPayments.length})` },
+        { id: 'sponsorship', label: `🤝 Corporate Sponsorships (${scopedPayments.filter(isSponsorshipPayment).length})` },
+        { id: 'event', label: `🎯 Event Partnerships (${scopedPayments.filter(isEventPayment).length})` },
+      ];
+    }
+    // Individual Member
+    return [
+      { id: 'all', label: `All My Transactions (${scopedPayments.length})` },
+      { id: 'individual', label: `👤 Membership Dues (${scopedPayments.filter(isIndividualPayment).length})` },
+      { id: 'event', label: `🎯 Event Registrations (${scopedPayments.filter(isEventPayment).length})` },
+    ];
+  }, [isAdminOrOfficer, isInstitution, isIndustry, scopedPayments]);
+
+  useEffect(() => {
+    const validIds = categoryTabs.map((t) => t.id);
+    if (!validIds.includes(filterCategory)) {
+      setFilterCategory('all');
+    }
+  }, [categoryTabs, filterCategory]);
 
   const filteredPayments = scopedPayments.filter((payment) => {
     const status = getVerificationStatus(payment);
@@ -179,12 +279,10 @@ export const PaymentsPage = () => {
     if (!matchesStatus) return false;
 
     if (filterCategory !== 'all') {
-      const kind = String(payment.paymentKind || '').toLowerCase();
-      const isInst = isInstitutionPayment(payment);
-      if (filterCategory === 'institution' && !isInst) return false;
-      if (filterCategory === 'individual' && (isInst || payment.eventId || kind === 'partner_sponsorship')) return false;
-      if (filterCategory === 'event' && (!payment.eventId && kind !== 'event')) return false;
-      if (filterCategory === 'sponsorship' && kind !== 'partner_sponsorship') return false;
+      if (filterCategory === 'institution' && !isInstitutionPayment(payment)) return false;
+      if (filterCategory === 'individual' && !isIndividualPayment(payment)) return false;
+      if (filterCategory === 'event' && !isEventPayment(payment)) return false;
+      if (filterCategory === 'sponsorship' && !isSponsorshipPayment(payment)) return false;
     }
 
     if (!searchTerm.trim()) return true;
@@ -199,15 +297,31 @@ export const PaymentsPage = () => {
       (payment.referenceNumber && String(payment.referenceNumber).toLowerCase().includes(term)) ||
       (payment.method && String(payment.method).toLowerCase().includes(term)) ||
       (payment.paymentMethod && String(payment.paymentMethod).toLowerCase().includes(term)) ||
-      (payment.memberId && String(payment.memberId) === term)
+      (payment.memberId && String(payment.memberId) === term) ||
+      (payment.id && String(payment.id) === term) ||
+      (payment.status && String(payment.status).toLowerCase().includes(term))
     );
   });
 
-  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
-  const paginatedPayments = filteredPayments.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() || filterStatus !== 'all' || filterCategory !== 'all'
   );
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setFilterStatus('all');
+    setFilterCategory('all');
+    setCurrentPage(1);
+    setSearchParams({});
+  };
+
+  const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(filteredPayments.length / itemsPerPage);
+  const paginatedPayments = itemsPerPage === 'all'
+    ? filteredPayments
+    : filteredPayments.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+      );
 
   const handleSubmitFee = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -417,10 +531,10 @@ export const PaymentsPage = () => {
   };
 
   // 1. All payments belonging to institutions
-  const institutionPaymentsList = payments.filter(isInstitutionPayment);
+  const institutionPaymentsList = scopedPayments.filter(isInstitutionPayment);
 
   // 2. Collections from individual memberships, renewals, events, sponsorships
-  const verifiedIndividualAndEventRevenue = payments
+  const verifiedIndividualAndEventRevenue = scopedPayments
     .filter((p) => getVerificationStatus(p) === 'verified' && !isInstitutionPayment(p))
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
@@ -461,6 +575,22 @@ export const PaymentsPage = () => {
   const totalVerifiedRevenue = verifiedIndividualAndEventRevenue + institutionTotalPaid;
   const totalFinancialVolume = verifiedIndividualAndEventRevenue + institutionTotalBilled;
 
+  // Individual persona stats:
+  const myTotalPaid = scopedPayments
+    .filter((p) => getVerificationStatus(p) === 'verified')
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const myVerifiedCount = scopedPayments.filter((p) => getVerificationStatus(p) === 'verified').length;
+  const myPendingCount = scopedPayments.filter((p) => getVerificationStatus(p) === 'pending').length;
+  const isVerifiedMember = user?.status === 'active' || myVerifiedCount > 0;
+
+  // Industry persona stats:
+  const industryTotalPaid = scopedPayments
+    .filter((p) => getVerificationStatus(p) === 'verified')
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const industryVerifiedCount = scopedPayments.filter((p) => getVerificationStatus(p) === 'verified').length;
+  const industryPendingCount = scopedPayments.filter((p) => getVerificationStatus(p) === 'pending').length;
+  const hasActiveSponsorship = industryVerifiedCount > 0;
+
   const canVerify = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
   return (
@@ -476,25 +606,49 @@ export const PaymentsPage = () => {
                   <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse" />
                   MODULE.FINANCE
                 </span>
-                <span className="text-xs text-slate-500 font-mono">AUDIT_LOG_ENABLED</span>
+                <span className="text-xs text-slate-500 font-mono">
+                  {isAdminOrOfficer
+                    ? 'CENTRAL_LEDGER_AUDIT'
+                    : isInstitution
+                    ? 'INSTITUTION_BILLING'
+                    : isIndustry
+                    ? 'CORPORATE_SPONSORSHIP'
+                    : 'MEMBER_RECEIPTS'}
+                </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
-                {isMember ? 'My Payment History' : 'Financial Ledger & Verification'}
+                {isAdminOrOfficer
+                  ? 'Financial Ledger & Verification'
+                  : isInstitution
+                  ? 'Institutional Fee & Payment History'
+                  : isIndustry
+                  ? 'Sponsorship & Contribution History'
+                  : 'Payment History & Receipts'}
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                {isMember ? 'Track your membership dues, event registrations, and digital receipts.' : 'Monitor transactions, verify digital receipts, and audit collegiate cash flows.'}
+                {isAdminOrOfficer
+                  ? 'Monitor transactions across all institutions, members, and industry partners, verify digital receipts, and audit collegiate cash flows.'
+                  : isInstitution
+                  ? "Track your institution's batch registration dues, partial remittances, and delegate payments."
+                  : isIndustry
+                  ? 'Manage your corporate sponsorships, track partnership contributions, and download official receipts.'
+                  : 'Track your personal membership dues, event registrations, and digital official receipts.'}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-              {isMember && (
+              {!isAdminOrOfficer && (
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={() => setShowPayFeeModal(true)}
+                  onClick={handleOpenPayModal}
                   className="w-full sm:w-auto shrink-0 font-medium"
                 >
                   <DollarSign size={18} />
-                  Submit Payment / Pay Fee
+                  {isIndustry
+                    ? 'Submit Sponsorship / Contribution'
+                    : isInstitution
+                    ? 'Submit Batch Payment / Settlement'
+                    : 'Submit Payment / Pay Fee'}
                 </Button>
               )}
               {canVerify && (
@@ -520,15 +674,41 @@ export const PaymentsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-cyber-blue/30 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Verified Revenue</span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue dark:text-cyber-cyan font-bold">SYS.REV</span>
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {isAdminOrOfficer
+                  ? 'Total Verified Revenue'
+                  : isInstitution
+                  ? 'Institution Total Paid'
+                  : isIndustry
+                  ? 'Total Contributions Paid'
+                  : 'My Total Paid'}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue dark:text-cyber-cyan font-bold">
+                {isAdminOrOfficer ? 'SYS.REV' : isInstitution ? 'INST.PAID' : isIndustry ? 'PARTNER.PAID' : 'MY.PAID'}
+              </span>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold font-display text-cyber-blue dark:text-cyber-cyan mt-3">
-              PHP {totalVerifiedRevenue.toLocaleString()}
+              PHP{' '}
+              {(isAdminOrOfficer
+                ? totalVerifiedRevenue
+                : isInstitution
+                ? institutionTotalPaid
+                : isIndustry
+                ? industryTotalPaid
+                : myTotalPaid
+              ).toLocaleString()}
             </p>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
-              <span>Audited platform & institution collections</span>
-              {institutionTotalBilled > 0 && (
+              <span>
+                {isAdminOrOfficer
+                  ? 'Audited platform & institution collections'
+                  : isInstitution
+                  ? 'Total verified institution & delegate remittances'
+                  : isIndustry
+                  ? `${industryVerifiedCount} verified sponsorship contribution${industryVerifiedCount === 1 ? '' : 's'}`
+                  : `${myVerifiedCount} verified payment${myVerifiedCount === 1 ? '' : 's'} recorded`}
+              </span>
+              {isAdminOrOfficer && institutionTotalBilled > 0 && (
                 <span className="text-blue-600 dark:text-blue-400 font-medium">
                   Includes ₱{institutionTotalPaid.toLocaleString()} paid • ₱{totalFinancialVolume.toLocaleString()} total volume
                 </span>
@@ -538,54 +718,117 @@ export const PaymentsPage = () => {
 
           <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-indigo-500/30 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Institution Members Total</span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold">INST.BILL</span>
-            </div>
-            <p className="text-2xl sm:text-3xl font-extrabold font-display text-indigo-600 dark:text-indigo-400 mt-3">
-              ₱{institutionTotalBilled.toLocaleString()}
-            </p>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                ₱{institutionTotalPaid.toLocaleString()} Paid & Verified
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {isAdminOrOfficer
+                  ? 'Institution Members Total'
+                  : isInstitution
+                  ? 'Assessed Batch Billing'
+                  : isIndustry
+                  ? 'Pending Sponsorships'
+                  : 'Pending Review'}
               </span>
-              <span className="text-rose-600 dark:text-rose-400 font-medium">
-                ₱{institutionRemainingBalance.toLocaleString()} Outstanding Balance
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold">
+                {isAdminOrOfficer || isInstitution ? 'INST.BILL' : 'IN_REVIEW'}
               </span>
             </div>
+            {isAdminOrOfficer || isInstitution ? (
+              <>
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-indigo-600 dark:text-indigo-400 mt-3">
+                  ₱{institutionTotalBilled.toLocaleString()}
+                </p>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                    ₱{institutionTotalPaid.toLocaleString()} Paid & Verified
+                  </span>
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">
+                    ₱{institutionRemainingBalance.toLocaleString()} Outstanding Balance
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-indigo-600 dark:text-indigo-400 mt-3">
+                  {isIndustry ? industryPendingCount : myPendingCount}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {isIndustry ? 'Awaiting officer verification & OR receipt' : 'Awaiting officer review & confirmation'}
+                </p>
+              </>
+            )}
           </div>
 
           <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-amber-500/30 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Pending Verification</span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">IN_REVIEW</span>
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Pending Verification
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+                IN_REVIEW
+              </span>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-gold-accent mt-3">
-              {payments.filter((p) => getVerificationStatus(p) === 'pending').length}
+              {isAdminOrOfficer || isInstitution
+                ? scopedPayments.filter((p) => getVerificationStatus(p) === 'pending').length
+                : isIndustry
+                ? industryPendingCount
+                : myPendingCount}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Awaiting officer confirmation</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {isAdminOrOfficer || isInstitution
+                ? 'Awaiting officer confirmation'
+                : 'Awaiting officer review & receipt verification'}
+            </p>
           </div>
 
           <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-emerald-500/30 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Verified Transactions</span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">SETTLED</span>
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {isAdminOrOfficer || isInstitution
+                  ? 'Verified Transactions'
+                  : isIndustry
+                  ? 'Partner Status'
+                  : 'Membership Status'}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                {isAdminOrOfficer || isInstitution
+                  ? 'SETTLED'
+                  : isIndustry
+                  ? 'PARTNER.STATUS'
+                  : 'MEMBER.STATUS'}
+              </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
-              {payments.filter((p) => getVerificationStatus(p) === 'verified').length}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Confirmed with reference IDs</p>
+            {isAdminOrOfficer || isInstitution ? (
+              <>
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
+                  {scopedPayments.filter((p) => getVerificationStatus(p) === 'verified').length}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Confirmed with reference IDs</p>
+              </>
+            ) : isIndustry ? (
+              <>
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
+                  {hasActiveSponsorship ? 'Active Partner' : 'Registered Partner'}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {hasActiveSponsorship ? 'Corporate partnership verified' : 'Pending initial contribution'}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
+                  {isVerifiedMember ? 'Active Member' : 'Pending Verification'}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {isVerifiedMember ? 'Good standing membership' : 'Dues settlement needed'}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Category Navigation Pills */}
         <div className="flex flex-wrap items-center gap-2">
-          {[
-            { id: 'all', label: `All Transactions (${payments.length})` },
-            { id: 'institution', label: `🏛️ Institution Payments (${payments.filter(isInstitutionPayment).length})` },
-            { id: 'individual', label: `👤 Individual Membership (${payments.filter(p => !isInstitutionPayment(p) && !p.eventId && (p.paymentKind !== 'partner_sponsorship')).length})` },
-            { id: 'event', label: `🎯 Event Registrations (${payments.filter(p => Boolean(p.eventId) || p.paymentKind === 'event').length})` },
-            { id: 'sponsorship', label: `🤝 Partner Sponsorships (${payments.filter(p => p.paymentKind === 'partner_sponsorship').length})` },
-          ].map((cat) => (
+          {categoryTabs.map((cat) => (
             <button
               key={cat.id}
               type="button"
@@ -624,19 +867,73 @@ export const PaymentsPage = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-900 dark:text-white placeholder-slate-400"
             />
           </div>
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value as any);
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-800 dark:text-slate-200 cursor-pointer"
-          >
-            <option value="all">All Verification Statuses</option>
-            <option value="pending">Pending Verification</option>
-            <option value="verified">Verified (Settled)</option>
-            <option value="rejected">Rejected (Flagged)</option>
-          </select>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="px-3.5 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-xs sm:text-sm text-slate-800 dark:text-slate-200 cursor-pointer font-medium"
+            >
+              <option value="all">All Verification Statuses</option>
+              <option value="pending">Pending Verification</option>
+              <option value="verified">Verified (Settled)</option>
+              <option value="rejected">Rejected (Flagged)</option>
+            </select>
+
+            {/* Rows Per Page Selector */}
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-300">
+              <span className="font-medium whitespace-nowrap">Show:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
+                  setItemsPerPage(val);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent font-bold text-blue-600 dark:text-blue-400 focus:outline-none cursor-pointer"
+              >
+                <option value={10}>10 rows</option>
+                <option value={25}>25 rows</option>
+                <option value={50}>50 rows</option>
+                <option value="all">All ({filteredPayments.length})</option>
+              </select>
+            </div>
+
+            {/* Reset Filters Quick Button */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-xs text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1.5 font-bold shrink-0"
+                title="Reset all active filters and return to all transactions"
+              >
+                <RotateCcw size={14} />
+                Reset Filters
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Visibility & Result Summary Indicator */}
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1 font-medium">
+          <div>
+            Showing <strong className="text-slate-900 dark:text-slate-200">{paginatedPayments.length}</strong> of{' '}
+            <strong className="text-slate-900 dark:text-slate-200">{filteredPayments.length}</strong> matching transactions
+            {hasActiveFilters && (
+              <span className="text-amber-600 dark:text-amber-400 ml-1">
+                (filtered from {scopedPayments.length} total)
+              </span>
+            )}
+          </div>
+          {totalPages > 1 && itemsPerPage !== 'all' && (
+            <div className="text-[11px] font-mono">
+              Page {currentPage} of {totalPages}
+            </div>
+          )}
         </div>
 
         {/* Payments Table */}
@@ -645,9 +942,9 @@ export const PaymentsPage = () => {
             <table className="w-full min-w-[1000px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {!isMember && (
+                  {(isAdminOrOfficer || isInstitution) && (
                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                      Member / Institution
+                      {isInstitution ? 'Member / Delegate' : 'Member / Institution'}
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
@@ -726,7 +1023,7 @@ export const PaymentsPage = () => {
 
                   return (
                     <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                    {!isMember && (
+                    {(isAdminOrOfficer || isInstitution) && (
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-100">
                         <div className="font-semibold">{payment.memberName || 'Member'}</div>
                         {payment.institutionName && (
@@ -834,12 +1131,85 @@ export const PaymentsPage = () => {
           </div>
 
           {paginatedPayments.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
-              {isLoading ? 'Loading...' : 'No payments found matching your criteria.'}
+            <div className="p-12 text-center space-y-4">
+              <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
+                <Receipt size={36} />
+              </div>
+              <div className="max-w-md mx-auto space-y-1">
+                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                  {isLoading
+                    ? 'Loading transactions...'
+                    : hasActiveFilters
+                    ? 'No transactions found matching your search or filters.'
+                    : isIndividualMember
+                    ? 'No personal transactions recorded yet.'
+                    : isInstitution
+                    ? 'No institution payments recorded yet.'
+                    : isIndustry
+                    ? 'No corporate sponsorships recorded yet.'
+                    : 'No payment transactions found.'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isLoading
+                    ? 'Please wait while we retrieve payment ledger data.'
+                    : hasActiveFilters
+                    ? 'Try adjusting your search query, status, or category filters.'
+                    : isIndividualMember
+                    ? 'Upload your membership dues or event registration receipts to track their verification here.'
+                    : isInstitution
+                    ? 'Remit batch member registration dues or upload institution settlement receipts to track them here.'
+                    : isIndustry
+                    ? 'Submit your sponsorship contributions or event partnership receipts to view your official verification ledger.'
+                    : 'Recorded offline payments and submitted digital member receipts will appear here.'}
+                </p>
+              </div>
+              {!isLoading && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  {hasActiveFilters && (
+                    <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                      <RotateCcw size={14} />
+                      Reset Filters
+                    </Button>
+                  )}
+                  {!hasActiveFilters && (
+                    <>
+                      {isIndividualMember && (
+                        <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
+                          <DollarSign size={15} />
+                          Pay Membership Fee (₱250)
+                        </Button>
+                      )}
+                      {isInstitution && (
+                        <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
+                          <DollarSign size={15} />
+                          Submit Batch Payment
+                        </Button>
+                      )}
+                      {isIndustry && (
+                        <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
+                          <DollarSign size={15} />
+                          Submit Sponsorship
+                        </Button>
+                      )}
+                      {isAdminOrOfficer && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setShowRecordModal(true)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <Plus size={15} />
+                          Record Offline Payment
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {totalPages > 1 && (
+          {totalPages > 1 && itemsPerPage !== 'all' && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -858,9 +1228,9 @@ export const PaymentsPage = () => {
         {viewing && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              {!isMember && (
+              {(isAdminOrOfficer || isInstitution) && (
                 <div>
-                  <span className="font-semibold">Member:</span> {viewing.memberName}
+                  <span className="font-semibold">{isInstitution ? 'Member / Delegate:' : 'Member:'}</span> {viewing.memberName || 'N/A'}
                   {viewing.memberEmail && <span className="text-gray-500 text-xs block">{viewing.memberEmail}</span>}
                 </div>
               )}
@@ -1140,7 +1510,13 @@ export const PaymentsPage = () => {
           setShowPayFeeModal(false);
           setFeeError(null);
         }}
-        title="Submit Payment / Pay Membership Fee"
+        title={
+          isIndustry
+            ? 'Submit Corporate Sponsorship / Contribution'
+            : isInstitution
+            ? 'Submit Institution Payment / Settlement'
+            : 'Submit Payment / Pay Membership Fee'
+        }
         size="lg"
       >
         <form onSubmit={handleSubmitFee} className="space-y-4">
@@ -1154,17 +1530,38 @@ export const PaymentsPage = () => {
             <Select
               label="Payment Purpose"
               required
-              options={[
-                { value: 'membership_registration', label: 'Membership Fee (₱250.00)' },
-                { value: 'membership_renewal', label: 'Membership Renewal (₱250.00)' },
-              ]}
+              options={
+                isIndustry
+                  ? [
+                      { value: 'partner_sponsorship', label: 'Corporate Sponsorship / Partner Contribution' },
+                      { value: 'event', label: 'Event Partnership Sponsorship' },
+                    ]
+                  : isInstitution
+                  ? [
+                      { value: 'institution_partial_payment', label: 'Institution Partial Payment / Settlement' },
+                      { value: 'membership_registration', label: 'Institutional Membership Fee (₱250.00)' },
+                      { value: 'membership_renewal', label: 'Membership Renewal (₱250.00)' },
+                    ]
+                  : [
+                      { value: 'membership_registration', label: 'Membership Fee (₱250.00)' },
+                      { value: 'membership_renewal', label: 'Membership Renewal (₱250.00)' },
+                      { value: 'event', label: 'Event Registration Fee' },
+                    ]
+              }
               value={feeForm.paymentKind}
               onChange={(e) => {
                 const kind = e.target.value;
                 setFeeForm((prev) => ({
                   ...prev,
                   paymentKind: kind,
-                  amount: 250,
+                  amount:
+                    kind === 'institution_partial_payment'
+                      ? prev.amount || 1000
+                      : kind === 'partner_sponsorship'
+                      ? prev.amount || 5000
+                      : kind === 'event'
+                      ? prev.amount || 500
+                      : 250,
                 }));
               }}
             />
