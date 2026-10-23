@@ -42,6 +42,7 @@ export const LiveEventsPage = () => {
   const location = useLocation();
 
   const canManage = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
   const [isLoading, setIsLoading] = useState(true);
   const [liveEvents, setLiveEvents] = useState<LiveSession[]>([]);
@@ -384,10 +385,12 @@ export const LiveEventsPage = () => {
                       <Pencil size={16} />
                       Edit
                     </Button>
-                    <Button variant="danger" size="sm" onClick={() => setConfirmDelete(e)} className="inline-flex items-center gap-2">
-                      <Trash2 size={16} />
-                      Delete
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="danger" size="sm" onClick={() => setConfirmDelete(e)} className="inline-flex items-center gap-2">
+                        <Trash2 size={16} />
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -552,7 +555,7 @@ export const LiveEventsPage = () => {
                             <Download size={15} />
                             Download
                           </button>
-                          {canManage && (
+                          {isAdmin && (
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteRecording(activeSession)}

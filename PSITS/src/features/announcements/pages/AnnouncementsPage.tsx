@@ -137,7 +137,6 @@ export const AnnouncementsPage = () => {
   const canCreateAnnouncements = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
   const isMember = user?.role === 'member';
-  const canModerateComments = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
   useEffect(() => {
     if (!showViewModal || !selectedAnnouncement?.id) return;
@@ -730,7 +729,7 @@ export const AnnouncementsPage = () => {
                     <div className="text-sm text-gray-500">No comments yet. Be the first to comment.</div>
                   )}
                   {comments.map((c) => {
-                    const canDelete = canModerateComments || String(c?.user?.id || '') === String(user?.id || '');
+                    const canDelete = isAdmin || String(c?.user?.id || '') === String(user?.id || '');
                     return (
                       <div key={String(c.id)} className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                         <div className="flex items-start justify-between gap-3">

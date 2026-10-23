@@ -7,7 +7,7 @@ function json(res, status, body) {
 function canDeleteComment(user, commentRow) {
   if (!user) return false;
   if (String(commentRow.user_id) === String(user.id)) return true;
-  return ['super_admin', 'admin', 'officer'].includes(String(user.role || ''));
+  return ['super_admin', 'admin'].includes(String(user.role || ''));
 }
 
 function toCommentDto(row) {

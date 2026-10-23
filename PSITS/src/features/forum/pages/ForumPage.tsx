@@ -48,6 +48,7 @@ export const ForumPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const canModerate = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
   const parsePostContent = (content: string) => {
     if (!content) return { body: '', isStructured: false };
@@ -828,15 +829,17 @@ export const ForumPage = () => {
                         >
                           <Pencil size={15} /> Edit
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDeletePost(p)}
-                          className="hover:text-red-600 hover:border-red-200 transition-colors text-red-600"
-                          title={p.status === 'archived' ? 'Permanently Delete' : 'Delete'}
-                        >
-                          <Trash2 size={15} /> {p.status === 'archived' ? 'Delete' : 'Delete'}
-                        </Button>
+                        {(isAdmin || String(p.authorId) === String(user?.id)) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeletePost(p)}
+                            className="hover:text-red-600 hover:border-red-200 transition-colors text-red-600"
+                            title={p.status === 'archived' ? 'Permanently Delete' : 'Delete'}
+                          >
+                            <Trash2 size={15} /> {p.status === 'archived' ? 'Delete' : 'Delete'}
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>

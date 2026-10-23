@@ -864,13 +864,13 @@ app.post('/api/archive/trigger', requireMigrationReady, authMiddleware, requireR
   return res.json(result);
 });
 
-app.delete('/api/archive/announcements', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+app.delete('/api/archive/announcements', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
   const result = await purgeArchivedAnnouncements(ids);
   return res.json(result);
 });
 
-app.delete('/api/archive/forum-posts', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+app.delete('/api/archive/forum-posts', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
   const result = await purgeArchivedForumPosts(ids);
   return res.json(result);
@@ -1007,14 +1007,14 @@ app.get('/api/live-events/:id/recording/download', authMiddleware, downloadLiveE
 app.get('/api/stream-events/:id/recording/download', authMiddleware, downloadLiveEventRecording);
 app.get('/api/live-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
 app.get('/api/stream-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
-app.delete('/api/live-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteLiveEventRecording);
-app.delete('/api/stream-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteLiveEventRecording);
+app.delete('/api/live-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
+app.delete('/api/stream-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
 app.post('/api/live-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createLiveEvent);
 app.post('/api/live-sessions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createLiveEvent);
 app.put('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEvent);
 app.put('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEvent);
-app.delete('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteLiveEvent);
-app.delete('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteLiveEvent);
+app.delete('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
+app.delete('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
 app.post('/api/live-events/:id/start', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), startLiveEvent);
 app.post('/api/live-sessions/:id/start', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), startLiveEvent);
 app.post('/api/live-events/:id/end', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), endLiveEvent);

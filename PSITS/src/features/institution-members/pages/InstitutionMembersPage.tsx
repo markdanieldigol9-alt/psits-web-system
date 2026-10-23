@@ -826,47 +826,6 @@ export const InstitutionMembersPage = () => {
     }
   };
 
-  const handleCleanupTestMembers = async () => {
-    if (!window.confirm('Are you sure you want to remove all Test Participant records?')) {
-      return;
-    }
-    try {
-      const { data } = await api.cleanupTestInstitutionMembers();
-      const deletedCount = data?.deletedCount || 0;
-      setMembers((prev) =>
-        prev.filter(
-          (m) =>
-            !m.fullName?.includes('Test Participant') &&
-            !m.email?.includes('test_part')
-        )
-      );
-      addNotification({
-        userId: 'current',
-        title: 'Test Participants Removed',
-        message: `Successfully removed ${deletedCount} test participant(s).`,
-        type: 'success',
-        isRead: false,
-      });
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to cleanup test participants.';
-      addNotification({
-        userId: 'current',
-        title: 'Error',
-        message: msg,
-        type: 'error',
-        isRead: false,
-      });
-    }
-  };
-
-  const testParticipantsCount = useMemo(() => {
-    return members.filter(
-      (m) =>
-        Boolean(m.fullName?.includes('Test Participant')) ||
-        Boolean(m.email?.includes('test_part'))
-    ).length;
-  }, [members]);
-
   const handleExportCSV = () => {
     const dataToExport = filteredMembers.map((m) => ({
       'Member Name': m.fullName || 'N/A',
@@ -967,17 +926,6 @@ export const InstitutionMembersPage = () => {
               >
                 <Coins size={20} />
                 Make Partial Payment
-              </Button>
-            )}
-            {testParticipantsCount > 0 && canViewAll && (
-              <Button
-                variant="danger"
-                size="lg"
-                onClick={handleCleanupTestMembers}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
-              >
-                <Trash2 size={20} />
-                Remove Test Participants ({testParticipantsCount})
               </Button>
             )}
             <Button variant="secondary" size="lg" onClick={handleExportCSV}>
