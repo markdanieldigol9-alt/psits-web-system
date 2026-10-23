@@ -47,6 +47,7 @@ const {
   setAnnouncementLike,
 } = require('./announcementInteractions');
 const { listPartners, createPartner, updatePartner, deletePartner, listPartnerContributions, createPartnerContribution, updatePartnerContribution, deletePartnerContribution, requirePartnerManager } = require('./partners');
+const { requireOfficerModule } = require('./officerPermissions');
 const { listPayments, createPayment, verifyPayment, getPaymentStatusLogs } = require('./payments');
 const { listElections, getElectionDetails, createElection, updateElection, addCandidate, updateCandidate, markWinner, castVote, checkVotedStatus, deleteCandidate, deleteElection } = require('./elections');
 const { listPosts, createPost, updatePost, deletePost, listComments, addComment, setLike } = require('./forum');
@@ -809,8 +810,8 @@ app.get('/api/events/institution-leaderboard', requireMigrationReady, authMiddle
 
 // Announcements
 app.get('/api/announcements', authMiddleware, listAnnouncements);
-app.post('/api/announcements', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createAnnouncement);
-app.put('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateAnnouncement);
+app.post('/api/announcements', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('announcements'), createAnnouncement);
+app.put('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('announcements'), updateAnnouncement);
 app.delete('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteAnnouncement);
 
 // Announcement interactions (comments + likes)
@@ -831,19 +832,19 @@ app.put('/api/partners/contributions/:id', requireMigrationReady, authMiddleware
 app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requirePartnerManager, deletePartnerContribution);
 
 // Payments
-app.get('/api/payments', requireMigrationReady, authMiddleware, listPayments);
+app.get('/api/payments', requireMigrationReady, authMiddleware, requireOfficerModule('payments'), listPayments);
 app.post('/api/payments', requireMigrationReady, authMiddleware, requireRole(['member']), createPayment);
-app.put('/api/payments/:id/verify', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), verifyPayment);
+app.put('/api/payments/:id/verify', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('payments'), verifyPayment);
 app.get('/api/payments/:id/logs', requireMigrationReady, authMiddleware, getPaymentStatusLogs);
 
 // Elections
 app.get('/api/elections', requireMigrationReady, authMiddleware, listElections);
 app.get('/api/elections/:id', requireMigrationReady, authMiddleware, getElectionDetails);
-app.post('/api/elections', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createElection);
-app.put('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateElection);
-app.post('/api/elections/:id/candidates', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), addCandidate);
-app.put('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateCandidate);
-app.post('/api/elections/:id/candidates/:candidateId/winner', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), markWinner);
+app.post('/api/elections', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('elections'), createElection);
+app.put('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('elections'), updateElection);
+app.post('/api/elections/:id/candidates', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('elections'), addCandidate);
+app.put('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('elections'), updateCandidate);
+app.post('/api/elections/:id/candidates/:candidateId/winner', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('elections'), markWinner);
 app.delete('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteCandidate);
 app.delete('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteElection);
 app.get('/api/elections/:id/voted', requireMigrationReady, authMiddleware, requireRole(['member']), checkVotedStatus);
@@ -966,15 +967,15 @@ app.post('/api/uploads/avatar', authMiddleware, express.raw({ type: '*/*', limit
 // Institutional participants upload/list
 app.get('/api/institution-members', authMiddleware, listInstitutionMembers);
 app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), bulkCreateInstitutionMembers);
-app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), approveInstitutionMember);
+app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('institution_members'), approveInstitutionMember);
 app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteInstitutionMember);
 app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
 
-  app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getDashboardReport);
-  app.get('/api/reports/members', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getAllMembersReport);
-  app.get('/api/reports/event-participation', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getEventParticipationReport);
-  app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getElectionReport);
-  app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getPartnerContributionsReport);
+  app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getDashboardReport);
+  app.get('/api/reports/members', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getAllMembersReport);
+  app.get('/api/reports/event-participation', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getEventParticipationReport);
+  app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getElectionReport);
+  app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getPartnerContributionsReport);
 
 // SMTP test (admin/super_admin/officer)
 app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), sendSmtpTest);
@@ -1009,10 +1010,10 @@ app.get('/api/live-events/:id/recording/stream', authMiddleware, streamLiveEvent
 app.get('/api/stream-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
 app.delete('/api/live-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
 app.delete('/api/stream-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
-app.post('/api/live-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createLiveEvent);
-app.post('/api/live-sessions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createLiveEvent);
-app.put('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEvent);
-app.put('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEvent);
+app.post('/api/live-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), createLiveEvent);
+app.post('/api/live-sessions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), createLiveEvent);
+app.put('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), updateLiveEvent);
+app.put('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), updateLiveEvent);
 app.delete('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
 app.delete('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
 app.post('/api/live-events/:id/start', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), startLiveEvent);

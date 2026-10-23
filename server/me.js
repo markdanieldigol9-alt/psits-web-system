@@ -36,7 +36,7 @@ function toUserDto(row) {
     occupation: row.occupation,
     representativeName: row.representative_name,
     representativeName2: row.representative_name_2,
-    position: row.position,
+    position: row.officer_position || row.position || null,
     representativePosition2: row.representative_position_2,
     companyEmail: row.company_email,
     website: row.website,
@@ -56,7 +56,14 @@ async function getMe(req, res) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
 
-  const [rows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+  const [rows] = await pool.execute(
+    `SELECT u.*, o.position AS officer_position
+     FROM users u
+     LEFT JOIN officers o ON o.user_id = u.id AND (o.officer_status IS NULL OR o.officer_status = 'active')
+     WHERE u.id = ?
+     LIMIT 1`,
+    [userId]
+  );
   if (!rows.length) return res.status(404).json({ success: false, message: 'User not found.' });
 
   return res.json({ success: true, user: toUserDto(rows[0]) });
@@ -126,7 +133,14 @@ async function updateMe(req, res) {
   params.push(userId);
   await pool.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, params);
 
-  const [rows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+  const [rows] = await pool.execute(
+    `SELECT u.*, o.position AS officer_position
+     FROM users u
+     LEFT JOIN officers o ON o.user_id = u.id AND (o.officer_status IS NULL OR o.officer_status = 'active')
+     WHERE u.id = ?
+     LIMIT 1`,
+    [userId]
+  );
   if (rows.length) {
     const updatedUser = rows[0];
     if (updatedUser.member_type === 'industry' || updatedUser.sector === 'industry') {

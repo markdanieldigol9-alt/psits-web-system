@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
+import { canOfficerAccessPath } from '@/shared/utils/officerPermissions';
 import { getUserInterfaceKey, getUserInterfaceLabel, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
@@ -230,6 +231,15 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
 
     const uiKey = getUserInterfaceKey(user);
     const groups = menuGroups[uiKey] || menuGroups[user.role] || menuGroups.member;
+
+    if (user.role === 'officer') {
+      return groups
+        .map((g) => ({
+          ...g,
+          items: g.items.filter((item) => canOfficerAccessPath(user.position, item.href)),
+        }))
+        .filter((g) => g.items.length > 0);
+    }
 
     const isMember = user.role === 'member';
     const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;

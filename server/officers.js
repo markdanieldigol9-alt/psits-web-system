@@ -314,6 +314,8 @@ async function createOfficer(req, res) {
         .concat(officerColumnSet.has('officer_status') ? ['active'] : [])
     );
 
+    await conn.execute("UPDATE users SET position = ? WHERE id = ?", [position, userId]);
+
     const [rows] = await conn.execute(
       `SELECT
          u.id AS user_id,
@@ -408,8 +410,8 @@ async function assignOfficer(req, res) {
     }
 
     await conn.execute(
-      "UPDATE users SET role = 'officer', status = 'active' WHERE id = ?",
-      [userId]
+      "UPDATE users SET role = 'officer', status = 'active', position = ? WHERE id = ?",
+      [position, userId]
     );
 
     const [existingOfficer] = await conn.execute(
@@ -562,6 +564,14 @@ async function updateOfficer(req, res) {
               'UPDATE officers SET position = ? WHERE user_id = ?',
               [currentPosition || 'Member', otherOfficer.user_id]
             );
+            await conn.execute(
+              'UPDATE users SET position = ? WHERE id = ?',
+              [currentPosition || 'Member', otherOfficer.user_id]
+            );
+            await conn.execute(
+              'UPDATE users SET position = ? WHERE id = ?',
+              [nextPosition, userId]
+            );
             swappedWith = {
               userId: otherOfficer.user_id,
               name: otherOfficer.full_name,
@@ -663,7 +673,9 @@ async function swapOfficers(req, res) {
 
     // Swap positions
     await conn.execute('UPDATE officers SET position = ? WHERE user_id = ?', [pos2, id1]);
+    await conn.execute('UPDATE users SET position = ? WHERE id = ?', [pos2, id1]);
     await conn.execute('UPDATE officers SET position = ? WHERE user_id = ?', [pos1, id2]);
+    await conn.execute('UPDATE users SET position = ? WHERE id = ?', [pos1, id2]);
 
     await conn.commit();
 
@@ -711,7 +723,7 @@ async function deleteOfficer(req, res) {
       `UPDATE officers SET ${sets.join(', ')} WHERE user_id = ?`,
       params
     );
-    await conn.execute("UPDATE users SET role = 'member', status = 'active' WHERE id = ?", [userId]);
+    await conn.execute("UPDATE users SET role = 'member', status = 'active', position = NULL WHERE id = ?", [userId]);
 
     await conn.commit();
     return res.json({ success: true });

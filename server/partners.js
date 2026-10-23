@@ -1,11 +1,15 @@
 const { pool } = require('./db');
+const { canOfficerAccessModule } = require('./officerPermissions');
 
 function canManagePartners(user) {
   if (!user) return false;
   const role = user.role;
   const memberType = user.member_type;
   const sector = user.sector;
-  if (['super_admin', 'admin', 'officer'].includes(role)) return true;
+  if (['super_admin', 'admin'].includes(role)) return true;
+  if (role === 'officer') {
+    return canOfficerAccessModule(user.position || user.officer_position, 'partners');
+  }
   if (role === 'member' && (memberType === 'industry' || sector === 'industry')) return true;
   return false;
 }

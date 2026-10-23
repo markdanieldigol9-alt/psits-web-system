@@ -1,6 +1,7 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
 import { LoadingSpinner } from '@/shared/components/Common';
+import { canOfficerAccessPath } from '@/shared/utils/officerPermissions';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export const ProtectedRoute = ({
   allowExpired = false,
 }: ProtectedRouteProps) => {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -28,6 +30,11 @@ export const ProtectedRoute = ({
   }
 
   if (requiredRoles.length > 0 && user && !requiredRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Position-based module access control for officers
+  if (user?.role === 'officer' && !canOfficerAccessPath(user?.position, location.pathname)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

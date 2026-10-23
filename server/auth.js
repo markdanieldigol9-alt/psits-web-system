@@ -110,7 +110,7 @@ function toUserDto(row) {
     occupation: row.occupation,
     representativeName: row.representative_name,
     representativeName2: row.representative_name_2,
-    position: row.position,
+    position: row.officer_position || row.position || null,
     representativePosition2: row.representative_position_2,
     companyEmail: row.company_email,
     website: row.website,
@@ -478,7 +478,14 @@ async function login(req, res) {
     return json(res, 400, { success: false, message: 'Email and password are required.' });
   }
 
-  const [rows] = await pool.execute('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
+  const [rows] = await pool.execute(
+    `SELECT u.*, o.position AS officer_position
+     FROM users u
+     LEFT JOIN officers o ON o.user_id = u.id AND (o.officer_status IS NULL OR o.officer_status = 'active')
+     WHERE u.email = ?
+     LIMIT 1`,
+    [email]
+  );
   let user = rows[0] || null;
 
   // Allow approved institutional participants (from institution_members) to log in using their institution account password.
@@ -686,16 +693,21 @@ async function authMiddleware(req, res, next) {
   if (!token) return json(res, 401, { success: false, message: 'Missing token.' });
 
   const [rows] = await pool.execute(
-    `SELECT u.*
+    `SELECT u.*, o.position AS officer_position
      FROM sessions s
      JOIN users u ON u.id = s.user_id
+     LEFT JOIN officers o ON o.user_id = u.id AND (o.officer_status IS NULL OR o.officer_status = 'active')
      WHERE s.token = ? AND s.expires_at > NOW()
      LIMIT 1`,
     [token]
   );
 
   if (!rows.length) return json(res, 401, { success: false, message: 'Invalid or expired token.' });
-  req.user = rows[0];
+  const rawUser = rows[0];
+  if (rawUser.officer_position) {
+    rawUser.position = rawUser.officer_position;
+  }
+  req.user = rawUser;
   next();
 }
 
