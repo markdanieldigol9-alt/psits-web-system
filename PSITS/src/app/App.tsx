@@ -268,11 +268,12 @@ export const App = () => {
               <Route path="/" element={<LandingPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
-          </Suspense>
-        </NotificationProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </Router>
+              </Suspense>
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </Router>
   );
 };
 

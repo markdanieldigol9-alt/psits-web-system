@@ -4,6 +4,7 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Badge } from '@/shared/components/Form';
+import { LoadingSpinner } from '@/shared/components/Common';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { getUserDisplayName } from '@/shared/utils/userInterface';
 import { InstitutionEventLeaderboard } from '@/features/dashboard/components/InstitutionEventLeaderboard';
@@ -205,11 +206,20 @@ export const DashboardPage = () => {
     return [...memberAnnouncements].slice(0, 6);
   }, [memberAnnouncements]);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="h-96 flex items-center justify-center">
+          <LoadingSpinner size="lg" />
+        </div>
+      </MainLayout>
+    );
+  }
 
-  const formatDate = (dateValue: string) => {
+  const formatDate = (dateValue?: string | null) => {
+    if (!dateValue) return 'N/A';
     const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return dateValue;
+    if (Number.isNaN(date.getTime())) return String(dateValue);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
@@ -308,7 +318,7 @@ export const DashboardPage = () => {
               <div>
                 <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Service Period</p>
                 <p className="mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-mono">
-                  {user.membershipStartedAt ? formatDate(user.membershipStartedAt) : 'N/A'} - {expiryDate ? formatDate(expiryDate.toISOString()) : 'N/A'}
+                  {user.membershipStartedAt ? formatDate(user.membershipStartedAt) : 'N/A'} - {user.membershipExpiresAt ? formatDate(user.membershipExpiresAt) : 'N/A'}
                 </p>
               </div>
             </Card>
@@ -587,7 +597,7 @@ export const DashboardPage = () => {
                       outerRadius={100}
                       paddingAngle={4}
                       labelLine={false}
-                      label={({ name, value }: { name: string; value: number }) => `${name}: ₱${value.toLocaleString()}`}
+                      label={({ name, value }: { name: string; value?: number }) => `${name}: ₱${((value != null && !Number.isNaN(value)) ? value : 0).toLocaleString()}`}
                       dataKey="value"
                     >
                       {(report?.revenueByMethod || []).map((_, index) => (

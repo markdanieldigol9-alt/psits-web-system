@@ -90,9 +90,9 @@ export const InstitutionEventLeaderboard = () => {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (i) =>
-          i.institutionName.toLowerCase().includes(q) ||
-          i.institutionEmail?.toLowerCase().includes(q) ||
-          i.participants.some((p) => p.fullName.toLowerCase().includes(q))
+          (i.institutionName && i.institutionName.toLowerCase().includes(q)) ||
+          (i.institutionEmail && i.institutionEmail.toLowerCase().includes(q)) ||
+          (Array.isArray(i.participants) && i.participants.some((p) => p.fullName && p.fullName.toLowerCase().includes(q)))
       );
     }
 
@@ -106,9 +106,9 @@ export const InstitutionEventLeaderboard = () => {
     const q = participantSearch.toLowerCase();
     return activeInstitution.participants.filter(
       (p) =>
-        p.fullName.toLowerCase().includes(q) ||
-        p.email?.toLowerCase().includes(q) ||
-        p.position?.toLowerCase().includes(q)
+        (p.fullName && p.fullName.toLowerCase().includes(q)) ||
+        (p.email && p.email.toLowerCase().includes(q)) ||
+        (p.position && p.position.toLowerCase().includes(q))
     );
   }, [activeInstitution?.participants, participantSearch]);
 
@@ -346,9 +346,9 @@ export const InstitutionEventLeaderboard = () => {
             <div className="space-y-3">
               {filteredLeaderboard.map((inst) => {
                 const isUserSchool =
-                  String(user?.id) === String(inst.institutionId) ||
-                  user?.sectorDetails === inst.institutionName ||
-                  user?.fullName === inst.institutionName;
+                  Boolean(inst.institutionId && String(user?.id) === String(inst.institutionId)) ||
+                  Boolean(user?.sectorDetails && inst.institutionName && user.sectorDetails.toLowerCase() === inst.institutionName.toLowerCase()) ||
+                  Boolean(user?.fullName && inst.institutionName && user.fullName.toLowerCase() === inst.institutionName.toLowerCase());
 
                 return (
                   <div
@@ -375,7 +375,7 @@ export const InstitutionEventLeaderboard = () => {
                             />
                           ) : (
                             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
-                              {inst.institutionName.charAt(0).toUpperCase()}
+                              {(inst.institutionName || 'Institution').charAt(0).toUpperCase()}
                             </div>
                           )}
                         </div>
@@ -492,7 +492,7 @@ export const InstitutionEventLeaderboard = () => {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-                        {part.fullName.charAt(0).toUpperCase()}
+                        {(part.fullName || 'Participant').charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
