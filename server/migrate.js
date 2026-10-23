@@ -1665,6 +1665,45 @@ async function migrate() {
     );
   }
 
+  // Seed default temporary bank transfer details setting if not configured
+  const defaultBankDetails = `Bank Name: Land Bank of the Philippines (LBP) / BDO Unibank
+Account Name: PSITS Region XII (Temporary Clearing Account)
+Account Number: 0142-8823-91
+Account Type: Savings Account
+Branch: General Santos City Branch
+Remittance Note: Include your Full Name or Member ID in transfer remarks/notes. Upload the validated deposit slip or transfer confirmation receipt as proof.`;
+
+  const [existingBankSetting] = await pool.execute(
+    'SELECT key_name, value_text FROM settings WHERE key_name = ? LIMIT 1',
+    ['bank_transfer_details']
+  );
+  if (!existingBankSetting.length) {
+    await pool.execute(
+      'INSERT INTO settings (key_name, value_text) VALUES (?, ?)',
+      ['bank_transfer_details', defaultBankDetails]
+    );
+  } else if (!existingBankSetting[0].value_text || existingBankSetting[0].value_text.trim() === '') {
+    await pool.execute(
+      'UPDATE settings SET value_text = ? WHERE key_name = ?',
+      [defaultBankDetails, 'bank_transfer_details']
+    );
+  }
+
+  // Seed a temporary member account for testing bank transfer workflows
+  const bankTesterEmail = 'banktest@psits.org';
+  const [existingBankTester] = await pool.execute(
+    'SELECT id FROM users WHERE email = ? LIMIT 1',
+    [bankTesterEmail]
+  );
+  if (!existingBankTester.length) {
+    const testerHash = hashPassword('Password123!');
+    await pool.execute(
+      `INSERT INTO users (email, username, full_name, password_hash, role, status, contact_number, sector, sector_details, member_type, terms_accepted)
+       VALUES (?, 'bank_tester', 'Bank Transfer Tester', ?, 'member', 'active', '09123456789', 'school', 'STI College GenSan', 'individual', 1)`,
+      [bankTesterEmail, testerHash]
+    );
+  }
+
   // Ensure institutional provisioned participants have member_type = 'individual' so they can log in as individual members
   try {
     await pool.query(`

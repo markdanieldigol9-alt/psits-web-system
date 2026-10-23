@@ -36,6 +36,14 @@ describe('PaymentInstructionsCard Component', () => {
     expect(screen.getByText(/1234-5678-9012/i)).toBeInTheDocument();
   });
 
+  it('renders default temporary bank transfer details when settings are empty', () => {
+    render(<PaymentInstructionsCard method="bank_transfer" settings={{ bank_transfer_details: '' }} />);
+
+    expect(screen.getByText(/bank transfer payment/i)).toBeInTheDocument();
+    expect(screen.getByText(/0142-8823-91/i)).toBeInTheDocument();
+    expect(screen.getByText(/temporary account/i)).toBeInTheDocument();
+  });
+
   it('renders nothing if method is empty', () => {
     const { container } = render(<PaymentInstructionsCard method="" />);
     expect(container.firstChild).toBeNull();

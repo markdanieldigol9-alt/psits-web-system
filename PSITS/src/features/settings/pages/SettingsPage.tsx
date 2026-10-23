@@ -1444,14 +1444,28 @@ export const SettingsPage = () => {
                         )}
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Bank Account Details / Instructions</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Bank Account Details / Instructions</label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPaymentSettings((prev) => ({
+                                ...prev,
+                                bank_transfer_details: `Bank Name: Land Bank of the Philippines (LBP) / BDO Unibank\nAccount Name: PSITS Region XII (Temporary Clearing Account)\nAccount Number: 0142-8823-91\nAccount Type: Savings Account\nBranch: General Santos City Branch\nRemittance Note: Include your Full Name or Member ID in transfer remarks/notes. Upload the validated deposit slip or transfer confirmation receipt as proof.`,
+                              }))
+                            }
+                            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                          >
+                            Fill Temporary Account Template
+                          </button>
+                        </div>
                         <textarea
-                          rows={3}
+                          rows={4}
                           value={paymentSettings.bank_transfer_details}
                           onChange={(e) =>
                             setPaymentSettings((prev) => ({ ...prev, bank_transfer_details: e.target.value }))
                           }
-                          placeholder="e.g. Bank Name: BDO&#10;Account Name: PSITS Region XII&#10;Account Number: 1234-5678-9012"
+                          placeholder="e.g. Bank Name: Land Bank / BDO&#10;Account Name: PSITS Region XII (Temporary Account)&#10;Account Number: 0142-8823-91"
                           className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
                         />
                       </div>

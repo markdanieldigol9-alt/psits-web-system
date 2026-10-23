@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import api from '@/shared/services/api';
 import { resolveImageUrl } from '@/shared/utils/helpers';
-import { QrCode, Building2, Wallet, Banknote, ShieldAlert, FileText, CheckCircle2 } from 'lucide-react';
+import { QrCode, Building2, Wallet, Banknote, ShieldAlert, FileText, CheckCircle2, Copy } from 'lucide-react';
+
+export const DEFAULT_BANK_TRANSFER_DETAILS = `Bank Name: Land Bank of the Philippines (LBP) / BDO Unibank
+Account Name: PSITS Region XII (Temporary Clearing Account)
+Account Number: 0142-8823-91
+Account Type: Savings Account
+Branch: General Santos City Branch
+Remittance Note: Include your Full Name or Member ID in transfer remarks/notes. Upload the validated deposit slip or transfer confirmation receipt as proof.`;
 
 
 export interface PaymentSettingsData {
@@ -28,6 +35,7 @@ export const PaymentInstructionsCard = ({
 }: PaymentInstructionsCardProps) => {
   const [settings, setSettings] = useState<PaymentSettingsData | null>(initialSettings || null);
   const [isLoading, setIsLoading] = useState(!initialSettings);
+  const [copiedBank, setCopiedBank] = useState(false);
 
   useEffect(() => {
     if (initialSettings) {
@@ -104,46 +112,76 @@ export const PaymentInstructionsCard = ({
       )}
 
       {/* Bank Transfer */}
-      {normalizedMethod === 'bank_transfer' && (
-        <div className="flex flex-col items-center text-center space-y-3">
-          <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-bold text-base">
-            <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            <span>Bank Transfer Payment</span>
+      {normalizedMethod === 'bank_transfer' && (() => {
+        const effectiveBankDetails =
+          settings?.bank_transfer_details && settings.bank_transfer_details.trim().length > 0
+            ? settings.bank_transfer_details
+            : DEFAULT_BANK_TRANSFER_DETAILS;
+
+        const isDefaultAccount = effectiveBankDetails === DEFAULT_BANK_TRANSFER_DETAILS;
+
+        return (
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-bold text-base">
+              <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <span>Bank Transfer Payment</span>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
+              Transfer your payment using the bank details or QR code below. After transferring, <strong className="text-indigo-700 dark:text-indigo-300">upload the bank transfer receipt or deposit slip</strong> as proof.
+            </p>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-100/70 dark:bg-indigo-950/60 text-[11px] text-indigo-800 dark:text-indigo-300 font-medium">
+              <CheckCircle2 size={13} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
+              <span>Requirements: Upload Bank Transfer Receipt</span>
+            </div>
+
+            {settings?.bank_transfer_qr_code && (
+              <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
+                <img
+                  src={resolveImageUrl(settings.bank_transfer_qr_code)}
+                  alt="Bank Transfer QR Code"
+                  className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
+                />
+              </div>
+            )}
+
+            <div className="p-4 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 rounded-xl max-w-md text-left text-xs text-gray-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs font-mono">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-gray-900 dark:text-slate-100 font-sans text-sm flex items-center gap-1.5">
+                  <Building2 size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  Bank Account Details:
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                  isDefaultAccount
+                    ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                    : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                }`}>
+                  {isDefaultAccount ? 'Temporary Account' : 'Official Account'}
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 mb-2.5 text-slate-800 dark:text-slate-200 leading-relaxed font-mono">
+                {effectiveBankDetails}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const match = effectiveBankDetails.match(/Account Number:\s*([^\n\r]+)/i);
+                  const accNum = match ? match[1].trim() : '0142-8823-91';
+                  void navigator.clipboard.writeText(accNum);
+                  setCopiedBank(true);
+                  setTimeout(() => setCopiedBank(false), 2000);
+                }}
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/80 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
+              >
+                {copiedBank ? <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={14} />}
+                <span>{copiedBank ? 'Account Number Copied!' : 'Copy Account Number (0142-8823-91)'}</span>
+              </button>
+            </div>
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
-            Transfer your payment using the bank details or QR code below. After transferring, <strong className="text-indigo-700 dark:text-indigo-300">upload the bank transfer receipt or deposit slip</strong> as proof.
-          </p>
-
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-100/70 dark:bg-indigo-950/60 text-[11px] text-indigo-800 dark:text-indigo-300 font-medium">
-            <CheckCircle2 size={13} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
-            <span>Requirements: Upload Bank Transfer Receipt</span>
-          </div>
-
-          {settings?.bank_transfer_qr_code && (
-            <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
-              <img
-                src={resolveImageUrl(settings.bank_transfer_qr_code)}
-                alt="Bank Transfer QR Code"
-                className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
-              />
-            </div>
-          )}
-
-          {settings?.bank_transfer_details ? (
-            <div className="p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl max-w-md text-left text-xs text-gray-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs font-mono">
-              <span className="font-bold text-gray-900 dark:text-slate-100 block mb-1 font-sans text-sm">
-                Bank Account Details:
-              </span>
-              {settings.bank_transfer_details}
-            </div>
-          ) : !settings?.bank_transfer_qr_code ? (
-            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center gap-2 max-w-md">
-              <ShieldAlert className="h-4 w-4 shrink-0" />
-              <span>No bank account details or QR code configured by Admin. Please contact administration for bank details.</span>
-            </div>
-          ) : null}
-        </div>
-      )}
+        );
+      })()}
 
       {/* Cheque */}
       {(normalizedMethod === 'cheque' || normalizedMethod === 'check') && (
