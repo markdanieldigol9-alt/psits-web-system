@@ -1713,9 +1713,28 @@ async function streamLiveEventRecording(req, res) {
   }
 
   try {
-    const stat = fileStat || (await fs.stat(fullPath));
+    let targetPath = fullPath;
+    let targetStat = fileStat;
+
+    // Support req.query.quality parameter (e.g. 144p, 240p, 360p, 480p, 720p)
+    const requestedQuality = req.query.quality ? String(req.query.quality).trim().toLowerCase() : null;
+    if (requestedQuality && requestedQuality !== 'auto') {
+      const parsedPath = path.parse(fullPath);
+      const variantPath = path.join(parsedPath.dir, `${parsedPath.name}_${requestedQuality}${parsedPath.ext}`);
+      try {
+        const vStat = await fs.stat(variantPath);
+        if (vStat.isFile()) {
+          targetPath = variantPath;
+          targetStat = vStat;
+        }
+      } catch {
+        // Quality variant file not found; fallback seamlessly to source recording
+      }
+    }
+
+    const stat = targetStat || (await fs.stat(targetPath));
     const fileSize = stat.size;
-    const ext = path.extname(fullPath).toLowerCase();
+    const ext = path.extname(targetPath).toLowerCase();
     const mimeMap = {
       '.mp4': 'video/mp4',
       '.webm': 'video/webm',
@@ -1744,22 +1763,55 @@ async function streamLiveEventRecording(req, res) {
       return res.end();
     }
 
-    const range = req.headers.range;
-    if (range) {
-      const parts = range.replace(/bytes=/, '').split('-');
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      if (start >= fileSize || end >= fileSize) {
+    const rangeHeader = req.headers.range;
+    if (rangeHeader && typeof rangeHeader === 'string' && rangeHeader.startsWith('bytes=')) {
+      const rangeMatch = rangeHeader.replace(/^bytes=/, '').trim();
+      let start = NaN;
+      let end = NaN;
+
+      if (rangeMatch.startsWith('-')) {
+        // Suffix byte range: bytes=-500 (last 500 bytes of the file)
+        const suffix = parseInt(rangeMatch.slice(1), 10);
+        if (!Number.isNaN(suffix) && suffix > 0) {
+          start = Math.max(0, fileSize - suffix);
+          end = fileSize - 1;
+        }
+      } else {
+        const parts = rangeMatch.split('-');
+        start = parseInt(parts[0], 10);
+        end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      }
+
+      // Strictly validate boundaries
+      if (
+        Number.isNaN(start) ||
+        Number.isNaN(end) ||
+        start > end ||
+        start < 0 ||
+        start >= fileSize
+      ) {
         res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end();
         return;
       }
+
+      end = Math.min(end, fileSize - 1);
       const chunkSize = end - start + 1;
-      const fileStream = fsSync.createReadStream(fullPath, { start, end });
+
+      const fileStream = fsSync.createReadStream(targetPath, { start, end });
+      fileStream.on('error', () => {
+        try {
+          fileStream.destroy();
+        } catch {}
+        if (!res.headersSent) {
+          res.status(500).end();
+        }
+      });
       res.on('close', () => {
         try {
           fileStream.destroy();
         } catch {}
       });
+
       res.writeHead(206, {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
@@ -1768,12 +1820,21 @@ async function streamLiveEventRecording(req, res) {
       });
       fileStream.pipe(res);
     } else {
-      const fileStream = fsSync.createReadStream(fullPath);
+      const fileStream = fsSync.createReadStream(targetPath);
+      fileStream.on('error', () => {
+        try {
+          fileStream.destroy();
+        } catch {}
+        if (!res.headersSent) {
+          res.status(500).end();
+        }
+      });
       res.on('close', () => {
         try {
           fileStream.destroy();
         } catch {}
       });
+
       res.writeHead(200, {
         'Content-Length': fileSize,
         'Content-Type': mimeType,
@@ -1860,4 +1921,6 @@ module.exports = {
   syncViewerCount,
   toParticipantDto,
   toMessageDto,
+  validateAndSanitizeStreamUrl,
+  toLiveEventDto,
 };
