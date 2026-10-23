@@ -3379,10 +3379,10 @@ export const EventsPage = () => {
                   paymentForm.method === 'gcash'
                     ? 'GCash Reference Number'
                     : paymentForm.method === 'through_officer'
-                    ? 'Official Receipt (OR) Number (optional)'
+                    ? 'Official Receipt (OR) Number'
                     : paymentForm.method === 'bank_transfer'
-                    ? 'Bank Reference / Trace Number (optional)'
-                    : 'Cheque Number (optional)'
+                    ? 'Bank Reference / Trace Number'
+                    : 'Cheque Number'
                 }
                 type="text"
                 value={paymentForm.referenceNumber}

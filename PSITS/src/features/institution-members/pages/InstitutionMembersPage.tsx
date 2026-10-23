@@ -1900,10 +1900,10 @@ export const InstitutionMembersPage = () => {
                   batchPaymentMethod === 'gcash'
                     ? 'GCash Reference Number *'
                     : batchPaymentMethod === 'through_officer' || batchPaymentMethod === 'cash_officer'
-                    ? 'Official Receipt (OR) Number (optional)'
+                    ? 'Official Receipt (OR) Number'
                     : batchPaymentMethod === 'bank_transfer'
-                    ? 'Bank Reference Number (optional)'
-                    : 'Cheque Number (optional)'
+                    ? 'Bank Reference Number'
+                    : 'Cheque Number'
                 }
                 placeholder={
                   batchPaymentMethod === 'gcash'
@@ -2278,10 +2278,10 @@ export const InstitutionMembersPage = () => {
                       <Input
                         label={
                           partialPaymentMethod === 'through_officer'
-                            ? 'Official Receipt (OR) Number' + (canViewAll ? ' (Optional)' : ' (Required)')
+                            ? 'Official Receipt (OR) Number'
                             : partialPaymentMethod === 'cheque'
-                            ? 'Cheque / Deposit Number (Optional)'
-                            : 'Bank Reference / Transaction Number (Optional)'
+                            ? 'Cheque / Deposit Number'
+                            : 'Bank Reference / Transaction Number'
                         }
                         placeholder="Enter reference or OR number"
                         value={partialPaymentRefNumber}

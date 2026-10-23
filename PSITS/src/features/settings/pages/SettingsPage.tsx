@@ -1823,10 +1823,10 @@ export const SettingsPage = () => {
               renewalForm.method === 'gcash'
                 ? 'GCash Reference Number'
                 : renewalForm.method === 'cheque'
-                ? 'Cheque Number (Optional)'
+                ? 'Cheque Number'
                 : renewalForm.method === 'through_officer'
-                ? 'Official Receipt (OR) Number (Optional)'
-                : 'Reference / Transaction ID (Optional)'
+                ? 'Official Receipt (OR) Number'
+                : 'Reference / Transaction ID'
             }
             required={renewalForm.method === 'gcash'}
             value={renewalForm.referenceNumber}

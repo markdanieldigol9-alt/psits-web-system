@@ -1575,10 +1575,10 @@ export const PaymentsPage = () => {
               feeForm.method === 'gcash'
                 ? 'GCash Reference Number'
                 : feeForm.method === 'cheque'
-                ? 'Cheque Number (Optional)'
+                ? 'Cheque Number'
                 : feeForm.method === 'through_officer'
-                ? 'Official Receipt (OR) Number (Optional)'
-                : 'Reference / Transaction ID (Optional)'
+                ? 'Official Receipt (OR) Number'
+                : 'Reference / Transaction ID'
             }
             required={feeForm.method === 'gcash'}
             placeholder={
