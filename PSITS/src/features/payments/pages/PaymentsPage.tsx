@@ -1844,44 +1844,6 @@ export const PaymentsPage = () => {
             </label>
           </div>
 
-          {/* Optional proof receipt */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-slate-300">
-              Attach Receipt / Cheque / Slip (Optional for Officers)
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                if (!file) return;
-                setRecordForm((prev) => ({
-                  ...prev,
-                  file,
-                  previewUrl: URL.createObjectURL(file),
-                }));
-              }}
-              className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-gray-900 dark:text-slate-100"
-            />
-            {recordForm.previewUrl && (
-              <div className="mt-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <img src={recordForm.previewUrl} alt="Preview" className="h-12 w-12 object-cover rounded-lg border" />
-                  <span className="text-xs text-emerald-600 font-medium">Receipt image attached</span>
-                </div>
-                <ReceiptScannerBadge
-                  imageSource={recordForm.file || recordForm.previewUrl}
-                  expectedAmount={Number(recordForm.amount || 0)}
-                  referenceNumber={recordForm.referenceNumber}
-                  onApplyReferenceNumber={(detectedRef) => {
-                    setRecordForm((prev) => ({ ...prev, referenceNumber: detectedRef }));
-                  }}
-                  autoScan={true}
-                />
-              </div>
-            )}
-          </div>
-
           <div className="flex justify-end gap-3 pt-3 border-t border-gray-200 dark:border-slate-800">
             <Button
               type="button"
