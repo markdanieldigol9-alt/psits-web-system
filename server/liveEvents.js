@@ -885,7 +885,6 @@ async function updateLiveEvent(req, res) {
     ['description', 'description', 4000],
     ['hostLabel', 'host_label', 191],
     ['joinLink', 'join_link', 255],
-    ['streamUrl', 'stream_url', 255],
     ['sessionToken', 'session_token', 96],
     ['recordingUrl', 'recording_url', 255],
     ['recordingPath', 'recording_path', 255],
@@ -908,12 +907,50 @@ async function updateLiveEvent(req, res) {
     params.push(streamSource);
   }
 
-  if (body.streamUrl !== undefined && body.meetingUrl === undefined) {
-    const value = safeString(body.streamUrl, 255) || null;
-    const currentSource = body.streamSource !== undefined ? body.streamSource : existing.stream_source;
-    if (currentSource === 'external' && !value) return json(res, 400, { success: false, message: 'Stream URL is required.' });
-    sets.push('meeting_url = ?');
-    params.push(value || existing.join_link || '');
+  const effectiveSource = body.streamSource !== undefined ? body.streamSource : existing.stream_source;
+
+  if (body.streamUrl !== undefined) {
+    const rawUrl = body.streamUrl ? String(body.streamUrl).trim() : '';
+    if (effectiveSource === 'external' && !rawUrl) {
+      return json(res, 400, { success: false, message: 'Stream URL is required for external stream sources.' });
+    }
+    if (rawUrl) {
+      const validation = validateAndSanitizeStreamUrl(rawUrl);
+      if (!validation.ok) {
+        return json(res, 400, { success: false, message: validation.error });
+      }
+      const cleanUrl = safeString(validation.url, 255);
+      sets.push('stream_url = ?');
+      params.push(cleanUrl);
+      if (body.meetingUrl === undefined) {
+        sets.push('meeting_url = ?');
+        params.push(cleanUrl);
+      }
+    } else {
+      sets.push('stream_url = ?');
+      params.push(null);
+      if (body.meetingUrl === undefined) {
+        sets.push('meeting_url = ?');
+        params.push(existing.join_link || '');
+      }
+    }
+  } else if (body.streamSource === 'external' && !existing.stream_url) {
+    return json(res, 400, { success: false, message: 'Stream URL is required for external stream sources.' });
+  }
+
+  if (body.meetingUrl !== undefined) {
+    const rawMeeting = body.meetingUrl ? String(body.meetingUrl).trim() : '';
+    if (rawMeeting) {
+      const validation = validateAndSanitizeStreamUrl(rawMeeting);
+      if (!validation.ok) {
+        return json(res, 400, { success: false, message: validation.error });
+      }
+      sets.push('meeting_url = ?');
+      params.push(safeString(validation.url, 255));
+    } else {
+      sets.push('meeting_url = ?');
+      params.push(existing.join_link || '');
+    }
   }
 
   if (body.eventId !== undefined) {
