@@ -1816,7 +1816,7 @@ export const PaymentsPage = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <Select
               label="Payment Method"
               options={[
@@ -1828,13 +1828,6 @@ export const PaymentsPage = () => {
               ]}
               value={recordForm.method}
               onChange={(e) => setRecordForm(prev => ({ ...prev, method: e.target.value }))}
-            />
-
-            <Input
-              label="Official Receipt (OR) # / Reference No."
-              placeholder="e.g. OR-2026-0089 or Ref #"
-              value={recordForm.referenceNumber}
-              onChange={(e) => setRecordForm(prev => ({ ...prev, referenceNumber: e.target.value }))}
             />
           </div>
 
