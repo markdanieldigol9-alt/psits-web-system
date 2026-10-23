@@ -3,7 +3,7 @@ import { Input, Button, Select } from '@/shared/components/Form';
 import { Alert } from '@/shared/components/Common';
 import api from '@/shared/services/api';
 import { getPositionRank } from '@/shared/utils/helpers';
-import { X } from 'lucide-react';
+import { X, ArrowLeftRight } from 'lucide-react';
 
 interface AddOfficerModalProps {
   isOpen: boolean;
@@ -64,6 +64,7 @@ export const AddOfficerModal = ({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberOption | null>(null);
   const [takenPositions, setTakenPositions] = useState<Set<string>>(new Set());
+  const [activeOfficersByPos, setActiveOfficersByPos] = useState<Record<string, { id: string; name: string; position: string }>>({});
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -163,6 +164,19 @@ export const AddOfficerModal = ({
         const active = officers.filter((o) => o.status === 'active' || o.officerStatus === 'active');
         const positions = new Set(active.map((o) => String(o.position || '').trim()).filter(Boolean));
         if (!cancelled) setTakenPositions(positions);
+
+        const posMap: Record<string, { id: string; name: string; position: string }> = {};
+        active.forEach((o) => {
+          const p = String(o.position || '').trim().toLowerCase();
+          if (p) {
+            posMap[p] = {
+              id: String(o.id),
+              name: String(o.fullName || o.name || o.email || 'Officer'),
+              position: String(o.position || '').trim(),
+            };
+          }
+        });
+        if (!cancelled) setActiveOfficersByPos(posMap);
 
         const fetchedPositions = posResp.data?.positions || [];
         if (fetchedPositions.length > 0) {
@@ -291,7 +305,7 @@ export const AddOfficerModal = ({
             </div>
 
             <div>
-              {lockPosition || initialMember ? (
+              {lockPosition ? (
                 <Input
                   label="Position"
                   value={formData.position}
@@ -299,26 +313,73 @@ export const AddOfficerModal = ({
                   className="bg-gray-50 font-semibold text-gray-900 cursor-not-allowed"
                 />
               ) : (
-                <Select
-                  label="Position"
-                  options={[
-                    { value: '', label: 'Select an option' },
-                    ...availablePositions.map((pos) => ({
-                      value: pos,
-                      label: takenPositions.has(pos) ? `${pos} (Assigned)` : pos,
-                    })),
-                  ]}
-                  value={formData.position}
-                  onChange={(e) => {
-                    if (takenPositions.has(e.target.value)) {
-                      setErrors((prev) => ({ ...prev, position: 'Position already assigned.' }));
-                      return;
+                <>
+                  <Select
+                    label="Position"
+                    options={[
+                      { value: '', label: 'Select an option' },
+                      ...availablePositions.map((pos) => {
+                        const occupant = activeOfficersByPos[pos.trim().toLowerCase()];
+                        const isSelf = occupant && selectedMember && String(occupant.id) === String(selectedMember.id);
+                        const isOtherOfficer = occupant && !isSelf;
+
+                        let label = pos;
+                        if (isSelf) {
+                          label = `${pos} (Current Position)`;
+                        } else if (isOtherOfficer) {
+                          label = initialMember
+                            ? `${pos} — (Occupied by ${occupant.name} • Will Swap)`
+                            : `${pos} (Assigned to ${occupant.name})`;
+                        } else {
+                          label = `${pos} (Vacant)`;
+                        }
+
+                        return {
+                          value: pos,
+                          label,
+                          disabled: !initialMember && Boolean(isOtherOfficer),
+                        };
+                      }),
+                    ]}
+                    value={formData.position}
+                    onChange={(e) => {
+                      const newPos = e.target.value;
+                      if (!initialMember && takenPositions.has(newPos)) {
+                        setErrors((prev) => ({ ...prev, position: 'Position already assigned.' }));
+                        return;
+                      }
+                      setErrors((prev) => ({ ...prev, position: '' }));
+                      setFormData({ ...formData, position: newPos });
+                    }}
+                    error={errors.position}
+                  />
+
+                  {/* Position Swap Indicator when editing existing officer */}
+                  {(() => {
+                    if (!initialMember || !formData.position) return null;
+                    const occupant = activeOfficersByPos[formData.position.trim().toLowerCase()];
+                    const isSelf = occupant && selectedMember && String(occupant.id) === String(selectedMember.id);
+                    if (occupant && !isSelf) {
+                      return (
+                        <div className="mt-2.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5 shadow-xs animate-in fade-in duration-200">
+                          <ArrowLeftRight size={16} className="shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+                          <div>
+                            <p className="font-bold text-blue-950 dark:text-blue-100 flex items-center gap-1.5">
+                              <span>Position Swap Activated</span>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-200/70 dark:bg-blue-900/60 font-black uppercase text-blue-900 dark:text-blue-200">
+                                Automatic
+                              </span>
+                            </p>
+                            <p className="mt-1 text-[11px] leading-relaxed text-blue-800 dark:text-blue-300">
+                              Saving will assign <strong>{selectedMember?.fullName}</strong> to <strong>{formData.position}</strong>, and swap <strong>{occupant.name}</strong> to <strong>{initialPosition || 'your previous position'}</strong>.
+                            </p>
+                          </div>
+                        </div>
+                      );
                     }
-                    setErrors((prev) => ({ ...prev, position: '' }));
-                    setFormData({ ...formData, position: e.target.value });
-                  }}
-                  error={errors.position}
-                />
+                    return null;
+                  })()}
+                </>
               )}
             </div>
 

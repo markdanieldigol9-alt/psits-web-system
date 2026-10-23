@@ -1214,6 +1214,32 @@ async function getLiveEventCounts(req, res) {
   return json(res, 200, { success: true, counts });
 }
 
+function isValidVideoBuffer(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 8) return false;
+  // MP4 / MOV brand identifiers
+  const brand = buffer.slice(4, 8).toString('ascii');
+  if (brand === 'ftyp' || brand === 'moov' || brand === 'mdat' || brand === 'skip' || brand === 'wide') {
+    return true;
+  }
+  // Matroska / WebM EBML header (0x1A 0x45 0xDF 0xA3)
+  if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) {
+    return true;
+  }
+  // RIFF AVI
+  if (buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'AVI ') {
+    return true;
+  }
+  // OGG video container
+  if (buffer.slice(0, 4).toString('ascii') === 'OggS') {
+    return true;
+  }
+  // FLV
+  if (buffer.slice(0, 3).toString('ascii') === 'FLV') {
+    return true;
+  }
+  return false;
+}
+
 async function uploadLiveEventRecording(req, res) {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid live session id.' });
@@ -1238,6 +1264,10 @@ async function uploadLiveEventRecording(req, res) {
 
   const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
   if (!buffer.length) return json(res, 400, { success: false, message: 'Recording upload body is empty.' });
+
+  if (!isValidVideoBuffer(buffer)) {
+    return json(res, 400, { success: false, message: 'Invalid or unsupported video file header. Please upload a standard MP4, WebM, or QuickTime file.' });
+  }
 
   // If there was an existing recording, delete it before writing the new one
   if (existing.recording_path) {
@@ -1317,15 +1347,9 @@ async function downloadLiveEventRecording(req, res) {
     }
   }
 
-  // Graceful fallback to bundled video asset if uploaded file is missing
+  // If uploaded file is missing on storage
   if (!fullPath) {
-    const fallbackPath = path.join(__dirname, 'assets', 'sample_event_clip.mp4');
-    try {
-      await fs.stat(fallbackPath);
-      fullPath = fallbackPath;
-    } catch {
-      return json(res, 404, { success: false, message: 'Recording not available.' });
-    }
+    return json(res, 404, { success: false, message: 'Recording file not found on server storage.' });
   }
 
   const name = safeFilename(row.title) || `live-session-${id}`;
@@ -1400,16 +1424,9 @@ async function streamLiveEventRecording(req, res) {
     }
   }
 
-  // Graceful fallback to bundled video asset if uploaded file is missing
+  // If uploaded file is missing on storage
   if (!fullPath || !fileStat) {
-    const fallbackPath = path.join(__dirname, 'assets', 'sample_event_clip.mp4');
-    try {
-      fileStat = await fs.stat(fallbackPath);
-      fullPath = fallbackPath;
-      res.setHeader('X-Video-Fallback', 'true');
-    } catch {
-      return json(res, 404, { success: false, message: 'Video clip not available.' });
-    }
+    return json(res, 404, { success: false, message: 'Video clip file not found on server storage. Please upload or replace the video clip.' });
   }
 
   try {

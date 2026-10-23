@@ -76,7 +76,7 @@ const {
   streamLiveEventRecording,
   cleanupExpiredLiveEventRecordings,
 } = require('./liveEvents');
-const { listOfficers, createOfficer, assignOfficer, updateOfficer, deleteOfficer, listOfficerPositions, createOfficerPosition, deleteOfficerPosition } = require('./officers');
+const { listOfficers, createOfficer, assignOfficer, updateOfficer, swapOfficers, deleteOfficer, listOfficerPositions, createOfficerPosition, deleteOfficerPosition } = require('./officers');
 const {
   listInstitutionMembers,
   bulkCreateInstitutionMembers,
@@ -784,6 +784,7 @@ app.get('/api/officers', requireMigrationReady, authMiddleware, listOfficers);
 app.post('/api/officers', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createOfficer);
 app.post('/api/officers/assign', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), assignOfficer);
 app.put('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateOfficer);
+app.post('/api/officers/swap', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), swapOfficers);
 app.delete('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteOfficer);
 app.get('/api/officer-positions', requireMigrationReady, authMiddleware, listOfficerPositions);
 app.post('/api/officer-positions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createOfficerPosition);

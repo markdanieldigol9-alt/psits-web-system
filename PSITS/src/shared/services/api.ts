@@ -154,9 +154,17 @@ class ApiService {
     return this.client.post('/officers', data);
   }
 
-  /** Update existing officer details or position */
+  /** Update existing officer details or position (supports position reassignment and auto-swap) */
   updateOfficer(id: string, data: any) {
     return this.client.put(`/officers/${id}`, data);
+  }
+
+  /** Directly swap positions between two officers */
+  swapOfficers(officerId1: string | number, officerId2: string | number) {
+    return this.client.post<{ success: boolean; message: string; officer1: any; officer2: any }>('/officers/swap', {
+      officerId1,
+      officerId2,
+    });
   }
 
   /** Archive officer (reverts role back to member) */

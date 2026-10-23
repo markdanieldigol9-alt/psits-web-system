@@ -529,12 +529,46 @@ async function updateOfficer(req, res) {
       await conn.execute(`UPDATE users SET ${userSets.join(', ')} WHERE id = ?`, userParams);
     }
 
+    let swappedWith = null;
     if (officerSets.length) {
       if (typeof body.position === 'string') {
         const nextPosition = body.position.trim();
-        if (await positionInUse(conn, nextPosition, userId)) {
-          await conn.rollback();
-          return res.status(400).json({ success: false, message: 'Position already assigned to another active officer.' });
+        
+        // Fetch current officer's existing position
+        const [currRows] = await conn.execute(
+          'SELECT position FROM officers WHERE user_id = ? LIMIT 1',
+          [userId]
+        );
+        const currentPosition = currRows[0]?.position || '';
+
+        // If changing to a different position
+        if (nextPosition && nextPosition.toLowerCase() !== currentPosition.toLowerCase()) {
+          // Check if another active officer is occupying this position
+          const [occupiedRows] = await conn.execute(
+            `SELECT o.user_id, o.position, u.full_name, u.email
+             FROM officers o
+             JOIN users u ON u.id = o.user_id
+             WHERE LOWER(TRIM(o.position)) = LOWER(?)
+               AND (o.officer_status = 'active' OR o.officer_status IS NULL)
+               AND o.user_id <> ?
+             LIMIT 1`,
+            [nextPosition, userId]
+          );
+
+          if (occupiedRows.length > 0) {
+            // Swap positions: Assign other officer to this officer's current position
+            const otherOfficer = occupiedRows[0];
+            await conn.execute(
+              'UPDATE officers SET position = ? WHERE user_id = ?',
+              [currentPosition || 'Member', otherOfficer.user_id]
+            );
+            swappedWith = {
+              userId: otherOfficer.user_id,
+              name: otherOfficer.full_name,
+              previousPosition: nextPosition,
+              newPosition: currentPosition || 'Member',
+            };
+          }
         }
       }
       officerParams.push(userId);
@@ -563,13 +597,85 @@ async function updateOfficer(req, res) {
     );
 
     await conn.commit();
-    return res.json({ success: true, officer: toOfficerDto(rows[0]) });
+    return res.json({
+      success: true,
+      officer: toOfficerDto(rows[0]),
+      swappedWith,
+      message: swappedWith
+        ? `Position updated to "${rows[0].position}" and swapped with ${swappedWith.name} (who is now ${swappedWith.newPosition}).`
+        : 'Officer updated successfully.',
+    });
   } catch (err) {
     await conn.rollback();
     const message = err && err.code === 'ER_DUP_ENTRY'
       ? 'Email already exists.'
       : 'Update officer failed.';
     return res.status(400).json({ success: false, message });
+  } finally {
+    conn.release();
+  }
+}
+
+/**
+ * Controller: POST /api/officers/swap
+ * Purpose: Directly swap positions between two officers (Admin / Super Admin / Officer)
+ */
+async function swapOfficers(req, res) {
+  const { officerId1, officerId2 } = req.body || {};
+  const id1 = Number(officerId1);
+  const id2 = Number(officerId2);
+
+  if (!Number.isFinite(id1) || !Number.isFinite(id2) || id1 === id2) {
+    return res.status(400).json({ success: false, message: 'Please provide two distinct valid officer IDs to swap.' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [rows1] = await conn.execute(
+      `SELECT o.user_id, o.position, u.full_name, u.email
+       FROM officers o
+       JOIN users u ON u.id = o.user_id
+       WHERE o.user_id = ?
+       LIMIT 1`,
+      [id1]
+    );
+
+    const [rows2] = await conn.execute(
+      `SELECT o.user_id, o.position, u.full_name, u.email
+       FROM officers o
+       JOIN users u ON u.id = o.user_id
+       WHERE o.user_id = ?
+       LIMIT 1`,
+      [id2]
+    );
+
+    if (!rows1.length || !rows2.length) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'One or both officers could not be found.' });
+    }
+
+    const officer1 = rows1[0];
+    const officer2 = rows2[0];
+    const pos1 = officer1.position;
+    const pos2 = officer2.position;
+
+    // Swap positions
+    await conn.execute('UPDATE officers SET position = ? WHERE user_id = ?', [pos2, id1]);
+    await conn.execute('UPDATE officers SET position = ? WHERE user_id = ?', [pos1, id2]);
+
+    await conn.commit();
+
+    return res.json({
+      success: true,
+      message: `Successfully swapped positions: ${officer1.full_name} is now ${pos2}, and ${officer2.full_name} is now ${pos1}.`,
+      officer1: { id: id1, name: officer1.full_name, position: pos2 },
+      officer2: { id: id2, name: officer2.full_name, position: pos1 },
+    });
+  } catch (err) {
+    await conn.rollback();
+    return res.status(500).json({ success: false, message: 'Failed to swap officer positions.', error: err.message });
   } finally {
     conn.release();
   }
@@ -756,6 +862,7 @@ module.exports = {
   createOfficer,
   assignOfficer,
   updateOfficer,
+  swapOfficers,
   deleteOfficer,
   listOfficerPositions,
   createOfficerPosition,
