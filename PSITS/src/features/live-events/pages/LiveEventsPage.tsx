@@ -9,7 +9,10 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { LiveSessionModal } from '@/features/live-events/components/LiveSessionModal';
 import type { LiveSession, LiveSessionFormState } from '@/features/live-events/types/liveSessions';
-import { Download, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Video, AlertCircle, Loader2, RotateCcw } from 'lucide-react';
+import { Download, Film, MonitorPlay, Pencil, Plus, Send, Trash2, Video } from 'lucide-react';
+import { CustomVideoPlayer } from '@/features/live-events/components/CustomVideoPlayer';
+import { VideoStatusBadge } from '@/features/live-events/components/VideoStatusBadge';
+import { parseVideoSource } from '@/features/live-events/utils/videoSource';
 
 function createEmptySessionFormState(hostLabel: string): LiveSessionFormState {
   return {
@@ -58,76 +61,13 @@ export const LiveEventsPage = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
 
   const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [isUploadingRecording, setIsUploadingRecording] = useState(false);
   const [recordingUploadPct, setRecordingUploadPct] = useState(0);
-
-  const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null);
-  const [isVideoLoadingBlob, setIsVideoLoadingBlob] = useState(false);
-  const [videoPlayError, setVideoPlayError] = useState(false);
-  const [videoStreamMode, setVideoStreamMode] = useState<'proxy' | 'direct' | 'blob'>('proxy');
-
-  useEffect(() => {
-    return () => {
-      if (videoBlobUrl) {
-        URL.revokeObjectURL(videoBlobUrl);
-      }
-    };
-  }, [videoBlobUrl]);
-
-  useEffect(() => {
-    if (videoBlobUrl) {
-      URL.revokeObjectURL(videoBlobUrl);
-    }
-    setVideoBlobUrl(null);
-    setVideoPlayError(false);
-    setIsVideoLoadingBlob(false);
-    setVideoStreamMode('proxy');
-  }, [activeSession?.id, activeSession?.recordingUrl]);
-
-  const handleVideoError = async () => {
-    if (!activeSession || isVideoLoadingBlob) return;
-
-    // Stage 1: If proxy stream failed, try direct Render stream
-    if (videoStreamMode === 'proxy') {
-      setVideoStreamMode('direct');
-      return;
-    }
-
-    // Stage 2: If direct stream also failed, fetch blob via Axios download
-    if (videoStreamMode === 'direct' && !videoBlobUrl) {
-      try {
-        setIsVideoLoadingBlob(true);
-        const res = await api.downloadLiveEventRecording(activeSession.id);
-        const blob = res.data as Blob;
-        const url = URL.createObjectURL(blob);
-        setVideoBlobUrl(url);
-        setVideoStreamMode('blob');
-        setVideoPlayError(false);
-        return;
-      } catch {
-        setVideoPlayError(true);
-      } finally {
-        setIsVideoLoadingBlob(false);
-      }
-      return;
-    }
-
-    setVideoPlayError(true);
-  };
-
-  const handleRetryVideo = () => {
-    if (videoBlobUrl) {
-      URL.revokeObjectURL(videoBlobUrl);
-      setVideoBlobUrl(null);
-    }
-    setVideoPlayError(false);
-    setIsVideoLoadingBlob(false);
-    setVideoStreamMode('proxy');
-  };
 
   const refresh = async () => {
     const { data } = await api.getLiveSessions();
@@ -383,14 +323,11 @@ export const LiveEventsPage = () => {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {e.eventTitle && <Badge variant="info">{e.eventTitle}</Badge>}
-                    {e.recordingUrl ? (
-                      <Badge variant="success" className="inline-flex items-center gap-1">
-                        <Film size={12} />
-                        Video Clip Ready
-                      </Badge>
-                    ) : (
-                      <Badge variant="warning">No Video File</Badge>
-                    )}
+                    <VideoStatusBadge
+                      status={e.status}
+                      sourceType={parseVideoSource(e.streamUrl || e.recordingUrl).type}
+                      hasRecording={Boolean(e.recordingUrl)}
+                    />
                   </div>
                   <div className="text-xl font-bold text-gray-900">{e.title}</div>
                   <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
@@ -464,89 +401,38 @@ export const LiveEventsPage = () => {
           <Modal
             title={activeSession.title}
             isOpen={Boolean(activeSession)}
-            onClose={() => setActiveSession(null)}
-            size="lg"
+            onClose={() => {
+              setActiveSession(null);
+              setIsTheaterMode(false);
+            }}
+            size={isTheaterMode ? '2xl' : 'xl'}
           >
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className={`grid grid-cols-1 gap-6 ${isTheaterMode ? 'grid-cols-1' : 'lg:grid-cols-[minmax(0,1fr)_360px]'}`}>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {activeSession.eventTitle && <Badge variant="info">{activeSession.eventTitle}</Badge>}
-                  {activeSession.recordingUrl ? (
-                    <Badge variant="success" className="inline-flex items-center gap-1">
-                      <Film size={12} />
-                      Video Clip
-                    </Badge>
-                  ) : (
-                    <Badge variant="warning">No Video File</Badge>
-                  )}
+                  <VideoStatusBadge
+                    status={activeSession.status}
+                    sourceType={parseVideoSource(activeSession.streamUrl || activeSession.recordingUrl).type}
+                    hasRecording={Boolean(activeSession.recordingUrl)}
+                  />
                 </div>
 
-                {activeSession.recordingUrl ? (
-                  <div className="aspect-video w-full overflow-hidden rounded-xl border border-gray-200 bg-black relative">
-                    {isVideoLoadingBlob ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 text-white gap-2">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                        <span className="text-xs font-medium text-slate-300">Buffering video stream...</span>
-                      </div>
-                    ) : videoPlayError ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 text-white p-4 text-center">
-                        <AlertCircle className="w-8 h-8 text-rose-400 mb-2" />
-                        <p className="text-sm font-semibold">Video Stream Unavailable</p>
-                        <p className="text-xs text-slate-400 mt-1 mb-3 max-w-xs">
-                          Browser could not stream this clip directly. You can download the video file or retry playback.
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void downloadRecording(activeSession)}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Download size={14} /> Download File
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleRetryVideo}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <RotateCcw size={14} /> Retry
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <video
-                      key={`${activeSession.id}-${videoStreamMode}-${videoBlobUrl ? 'blob' : 'stream'}`}
-                      controls
-                      autoPlay
-                      playsInline
-                      preload="auto"
-                      crossOrigin="anonymous"
-                      className="h-full w-full object-contain"
-                      src={
-                        videoBlobUrl ||
-                        (videoStreamMode === 'direct'
-                          ? api.getLiveEventRecordingDirectStreamUrl(activeSession.id)
-                          : api.getLiveEventRecordingStreamUrl(activeSession.id))
-                      }
-                      onError={handleVideoError}
-                    >
-                      Your browser does not support HTML5 video streaming.
-                    </video>
-                  </div>
-                ) : (
-                  <div className="flex aspect-video w-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
-                    <Film size={40} className="text-gray-400 mb-2" />
-                    <p className="text-sm font-medium text-gray-700">No video clip uploaded yet</p>
-                    {canManage && (
-                      <p className="text-xs text-gray-500 mt-1">Upload a video clip using the panel on the right.</p>
-                    )}
-                  </div>
-                )}
+                {/* Custom Video Player with 144p to 720p Resolution Selector & Embed Support */}
+                <CustomVideoPlayer
+                  recordingUrl={activeSession.recordingUrl ? api.getLiveEventRecordingStreamUrl(activeSession.id) : null}
+                  streamUrl={activeSession.streamUrl}
+                  streamSource={activeSession.streamSource}
+                  title={activeSession.title}
+                  sessionId={activeSession.id}
+                  isTheaterMode={isTheaterMode}
+                  onToggleTheater={() => setIsTheaterMode((prev) => !prev)}
+                />
 
                 {activeSession.description && (
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Description</div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{activeSession.description}</p>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 dark:bg-slate-800/60 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-1">Description</div>
+                    <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">{activeSession.description}</p>
                   </div>
                 )}
               </div>
@@ -597,8 +483,27 @@ export const LiveEventsPage = () => {
                           )}
                         </div>
                       </div>
+                    ) : activeSession.streamUrl ? (
+                      <div className="rounded-lg bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-900 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-blue-900 dark:text-cyan-400 text-xs uppercase tracking-wide">
+                            External Stream Link
+                          </span>
+                          <span className="font-mono text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-bold uppercase">
+                            {parseVideoSource(activeSession.streamUrl).type}
+                          </span>
+                        </div>
+                        <a
+                          href={activeSession.streamUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-cyan-400 hover:underline truncate block"
+                        >
+                          {activeSession.streamUrl}
+                        </a>
+                      </div>
                     ) : (
-                      <div className="text-gray-500 text-xs">No video clip uploaded yet.</div>
+                      <div className="text-gray-500 text-xs">No video clip or stream link configured yet.</div>
                     )}
 
                     {canManage && (

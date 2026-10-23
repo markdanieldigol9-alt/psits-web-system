@@ -2,6 +2,16 @@ export type LiveSessionStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 export type LiveSessionType = 'livestream';
 export type LiveSessionPrivacy = 'public' | 'private' | 'event_registered_only';
 export type RecordingVisibility = 'host_only' | 'registered_members' | 'public_replay';
+export type VideoQuality = '144p' | '240p' | '360p' | '480p' | '720p' | 'Auto';
+export type VideoSourceType = 'youtube' | 'vimeo' | 'direct' | 'uploaded' | 'unknown';
+
+export interface ParsedVideoSource {
+  type: VideoSourceType;
+  embedUrl: string | null;
+  videoId: string | null;
+  isValid: boolean;
+  errorMessage?: string;
+}
 
 export type LiveSession = {
   id: string;
@@ -24,6 +34,8 @@ export type LiveSession = {
   recordingUrl?: string | null;
   recordingPath?: string | null;
   recordingExpiresAt?: string | null;
+  availableQualities?: VideoQuality[];
+  embedUrl?: string | null;
   roomCode?: string | null;
   sessionToken?: string | null;
   viewersCount?: number;
