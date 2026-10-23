@@ -196,10 +196,14 @@ function canOfficerAccessPath(positionTitle, pathname) {
   return false;
 }
 
-function requireOfficerModule(moduleKey) {
+function requireOfficerModule(moduleKey, options = {}) {
+  const { allowMembers = false } = options;
   return (req, res, next) => {
     const role = req.user?.role;
     if (role === 'super_admin' || role === 'admin') {
+      return next();
+    }
+    if (allowMembers && (role === 'member' || role === 'institution')) {
       return next();
     }
     if (role === 'officer') {

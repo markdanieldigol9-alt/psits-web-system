@@ -79,7 +79,7 @@ export const VerifyActionModal = ({
           })();
         }}
       >
-        <p className="text-sm text-gray-700">{message}</p>
+        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{message}</p>
 
         {requireText && (
           <Input

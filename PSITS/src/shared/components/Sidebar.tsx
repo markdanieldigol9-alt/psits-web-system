@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
 import { canOfficerAccessPath } from '@/shared/utils/officerPermissions';
-import { getUserInterfaceKey, getUserInterfaceLabel, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
+import { getUserInterfaceKey, getUserRoleConfig, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   LayoutDashboard,
@@ -256,6 +256,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
   if (!user) return null;
 
   const initial = getUserInitial(user);
+  const roleConfig = getUserRoleConfig(user);
 
   return (
     <>
@@ -341,7 +342,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                   className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-slate-700"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-tr ${roleConfig.avatarGradient} text-white flex items-center justify-center text-xs font-bold shadow-sm`}>
                   {initial}
                 </div>
               )}
@@ -351,8 +352,8 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
               <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 truncate leading-tight">
                 {getUserDisplayName(user)}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize truncate leading-tight mt-0.5">
-                {getUserInterfaceLabel(user)}
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate leading-tight mt-0.5">
+                {roleConfig.badgeLabel}
               </span>
             </div>
           </div>

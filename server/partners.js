@@ -310,6 +310,27 @@ async function createPartnerContribution(req, res) {
     [result.insertId]
   );
 
+  // Sync monetary contribution into payments ledger
+  if (valueAmount && Number(valueAmount) > 0) {
+    try {
+      const [partnerRows] = await pool.execute('SELECT company, contact_person, user_id FROM partners WHERE id = ? LIMIT 1', [partnerId]);
+      const partner = partnerRows[0] || {};
+      const targetUserId = partner.user_id || req.user?.id || 1;
+      const partnerName = partner.company || partner.contact_person || 'Industry Partner';
+      const refNum = `SPONSOR-${partnerId}-${result.insertId}`;
+
+      await pool.execute(
+        `INSERT INTO payments (
+          member_id, member_name, event_id, event, amount, payment_kind,
+          payment_method, method, reference_number, status, payment_status, process_status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'partner_sponsorship', 'bank_transfer', 'bank_transfer', ?, 'verified', 'paid', 'verified', NOW(), NOW())`,
+        [targetUserId, partnerName, eventId, dealTitle, valueAmount, refNum]
+      );
+    } catch (syncErr) {
+      console.error('Failed to sync partner contribution to payments ledger:', syncErr);
+    }
+  }
+
   return res.status(201).json({ success: true, contribution: toContributionDto(rows[0]) });
 }
 
@@ -358,6 +379,11 @@ async function deletePartnerContribution(req, res) {
 
   const [result] = await pool.execute('DELETE FROM partner_contributions WHERE id = ?', [id]);
   if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Contribution not found.' });
+
+  try {
+    await pool.execute("DELETE FROM payments WHERE payment_kind = 'partner_sponsorship' AND reference_number LIKE ?", [`SPONSOR-%-${id}`]);
+  } catch {}
+
   return res.json({ success: true });
 }
 

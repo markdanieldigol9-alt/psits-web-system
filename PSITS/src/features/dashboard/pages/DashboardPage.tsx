@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
+import { useTheme } from '@/shared/context/ThemeContext';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Badge } from '@/shared/components/Form';
 import { LoadingSpinner } from '@/shared/components/Common';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
-import { getUserDisplayName } from '@/shared/utils/userInterface';
+import { getUserDisplayName, getUserRoleConfig, getUserInterfaceKey } from '@/shared/utils/userInterface';
 import { InstitutionEventLeaderboard } from '@/features/dashboard/components/InstitutionEventLeaderboard';
 import api from '@/shared/services/api';
 import {
@@ -19,6 +20,12 @@ import {
   Megaphone,
   CalendarDays,
   ExternalLink,
+  Briefcase,
+  FileText,
+  Upload,
+  Vote,
+  Building2,
+  Video,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -82,6 +89,10 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addNotification } = useNotification();
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
+  const roleConfig = getUserRoleConfig(user);
+  const uiKey = getUserInterfaceKey(user);
 
   const [report, setReport] = useState<DashboardReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -267,31 +278,67 @@ export const DashboardPage = () => {
             </div>
           )}
 
-          {/* Member Hero Banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 text-white shadow-xl shadow-blue-600/20 p-6 sm:p-8 animate-fade-in">
+          {/* Member Hero Banner (Role-Tailored) */}
+          <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${roleConfig.heroGradient} text-white shadow-xl shadow-blue-900/20 p-6 sm:p-8 animate-fade-in border border-white/10`}>
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse" /> Student Portal
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-mono font-bold uppercase tracking-wider mb-2 border border-white/20">
+                  <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor} animate-pulse`} /> {roleConfig.portalTitle}
                 </span>
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Welcome, {getUserDisplayName(user)}</h1>
-                {user.memberType === 'institution' && (user.representativeName || (user.sectorDetails && user.fullName && user.fullName !== user.sectorDetails)) && (
-                  <p className="text-xs sm:text-sm font-semibold text-cyan-200 mt-1">
-                    Representative: {user.representativeName || user.fullName}
+                {uiKey === 'member_institutional' && (
+                  <p className="text-xs sm:text-sm font-semibold text-teal-200 mt-1 flex items-center gap-2">
+                    <Building2 size={15} />
+                    <span>Campus Chapter: <strong>{user.sectorDetails || 'Institutional Member'}</strong></span>
+                    {user.representativeName && <span>• Rep: {user.representativeName}</span>}
                   </p>
                 )}
-                <p className="mt-1 text-blue-100 text-xs sm:text-sm max-w-xl">
-                  Stay updated with your registered events, live announcements, and fast-track actions.
-                </p>
+                {uiKey === 'member_industry' && (
+                  <p className="text-xs sm:text-sm font-semibold text-violet-200 mt-1 flex items-center gap-2">
+                    <Briefcase size={15} />
+                    <span>Corporate Partner: <strong>{user.sectorDetails || 'Tech Industry Partner'}</strong></span>
+                  </p>
+                )}
+                {uiKey === 'member_individual' && (
+                  <p className="mt-1 text-blue-100 text-xs sm:text-sm max-w-xl">
+                    Stay updated with your registered events, live announcements, and fast-track actions.
+                  </p>
+                )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
-                  <CalendarDays size={15} /> Browse Events
-                </Button>
-                <Button variant="gold" size="sm" onClick={() => navigate('/payments')}>
-                  <DollarSign size={15} /> Pay Fee
-                </Button>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {uiKey === 'member_institutional' ? (
+                  <>
+                    <Button variant="cyber" size="sm" onClick={() => navigate('/institution-members')} className="shadow-md">
+                      <Upload size={15} /> Batch Roster
+                    </Button>
+                    <Button variant="gold" size="sm" onClick={() => navigate('/payments')}>
+                      <DollarSign size={15} /> Remittance
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                      <CalendarDays size={15} /> Delegations
+                    </Button>
+                  </>
+                ) : uiKey === 'member_industry' ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                      <CalendarDays size={15} /> Tech Events
+                    </Button>
+                    <Button variant="cyber" size="sm" onClick={() => navigate('/forum')}>
+                      <Megaphone size={15} /> Community
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                      <CalendarDays size={15} /> Browse Events
+                    </Button>
+                    <Button variant="gold" size="sm" onClick={() => navigate('/payments')}>
+                      <DollarSign size={15} /> Pay Fee
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -392,27 +439,62 @@ export const DashboardPage = () => {
             </Card>
           </div>
 
-          <Card title="Quick Links" subtitle="Go directly to common member actions">
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${user.memberType === 'institution' ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}>
-              {user.memberType === 'institution' && (
+          <Card title="Quick Actions & Fast Links" subtitle="Fast-track navigation tailored to your role">
+            {uiKey === 'member_institutional' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <Button variant="outline" onClick={() => navigate('/institution-members')} className="justify-between">
-                  <span className="flex items-center gap-2"><CheckCircle size={16} /> Institution Members</span>
+                  <span className="flex items-center gap-2 text-teal-700 dark:text-teal-300 font-bold"><Upload size={16} /> Batch Roster</span>
                   <ArrowRight size={16} />
                 </Button>
-              )}
-              <Button variant="outline" onClick={() => navigate('/events')} className="justify-between">
-                <span className="flex items-center gap-2"><CalendarDays size={16} /> Events</span>
-                <ArrowRight size={16} />
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/announcements')} className="justify-between">
-                <span className="flex items-center gap-2"><Megaphone size={16} /> Announcements</span>
-                <ArrowRight size={16} />
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/payments')} className="justify-between">
-                <span className="flex items-center gap-2"><ExternalLink size={16} /> Payments</span>
-                <ArrowRight size={16} />
-              </Button>
-            </div>
+                <Button variant="outline" onClick={() => navigate('/payments')} className="justify-between">
+                  <span className="flex items-center gap-2"><DollarSign size={16} /> Remittance & Dues</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/events')} className="justify-between">
+                  <span className="flex items-center gap-2"><CalendarDays size={16} /> Register Delegation</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/my-events')} className="justify-between">
+                  <span className="flex items-center gap-2"><Calendar size={16} /> Registered Events</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/stream-events')} className="justify-between">
+                  <span className="flex items-center gap-2"><Video size={16} /> Stream Events</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/announcements')} className="justify-between">
+                  <span className="flex items-center gap-2"><Megaphone size={16} /> Chapter News</span>
+                  <ArrowRight size={16} />
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <Button variant="outline" onClick={() => navigate('/my-events')} className="justify-between">
+                  <span className="flex items-center gap-2"><CalendarDays size={16} /> My Events</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/events')} className="justify-between">
+                  <span className="flex items-center gap-2"><Calendar size={16} /> Explore Events</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/payments')} className="justify-between">
+                  <span className="flex items-center gap-2"><DollarSign size={16} /> Payment History</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/elections')} className="justify-between">
+                  <span className="flex items-center gap-2"><Vote size={16} /> Elections</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/forum')} className="justify-between">
+                  <span className="flex items-center gap-2"><Megaphone size={16} /> Community Forum</span>
+                  <ArrowRight size={16} />
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/announcements')} className="justify-between">
+                  <span className="flex items-center gap-2"><ExternalLink size={16} /> Announcements</span>
+                  <ArrowRight size={16} />
+                </Button>
+              </div>
+            )}
           </Card>
         </div>
       </MainLayout>
@@ -461,28 +543,64 @@ export const DashboardPage = () => {
     <MainLayout>
       <div className="space-y-6">
         {/* Admin/Officer Hero Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-900 to-[#060E20] text-white shadow-xl shadow-blue-900/20 p-8 sm:p-10 animate-fade-in border border-blue-700/40">
+        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${roleConfig.heroGradient} text-white shadow-xl shadow-blue-900/20 p-8 sm:p-10 animate-fade-in border border-blue-700/40`}>
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-10 left-10 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-300">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                <span>GOVERNANCE PORTAL • REGION XII</span>
+                <span className={`w-2 h-2 rounded-full ${roleConfig.dotColor} animate-pulse`} />
+                <span>{roleConfig.portalTitle}</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
                 Welcome back, {getUserDisplayName(user)}!
               </h1>
+              {user.role === 'officer' && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-200 text-xs font-bold">
+                    <Briefcase size={13} />
+                    {user.position || 'Executive Officer'}
+                  </span>
+                  <span className="text-xs text-slate-300 font-medium">Operational Administration</span>
+                </div>
+              )}
+              {user.role !== 'officer' && (
+                <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-xl">
+                  Central command, organizational telemetry, financial ledgers, and institutional intelligence.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2 shrink-0">
-              <Button variant="cyber" size="sm" onClick={() => navigate('/members')}>
-                <Users size={16} /> Manage Members
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
-                <Calendar size={16} /> Add Event
-              </Button>
+              {user.role === 'officer' ? (
+                <>
+                  <Button variant="gold" size="sm" onClick={() => navigate('/payments')} className="shadow-md">
+                    <DollarSign size={16} /> Log Remittance / OR
+                  </Button>
+                  <Button variant="cyber" size="sm" onClick={() => navigate('/members')}>
+                    <Users size={16} /> Review Members
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <Calendar size={16} /> Event Rosters
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="cyber" size="sm" onClick={() => navigate('/members')}>
+                    <Users size={16} /> Manage Members
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/payments')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <DollarSign size={16} /> Financial Ledger
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <Calendar size={16} /> Add Event
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/reports')} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <FileText size={16} /> Reports
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -563,15 +681,16 @@ export const DashboardPage = () => {
               <div className="min-w-[400px]">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={report?.memberGrowth || []}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                    <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
-                    <YAxis allowDecimals={false} stroke="#94A3B8" fontSize={12} />
+                    <CartesianGrid strokeDasharray="3 3" opacity={isDark ? 0.15 : 0.4} stroke={isDark ? '#334155' : '#E2E8F0'} />
+                    <XAxis dataKey="month" stroke={isDark ? '#94A3B8' : '#64748B'} fontSize={12} tickLine={false} />
+                    <YAxis allowDecimals={false} stroke={isDark ? '#94A3B8' : '#64748B'} fontSize={12} tickLine={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'rgba(11, 19, 38, 0.9)',
+                        backgroundColor: isDark ? 'rgba(11, 19, 38, 0.95)' : 'rgba(255, 255, 255, 0.98)',
                         borderRadius: '12px',
-                        border: '1px solid rgba(6, 182, 212, 0.3)',
-                        color: '#fff',
+                        border: isDark ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid rgba(203, 213, 225, 0.9)',
+                        color: isDark ? '#fff' : '#0F172A',
+                        boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.15)',
                         fontSize: '12px',
                       }}
                     />
@@ -606,10 +725,11 @@ export const DashboardPage = () => {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'rgba(11, 19, 38, 0.9)',
+                        backgroundColor: isDark ? 'rgba(11, 19, 38, 0.95)' : 'rgba(255, 255, 255, 0.98)',
                         borderRadius: '12px',
-                        border: '1px solid rgba(6, 182, 212, 0.3)',
-                        color: '#fff',
+                        border: isDark ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid rgba(203, 213, 225, 0.9)',
+                        color: isDark ? '#fff' : '#0F172A',
+                        boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.15)',
                         fontSize: '12px',
                       }}
                     />

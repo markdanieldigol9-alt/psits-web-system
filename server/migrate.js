@@ -1570,6 +1570,16 @@ async function migrate() {
   await ensureIndex('payments', 'idx_payments_created_at', 'created_at');
   await ensureIndex('payments', 'idx_payments_member_kind', 'member_id, payment_kind');
   await ensureIndex('payments', 'idx_payments_status_created', 'status, created_at');
+  await ensureIndex('payments', 'idx_payments_member_created', 'member_id, created_at DESC');
+  await ensureIndex('payments', 'idx_payments_ref_number', 'reference_number');
+
+  // Indexes on notifications
+  await ensureIndex('notifications', 'idx_notif_user_created', 'user_id, created_at DESC');
+  await ensureIndex('notifications', 'idx_notif_user_unread', 'user_id, is_read, created_at DESC');
+
+  // Indexes on forum
+  await ensureIndex('forum_posts', 'idx_forum_posts_status_pinned_created', 'status, is_pinned DESC, created_at DESC');
+  await ensureIndex('forum_comments', 'idx_forum_comments_post_status', 'post_id, status');
 
   // Indexes on announcements
   await ensureIndex('announcements', 'idx_announcements_status', 'status');
@@ -1675,22 +1685,22 @@ async function migrate() {
     );
 
     const ids = idRows.map((r) => Number(r.id)).filter(Number.isFinite);
-    if (!ids.length) return;
+    if (ids.length) {
+      const placeholders = ids.map(() => '?').join(',');
+      const safeDelete = async (sql, params) => {
+        try {
+          await pool.execute(sql, params);
+        } catch {
+          // ignore missing tables/columns in older schemas
+        }
+      };
 
-    const placeholders = ids.map(() => '?').join(',');
-    const safeDelete = async (sql, params) => {
-      try {
-        await pool.execute(sql, params);
-      } catch {
-        // ignore missing tables/columns in older schemas
-      }
-    };
-
-    await safeDelete(`DELETE FROM payments WHERE member_id IN (${placeholders})`, ids);
-    await safeDelete(`DELETE FROM event_registrations WHERE member_id IN (${placeholders})`, ids);
-    await safeDelete(`DELETE FROM institution_members WHERE institution_user_id IN (${placeholders})`, ids);
-    await safeDelete(`DELETE FROM sessions WHERE user_id IN (${placeholders})`, ids);
-    await safeDelete(`DELETE FROM users WHERE id IN (${placeholders})`, ids);
+      await safeDelete(`DELETE FROM payments WHERE member_id IN (${placeholders})`, ids);
+      await safeDelete(`DELETE FROM event_registrations WHERE member_id IN (${placeholders})`, ids);
+      await safeDelete(`DELETE FROM institution_members WHERE institution_user_id IN (${placeholders})`, ids);
+      await safeDelete(`DELETE FROM sessions WHERE user_id IN (${placeholders})`, ids);
+      await safeDelete(`DELETE FROM users WHERE id IN (${placeholders})`, ids);
+    }
   } catch {
     // ignore
   }

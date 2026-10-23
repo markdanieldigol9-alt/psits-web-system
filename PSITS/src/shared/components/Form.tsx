@@ -282,17 +282,17 @@ export const Card = ({
 }: CardProps) => {
   const variantClasses = {
     default:
-      'bg-white dark:bg-[#131B2E] border border-gray-100 dark:border-slate-800 shadow-card hover:shadow-card-md hover:border-gray-200/80 dark:hover:border-slate-700',
+      'bg-white dark:bg-[#131B2E] border border-slate-200/80 dark:border-slate-800 shadow-card hover:shadow-card-md hover:border-slate-300 dark:hover:border-slate-700',
     elevated:
-      'bg-white dark:bg-[#131B2E] border border-gray-100/80 dark:border-slate-800 shadow-card-lg hover:shadow-[0_16px_40px_-8px_rgb(0,0,0,0.12)]',
+      'bg-white dark:bg-[#131B2E] border border-slate-200/80 dark:border-slate-800 shadow-card-lg hover:shadow-[0_16px_40px_-8px_rgb(0,0,0,0.12)]',
     bordered:
-      'bg-white dark:bg-[#131B2E] border-2 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-cyan-800/80',
+      'bg-white dark:bg-[#131B2E] border-2 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-cyan-800/80',
     glass:
       'bg-white/85 dark:bg-[#0B1326]/85 backdrop-blur-md border border-white/60 dark:border-slate-700/60 shadow-card',
     cyber:
       'bg-white dark:bg-[#131B2E] border border-blue-500/20 dark:border-cyan-500/20 shadow-card hover:shadow-glow-cyan hover:border-cyan-500/40 transition-all duration-200',
     flat:
-      'bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800',
+      'bg-gray-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800',
   };
 
   return (
@@ -302,7 +302,7 @@ export const Card = ({
       className={`rounded-2xl transition-all duration-200 text-gray-900 dark:text-slate-100 ${variantClasses[variant]} ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {(title || subtitle || headerAction) && (
-        <div className="border-b border-gray-100 dark:border-slate-800 px-5 py-4 sm:px-6 sm:py-4 rounded-t-2xl flex items-center justify-between gap-3">
+        <div className="border-b border-slate-200/80 dark:border-slate-800 px-5 py-4 sm:px-6 sm:py-4 rounded-t-2xl flex items-center justify-between gap-3">
           <div>
             {title && <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight">{title}</h3>}
             {subtitle && <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium mt-0.5">{subtitle}</p>}

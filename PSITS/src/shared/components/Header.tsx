@@ -3,7 +3,7 @@ import { Bell, LogOut, Settings, Menu, X, Sun, Moon, ChevronRight, Search } from
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { useTheme } from '@/shared/context/ThemeContext';
-import { getUserInterfaceLabel, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
+import { getUserRoleConfig, getUserDisplayName, getUserInitial } from '@/shared/utils/userInterface';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '@/assets/image/PSITS_Logo.png';
 
@@ -124,6 +124,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
   });
 
   const initial = getUserInitial(user);
+  const roleConfig = getUserRoleConfig(user);
 
   return (
     <>
@@ -182,28 +183,38 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
 
             {/* Role / status badge */}
             {user?.status === 'suspended' ? (
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-[11px] font-bold text-rose-700 dark:text-rose-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                 Suspended
               </span>
             ) : user && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/70 dark:border-cyan-800/60 text-[11px] font-semibold text-blue-700 dark:text-cyan-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                {getUserInterfaceLabel(user)}
+              <span
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight shadow-xs transition-all ${
+                  roleConfig.pillClasses
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor} animate-pulse`} />
+                {roleConfig.badgeLabel}
               </span>
             )}
 
             {/* Theme toggle — pill style */}
             <button
               onClick={toggleTheme}
-              title={effectiveTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-              aria-label="Toggle theme"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gray-100/80 dark:bg-slate-800 hover:bg-gray-200/80 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 transition-colors text-xs font-medium"
+              title={effectiveTheme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+              aria-label="Toggle theme mode"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-all text-xs font-semibold shadow-xs active:scale-95"
             >
               {effectiveTheme === 'dark' ? (
-                <><Sun size={15} className="text-amber-400" /><span className="hidden sm:inline text-amber-500 dark:text-amber-400">Light</span></>
+                <>
+                  <Sun size={15} className="text-amber-400 transition-transform hover:rotate-45" />
+                  <span className="hidden sm:inline text-amber-500 dark:text-amber-400 font-bold">Light</span>
+                </>
               ) : (
-                <><Moon size={15} /><span className="hidden sm:inline">Dark</span></>
+                <>
+                  <Moon size={15} className="text-indigo-600 transition-transform hover:-rotate-12" />
+                  <span className="hidden sm:inline text-slate-700 font-bold">Dark</span>
+                </>
               )}
             </button>
 
@@ -254,8 +265,8 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
                   <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 max-w-[9rem] truncate">
                     {getUserDisplayName(user)}
                   </span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">
-                    {user?.role || 'member'}
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                    {roleConfig.badgeLabel}
                   </span>
                 </div>
               </button>

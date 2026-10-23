@@ -22,49 +22,67 @@ async function getDashboardReport(_req, res) {
     return res.status(403).json({ success: false, message: 'Forbidden.' });
   }
 
-  const [[{ totalUsers }]] = await pool.query(
-    "SELECT COUNT(*) AS totalUsers FROM users WHERE role='member'"
-  );
-  const [[{ totalInstMembers }]] = await pool.query(
-    "SELECT COUNT(*) AS totalInstMembers FROM institution_members"
-  );
+  // Consolidated parallel aggregation: 11 sequential queries reduced to fast concurrent queries
+  const [
+    [[userStats]],
+    [[instStats]],
+    [[payStats]],
+    [[eventStats]],
+    [revenueRows],
+  ] = await Promise.all([
+    pool.query(`
+      SELECT
+        COUNT(*) AS totalUsers,
+        COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) AS activeUsers,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) AS pendingUsers
+      FROM users
+      WHERE role = 'member'
+    `),
+    pool.query(`
+      SELECT
+        COUNT(*) AS totalInstMembers,
+        COALESCE(SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END), 0) AS approvedInstMembers,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) AS pendingInstMembers
+      FROM institution_members
+    `),
+    pool.query(`
+      SELECT
+        COALESCE(SUM(amount), 0) AS grossCollections,
+        COALESCE(SUM(CASE WHEN status = 'verified' THEN amount ELSE 0 END), 0) AS totalRevenue,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) AS pendingCollections,
+        COALESCE(SUM(CASE WHEN remaining_balance > 0 THEN remaining_balance ELSE 0 END), 0) AS remainingReceivables
+      FROM payments
+    `),
+    pool.query(`
+      SELECT COUNT(*) AS activeEvents
+      FROM events
+      WHERE status IN ('upcoming', 'ongoing')
+    `),
+    pool.query(`
+      SELECT method, COALESCE(SUM(amount), 0) AS total
+      FROM payments
+      WHERE status IN ('verified', 'approved')
+      GROUP BY method
+    `),
+  ]);
+
+  const totalUsers = userStats?.totalUsers || 0;
+  const totalInstMembers = instStats?.totalInstMembers || 0;
   const totalMembers = (Number(totalUsers) || 0) + (Number(totalInstMembers) || 0);
 
-  const [[{ activeUsers }]] = await pool.query(
-    "SELECT COUNT(*) AS activeUsers FROM users WHERE role='member' AND status='active'"
-  );
-  const [[{ approvedInstMembers }]] = await pool.query(
-    "SELECT COUNT(*) AS approvedInstMembers FROM institution_members WHERE status='approved'"
-  );
+  const activeUsers = userStats?.activeUsers || 0;
+  const approvedInstMembers = instStats?.approvedInstMembers || 0;
   const activeMembers = (Number(activeUsers) || 0) + (Number(approvedInstMembers) || 0);
 
-  const [[{ pendingUsers }]] = await pool.query(
-    "SELECT COUNT(*) AS pendingUsers FROM users WHERE role='member' AND status='pending'"
-  );
-  const [[{ pendingInstMembers }]] = await pool.query(
-    "SELECT COUNT(*) AS pendingInstMembers FROM institution_members WHERE status='pending'"
-  );
+  const pendingUsers = userStats?.pendingUsers || 0;
+  const pendingInstMembers = instStats?.pendingInstMembers || 0;
   const pendingApprovals = (Number(pendingUsers) || 0) + (Number(pendingInstMembers) || 0);
 
-  const [[{ activeEvents }]] = await pool.query(
-    "SELECT COUNT(*) AS activeEvents FROM events WHERE status IN ('upcoming','ongoing')"
-  );
-  const [[{ totalRevenue }]] = await pool.query(
-    "SELECT COALESCE(SUM(amount), 0) AS totalRevenue FROM payments WHERE status='verified'"
-  );
-  const [[{ grossCollections }]] = await pool.query(
-    "SELECT COALESCE(SUM(amount), 0) AS grossCollections FROM payments"
-  );
-  const [[{ pendingCollections }]] = await pool.query(
-    "SELECT COALESCE(SUM(amount), 0) AS pendingCollections FROM payments WHERE status='pending'"
-  );
-  const [[{ remainingReceivables }]] = await pool.query(
-    "SELECT COALESCE(SUM(remaining_balance), 0) AS remainingReceivables FROM payments WHERE remaining_balance > 0"
-  );
-
-  const [revenueRows] = await pool.query(
-    "SELECT method, COALESCE(SUM(amount), 0) AS total FROM payments WHERE status IN ('verified', 'approved') GROUP BY method"
-  );
+  const activeEvents = eventStats?.activeEvents || 0;
+  const totalRevenue = payStats?.totalRevenue || 0;
+  const grossCollections = payStats?.grossCollections || 0;
+  const pendingCollections = payStats?.pendingCollections || 0;
+  const remainingReceivables = payStats?.remainingReceivables || 0;
   const methodLabelMap = {
     gcash: 'GCash',
     paypal: 'PayPal',
@@ -106,41 +124,45 @@ async function getDashboardReport(_req, res) {
   const now = new Date();
   const start = addMonths(firstOfMonth(now), -5);
 
-  const [registeredUsers] = await pool.execute(
-    `SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS cnt
-     FROM users
-     WHERE role='member' AND created_at >= ?
-     GROUP BY ym
-     ORDER BY ym`,
-    [start]
-  );
-
-  const [registeredInst] = await pool.execute(
-    `SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS cnt
-     FROM institution_members
-     WHERE created_at >= ?
-     GROUP BY ym
-     ORDER BY ym`,
-    [start]
-  );
-
-  const [approvedUsers] = await pool.execute(
-    `SELECT DATE_FORMAT(updated_at, '%Y-%m') AS ym, COUNT(*) AS cnt
-     FROM users
-     WHERE role='member' AND status='active' AND updated_at >= ?
-     GROUP BY ym
-     ORDER BY ym`,
-    [start]
-  );
-
-  const [approvedInst] = await pool.execute(
-    `SELECT DATE_FORMAT(COALESCE(approved_at, updated_at), '%Y-%m') AS ym, COUNT(*) AS cnt
-     FROM institution_members
-     WHERE status='approved' AND COALESCE(approved_at, updated_at) >= ?
-     GROUP BY ym
-     ORDER BY ym`,
-    [start]
-  );
+  const [
+    [registeredUsers],
+    [registeredInst],
+    [approvedUsers],
+    [approvedInst],
+  ] = await Promise.all([
+    pool.execute(
+      `SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS cnt
+       FROM users
+       WHERE role='member' AND created_at >= ?
+       GROUP BY ym
+       ORDER BY ym`,
+      [start]
+    ),
+    pool.execute(
+      `SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS cnt
+       FROM institution_members
+       WHERE created_at >= ?
+       GROUP BY ym
+       ORDER BY ym`,
+      [start]
+    ),
+    pool.execute(
+      `SELECT DATE_FORMAT(updated_at, '%Y-%m') AS ym, COUNT(*) AS cnt
+       FROM users
+       WHERE role='member' AND status='active' AND updated_at >= ?
+       GROUP BY ym
+       ORDER BY ym`,
+      [start]
+    ),
+    pool.execute(
+      `SELECT DATE_FORMAT(COALESCE(approved_at, updated_at), '%Y-%m') AS ym, COUNT(*) AS cnt
+       FROM institution_members
+       WHERE status='approved' AND COALESCE(approved_at, updated_at) >= ?
+       GROUP BY ym
+       ORDER BY ym`,
+      [start]
+    ),
+  ]);
 
   const regMap = new Map();
   for (const r of registeredUsers) {

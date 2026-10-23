@@ -249,7 +249,7 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
-app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member']), async (req, res) => {
+app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
 
@@ -851,8 +851,8 @@ app.put('/api/partners/contributions/:id', requireMigrationReady, authMiddleware
 app.delete('/api/partners/contributions/:id', requireMigrationReady, authMiddleware, requirePartnerManager, deletePartnerContribution);
 
 // Payments
-app.get('/api/payments', requireMigrationReady, authMiddleware, requireOfficerModule('payments'), listPayments);
-app.post('/api/payments', requireMigrationReady, authMiddleware, requireRole(['member']), createPayment);
+app.get('/api/payments', requireMigrationReady, authMiddleware, requireOfficerModule('payments', { allowMembers: true }), listPayments);
+app.post('/api/payments', requireMigrationReady, authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), createPayment);
 app.put('/api/payments/:id/verify', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('payments'), verifyPayment);
 app.get('/api/payments/:id/logs', requireMigrationReady, authMiddleware, getPaymentStatusLogs);
 
