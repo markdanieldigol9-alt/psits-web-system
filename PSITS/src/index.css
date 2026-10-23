@@ -242,9 +242,22 @@ button {
     background-size: 32px 32px;
   }
 
-  /* Telemetry tags */
+  /* Module Page Header Banner (Light Blue in default light mode, sleek Cyber Obsidian in dark mode) */
+  .module-header-banner {
+    @apply relative overflow-hidden rounded-2xl p-6 transition-all duration-200 border;
+    @apply bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-cyan-50/70 border-blue-200/80 shadow-xs;
+  }
+  html.dark .module-header-banner {
+    @apply bg-gradient-to-r from-[#0B1326] via-[#131B2E] to-[#0B1326] border-slate-800 shadow-glow-sm;
+  }
+
+  /* Telemetry tags with accessible WCAG AA contrast in both themes */
   .telemetry-chip {
-    @apply font-mono text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full border;
+    @apply font-mono text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1.5;
+    @apply bg-blue-100/90 text-blue-800 border-blue-200/90;
+  }
+  html.dark .telemetry-chip {
+    @apply bg-cyan-950/60 text-cyan-300 border-cyan-800/60;
   }
 
   /* Page content container */

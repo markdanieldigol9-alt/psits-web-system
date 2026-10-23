@@ -39,8 +39,8 @@ export const MyEventsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">My Events</h1>
-            <p className="text-gray-600 mt-2">Track the events you joined and your approval status.</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">My Events</h1>
+            <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">Track the events you joined and your approval status.</p>
           </div>
           <Button variant="outline" onClick={() => void load()} isLoading={isLoading} className="w-full sm:w-auto">
             <RefreshCw size={16} />
@@ -49,7 +49,7 @@ export const MyEventsPage = () => {
         </div>
 
         {!hasRows && (
-          <Card className="p-8 text-center text-gray-500">
+          <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
             {isLoading ? 'Loading your event registrations...' : 'You have not joined any event yet.'}
           </Card>
         )}
@@ -57,12 +57,12 @@ export const MyEventsPage = () => {
         {hasRows && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {registrations.map((registration) => (
-              <Card key={registration.id} className="p-5">
+              <Card key={registration.id} className="p-5 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">{registration.eventTitle || 'Event'}</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <Calendar size={14} className="inline mr-1" />
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{registration.eventTitle || 'Event'}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                      <Calendar size={14} className="inline mr-1 text-primary" />
                       Registered: {registration.createdAt ? String(registration.createdAt).slice(0, 10) : '-'}
                     </p>
                   </div>
@@ -71,10 +71,10 @@ export const MyEventsPage = () => {
                   </Badge>
                 </div>
 
-                <div className="mt-3 space-y-1 text-sm text-gray-700">
+                <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-300">
                   <p>Participants: {registration.participantCount || 1}</p>
                   {registration.rejectionReason && (
-                    <p className="text-red-600">Reason: {registration.rejectionReason}</p>
+                    <p className="text-rose-600 dark:text-rose-400 font-medium">Reason: {registration.rejectionReason}</p>
                   )}
                 </div>
 

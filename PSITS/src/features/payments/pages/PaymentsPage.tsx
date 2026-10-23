@@ -593,16 +593,15 @@ export const PaymentsPage = () => {
     <MainLayout>
       <div className="space-y-6">
         {/* Module Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-obsidian-card via-obsidian-surface to-obsidian-card border border-cyber-cyan/20 p-6 shadow-glow-sm">
-          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-cyber-cyan/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="module-header-banner">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="telemetry-chip font-mono text-[11px] text-cyber-cyan">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse" />
+                <span className="telemetry-chip">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
                   MODULE.FINANCE
                 </span>
-                <span className="text-xs text-slate-500 font-mono">
+                <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">
                   {isAdminOrOfficer
                     ? 'CENTRAL_LEDGER_AUDIT'
                     : isInstitution
@@ -621,7 +620,7 @@ export const PaymentsPage = () => {
                   ? 'Sponsorship & Contribution History'
                   : 'Payment History & Receipts'}
               </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                 {isAdminOrOfficer
                   ? 'Monitor transactions across all institutions, members, and industry partners, verify digital receipts, and audit collegiate cash flows.'
                   : isInstitution
@@ -677,11 +676,11 @@ export const PaymentsPage = () => {
                   ? 'Total Contributions Paid'
                   : 'My Total Paid'}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue dark:text-cyber-cyan font-bold">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-cyan-300 font-bold">
                 {isAdminOrOfficer ? 'SYS.REV' : isInstitution ? 'INST.PAID' : isIndustry ? 'PARTNER.PAID' : 'MY.PAID'}
               </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold font-display text-cyber-blue dark:text-cyber-cyan mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-blue-600 dark:text-cyan-400 mt-3">
               PHP{' '}
               {(isAdminOrOfficer
                 ? totalVerifiedRevenue
@@ -760,7 +759,7 @@ export const PaymentsPage = () => {
                 IN_REVIEW
               </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-gold-accent mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-amber-400 mt-3">
               {isAdminOrOfficer || isInstitution
                 ? scopedPayments.filter((p) => getVerificationStatus(p) === 'pending').length
                 : isIndustry
@@ -934,34 +933,34 @@ export const PaymentsPage = () => {
         <Card className="border border-slate-200 dark:border-slate-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
                   {(isAdminOrOfficer || isInstitution) && (
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       {isInstitution ? 'Member / Delegate' : 'Member / Institution'}
                     </th>
                   )}
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Payment Type / Event
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Method
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                 {paginatedPayments.map((payment) => {
                   const status = getVerificationStatus(payment);
                   const formattedMethod = formatPaymentMethod(payment.method || payment.paymentMethod || '');

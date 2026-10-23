@@ -689,7 +689,7 @@ export const ForumPage = () => {
                       </div>
 
                       {/* Title display */}
-                      <p className="font-bold text-lg text-gray-900 flex items-center gap-2 mt-1">
+                      <p className="font-bold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
                         {p.type === 'question' && <span className="text-xl">❓</span>}
                         {p.type === 'story' && <span className="text-xl">{info.emoji}</span>}
                         {p.title}
@@ -697,7 +697,7 @@ export const ForumPage = () => {
 
                       {/* Subtitle summary for blogs */}
                       {p.type === 'blog' && info.subtitle && (
-                        <p className="text-sm text-gray-500 italic font-medium -mt-1 pl-1 border-l-2 border-slate-300">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 italic font-medium -mt-1 pl-1 border-l-2 border-slate-300 dark:border-slate-700">
                           {info.subtitle}
                         </p>
                       )}

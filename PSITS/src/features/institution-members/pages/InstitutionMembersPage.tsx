@@ -947,8 +947,8 @@ export const InstitutionMembersPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">Institution Members</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Institution Members</h1>
+            <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">
               {isInstitutionMember
                 ? 'Upload and manage your institution members for event participation and system access.'
                 : 'View and manage institution-uploaded member records.'}
@@ -1425,29 +1425,29 @@ export const InstitutionMembersPage = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1100px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Member</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Member</th>
                   {canViewAll && (
-                    <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Institution</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Institution</th>
                   )}
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Password</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Position</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Fee / Rate</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Gender</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Date</th>
-                  {canApprove && <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Actions</th>}
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Email</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Password</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Contact</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Position</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Fee / Rate</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Gender</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Status</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Date</th>
+                  {canApprove && <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                 {paginated.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">{member.fullName}</td>
-                    {canViewAll && <td className="px-6 py-4 text-sm text-gray-600">{member.institutionName || '-'}</td>}
-                    <td className="px-6 py-4 text-sm text-gray-600">{member.email || '-'}</td>
+                  <tr key={member.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{member.fullName}</td>
+                    {canViewAll && <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.institutionName || '-'}</td>}
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.email || '-'}</td>
                     <td className="px-6 py-4 text-sm">
                       {member.password ? (
                         <div className="flex items-center gap-1.5 font-mono">
@@ -1492,19 +1492,19 @@ export const InstitutionMembersPage = () => {
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{member.contactNumber || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{member.position || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.contactNumber || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.position || '-'}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">
                       <div>₱250.00</div>
-                      <span className="text-[10px] text-gray-400 font-normal">per person</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">per person</span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{member.gender || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.gender || '-'}</td>
                     <td className="px-6 py-4">
                       <Badge variant={member.status === 'approved' ? 'success' : member.status === 'rejected' ? 'error' : 'warning'}>
                         {String(member.status || 'pending').charAt(0).toUpperCase() + String(member.status || 'pending').slice(1)}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{member.date || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.date || '-'}</td>
                     {canApprove && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">

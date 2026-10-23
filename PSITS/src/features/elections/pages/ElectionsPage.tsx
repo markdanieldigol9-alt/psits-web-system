@@ -420,22 +420,22 @@ export const ElectionsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">Officer Elections</h1>
-            <p className="mt-2 text-gray-600">Election periods, manage candidates, and record winners.</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Officer Elections</h1>
+            <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">Election periods, candidate management, and voting results.</p>
           </div>
           {canManage && (
-            <Button variant="primary" size="lg" onClick={openCreate} className="w-full sm:w-auto">
+            <Button variant="primary" size="lg" onClick={openCreate} className="w-full sm:w-auto shadow-sm">
               <Plus size={18} /> Create Election
             </Button>
           )}
         </div>
 
-        <Card className="p-5">
+        <Card className="p-5 border border-slate-200 dark:border-slate-800">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="rounded-lg border border-gray-300 px-3 py-2"
+              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="all">All</option>
               {canManage && <option value="draft">Draft</option>}
@@ -448,12 +448,12 @@ export const ElectionsPage = () => {
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {filtered.map((e) => (
-              <Card key={e.id} className="p-4">
+              <Card key={e.id} className="p-4 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{e.title}</p>
-                    <p className="text-sm text-gray-600 mt-1 truncate">{e.description || '—'}</p>
-                    <p className="text-xs text-gray-500 mt-2">{e.startDate} → {e.endDate}</p>
+                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{e.title}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 truncate">{e.description || '—'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono">{e.startDate} → {e.endDate}</p>
                   </div>
                   {(() => {
                     const isClosed = isElectionClosed(e);

@@ -1228,25 +1228,25 @@ export const EventsPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-900/40 via-cyan-900/20 to-slate-900/60 p-6 rounded-2xl border border-cyan-500/20 shadow-lg backdrop-blur-md">
+        <div className="module-header-banner flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="telemetry-chip text-cyan-400 border-cyan-500/30 bg-cyan-950/40">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="telemetry-chip">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-ping"></span>
                 MODULE.EVENTS
               </span>
-              <span className="text-xs text-slate-400 font-mono">SYS.OK</span>
+              <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">SYS.OK</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Events Management</h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Conventions, seminars, hackathons, and esports tournament activities.</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Events Management</h1>
+            <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">Conventions, seminars, hackathons, and esports tournament activities.</p>
           </div>
           {canManageEvents && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <Button variant="outline" onClick={() => openTemplateUpload()} className="w-full sm:w-auto border-cyan-500/30 hover:border-cyan-400">
+              <Button variant="outline" onClick={() => openTemplateUpload()} className="w-full sm:w-auto border-blue-200 dark:border-cyan-500/30 hover:border-blue-400 dark:hover:border-cyan-400">
                 <Upload size={16} />
                 Upload Spreadsheet Template
               </Button>
-              <Button variant="cyber" size="lg" onClick={openCreateModal} className="w-full sm:w-auto">
+              <Button variant="cyber" size="lg" onClick={openCreateModal} className="w-full sm:w-auto shadow-sm">
                 <Plus size={20} />
                 Create Event
               </Button>
@@ -1304,11 +1304,11 @@ export const EventsPage = () => {
                         EV
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{event.title}</h3>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 font-medium">
                           PSITS Event
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Scheduled on {event.date} at {event.time}
                         </p>
                       </div>

@@ -22,7 +22,8 @@ const getStoredThemeMode = (): ThemeMode => {
   } catch {
     // ignore
   }
-  return 'system';
+  // Default to light mode (signature PSITS light blue theme)
+  return 'light';
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {

@@ -434,21 +434,20 @@ export const AnnouncementsPage = () => {
     <MainLayout>
       <div className="space-y-6">
         {/* Module Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-obsidian-card via-obsidian-surface to-obsidian-card border border-cyber-cyan/20 p-6 shadow-glow-sm">
-          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-cyber-cyan/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="module-header-banner">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="telemetry-chip font-mono text-[11px] text-cyber-cyan">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse" />
+                <span className="telemetry-chip">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
                   COMMS.DISPATCH
                 </span>
-                <span className="text-xs text-slate-500 font-mono">BROADCAST_FEED</span>
+                <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">BROADCAST_FEED</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
                 Official Announcements
               </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                 {isMember ? 'Stay updated with verified college broadcasts, memorandums, and urgent notices.' : 'Publish official notices, broadcast updates to collegiate tiers, and manage comms.'}
               </p>
             </div>

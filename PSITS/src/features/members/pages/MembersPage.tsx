@@ -425,25 +425,25 @@ export const MembersPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-900/40 via-cyan-900/20 to-slate-900/60 p-6 rounded-2xl border border-cyan-500/20 shadow-lg backdrop-blur-md">
+        <div className="module-header-banner flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="telemetry-chip text-cyan-400 border-cyan-500/30 bg-cyan-950/40">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="telemetry-chip">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-ping"></span>
                 ROSTER.DATABASE
               </span>
-              <span className="text-xs text-slate-400 font-mono">NODE.ACTIVE</span>
+              <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">NODE.ACTIVE</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Members Management</h1>
-            <p className="mt-1 text-slate-600 dark:text-slate-400 text-sm">Membership registry for individual, institutional chapters, and industry partner profiles.</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Members Management</h1>
+            <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">Membership registry for individual, institutional chapters, and industry partner profiles.</p>
           </div>
           {canManageMembers && (
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto border-cyan-500/30 hover:border-cyan-400">
+              <Button variant="outline" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto border-blue-200 dark:border-cyan-500/30 hover:border-blue-400 dark:hover:border-cyan-400">
                 <Download size={18} />
                 Export CSV
               </Button>
-              <Button variant="cyber" size="lg" onClick={() => setIsAddMemberModalOpen(true)} className="w-full sm:w-auto">
+              <Button variant="cyber" size="lg" onClick={() => setIsAddMemberModalOpen(true)} className="w-full sm:w-auto shadow-sm">
                 <Plus size={20} />
                 Add Member
               </Button>
@@ -464,22 +464,22 @@ export const MembersPage = () => {
                   setFilterType(key);
                   setCurrentPage(1);
                 }}
-                className={`card-cyber p-5 text-left transition-all duration-300 relative overflow-hidden group ${
+                className={`card-cyber p-5 text-left transition-all duration-300 relative overflow-hidden group bg-white dark:bg-[#131B2E] ${
                   active
-                    ? 'border-cyan-400 bg-cyan-950/30 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400'
-                    : 'hover:border-cyan-500/40'
+                    ? 'border-blue-600 dark:border-cyan-400 bg-blue-50/40 dark:bg-cyan-950/30 shadow-md ring-1 ring-blue-500 dark:ring-cyan-400'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-cyan-500/40'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">TIER.{key.toUpperCase()}</span>
-                      {active && <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>}
+                      <span className="text-[10px] font-mono font-bold tracking-widest text-blue-700 dark:text-cyan-400 uppercase">TIER.{key.toUpperCase()}</span>
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400"></span>}
                     </div>
                     <p className="text-lg font-bold text-slate-900 dark:text-white">{meta.label}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">{memberTypeCounts[key]} registered profiles</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-mono">{memberTypeCounts[key]} registered profiles</p>
                   </div>
-                  <div className={`p-3 rounded-xl border ${active ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' : 'bg-slate-800/40 text-slate-400 border-slate-700/50 group-hover:text-cyan-400 group-hover:border-cyan-500/30'}`}>
+                  <div className={`p-3 rounded-xl border ${active ? 'bg-blue-100 dark:bg-cyan-500/20 text-blue-700 dark:text-cyan-400 border-blue-200 dark:border-cyan-500/40' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/60 group-hover:text-blue-700 dark:group-hover:text-cyan-400 group-hover:border-blue-300 dark:group-hover:border-cyan-500/30'}`}>
                     <Icon size={22} />
                   </div>
                 </div>
@@ -537,22 +537,22 @@ export const MembersPage = () => {
           </div>
         </Card>
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1200px]">
-              <thead className="border-b border-gray-200 bg-gray-50">
+              <thead className="border-b border-gray-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Organization / Representative</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Expiry (1 Year Limit)</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Actions</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Name</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Email</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Type</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Contact</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Organization / Representative</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Status</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Expiry (1 Year Limit)</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                 {paginatedMembers.map((member) => {
                   const normalizedType = normalizeMemberType(member.memberType);
                   const expiryRaw = (member as any).membershipExpiresAt;
@@ -563,21 +563,21 @@ export const MembersPage = () => {
                     ? Math.ceil((expiryDate.getTime() - Date.now()) / msDay)
                     : null;
                   return (
-                    <tr key={member.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-900">{getUserDisplayName(member as any)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
+                    <tr key={member.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{getUserDisplayName(member as any)}</td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.email}</td>
                       <td className="px-6 py-4">
                         <Badge variant="info">{typeMeta[normalizedType].label}</Badge>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{member.contactNumber || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.contactNumber || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                         {member.sectorDetails || '-'}
                         {member.representativeName ? ` / ${member.representativeName}` : ''}
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={member.status} />
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                         {!hasExpiryWindow ? (
                           '-'
                         ) : !expiryDate || Number.isNaN(expiryDate.getTime()) ? (
@@ -585,12 +585,12 @@ export const MembersPage = () => {
                         ) : daysLeft !== null && daysLeft < 0 ? (
                           <div className="space-y-1">
                             <Badge variant="error">Expired</Badge>
-                            <div className="text-xs text-gray-500">{expiryDate.toLocaleDateString()}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{expiryDate.toLocaleDateString()}</div>
                           </div>
                         ) : daysLeft !== null && daysLeft <= 30 ? (
                           <div className="space-y-1">
                             <Badge variant="warning">Expiring ({daysLeft}d)</Badge>
-                            <div className="text-xs text-gray-500">{expiryDate.toLocaleDateString()}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{expiryDate.toLocaleDateString()}</div>
                           </div>
                         ) : (
                           expiryDate.toLocaleDateString()

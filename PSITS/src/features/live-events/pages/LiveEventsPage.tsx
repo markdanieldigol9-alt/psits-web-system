@@ -303,13 +303,13 @@ export const LiveEventsPage = () => {
       <div className="p-6 space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Recorded Video Events</h1>
-            <p className="mt-2 text-gray-600">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Recorded Video Events</h1>
+            <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">
               Upload and watch recorded activity clips and event videos. All uploaded videos are retained for 1 month and then permanently deleted.
             </p>
           </div>
           {canManage && (
-            <Button variant="primary" onClick={openCreate} className="inline-flex items-center gap-2">
+            <Button variant="primary" onClick={openCreate} className="inline-flex items-center gap-2 shadow-sm">
               <Plus size={18} />
               Upload Video Event
             </Button>
@@ -318,8 +318,8 @@ export const LiveEventsPage = () => {
 
         <div className="space-y-4">
           {sorted.map((e) => (
-            <Card key={e.id} className="overflow-hidden">
-              <div className="flex flex-col gap-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
+            <Card key={e.id} className="overflow-hidden border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col gap-3 border-b border-gray-100 dark:border-slate-800 bg-gradient-to-r from-blue-50 via-sky-50/50 to-slate-50 dark:from-slate-900 dark:via-blue-950/40 dark:to-slate-900 px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {e.eventTitle && <Badge variant="info">{e.eventTitle}</Badge>}
@@ -329,14 +329,14 @@ export const LiveEventsPage = () => {
                       hasRecording={Boolean(e.recordingUrl)}
                     />
                   </div>
-                  <div className="text-xl font-bold text-gray-900">{e.title}</div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                    <div className="inline-flex items-center gap-1 font-medium text-gray-700">
+                  <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{e.title}</div>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <div className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200">
                       <Video size={16} className="text-primary" />
                       Uploaded by {e.hostLabel || 'PSITS'}
                     </div>
                     {((e as any).createdAt || e.startAt) && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                         Date: {new Date(((e as any).createdAt || e.startAt)!).toLocaleDateString()}
                       </span>
                     )}
@@ -361,14 +361,14 @@ export const LiveEventsPage = () => {
 
               <div className="space-y-4 px-6 py-5">
                 {e.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed">{e.description}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{e.description}</p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => setActiveSession(e)}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95 shadow-sm"
                   >
                     <MonitorPlay size={18} />
                     Watch Video
@@ -378,7 +378,7 @@ export const LiveEventsPage = () => {
                     <button
                       type="button"
                       onClick={() => void downloadRecording(e)}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
                     >
                       <Download size={18} />
                       Download
@@ -390,7 +390,7 @@ export const LiveEventsPage = () => {
           ))}
 
           {!isLoading && sorted.length === 0 && (
-            <Card className="p-10 text-center text-gray-600">
+            <Card className="p-10 text-center text-slate-600 dark:text-slate-400">
               No recorded video events yet.
               {canManage ? ' Click "Upload Video Event" to get started.' : ' Please check back later.'}
             </Card>

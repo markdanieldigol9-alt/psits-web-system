@@ -258,8 +258,8 @@ export const PartnersPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold">Industry Partners</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Industry Partners</h1>
+            <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">
               {canManagePartners
                 ? 'Manage partner companies, sponsorship deals, and resources'
                 : 'Explore industry partner companies, sponsorship deals, and resources'}
@@ -307,12 +307,12 @@ export const PartnersPage = () => {
             const canLogDeal = isPrivileged || isMyCompany;
 
             return (
-            <Card key={p.id} className="p-6 flex flex-col justify-between">
+            <Card key={p.id} className="p-6 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
               <div>
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-lg text-gray-900">{p.company}</p>
+                      <p className="font-bold text-lg text-slate-900 dark:text-slate-100">{p.company}</p>
                       {isMyCompany && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2.5 py-0.5 border border-emerald-300">
                           🏢 Your Company Profile
