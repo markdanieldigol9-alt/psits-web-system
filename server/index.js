@@ -411,7 +411,7 @@ app.post('/api/uploads/event-guidelines', authMiddleware, requireRole(['super_ad
   return res.status(201).json({ success: true, url: `/uploads/event-guidelines/${filename}`, fileName: originalFileName || filename });
 });
 
-app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
 
@@ -730,7 +730,7 @@ app.get('/api/settings/public', requireMigrationReady, async (req, res) => {
   }
 });
 
-app.put('/api/settings', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+app.put('/api/settings', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const settings = body.settings || {};
 
@@ -777,23 +777,23 @@ app.delete('/api/members/:id', requireMigrationReady, authMiddleware, requireRol
 app.delete('/api/memberships/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteMember);
 app.post('/api/members/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
 app.post('/api/memberships/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
-app.post('/api/members/trigger-expiration-check', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), triggerExpirationCheck);
+app.post('/api/members/trigger-expiration-check', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), triggerExpirationCheck);
 
 // Officers
 app.get('/api/officers', requireMigrationReady, authMiddleware, listOfficers);
-app.post('/api/officers', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), createOfficer);
-app.post('/api/officers/assign', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), assignOfficer);
-app.put('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), updateOfficer);
-app.delete('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteOfficer);
+app.post('/api/officers', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createOfficer);
+app.post('/api/officers/assign', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), assignOfficer);
+app.put('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateOfficer);
+app.delete('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteOfficer);
 app.get('/api/officer-positions', requireMigrationReady, authMiddleware, listOfficerPositions);
-app.post('/api/officer-positions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), createOfficerPosition);
-app.delete('/api/officer-positions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteOfficerPosition);
+app.post('/api/officer-positions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createOfficerPosition);
+app.delete('/api/officer-positions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteOfficerPosition);
 
 // Events
 app.get('/api/events', requireMigrationReady, authMiddleware, listEvents);
 app.post('/api/events', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createEvent);
 app.put('/api/events/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateEvent);
-app.delete('/api/events/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteEvent);
+app.delete('/api/events/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteEvent);
 app.post('/api/events/:id/register', requireMigrationReady, authMiddleware, requireRole(['member']), registerForEvent);
 app.post('/api/events/:id/payment', requireMigrationReady, authMiddleware, requireRole(['member']), (req, res) => {
   req.body = { ...(req.body || {}), eventId: req.params.id };
@@ -810,7 +810,7 @@ app.get('/api/events/institution-leaderboard', requireMigrationReady, authMiddle
 app.get('/api/announcements', authMiddleware, listAnnouncements);
 app.post('/api/announcements', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createAnnouncement);
 app.put('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateAnnouncement);
-app.delete('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteAnnouncement);
+app.delete('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteAnnouncement);
 
 // Announcement interactions (comments + likes)
 app.get('/api/announcements/:id/comments', authMiddleware, listAnnouncementComments);
@@ -863,13 +863,13 @@ app.post('/api/archive/trigger', requireMigrationReady, authMiddleware, requireR
   return res.json(result);
 });
 
-app.delete('/api/archive/announcements', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+app.delete('/api/archive/announcements', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
   const result = await purgeArchivedAnnouncements(ids);
   return res.json(result);
 });
 
-app.delete('/api/archive/forum-posts', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), async (req, res) => {
+app.delete('/api/archive/forum-posts', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : null;
   const result = await purgeArchivedForumPosts(ids);
   return res.json(result);
@@ -975,8 +975,8 @@ app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['
   app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getElectionReport);
   app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getPartnerContributionsReport);
 
-// SMTP test (admin/super_admin only)
-app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin']), sendSmtpTest);
+// SMTP test (admin/super_admin/officer)
+app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), sendSmtpTest);
 
 // Stream Events (formerly Live Events)
 app.get('/api/live-events', authMiddleware, listLiveEvents);

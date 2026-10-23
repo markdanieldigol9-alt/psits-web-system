@@ -313,7 +313,7 @@ export const SettingsPage = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'super_admin') {
+    if (user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'officer') {
       const fetchSettings = async () => {
         try {
           const { data } = await api.getPublicSettings();
@@ -1311,7 +1311,7 @@ export const SettingsPage = () => {
           )}
         </Card>
 
-        {(user.role === 'admin' || user.role === 'super_admin') && (
+        {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'officer') && (
           <Card className="w-full overflow-hidden transition-all duration-200 border border-gray-100 dark:border-slate-800 shadow-sm">
             <button
               type="button"
