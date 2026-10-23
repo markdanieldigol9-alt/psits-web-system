@@ -178,6 +178,7 @@ export const EventsPage = () => {
   });
 
   const [activeFormTab, setActiveFormTab] = useState<'basic' | 'schedule' | 'guidelines'>('basic');
+  const tabTransitionTimeRef = useRef<number>(Date.now());
 
   const [formData, setFormData] = useState({
     title: '',
@@ -508,8 +509,9 @@ export const EventsPage = () => {
     if (override === 'closed') return { key: 'closed', label: 'Registration Closed', variant: 'warning' };
     if (override === 'open') return { key: 'open', label: 'Open for Registration', variant: 'success' };
 
-    const regStart = event?.registrationStartAt ? new Date(String(event.registrationStartAt)) : null;
-    const regEnd = event?.registrationEndAt ? new Date(String(event.registrationEndAt)) : null;
+    const isSemOrConf = ['seminar', 'conference'].includes(String(event?.eventType || '').toLowerCase());
+    const regStart = !isSemOrConf && event?.registrationStartAt ? new Date(String(event.registrationStartAt)) : null;
+    const regEnd = !isSemOrConf && event?.registrationEndAt ? new Date(String(event.registrationEndAt)) : null;
     const endAt = event?.endDate && event?.endTime ? new Date(`${event.endDate}T${event.endTime}:00`) : (event?.endAt ? new Date(String(event.endAt)) : null);
 
     if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) {
@@ -551,6 +553,7 @@ export const EventsPage = () => {
 
   const openCreateModal = () => {
     setEditingEventId(null);
+    tabTransitionTimeRef.current = Date.now();
     setActiveFormTab('basic');
     setFormData({
       title: '',
@@ -597,6 +600,7 @@ export const EventsPage = () => {
 
   const openEditModal = (event: any) => {
     setEditingEventId(String(event.id));
+    tabTransitionTimeRef.current = Date.now();
     setActiveFormTab('basic');
     const regStart = splitIsoToDateTime(event.registrationStartAt);
     const regEnd = splitIsoToDateTime(event.registrationEndAt);
@@ -605,6 +609,7 @@ export const EventsPage = () => {
     const isStandardCat = ['competition', 'contest', 'esports', 'seminar', 'conference'].includes(rawType.toLowerCase());
     const isOtherCat = Boolean(rawType && !isStandardCat);
     const catSelect = isEsp ? 'esports' : (isStandardCat ? rawType.toLowerCase() : (rawType ? 'other' : ''));
+    const isSemOrConf = catSelect === 'seminar' || catSelect === 'conference';
     const customText = (!isEsp && isOtherCat) ? (rawType.toLowerCase() === 'other' ? '' : rawType) : '';
     const isUnlimited = !event.capacity || Number(event.capacity) <= 0;
 
@@ -624,10 +629,10 @@ export const EventsPage = () => {
       guidelineFileName: '',
       registrationMode: event.registrationMode || 'individual',
       registrationOverride: (event.registrationOverride || '') as RegistrationOverride,
-      registrationStartDate: regStart.date,
-      registrationStartTime: regStart.time,
-      registrationEndDate: regEnd.date,
-      registrationEndTime: regEnd.time,
+      registrationStartDate: isSemOrConf ? '' : regStart.date,
+      registrationStartTime: isSemOrConf ? '' : regStart.time,
+      registrationEndDate: isSemOrConf ? '' : regEnd.date,
+      registrationEndTime: isSemOrConf ? '' : regEnd.time,
       eventType: rawType || 'seminar',
       categorySelect: catSelect,
       customCategoryText: customText,
@@ -658,6 +663,7 @@ export const EventsPage = () => {
   };
 
   const handleCategoryChange = (val: string) => {
+    const isSemOrConf = val === 'seminar' || val === 'conference';
     if (val === 'esports') {
       setFormData((p) => ({
         ...p,
@@ -680,6 +686,14 @@ export const EventsPage = () => {
         eventType: val,
         customCategoryText: '',
         isEsports: false,
+        ...(isSemOrConf
+          ? {
+              registrationStartDate: '',
+              registrationStartTime: '',
+              registrationEndDate: '',
+              registrationEndTime: '',
+            }
+          : {}),
       }));
     }
   };
@@ -753,20 +767,25 @@ export const EventsPage = () => {
           return false;
         }
       }
-      if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
-        addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
-        return false;
-      }
-      if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
-        addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
-        return false;
-      }
-      if (formData.registrationStartDate && formData.registrationStartTime && formData.registrationEndDate && formData.registrationEndTime) {
-        const rs = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`);
-        const re = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}:00`);
-        if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
-          addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
+      const isSeminarOrConf = ['seminar', 'conference'].includes(
+        String(formData.categorySelect || formData.eventType || '').toLowerCase()
+      );
+      if (!isSeminarOrConf) {
+        if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
           return false;
+        }
+        if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
+          return false;
+        }
+        if (formData.registrationStartDate && formData.registrationStartTime && formData.registrationEndDate && formData.registrationEndTime) {
+          const rs = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`);
+          const re = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}:00`);
+          if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
+            addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
+            return false;
+          }
         }
       }
       return true;
@@ -778,15 +797,178 @@ export const EventsPage = () => {
   };
 
   const handleNextFormStep = () => {
+    // Cooldown check: prevent double-click bleed
+    if (Date.now() - tabTransitionTimeRef.current < 300) return;
     if (!validateCurrentFormStep(activeFormTab)) return;
 
+    tabTransitionTimeRef.current = Date.now();
     if (activeFormTab === 'basic') setActiveFormTab('schedule');
     else if (activeFormTab === 'schedule') setActiveFormTab('guidelines');
   };
 
   const handlePrevFormStep = () => {
+    tabTransitionTimeRef.current = Date.now();
     if (activeFormTab === 'schedule') setActiveFormTab('basic');
     else if (activeFormTab === 'guidelines') setActiveFormTab('schedule');
+  };
+
+  const handleFinalSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    // Strict guard: only allow final submission from the guidelines step
+    if (activeFormTab !== 'guidelines') {
+      return;
+    }
+
+    // Cooldown guard: user must be on the guidelines step for at least 400ms
+    // Prevents accidental double-clicks on the "Next" button from immediately creating the event
+    if (Date.now() - tabTransitionTimeRef.current < 400) {
+      return;
+    }
+
+    if (!validateCurrentFormStep('basic')) { setActiveFormTab('basic'); return; }
+    if (!validateCurrentFormStep('schedule')) { setActiveFormTab('schedule'); return; }
+    if (!validateCurrentFormStep('guidelines')) { setActiveFormTab('guidelines'); return; }
+
+    const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00` : null;
+    if (!startAt) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'Start date/time is required.', type: 'error', isRead: false });
+      setActiveFormTab('schedule');
+      return;
+    }
+
+    const isSeminarOrConf = ['seminar', 'conference'].includes(
+      String(formData.categorySelect || formData.eventType || '').toLowerCase()
+    );
+
+    const registrationStartAt =
+      !isSeminarOrConf && formData.registrationStartDate && formData.registrationStartTime
+        ? `${formData.registrationStartDate}T${formData.registrationStartTime}:00`
+        : null;
+    const registrationEndAt =
+      !isSeminarOrConf && formData.registrationEndDate && formData.registrationEndTime
+        ? `${formData.registrationEndDate}T${formData.registrationEndTime}:00`
+        : null;
+
+    if (!isSeminarOrConf) {
+      if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
+        setActiveFormTab('schedule');
+        return;
+      }
+      if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
+        setActiveFormTab('schedule');
+        return;
+      }
+      if (registrationStartAt && registrationEndAt) {
+        const rs = new Date(registrationStartAt);
+        const re = new Date(registrationEndAt);
+        if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
+          addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
+          setActiveFormTab('schedule');
+          return;
+        }
+      }
+    }
+    if ((formData.endDate && !formData.endTime) || (!formData.endDate && formData.endTime)) {
+      addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must include both date and time.', type: 'error', isRead: false });
+      setActiveFormTab('schedule');
+      return;
+    }
+    const endAt =
+      formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}:00` : null;
+    if (endAt) {
+      const startCheck = new Date(startAt);
+      const endCheck = new Date(endAt);
+      if (!Number.isNaN(startCheck.getTime()) && !Number.isNaN(endCheck.getTime()) && endCheck < startCheck) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must be after start date/time.', type: 'error', isRead: false });
+        setActiveFormTab('schedule');
+        return;
+      }
+    }
+
+    const isEsportsActive = formData.categorySelect === 'esports';
+    if (isEsportsActive) {
+      if (!formData.esportsGame) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
+        setActiveFormTab('basic');
+        return;
+      }
+      if (!formData.esportsBracketFormat) {
+        addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
+        setActiveFormTab('basic');
+        return;
+      }
+    }
+
+    let finalBannerUrl = formData.bannerUrl || null;
+    if (formData.bannerFile) {
+      try {
+        const dataUrl = await readAsDataUrl(formData.bannerFile);
+        const { data: upload } = await api.uploadEventBanner(dataUrl);
+        if (upload?.url) {
+          finalBannerUrl = upload.url;
+        }
+      } catch (err) {
+        console.error('Banner upload error:', err);
+        addNotification({ userId: 'current', title: 'Banner Upload Warning', message: 'Failed to upload banner image. Event saved with default design.', type: 'warning', isRead: false });
+      }
+    }
+
+    let finalGuidelinesFileUrl = formData.guidelinesFileUrl || null;
+    let finalGuidelinesFileName = formData.guidelinesFileName || null;
+    if (formData.guidelinesFile && !finalGuidelinesFileUrl) {
+      try {
+        const dataUrl = await readAsDataUrl(formData.guidelinesFile);
+        const { data: uploadG } = await api.uploadEventGuidelines(dataUrl, formData.guidelinesFile.name);
+        if (uploadG?.url) {
+          finalGuidelinesFileUrl = uploadG.url;
+          finalGuidelinesFileName = uploadG.fileName || formData.guidelinesFile.name;
+        }
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || err?.message || 'Failed to upload guidelines file.';
+        console.error('Guidelines upload error:', msg, err);
+        addNotification({ userId: 'current', title: 'Guidelines Upload Warning', message: `${msg} Saved text guidelines only.`, type: 'warning', isRead: false });
+      }
+    }
+
+    const finalEventType = formData.categorySelect === 'other'
+      ? (formData.customCategoryText.trim() || 'other')
+      : (formData.categorySelect || formData.eventType || 'seminar');
+    const finalIsEsports = formData.categorySelect === 'esports';
+
+    setPendingEventPayload({
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      guidelines: formData.guidelines.trim(),
+      guidelinesFileUrl: finalGuidelinesFileUrl,
+      guidelinesFileName: finalGuidelinesFileName,
+      registrationMode: formData.registrationMode || 'individual',
+      registrationOverride: null,
+      registrationStartAt: isSeminarOrConf ? null : (registrationStartAt || null),
+      registrationEndAt: isSeminarOrConf ? null : (registrationEndAt || null),
+      location: formData.location.trim(),
+      eventType: finalEventType,
+      startAt,
+      ...(endAt ? { endAt } : {}),
+      fee: Number(formData.fee) || 0,
+      capacity: formData.isUnlimitedCapacity ? 0 : (Number(formData.capacity) || 0),
+      status: formData.status || 'upcoming',
+      isEsports: finalIsEsports,
+      esportsGame: finalIsEsports ? formData.esportsGame : null,
+      esportsBracketFormat: finalIsEsports ? formData.esportsBracketFormat : null,
+      bannerUrl: finalBannerUrl,
+      themeColor: formData.themeColor || '#2563eb',
+      customBadge: formData.customBadge.trim() || null,
+      requiresCoach: formData.requiresCoach,
+      hasModerator: formData.hasOfficerModerator,
+      moderatorOfficerId: formData.hasOfficerModerator ? (formData.moderatorOfficerId || null) : null,
+      moderatorOfficerName: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
+      moderatorIds: formData.hasOfficerModerator ? formData.moderatorOfficerIds : [],
+      moderatorNames: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
+    });
+    setConfirmSaveEvent(true);
   };
 
   const allTemplates = useMemo(() => {
@@ -1186,7 +1368,7 @@ export const EventsPage = () => {
                   <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400" /> <span><strong>Location:</strong> {event.location}</span></div>
                   <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.registrations} / {Number(event.capacity) > 0 ? event.capacity : 'Unlimited'}</span></div>
                   <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400" /> <span><strong>Mode:</strong> {String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
-                  {isMember && (event.registrationStartAt || event.registrationEndAt) && (
+                  {isMember && !['seminar', 'conference'].includes(String(event.eventType || '').toLowerCase()) && (event.registrationStartAt || event.registrationEndAt) && (
                     <div className="sm:col-span-2 md:col-span-3 text-xs text-gray-500 border-t border-gray-200/60 pt-2 mt-1">
                       <strong>Registration Window:</strong> {event.registrationStartAt ? String(event.registrationStartAt).replace('T', ' ').slice(0, 16) : '—'} to {event.registrationEndAt ? String(event.registrationEndAt).replace('T', ' ').slice(0, 16) : '—'}
                     </div>
@@ -1309,7 +1491,10 @@ export const EventsPage = () => {
         <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar gap-1 bg-gray-50/80 p-1.5 rounded-xl border">
           <button
             type="button"
-            onClick={() => setActiveFormTab('basic')}
+            onClick={() => {
+              tabTransitionTimeRef.current = Date.now();
+              setActiveFormTab('basic');
+            }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
               activeFormTab === 'basic' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
             }`}
@@ -1318,7 +1503,10 @@ export const EventsPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveFormTab('schedule')}
+            onClick={() => {
+              tabTransitionTimeRef.current = Date.now();
+              setActiveFormTab('schedule');
+            }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
               activeFormTab === 'schedule' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
             }`}
@@ -1327,7 +1515,10 @@ export const EventsPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveFormTab('guidelines')}
+            onClick={() => {
+              tabTransitionTimeRef.current = Date.now();
+              setActiveFormTab('guidelines');
+            }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
               activeFormTab === 'guidelines' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
             }`}
@@ -1340,149 +1531,15 @@ export const EventsPage = () => {
           className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!isFinalFormStep) {
-              handleNextFormStep();
-              return;
+            if (activeFormTab === 'guidelines') {
+              void handleFinalSubmit(e);
             }
-
-            if (!validateCurrentFormStep('basic')) { setActiveFormTab('basic'); return; }
-            if (!validateCurrentFormStep('schedule')) { setActiveFormTab('schedule'); return; }
-            if (!validateCurrentFormStep('guidelines')) { setActiveFormTab('guidelines'); return; }
-
-            const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00` : null;
-            if (!startAt) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Start date/time is required.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
+          }}
+          onKeyDown={(e) => {
+            // Prevent accidental Enter key press in text inputs from triggering next step or form submission
+            if (e.key === 'Enter' && (e.target as HTMLElement)?.tagName === 'INPUT') {
+              e.preventDefault();
             }
-
-            const registrationStartAt =
-              formData.registrationStartDate && formData.registrationStartTime
-                ? `${formData.registrationStartDate}T${formData.registrationStartTime}:00`
-                : null;
-            const registrationEndAt =
-              formData.registrationEndDate && formData.registrationEndTime
-                ? `${formData.registrationEndDate}T${formData.registrationEndTime}:00`
-                : null;
-
-            if ((formData.registrationStartDate && !formData.registrationStartTime) || (!formData.registrationStartDate && formData.registrationStartTime)) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Registration start must include both date and time.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
-            }
-            if ((formData.registrationEndDate && !formData.registrationEndTime) || (!formData.registrationEndDate && formData.registrationEndTime)) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must include both date and time.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
-            }
-            if (registrationStartAt && registrationEndAt) {
-              const rs = new Date(registrationStartAt);
-              const re = new Date(registrationEndAt);
-              if (!Number.isNaN(rs.getTime()) && !Number.isNaN(re.getTime()) && re < rs) {
-                addNotification({ userId: 'current', title: 'Validation', message: 'Registration end must be after registration start.', type: 'error', isRead: false });
-                setActiveFormTab('schedule');
-                return;
-              }
-            }
-            if ((formData.endDate && !formData.endTime) || (!formData.endDate && formData.endTime)) {
-              addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must include both date and time.', type: 'error', isRead: false });
-              setActiveFormTab('schedule');
-              return;
-            }
-            const endAt =
-              formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}:00` : null;
-            if (endAt) {
-              const startCheck = new Date(startAt);
-              const endCheck = new Date(endAt);
-              if (!Number.isNaN(startCheck.getTime()) && !Number.isNaN(endCheck.getTime()) && endCheck < startCheck) {
-                addNotification({ userId: 'current', title: 'Validation', message: 'End date/time must be after start date/time.', type: 'error', isRead: false });
-                setActiveFormTab('schedule');
-                return;
-              }
-            }
-
-            const isEsportsActive = formData.categorySelect === 'esports';
-            if (isEsportsActive) {
-              if (!formData.esportsGame) {
-                addNotification({ userId: 'current', title: 'Validation', message: 'eSports Game is required.', type: 'error', isRead: false });
-                setActiveFormTab('basic');
-                return;
-              }
-              if (!formData.esportsBracketFormat) {
-                addNotification({ userId: 'current', title: 'Validation', message: 'Tournament Bracket Format is required.', type: 'error', isRead: false });
-                setActiveFormTab('basic');
-                return;
-              }
-            }
-
-            (async () => {
-              let finalBannerUrl = formData.bannerUrl || null;
-              if (formData.bannerFile) {
-                try {
-                  const dataUrl = await readAsDataUrl(formData.bannerFile);
-                  const { data: upload } = await api.uploadEventBanner(dataUrl);
-                  if (upload?.url) {
-                    finalBannerUrl = upload.url;
-                  }
-                } catch (err) {
-                  console.error('Banner upload error:', err);
-                  addNotification({ userId: 'current', title: 'Banner Upload Warning', message: 'Failed to upload banner image. Event saved with default design.', type: 'warning', isRead: false });
-                }
-              }
-
-              let finalGuidelinesFileUrl = formData.guidelinesFileUrl || null;
-              let finalGuidelinesFileName = formData.guidelinesFileName || null;
-              if (formData.guidelinesFile) {
-                try {
-                  const dataUrl = await readAsDataUrl(formData.guidelinesFile);
-                  const { data: uploadG } = await api.uploadEventGuidelines(dataUrl, formData.guidelinesFile.name);
-                  if (uploadG?.url) {
-                    finalGuidelinesFileUrl = uploadG.url;
-                    finalGuidelinesFileName = uploadG.fileName || formData.guidelinesFile.name;
-                  }
-                } catch (err) {
-                  console.error('Guidelines upload error:', err);
-                  addNotification({ userId: 'current', title: 'Guidelines Upload Warning', message: 'Failed to upload guidelines file. Saved text guidelines only.', type: 'warning', isRead: false });
-                }
-              }
-
-              const finalEventType = formData.categorySelect === 'other'
-                ? (formData.customCategoryText.trim() || 'other')
-                : (formData.categorySelect || formData.eventType || 'seminar');
-              const finalIsEsports = formData.categorySelect === 'esports';
-
-              setPendingEventPayload({
-                title: formData.title.trim(),
-                description: formData.description.trim(),
-                guidelines: formData.guidelines.trim(),
-                guidelinesFileUrl: finalGuidelinesFileUrl,
-                guidelinesFileName: finalGuidelinesFileName,
-                registrationMode: formData.registrationMode || 'individual',
-                registrationOverride: null,
-                ...(registrationStartAt ? { registrationStartAt } : {}),
-                ...(registrationEndAt ? { registrationEndAt } : {}),
-                location: formData.location.trim(),
-                eventType: finalEventType,
-                startAt,
-                ...(endAt ? { endAt } : {}),
-                fee: Number(formData.fee) || 0,
-                capacity: formData.isUnlimitedCapacity ? 0 : (Number(formData.capacity) || 0),
-                status: formData.status || 'upcoming',
-                isEsports: finalIsEsports,
-                esportsGame: finalIsEsports ? formData.esportsGame : null,
-                esportsBracketFormat: finalIsEsports ? formData.esportsBracketFormat : null,
-                bannerUrl: finalBannerUrl,
-                themeColor: formData.themeColor || '#2563eb',
-                customBadge: formData.customBadge.trim() || null,
-                requiresCoach: formData.requiresCoach,
-                hasModerator: formData.hasOfficerModerator,
-                moderatorOfficerId: formData.hasOfficerModerator ? (formData.moderatorOfficerId || null) : null,
-                moderatorOfficerName: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
-                moderatorIds: formData.hasOfficerModerator ? formData.moderatorOfficerIds : [],
-                moderatorNames: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
-              });
-              setConfirmSaveEvent(true);
-            })();
           }}
         >
           {/* TAB 1: BASIC INFO */}
@@ -1814,44 +1871,46 @@ export const EventsPage = () => {
                 </div>
               </div>
 
-              {/* Registration Window (Moved to Step 2) */}
-              <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-slate-800">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
-                    Registration Window (Optional)
-                  </h4>
-                  <span className="text-[11px] text-gray-400">Controls registration schedule</span>
+              {/* Registration Window (Moved to Step 2 - Not applicable for Seminars or Conferences) */}
+              {!['seminar', 'conference'].includes(String(formData.categorySelect || formData.eventType || '').toLowerCase()) && (
+                <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-slate-800 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
+                      Registration Window
+                    </h4>
+                    <span className="text-[11px] text-gray-400">Controls registration schedule</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-slate-800">
+                    <Input
+                      label="Registration Start Date"
+                      type="date"
+                      value={formData.registrationStartDate}
+                      onChange={(e) => setFormData((p) => ({ ...p, registrationStartDate: e.target.value }))}
+                    />
+                    <Input
+                      label="Registration Start Time"
+                      type="time"
+                      value={formData.registrationStartTime}
+                      onChange={(e) => setFormData((p) => ({ ...p, registrationStartTime: e.target.value }))}
+                    />
+                    <Input
+                      label="Registration End Date"
+                      type="date"
+                      value={formData.registrationEndDate}
+                      onChange={(e) => setFormData((p) => ({ ...p, registrationEndDate: e.target.value }))}
+                    />
+                    <Input
+                      label="Registration End Time"
+                      type="time"
+                      value={formData.registrationEndTime}
+                      onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Leave blank to naturally keep registration open based on event schedule.
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-slate-800">
-                  <Input
-                    label="Registration Start Date"
-                    type="date"
-                    value={formData.registrationStartDate}
-                    onChange={(e) => setFormData((p) => ({ ...p, registrationStartDate: e.target.value }))}
-                  />
-                  <Input
-                    label="Registration Start Time"
-                    type="time"
-                    value={formData.registrationStartTime}
-                    onChange={(e) => setFormData((p) => ({ ...p, registrationStartTime: e.target.value }))}
-                  />
-                  <Input
-                    label="Registration End Date"
-                    type="date"
-                    value={formData.registrationEndDate}
-                    onChange={(e) => setFormData((p) => ({ ...p, registrationEndDate: e.target.value }))}
-                  />
-                  <Input
-                    label="Registration End Time"
-                    type="time"
-                    value={formData.registrationEndTime}
-                    onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  Leave blank to naturally keep registration open based on event schedule.
-                </p>
-              </div>
+              )}
             </div>
           )}
 
@@ -1940,22 +1999,35 @@ export const EventsPage = () => {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          if (file.size > 15 * 1024 * 1024) {
-                            addNotification({ userId: 'current', title: 'File Too Large', message: 'Guidelines file must be 15MB or less.', type: 'error', isRead: false });
+                          if (file.size > 25 * 1024 * 1024) {
+                            addNotification({ userId: 'current', title: 'File Too Large', message: 'Guidelines file must be 25MB or less.', type: 'error', isRead: false });
                             return;
                           }
                           if ((file.name.endsWith('.txt') || file.name.endsWith('.md')) && !formData.guidelines.trim()) {
                             try {
                               const text = await file.text();
                               if (text) {
-                                setFormData((p) => ({ ...p, guidelines: text.trim(), guidelinesFile: file, guidelinesFileName: file.name }));
-                                return;
+                                setFormData((p) => ({ ...p, guidelines: text.trim() }));
                               }
                             } catch {
                               // ignore
                             }
                           }
-                          setFormData((p) => ({ ...p, guidelinesFile: file, guidelinesFileName: file.name }));
+                          setFormData((p) => ({ ...p, guidelinesFile: file, guidelinesFileName: file.name, guidelinesFileUrl: '' }));
+                          try {
+                            const dataUrl = await readAsDataUrl(file);
+                            const { data: uploadG } = await api.uploadEventGuidelines(dataUrl, file.name);
+                            if (uploadG?.url) {
+                              setFormData((p) => ({
+                                ...p,
+                                guidelinesFile: file,
+                                guidelinesFileUrl: uploadG.url,
+                                guidelinesFileName: uploadG.fileName || file.name,
+                              }));
+                            }
+                          } catch (err: any) {
+                            console.warn('Guidelines upload will retry on event save:', err);
+                          }
                         }}
                       />
                     </label>
@@ -2047,6 +2119,7 @@ export const EventsPage = () => {
             <div className="flex items-center gap-2">
               {!isFinalFormStep ? (
                 <Button
+                  key="btn-wizard-next"
                   type="button"
                   variant="primary"
                   size="md"
@@ -2057,10 +2130,12 @@ export const EventsPage = () => {
                 </Button>
               ) : (
                 <Button
-                  type="submit"
+                  key="btn-wizard-submit"
+                  type="button"
                   variant="primary"
                   size="md"
                   isLoading={isLoading}
+                  onClick={() => void handleFinalSubmit()}
                   className="px-6 font-bold"
                 >
                   {editingEventId ? 'Update Event' : 'Create Event'}

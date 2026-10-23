@@ -119,7 +119,181 @@ function isModerator(user) {
   return MODERATOR_ROLES.has(String(user?.role || ''));
 }
 
+function validateAndSanitizeStreamUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return { ok: false, error: 'Video stream URL is required.' };
+  }
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return { ok: false, error: 'Video stream URL cannot be empty.' };
+  }
+
+  // Allow relative upload paths
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('/api/')) {
+    return {
+      ok: true,
+      url: trimmed,
+      type: 'direct',
+      videoId: null,
+      embedUrl: trimmed,
+    };
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return { ok: false, error: 'Invalid URL format. Please provide a valid HTTP or HTTPS video link.' };
+  }
+
+  const protocol = parsed.protocol.toLowerCase();
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    return { ok: false, error: 'Unsupported URL protocol. Only HTTP and HTTPS links are allowed.' };
+  }
+
+  const rawHostname = parsed.hostname.toLowerCase().trim();
+  const cleanHost = rawHostname.replace(/^\[|\]$/g, '');
+
+  // SSRF Protection: reject loopback, internal hostnames, and metadata endpoints
+  if (
+    cleanHost === 'localhost' ||
+    cleanHost === '127.0.0.1' ||
+    cleanHost === '0.0.0.0' ||
+    cleanHost === '::1' ||
+    cleanHost === '::' ||
+    cleanHost.endsWith('.localhost') ||
+    cleanHost.endsWith('.local') ||
+    cleanHost.endsWith('.internal')
+  ) {
+    return { ok: false, error: 'Localhost and internal loopback addresses are not permitted.' };
+  }
+
+  // Reject integer/hex IP encodings
+  if (/^\d+$/.test(cleanHost) || /^0x[0-9a-f]+$/i.test(cleanHost)) {
+    return { ok: false, error: 'Numeric IP representations are not permitted.' };
+  }
+
+  // Check dotted quad notations with alternative encodings
+  const parts = cleanHost.split('.');
+  if (parts.length === 4 && parts.every((p) => /^(0x[0-9a-f]+|0[0-7]+|\d+)$/i.test(p))) {
+    if (parts.some((p) => p.startsWith('0x') || (p.length > 1 && p.startsWith('0')))) {
+      return { ok: false, error: 'Alternative IP notations are not permitted.' };
+    }
+  }
+
+  // IPv4 private ranges and cloud metadata (169.254.169.254)
+  const ipv4Match = cleanHost.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4Match) {
+    const o1 = Number(ipv4Match[1]);
+    const o2 = Number(ipv4Match[2]);
+    const o3 = Number(ipv4Match[3]);
+    const o4 = Number(ipv4Match[4]);
+    if (o1 > 255 || o2 > 255 || o3 > 255 || o4 > 255) {
+      return { ok: false, error: 'Invalid IP address.' };
+    }
+    if (
+      o1 === 127 ||
+      o1 === 10 ||
+      o1 === 0 ||
+      (o1 === 172 && o2 >= 16 && o2 <= 31) ||
+      (o1 === 192 && o2 === 168) ||
+      (o1 === 169 && o2 === 254)
+    ) {
+      return { ok: false, error: 'Private and link-local IP addresses are not permitted.' };
+    }
+  }
+
+  // IPv6 link-local, unique-local, and mapped addresses
+  if (
+    cleanHost.startsWith('fe80:') ||
+    cleanHost.startsWith('fc') ||
+    cleanHost.startsWith('fd') ||
+    cleanHost.includes('::ffff:127.') ||
+    cleanHost.includes('::ffff:10.') ||
+    cleanHost.includes('::ffff:192.168.') ||
+    cleanHost.includes('::ffff:172.')
+  ) {
+    return { ok: false, error: 'Private and link-local IP addresses are not permitted.' };
+  }
+
+  // YouTube normalization (watch, shorts, embed, live, youtu.be)
+  if (
+    cleanHost === 'youtube.com' ||
+    cleanHost.endsWith('.youtube.com') ||
+    cleanHost === 'youtube-nocookie.com' ||
+    cleanHost.endsWith('.youtube-nocookie.com') ||
+    cleanHost === 'youtu.be'
+  ) {
+    let videoId = null;
+    if (cleanHost === 'youtu.be') {
+      videoId = parsed.pathname.slice(1).split('/')[0];
+    } else if (parsed.pathname.startsWith('/embed/')) {
+      videoId = parsed.pathname.slice('/embed/'.length).split('/')[0];
+    } else if (parsed.pathname.startsWith('/live/')) {
+      videoId = parsed.pathname.slice('/live/'.length).split('/')[0];
+    } else if (parsed.pathname.startsWith('/shorts/')) {
+      videoId = parsed.pathname.slice('/shorts/'.length).split('/')[0];
+    } else if (parsed.pathname.startsWith('/v/')) {
+      videoId = parsed.pathname.slice('/v/'.length).split('/')[0];
+    } else {
+      videoId = parsed.searchParams.get('v');
+    }
+
+    if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return { ok: false, error: 'Invalid YouTube video ID or link format.' };
+    }
+
+    return {
+      ok: true,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      type: 'youtube',
+      videoId,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
+    };
+  }
+
+  // Vimeo normalization
+  if (cleanHost === 'vimeo.com' || cleanHost.endsWith('.vimeo.com')) {
+    const vimeoMatch = parsed.pathname.match(/\/(\d{5,12})(?:\/|$)/) || parsed.pathname.match(/(\d{5,12})/);
+    const videoId = vimeoMatch ? vimeoMatch[1] : null;
+
+    if (!videoId) {
+      return { ok: false, error: 'Invalid Vimeo video ID or link format.' };
+    }
+
+    return {
+      ok: true,
+      url: `https://vimeo.com/${videoId}`,
+      type: 'vimeo',
+      videoId,
+      embedUrl: `https://player.vimeo.com/video/${videoId}`,
+    };
+  }
+
+  // Direct video file link
+  const validExts = ['.mp4', '.webm', '.mov', '.m3u8', '.ogv', '.ogg', '.avi', '.mkv', '.m4v'];
+  const ext = path.extname(parsed.pathname).toLowerCase();
+  const isDirectVideo = validExts.includes(ext) || parsed.pathname.includes('/video') || parsed.pathname.includes('/stream');
+
+  return {
+    ok: true,
+    url: parsed.toString(),
+    type: isDirectVideo ? 'direct' : 'external',
+    videoId: null,
+    embedUrl: parsed.toString(),
+  };
+}
+
 function toLiveEventDto(row) {
+  let embedUrl = null;
+  if (row.stream_url) {
+    const parsed = validateAndSanitizeStreamUrl(row.stream_url);
+    if (parsed.ok && (parsed.type === 'youtube' || parsed.type === 'vimeo')) {
+      embedUrl = parsed.embedUrl;
+    }
+  }
+
   return {
     id: String(row.id),
     sessionId: row.session_identifier || String(row.id),
@@ -141,6 +315,8 @@ function toLiveEventDto(row) {
     recordingUrl: row.recording_url || null,
     recordingPath: row.recording_path || null,
     recordingExpiresAt: row.recording_expires_at || null,
+    availableQualities: ['144p', '240p', '360p', '480p', '720p', 'Auto'],
+    embedUrl,
     roomCode: row.room_code || null,
     sessionToken: row.session_token || null,
     chatEnabled: Boolean(row.chat_enabled),
@@ -589,8 +765,41 @@ async function createLiveEvent(req, res) {
   const sessionToken = safeString(body.sessionToken, 96) || generateSessionToken();
   const joinLink = safeString(body.joinLink, 255) || buildInternalJoinLink(sessionIdentifier);
   const streamSource = ['external', 'built_in'].includes(body.streamSource) ? String(body.streamSource) : 'built_in';
-  let streamUrl = safeString(body.streamUrl || body.meetingUrl, 255) || joinLink;
-  let meetingUrl = safeString(body.meetingUrl, 255) || streamUrl || joinLink;
+  let streamUrl = null;
+  let meetingUrl = joinLink;
+
+  if (streamSource === 'external') {
+    const rawUrl = body.streamUrl || body.meetingUrl;
+    if (!rawUrl) {
+      return json(res, 400, { success: false, message: 'Stream URL is required for external stream sources.' });
+    }
+    const validation = validateAndSanitizeStreamUrl(rawUrl);
+    if (!validation.ok) {
+      return json(res, 400, { success: false, message: validation.error });
+    }
+    streamUrl = safeString(validation.url, 255);
+    meetingUrl = streamUrl;
+  } else {
+    // built_in
+    if (body.streamUrl) {
+      const validation = validateAndSanitizeStreamUrl(body.streamUrl);
+      if (!validation.ok) {
+        return json(res, 400, { success: false, message: validation.error });
+      }
+      streamUrl = safeString(validation.url, 255);
+    } else {
+      streamUrl = joinLink;
+    }
+    meetingUrl = streamUrl;
+  }
+
+  if (body.meetingUrl) {
+    const meetingValidation = validateAndSanitizeStreamUrl(body.meetingUrl);
+    if (!meetingValidation.ok) {
+      return json(res, 400, { success: false, message: meetingValidation.error });
+    }
+    meetingUrl = safeString(meetingValidation.url, 255);
+  }
 
   const recordingEnabled = 1;
   const recordingVisibility = ['host_only', 'registered_members', 'public_replay'].includes(String(body.recordingVisibility))

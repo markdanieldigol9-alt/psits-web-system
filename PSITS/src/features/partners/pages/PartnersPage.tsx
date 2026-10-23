@@ -122,9 +122,10 @@ export const PartnersPage = () => {
     if (override === 'closed') return false;
     if (override === 'open') return true;
 
+    const isSemOrConf = ['seminar', 'conference'].includes(String(evt.eventType || '').toLowerCase());
     // Check registration dates window
-    const regStart = evt.registrationStartAt ? new Date(String(evt.registrationStartAt)) : null;
-    const regEnd = evt.registrationEndAt ? new Date(String(evt.registrationEndAt)) : null;
+    const regStart = !isSemOrConf && evt.registrationStartAt ? new Date(String(evt.registrationStartAt)) : null;
+    const regEnd = !isSemOrConf && evt.registrationEndAt ? new Date(String(evt.registrationEndAt)) : null;
 
     if (regStart && !Number.isNaN(regStart.getTime()) && now < regStart) {
       return false;

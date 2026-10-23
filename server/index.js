@@ -249,7 +249,7 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
-app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), async (req, res) => {
+app.post(['/api/uploads/payment-proof', '/uploads/payment-proof'], authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
 
@@ -277,41 +277,46 @@ app.post('/api/uploads/payment-proof', authMiddleware, requireRole(['member', 's
   return res.status(201).json({ success: true, url: `/uploads/payment-proofs/${filename}` });
 });
 
-app.post('/api/uploads/team-profile', authMiddleware, requireRole(['member']), async (req, res) => {
+app.post(['/api/uploads/team-profile', '/uploads/team-profile'], authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
   const originalFileName = String(body.fileName || '').trim();
 
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) {
+  let mime = '';
+  let base64 = '';
+  const commaIndex = dataUrl.indexOf(',');
+  if (commaIndex !== -1 && dataUrl.startsWith('data:')) {
+    const meta = dataUrl.slice(5, commaIndex).toLowerCase();
+    mime = meta.split(';')[0].trim();
+    base64 = dataUrl.slice(commaIndex + 1).replace(/\s+/g, '');
+  } else {
+    base64 = dataUrl.replace(/\s+/g, '');
+  }
+
+  if (!base64) {
     return res.status(400).json({ success: false, message: 'Invalid file format. Use PDF, Excel (.xlsx/.xls), or Word (.docx/.doc) document.' });
   }
 
-  const mime = match[1].toLowerCase();
-  const base64 = match[2];
   const buffer = Buffer.from(base64, 'base64');
-
-  const maxBytes = 15 * 1024 * 1024; // 15MB
+  const maxBytes = 25 * 1024 * 1024; // 25MB
   if (!buffer.length || buffer.length > maxBytes) {
-    return res.status(400).json({ success: false, message: 'File is required and must be <= 15MB.' });
+    return res.status(400).json({ success: false, message: 'File is required and must be <= 25MB.' });
   }
 
+  const fileExt = path.extname(originalFileName).toLowerCase().replace('.', '');
   let ext = 'pdf';
-  if (mime.includes('pdf')) {
+  if (mime.includes('pdf') || fileExt === 'pdf') {
     ext = 'pdf';
-  } else if (mime.includes('csv') || mime.includes('text/csv') || originalFileName.toLowerCase().endsWith('.csv')) {
+  } else if (mime.includes('csv') || fileExt === 'csv') {
     ext = 'csv';
-  } else if (mime.includes('spreadsheet') || mime.includes('excel') || originalFileName.toLowerCase().endsWith('.xlsx') || originalFileName.toLowerCase().endsWith('.xls')) {
-    ext = originalFileName.toLowerCase().endsWith('.xls') ? 'xls' : 'xlsx';
-  } else if (mime.includes('word') || mime.includes('document') || originalFileName.toLowerCase().endsWith('.docx') || originalFileName.toLowerCase().endsWith('.doc')) {
-    ext = originalFileName.toLowerCase().endsWith('.doc') ? 'doc' : 'docx';
+  } else if (mime.includes('spreadsheet') || mime.includes('excel') || ['xlsx', 'xls'].includes(fileExt)) {
+    ext = fileExt === 'xls' ? 'xls' : 'xlsx';
+  } else if (mime.includes('word') || mime.includes('document') || ['docx', 'doc'].includes(fileExt)) {
+    ext = fileExt === 'doc' ? 'doc' : 'docx';
+  } else if (['pdf', 'csv', 'xlsx', 'xls', 'docx', 'doc'].includes(fileExt)) {
+    ext = fileExt;
   } else {
-    const fileExt = path.extname(originalFileName).toLowerCase().replace('.', '');
-    if (['pdf', 'csv', 'xlsx', 'xls', 'docx', 'doc'].includes(fileExt)) {
-      ext = fileExt;
-    } else {
-      return res.status(400).json({ success: false, message: 'Only CSV (.csv), Excel (.xlsx, .xls), PDF, or Word documents are allowed.' });
-    }
+    ext = fileExt || 'pdf';
   }
 
   const dir = path.join(__dirname, 'uploads', 'team-profiles');
@@ -323,7 +328,7 @@ app.post('/api/uploads/team-profile', authMiddleware, requireRole(['member']), a
   return res.status(201).json({ success: true, url: `/uploads/team-profiles/${filename}` });
 });
 
-app.post('/api/uploads/announcement-image', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+app.post(['/api/uploads/announcement-image', '/uploads/announcement-image'], authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
 
@@ -351,7 +356,7 @@ app.post('/api/uploads/announcement-image', authMiddleware, requireRole(['super_
   return res.status(201).json({ success: true, url: `/uploads/announcement-images/${filename}` });
 });
 
-app.post('/api/uploads/event-banner', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+app.post(['/api/uploads/event-banner', '/uploads/event-banner'], authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
 
@@ -379,59 +384,86 @@ app.post('/api/uploads/event-banner', authMiddleware, requireRole(['super_admin'
   return res.status(201).json({ success: true, url: `/uploads/event-banners/${filename}` });
 });
 
-app.post('/api/uploads/event-guidelines', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
-  const body = req.body || {};
-  const dataUrl = String(body.dataUrl || '');
-  const originalFileName = String(body.fileName || '').trim();
+app.post(['/api/uploads/event-guidelines', '/uploads/event-guidelines'], authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+  try {
+    const body = req.body || {};
+    const dataUrl = String(body.dataUrl || '');
+    const originalFileName = String(body.fileName || '').trim();
 
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) {
-    return res.status(400).json({ success: false, message: 'Invalid file format. Use PDF, Word (.docx/.doc), text (.txt/.md), or image.' });
-  }
-
-  const mime = match[1].toLowerCase();
-  const base64 = match[2];
-  const buffer = Buffer.from(base64, 'base64');
-
-  const maxBytes = 15 * 1024 * 1024; // 15MB
-  if (!buffer.length || buffer.length > maxBytes) {
-    return res.status(400).json({ success: false, message: 'File is required and must be <= 15MB.' });
-  }
-
-  let ext = 'pdf';
-  if (mime.includes('pdf') || originalFileName.toLowerCase().endsWith('.pdf')) {
-    ext = 'pdf';
-  } else if (mime.includes('text/plain') || originalFileName.toLowerCase().endsWith('.txt')) {
-    ext = 'txt';
-  } else if (mime.includes('markdown') || originalFileName.toLowerCase().endsWith('.md')) {
-    ext = 'md';
-  } else if (mime.includes('word') || mime.includes('document') || originalFileName.toLowerCase().endsWith('.docx') || originalFileName.toLowerCase().endsWith('.doc')) {
-    ext = originalFileName.toLowerCase().endsWith('.doc') ? 'doc' : 'docx';
-  } else if (mime.includes('image/png') || originalFileName.toLowerCase().endsWith('.png')) {
-    ext = 'png';
-  } else if (mime.includes('image/webp') || originalFileName.toLowerCase().endsWith('.webp')) {
-    ext = 'webp';
-  } else if (mime.includes('image/jpeg') || mime.includes('image/jpg') || originalFileName.toLowerCase().endsWith('.jpg') || originalFileName.toLowerCase().endsWith('.jpeg')) {
-    ext = 'jpg';
-  } else {
-    const fileExt = path.extname(originalFileName).toLowerCase().replace('.', '');
-    if (['pdf', 'txt', 'md', 'docx', 'doc', 'png', 'jpg', 'jpeg', 'webp'].includes(fileExt)) {
-      ext = fileExt;
-    } else {
-      return res.status(400).json({ success: false, message: 'Only PDF, Word, Text, Markdown, or Image documents are allowed.' });
+    if (!dataUrl) {
+      return res.status(400).json({ success: false, message: 'File payload is empty.' });
     }
+
+    let mime = '';
+    let base64 = '';
+    const commaIndex = dataUrl.indexOf(',');
+    if (commaIndex !== -1 && dataUrl.startsWith('data:')) {
+      const meta = dataUrl.slice(5, commaIndex).toLowerCase();
+      mime = meta.split(';')[0].trim();
+      base64 = dataUrl.slice(commaIndex + 1).replace(/\s+/g, '');
+    } else {
+      base64 = dataUrl.replace(/\s+/g, '');
+    }
+
+    if (!base64) {
+      return res.status(400).json({ success: false, message: 'Invalid or empty base64 file data.' });
+    }
+
+    const buffer = Buffer.from(base64, 'base64');
+    const maxBytes = 25 * 1024 * 1024; // 25MB
+    if (!buffer.length || buffer.length > maxBytes) {
+      return res.status(400).json({ success: false, message: 'File must not be empty and must be <= 25MB.' });
+    }
+
+    const fileExt = path.extname(originalFileName || '').toLowerCase().replace('.', '');
+    const ALLOWED_EXTS = new Set(['pdf', 'docx', 'doc', 'txt', 'md', 'png', 'jpg', 'jpeg', 'webp', 'xlsx', 'xls', 'csv']);
+
+    let ext = 'pdf';
+    if (ALLOWED_EXTS.has(fileExt)) {
+      ext = fileExt === 'jpeg' ? 'jpg' : fileExt;
+    } else if (mime.includes('pdf')) {
+      ext = 'pdf';
+    } else if (mime.includes('word') || mime.includes('document') || mime.includes('officedocument')) {
+      ext = 'docx';
+    } else if (mime.includes('text/plain')) {
+      ext = 'txt';
+    } else if (mime.includes('markdown')) {
+      ext = 'md';
+    } else if (mime.includes('image/png')) {
+      ext = 'png';
+    } else if (mime.includes('image/webp')) {
+      ext = 'webp';
+    } else if (mime.includes('image/jpeg')) {
+      ext = 'jpg';
+    } else if (mime.includes('spreadsheet') || mime.includes('excel')) {
+      ext = 'xlsx';
+    } else if (mime.includes('csv')) {
+      ext = 'csv';
+    } else {
+      ext = fileExt || 'docx';
+    }
+
+    const dir = path.join(__dirname, 'uploads', 'event-guidelines');
+    await fs.mkdir(dir, { recursive: true });
+
+    const safeOriginalName = originalFileName ? originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) : '';
+    const uniquePrefix = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const filename = safeOriginalName ? `${uniquePrefix}-${safeOriginalName}` : `${uniquePrefix}-guidelines.${ext}`;
+
+    await fs.writeFile(path.join(dir, filename), buffer);
+
+    return res.status(201).json({
+      success: true,
+      url: `/uploads/event-guidelines/${filename}`,
+      fileName: originalFileName || filename
+    });
+  } catch (err) {
+    console.error('event-guidelines upload error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to save uploaded guidelines file.' });
   }
-
-  const dir = path.join(__dirname, 'uploads', 'event-guidelines');
-  await fs.mkdir(dir, { recursive: true });
-
-  const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-  await fs.writeFile(path.join(dir, filename), buffer);
-
-  return res.status(201).json({ success: true, url: `/uploads/event-guidelines/${filename}`, fileName: originalFileName || filename });
 });
 
-app.post('/api/uploads/qr-code', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
+app.post(['/api/uploads/qr-code', '/uploads/qr-code'], authMiddleware, requireRole(['super_admin', 'admin', 'officer']), async (req, res) => {
   const body = req.body || {};
   const dataUrl = String(body.dataUrl || '');
 
@@ -1032,25 +1064,39 @@ app.delete('/api/live-events/:id/recording', authMiddleware, requireRole(['super
 app.delete('/api/stream-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
 app.post('/api/live-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), createLiveEvent);
 app.post('/api/live-sessions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), createLiveEvent);
+app.post('/api/stream-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), createLiveEvent);
 app.put('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), updateLiveEvent);
 app.put('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), updateLiveEvent);
+app.put('/api/stream-events/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), updateLiveEvent);
 app.delete('/api/live-events/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
 app.delete('/api/live-sessions/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
+app.delete('/api/stream-events/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEvent);
 app.post('/api/live-events/:id/start', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), startLiveEvent);
 app.post('/api/live-sessions/:id/start', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), startLiveEvent);
+app.post('/api/stream-events/:id/start', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), startLiveEvent);
 app.post('/api/live-events/:id/end', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), endLiveEvent);
 app.post('/api/live-sessions/:id/end', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), endLiveEvent);
+app.post('/api/stream-events/:id/end', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), endLiveEvent);
 app.post('/api/live-events/:id/cancel', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cancelLiveEvent);
 app.post('/api/live-sessions/:id/cancel', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cancelLiveEvent);
+app.post('/api/stream-events/:id/cancel', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cancelLiveEvent);
 app.post('/api/live-events/:id/join', authMiddleware, joinLiveEvent);
 app.post('/api/live-sessions/:id/join', authMiddleware, joinLiveEvent);
+app.post('/api/stream-events/:id/join', authMiddleware, joinLiveEvent);
 app.post('/api/live-events/:id/leave', authMiddleware, leaveLiveEvent);
+app.post('/api/stream-events/:id/leave', authMiddleware, leaveLiveEvent);
 app.get('/api/live-events/:id/participants', authMiddleware, listLiveEventParticipants);
+app.get('/api/stream-events/:id/participants', authMiddleware, listLiveEventParticipants);
 app.put('/api/live-events/:id/participants/:userId', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEventParticipant);
+app.put('/api/stream-events/:id/participants/:userId', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEventParticipant);
 app.put('/api/live-events/:id/permissions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEventPermissions);
+app.put('/api/stream-events/:id/permissions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateLiveEventPermissions);
 app.get('/api/live-events/:id/counts', authMiddleware, getLiveEventCounts);
+app.get('/api/stream-events/:id/counts', authMiddleware, getLiveEventCounts);
 app.get('/api/live-events/:id/chat', authMiddleware, listLiveEventChatMessages);
+app.get('/api/stream-events/:id/chat', authMiddleware, listLiveEventChatMessages);
 app.post('/api/live-events/:id/chat', authMiddleware, createLiveEventChatMessage);
+app.post('/api/stream-events/:id/chat', authMiddleware, createLiveEventChatMessage);
 app.get('/api/events/:id/live-sessions', authMiddleware, listLiveEventsByEvent);
 
 // Audit logs

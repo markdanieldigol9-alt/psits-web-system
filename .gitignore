@@ -20,5 +20,6 @@ server/uploads/*
 **/*.out.log
 **/test-results/
 server/exports/
+.agents/teamwork/
 ~$*
 *.backup.docx
