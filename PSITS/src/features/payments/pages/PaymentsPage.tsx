@@ -79,11 +79,9 @@ export const PaymentsPage = () => {
     previewUrl: string;
   }>({
     method: 'gcash',
-    amount: isIndustry ? 5000 : isInstitution ? 1000 : 250,
+    amount: isIndustry ? 5000 : 250,
     paymentKind: isIndustry
       ? 'partner_sponsorship'
-      : isInstitution
-      ? 'institution_partial_payment'
       : 'membership_registration',
     referenceNumber: '',
     file: null,
@@ -93,11 +91,9 @@ export const PaymentsPage = () => {
   const handleOpenPayModal = () => {
     setFeeForm({
       method: 'gcash',
-      amount: isIndustry ? 5000 : isInstitution ? 1000 : 250,
+      amount: isIndustry ? 5000 : 250,
       paymentKind: isIndustry
         ? 'partner_sponsorship'
-        : isInstitution
-        ? 'institution_partial_payment'
         : 'membership_registration',
       referenceNumber: '',
       file: null,
@@ -636,7 +632,7 @@ export const PaymentsPage = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-              {!isAdminOrOfficer && (
+              {!isAdminOrOfficer && !isInstitution && (
                 <Button
                   variant="primary"
                   size="lg"
@@ -646,8 +642,6 @@ export const PaymentsPage = () => {
                   <DollarSign size={18} />
                   {isIndustry
                     ? 'Submit Sponsorship / Contribution'
-                    : isInstitution
-                    ? 'Submit Batch Payment / Settlement'
                     : 'Submit Payment / Pay Fee'}
                 </Button>
               )}
@@ -1179,12 +1173,6 @@ export const PaymentsPage = () => {
                           Pay Membership Fee (₱250)
                         </Button>
                       )}
-                      {isInstitution && (
-                        <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
-                          <DollarSign size={15} />
-                          Submit Batch Payment
-                        </Button>
-                      )}
                       {isIndustry && (
                         <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
                           <DollarSign size={15} />
@@ -1513,8 +1501,6 @@ export const PaymentsPage = () => {
         title={
           isIndustry
             ? 'Submit Corporate Sponsorship / Contribution'
-            : isInstitution
-            ? 'Submit Institution Payment / Settlement'
             : 'Submit Payment / Pay Membership Fee'
         }
         size="lg"
@@ -1535,12 +1521,6 @@ export const PaymentsPage = () => {
                   ? [
                       { value: 'partner_sponsorship', label: 'Corporate Sponsorship / Partner Contribution' },
                       { value: 'event', label: 'Event Partnership Sponsorship' },
-                    ]
-                  : isInstitution
-                  ? [
-                      { value: 'institution_partial_payment', label: 'Institution Partial Payment / Settlement' },
-                      { value: 'membership_registration', label: 'Institutional Membership Fee (₱250.00)' },
-                      { value: 'membership_renewal', label: 'Membership Renewal (₱250.00)' },
                     ]
                   : [
                       { value: 'membership_registration', label: 'Membership Fee (₱250.00)' },
