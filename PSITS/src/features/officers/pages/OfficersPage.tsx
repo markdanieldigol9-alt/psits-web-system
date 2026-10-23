@@ -35,7 +35,7 @@ export const OfficersPage = () => {
 
   const [confirmToggleStatus, setConfirmToggleStatus] = useState<{ id: string; name: string; currentStatus: string; newStatus: 'active' | 'inactive' } | null>(null);
 
-  const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin';
+  const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
   useEffect(() => {
     let cancelled = false;

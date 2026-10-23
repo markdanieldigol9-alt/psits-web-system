@@ -561,7 +561,27 @@ async function login(req, res) {
   }
 
   if (user.lock_until && new Date(user.lock_until).getTime() > Date.now()) {
-    return json(res, 423, { success: false, message: 'Account temporarily locked. Please try again later.' });
+    // If the legitimate user enters the correct password, clear the lockout and allow login
+    const isOwnerValid = verifyPassword(password, user.password_hash);
+    let isInstValid = false;
+    if (!isOwnerValid && user.institution_owner_id) {
+      const [instRows] = await pool.execute('SELECT password_hash FROM users WHERE id = ? LIMIT 1', [user.institution_owner_id]);
+      const instHash = instRows[0]?.password_hash || null;
+      if (instHash && verifyPassword(password, instHash)) {
+        isInstValid = true;
+      }
+    }
+
+    if (isOwnerValid || isInstValid) {
+      await pool.execute(
+        `UPDATE users SET failed_login_count = 0, lock_until = NULL WHERE id = ?`,
+        [user.id]
+      );
+      user.lock_until = null;
+      user.failed_login_count = 0;
+    } else {
+      return json(res, 423, { success: false, message: 'Account temporarily locked. Please try again later.' });
+    }
   }
 
   let matchedInstitutionPassword = false;
