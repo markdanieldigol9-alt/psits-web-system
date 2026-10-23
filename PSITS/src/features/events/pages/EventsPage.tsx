@@ -115,7 +115,7 @@ const splitIsoToDateTime = (iso?: string | null) => {
 export const EventsPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
-  const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'draft'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'draft'>('upcoming');
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<any | null>(null);
