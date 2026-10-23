@@ -854,11 +854,13 @@ async function migrate() {
         const procStatus = isVerified ? 'verified' : 'submitted';
 
         try {
+          const creationDate = m.created_at ? new Date(m.created_at) : new Date();
+          const dateStr = creationDate.toISOString().slice(0, 10);
           await pool.query(`
             INSERT INTO payments (
               member_id, amount, payment_kind, payment_method, method, reference_number,
-              status, payment_status, process_status, created_at, updated_at
-            ) VALUES (?, 250.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?)
+              status, payment_status, process_status, date, created_at, updated_at
+            ) VALUES (?, 250.00, ?, 'gcash', 'gcash', ?, ?, ?, ?, ?, ?, ?)
           `, [
             m.id,
             kind,
@@ -866,6 +868,7 @@ async function migrate() {
             statusVal,
             payStatus,
             procStatus,
+            dateStr,
             m.created_at || new Date(),
             m.created_at || new Date(),
           ]);
@@ -873,6 +876,17 @@ async function migrate() {
           console.warn(`Could not sync payment for member ${m.id}:`, singleInsertErr.message);
         }
       }
+    }
+
+    // Self-healing fix for payments with zero/invalid date (1899)
+    try {
+      await pool.query(`
+        UPDATE payments
+        SET date = DATE(created_at)
+        WHERE (date IS NULL OR YEAR(date) < 2000) AND created_at IS NOT NULL
+      `);
+    } catch {
+      // ignore
     }
   } catch (syncErr) {
     console.error('Self-healing payment sync notice:', syncErr);
