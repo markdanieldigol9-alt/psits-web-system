@@ -65,6 +65,7 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
       group: 'Management',
       items: [
         { label: 'PSITS Members', icon: Users, href: '/members' },
+        { label: 'Officers', icon: Briefcase, href: '/officers' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
         { label: 'Events', icon: Calendar, href: '/events' },
         { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
@@ -91,6 +92,7 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
       group: 'Management',
       items: [
         { label: 'PSITS Members', icon: Users, href: '/members' },
+        { label: 'Officers', icon: Briefcase, href: '/officers' },
         { label: 'Officer Elections', icon: Vote, href: '/elections' },
         { label: 'Events', icon: Calendar, href: '/events' },
         { label: 'Payment Tracking', icon: DollarSign, href: '/payments' },
@@ -101,8 +103,9 @@ const menuGroups: Record<string, { group: string; items: MenuItem[] }[]> = {
     {
       group: 'Community',
       items: [
-        { label: 'Announcements', icon: Megaphone, href: '/announcements' },
         { label: 'PSITS Community', icon: MessageSquareText, href: '/forum' },
+        { label: 'Announcements', icon: Megaphone, href: '/announcements' },
+        { label: 'Partners', icon: Briefcase, href: '/partners' },
         { label: 'Stream Events', icon: Video, href: '/stream-events' },
       ],
     },
