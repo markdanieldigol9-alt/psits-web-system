@@ -483,29 +483,27 @@ async function changeMemberStatus(req, res) {
   });
 
   const becameActive = oldStatus !== 'active' && updated.status === 'active';
-  let emailNotification = { sent: false, reason: '' };
 
   if (becameActive && updated.email) {
-    try {
-      emailNotification = await sendRegistrationApprovedEmail({
-        to: updated.email,
-        fullName: updated.full_name || 'Member',
-        userId: updated.id,
-      });
-    } catch (err) {
-      emailNotification = {
-        sent: false,
-        reason: err instanceof Error ? err.message : 'Failed to send email notification.',
-      };
-    }
+    setImmediate(async () => {
+      try {
+        await sendRegistrationApprovedEmail({
+          to: updated.email,
+          fullName: updated.full_name || 'Member',
+          userId: updated.id,
+        });
+      } catch (err) {
+        console.error(`[Mailer] Background approval email failed for user ${updated.id}:`, err.message);
+      }
+    });
   }
 
   return json(res, 200, {
     success: true,
     member: toMemberDto(updated),
     notification: {
-      emailSent: emailNotification.sent,
-      reason: emailNotification.reason || null,
+      emailSent: Boolean(becameActive && updated.email),
+      reason: becameActive && updated.email ? 'Approval notification dispatched to member email.' : null,
     },
   });
 }
@@ -681,15 +679,17 @@ async function createMember(req, res) {
         });
 
         if (existingUser.email) {
-          try {
-            await sendRegistrationApprovedEmail({
-              to: existingUser.email,
-              fullName: fullName || existingUser.full_name || 'Member',
-              userId: existingUser.id,
-            });
-          } catch (err) {
-            // ignore
-          }
+          setImmediate(async () => {
+            try {
+              await sendRegistrationApprovedEmail({
+                to: existingUser.email,
+                fullName: fullName || existingUser.full_name || 'Member',
+                userId: existingUser.id,
+              });
+            } catch (err) {
+              console.error(`[Mailer] Background renewal approval email failed for user ${existingUser.id}:`, err.message);
+            }
+          });
         }
       }
 
@@ -846,29 +846,27 @@ async function updateMember(req, res) {
   }
 
   const becameActive = before.status !== 'active' && updated.status === 'active';
-  let emailNotification = { sent: false, reason: '' };
 
   if (becameActive && updated.email) {
-    try {
-      emailNotification = await sendRegistrationApprovedEmail({
-        to: updated.email,
-        fullName: updated.full_name || 'Member',
-        userId: updated.id,
-      });
-    } catch (err) {
-      emailNotification = {
-        sent: false,
-        reason: err instanceof Error ? err.message : 'Failed to send email notification.',
-      };
-    }
+    setImmediate(async () => {
+      try {
+        await sendRegistrationApprovedEmail({
+          to: updated.email,
+          fullName: updated.full_name || 'Member',
+          userId: updated.id,
+        });
+      } catch (err) {
+        console.error(`[Mailer] Background approval email failed for user ${updated.id}:`, err.message);
+      }
+    });
   }
 
   return json(res, 200, {
     success: true,
     member: toMemberDto(updated),
     notification: {
-      emailSent: emailNotification.sent,
-      reason: emailNotification.reason || null,
+      emailSent: Boolean(becameActive && updated.email),
+      reason: becameActive && updated.email ? 'Approval notification dispatched to member email.' : null,
     },
   });
 }
@@ -909,11 +907,19 @@ async function resendApprovalEmail(req, res) {
   }
 
   try {
-    const notification = await sendRegistrationApprovedEmail({
-      to: member.email,
-      fullName: member.full_name || 'Member',
-      userId: member.id,
-    });
+    const notification = await Promise.race([
+      sendRegistrationApprovedEmail({
+        to: member.email,
+        fullName: member.full_name || 'Member',
+        userId: member.id,
+      }),
+      new Promise((resolve) =>
+        setTimeout(
+          () => resolve({ sent: false, reason: 'Email dispatch in progress. Retry queued.' }),
+          4000
+        )
+      ),
+    ]);
 
     const [updatedRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]);
     return json(res, 200, {

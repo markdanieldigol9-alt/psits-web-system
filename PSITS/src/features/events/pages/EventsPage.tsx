@@ -11,6 +11,7 @@ import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
 
 type EventStatus = 'draft' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type RegistrationOverride = '' | 'open' | 'closed';
@@ -3348,8 +3349,20 @@ export const EventsPage = () => {
           </div>
 
           {paymentForm.previewUrl && (
-            <div className="rounded-lg border border-gray-200 p-3">
-              <img src={paymentForm.previewUrl} alt="Transaction proof preview" className="w-full max-h-80 object-contain" />
+            <div className="space-y-3">
+              <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3">
+                <img src={paymentForm.previewUrl} alt="Transaction proof preview" className="w-full max-h-80 object-contain" />
+              </div>
+              <ReceiptScannerBadge
+                imageSource={paymentForm.file || paymentForm.previewUrl}
+                expectedAmount={paymentForm.amount || Number(paymentEvent?.fee || 0)}
+                referenceNumber={paymentForm.referenceNumber}
+                onApplyReferenceNumber={(detectedRef) => {
+                  setPaymentForm((p) => ({ ...p, referenceNumber: detectedRef }));
+                }}
+                label="Event Payment Receipt Scanner"
+                autoScan={true}
+              />
             </div>
           )}
 

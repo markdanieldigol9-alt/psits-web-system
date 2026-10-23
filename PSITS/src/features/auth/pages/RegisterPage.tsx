@@ -162,6 +162,7 @@ export const RegisterPage = () => {
       });
 
       setSubmitSuccess(successMessage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       setFormData({
         fullName: '',
         username: '',
@@ -186,6 +187,7 @@ export const RegisterPage = () => {
       });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Registration failed.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 

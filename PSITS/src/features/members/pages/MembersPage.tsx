@@ -221,7 +221,7 @@ export const MembersPage = () => {
       const updated = data?.member;
       const targetEmail = updated?.email || existing?.email;
       if (updated) {
-        setMembers((prev: any[]) => prev.map((m: any) => (m.id === memberId ? { ...m, ...updated } : m)));
+        setMembers((prev: any[]) => prev.map((m: any) => (String(m.id) === String(memberId) ? { ...m, ...updated } : m)));
       }
 
       const emailStatus = data?.notification?.emailSent

@@ -453,10 +453,16 @@ async function register(req, res) {
     }
 
     if (rows[0]?.email) {
-      await sendRegistrationSubmittedEmail({
-        to: rows[0].email,
-        fullName: rows[0].full_name || 'Member',
-        userId: rows[0].id,
+      setImmediate(async () => {
+        try {
+          await sendRegistrationSubmittedEmail({
+            to: rows[0].email,
+            fullName: rows[0].full_name || 'Member',
+            userId: rows[0].id,
+          });
+        } catch (mailErr) {
+          console.error(`[Mailer] Background registration submitted email notice for user ${rows[0].id}:`, mailErr.message);
+        }
       });
     }
     return json(res, 201, { success: true, user: toUserDto(rows[0]) });

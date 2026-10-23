@@ -31,8 +31,8 @@ export function extractReferenceNumber(text: string): string | null {
 
   // 2. Labeled reference / OR / Trace patterns
   const labeledPatterns = [
-    /(?:OR|Official\s*Receipt)\s*(?:No\.?|#)?\s*[:.]?\s*([A-Za-z0-9\-]{3,24})/i,
-    /(?:Ref(?:erence)?\.?\s*(?:No|Number)?\.?|Trace\s*(?:No|Number)?\.?|Trans(?:action)?\.?\s*(?:ID|No)?\.?|Approval\s*Code)\s*[:.]?\s*([A-Za-z0-9\-]{4,24})/i,
+    /(?:OR|Official\s*Receipt)\s*(?:No\.?|#)?\s*[:.]?\s*([A-Za-z0-9-]{3,24})/i,
+    /(?:Ref(?:erence)?\.?\s*(?:No|Number)?\.?|Trace\s*(?:No|Number)?\.?|Trans(?:action)?\.?\s*(?:ID|No)?\.?|Approval\s*Code)\s*[:.]?\s*([A-Za-z0-9-]{4,24})/i,
   ];
 
   for (const pat of labeledPatterns) {

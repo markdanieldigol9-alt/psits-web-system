@@ -11,6 +11,7 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
 import { formatPaymentMethod, PAYMENT_METHOD_OPTIONS } from '@/shared/utils/helpers';
 
 const readAsDataUrl = (file: File) =>
@@ -968,7 +969,16 @@ export const PaymentsPage = () => {
                 <img
                   src={viewing.proofUrl}
                   alt="Transaction proof"
-                  className="w-full max-h-96 object-contain rounded border bg-gray-50"
+                  className="w-full max-h-96 object-contain rounded border bg-gray-50 dark:bg-slate-900"
+                />
+
+                {/* AI / OCR Receipt Scanner for Verification */}
+                <ReceiptScannerBadge
+                  imageSource={viewing.proofUrl}
+                  expectedAmount={Number(viewing.amount ?? viewing.grossAmount ?? 0)}
+                  referenceNumber={viewing.referenceNumber}
+                  label="Receipt Verification Scanner"
+                  autoScan={false}
                 />
               </div>
             ) : (
@@ -1248,12 +1258,22 @@ export const PaymentsPage = () => {
               className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-slate-100"
             />
             {feeForm.previewUrl && (
-              <div className="mt-3">
+              <div className="mt-3 space-y-3">
                 <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Receipt Preview:</p>
                 <img
                   src={feeForm.previewUrl}
                   alt="Receipt preview"
                   className="max-h-48 rounded border border-gray-200 dark:border-slate-700 object-contain bg-white dark:bg-slate-900 p-1"
+                />
+                <ReceiptScannerBadge
+                  imageSource={feeForm.file || feeForm.previewUrl}
+                  expectedAmount={Number(feeForm.amount || 0)}
+                  referenceNumber={feeForm.referenceNumber}
+                  onApplyReferenceNumber={(detectedRef) => {
+                    setFeeForm((prev) => ({ ...prev, referenceNumber: detectedRef }));
+                  }}
+                  label="Receipt Amount & Ref Scanner"
+                  autoScan={true}
                 />
               </div>
             )}
@@ -1475,9 +1495,20 @@ export const PaymentsPage = () => {
               className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-gray-900 dark:text-slate-100"
             />
             {recordForm.previewUrl && (
-              <div className="mt-2 flex items-center gap-2">
-                <img src={recordForm.previewUrl} alt="Preview" className="h-12 w-12 object-cover rounded-lg border" />
-                <span className="text-xs text-emerald-600 font-medium">Receipt image attached</span>
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <img src={recordForm.previewUrl} alt="Preview" className="h-12 w-12 object-cover rounded-lg border" />
+                  <span className="text-xs text-emerald-600 font-medium">Receipt image attached</span>
+                </div>
+                <ReceiptScannerBadge
+                  imageSource={recordForm.file || recordForm.previewUrl}
+                  expectedAmount={Number(recordForm.amount || 0)}
+                  referenceNumber={recordForm.referenceNumber}
+                  onApplyReferenceNumber={(detectedRef) => {
+                    setRecordForm((prev) => ({ ...prev, referenceNumber: detectedRef }));
+                  }}
+                  autoScan={true}
+                />
               </div>
             )}
           </div>
