@@ -31,7 +31,7 @@ async function registerForEvent(req, res) {
   const memberId = Number(req.user?.id);
   if (!Number.isFinite(memberId)) return json(res, 401, { success: false, message: 'Unauthorized.' });
 
-  // Registration window enforcement (members cannot register outside allowed period)
+  // Registration window and dynamic status enforcement (adhering to event-management standards)
   const [eventRows] = await pool.execute(
     `SELECT id, start_at, end_at, registration_start_at, registration_end_at, registration_override, status
      FROM events
@@ -45,12 +45,27 @@ async function registerForEvent(req, res) {
   const now = new Date();
   const startAt = event.start_at ? new Date(event.start_at) : null;
   const endAt = event.end_at ? new Date(event.end_at) : null;
-  if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) {
-    return json(res, 400, { success: false, message: 'Event finished. Registration is closed.' });
+
+  // Compute dynamic status based on schedule
+  let effectiveStatus = event.status;
+  if (effectiveStatus !== 'cancelled') {
+    if (startAt && !Number.isNaN(startAt.getTime())) {
+      if (startAt.getTime() > now.getTime()) {
+        effectiveStatus = 'upcoming';
+      } else if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) {
+        effectiveStatus = 'completed';
+      } else {
+        effectiveStatus = 'ongoing';
+      }
+    }
   }
 
-  if (event.status === 'ongoing' || event.status === 'completed' || event.status === 'cancelled') {
-    return json(res, 400, { success: false, message: 'Event has already started or concluded. Registration is closed.' });
+  if (effectiveStatus === 'cancelled') {
+    return json(res, 400, { success: false, message: 'This event has been cancelled.' });
+  }
+
+  if (effectiveStatus === 'completed' || (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime())) {
+    return json(res, 400, { success: false, message: 'Event finished. Registration is closed.' });
   }
 
   const override = event.registration_override ? String(event.registration_override) : null;
@@ -59,6 +74,10 @@ async function registerForEvent(req, res) {
   }
 
   if (override !== 'open') {
+    if (effectiveStatus === 'ongoing') {
+      return json(res, 400, { success: false, message: 'Event has already started. Registration is closed.' });
+    }
+
     const regStart = event.registration_start_at ? new Date(event.registration_start_at) : null;
     const regEnd = event.registration_end_at ? new Date(event.registration_end_at) : null;
 
@@ -91,7 +110,28 @@ async function registerForEvent(req, res) {
   );
 
   if (existing.length) {
-    return json(res, 200, { success: true, registration: toDto(existing[0]) });
+    const existingReg = existing[0];
+    // Update participant count and team profile file if provided
+    await pool.execute(
+      `UPDATE event_registrations
+       SET participant_count = ?,
+           team_profile_url = COALESCE(?, team_profile_url),
+           notes = COALESCE(?, notes),
+           updated_at = NOW()
+       WHERE id = ?`,
+      [participantCount, teamProfileUrl, notes, existingReg.id]
+    );
+
+    const [updatedRows] = await pool.execute(
+      `SELECT er.*, e.title AS event_title, u.full_name AS member_name, u.email AS member_email
+       FROM event_registrations er
+       JOIN events e ON e.id = er.event_id
+       JOIN users u ON u.id = er.member_id
+       WHERE er.id = ?
+       LIMIT 1`,
+      [existingReg.id]
+    );
+    return json(res, 200, { success: true, registration: toDto(updatedRows[0] || existingReg) });
   }
 
   const [result] = await pool.execute(

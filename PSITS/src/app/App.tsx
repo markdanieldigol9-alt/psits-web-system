@@ -3,7 +3,7 @@ import {
   Routes,
   Route,
 } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { AuthProvider } from '@/shared/context/AuthContext';
 import { NotificationProvider } from '@/shared/context/NotificationContext';
 import { ThemeProvider } from '@/shared/context/ThemeContext';
@@ -11,77 +11,32 @@ import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { LoadingSpinner } from '@/shared/components/Common';
 import { Toasts } from '@/shared/components/Toasts';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { lazyWithRetry } from '@/shared/utils/lazyWithRetry';
 
-const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() =>
-  import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage }))
-);
-const ForgotPasswordPage = lazy(() =>
-  import('@/features/auth/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage }))
-);
-const ResetPasswordPage = lazy(() =>
-  import('@/features/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage }))
-);
-const DashboardPage = lazy(() =>
-  import('@/features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
-);
-const NotFoundPage = lazy(() =>
-  import('@/features/misc/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
-);
-const UnauthorizedPage = lazy(() =>
-  import('@/features/misc/pages/UnauthorizedPage').then((m) => ({ default: m.UnauthorizedPage }))
-);
-const MembersPage = lazy(() =>
-  import('@/features/members/pages/MembersPage').then((m) => ({ default: m.MembersPage }))
-);
-const EventsPage = lazy(() =>
-  import('@/features/events/pages/EventsPage').then((m) => ({ default: m.EventsPage }))
-);
-const PaymentsPage = lazy(() =>
-  import('@/features/payments/pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage }))
-);
-const AnnouncementsPage = lazy(() =>
-  import('@/features/announcements/pages/AnnouncementsPage').then((m) => ({ default: m.AnnouncementsPage }))
-);
-const OfficersPage = lazy(() =>
-  import('@/features/officers/pages/OfficersPage').then((m) => ({ default: m.OfficersPage }))
-);
-const ReportsPage = lazy(() =>
-  import('@/features/reports/pages/ReportsPage').then((m) => ({ default: m.ReportsPage }))
-);
-const NotificationsPage = lazy(() =>
-  import('@/features/notifications/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage }))
-);
-const SettingsPage = lazy(() =>
-  import('@/features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))
-);
-const PartnersPage = lazy(() =>
-  import('@/features/partners/pages/PartnersPage').then((m) => ({ default: m.PartnersPage }))
-);
-const LiveEventsPage = lazy(() =>
-  import('@/features/live-events/pages/LiveEventsPage').then((m) => ({ default: m.LiveEventsPage }))
-);
-const MyEventsPage = lazy(() =>
-  import('@/features/my-events/pages/MyEventsPage').then((m) => ({ default: m.MyEventsPage }))
-);
-const InstitutionMembersPage = lazy(() =>
-  import('@/features/institution-members/pages/InstitutionMembersPage').then((m) => ({ default: m.InstitutionMembersPage }))
-);
-const ElectionsPage = lazy(() =>
-  import('@/features/elections/pages/ElectionsPage').then((m) => ({ default: m.ElectionsPage }))
-);
-const ForumPage = lazy(() =>
-  import('@/features/forum/pages/ForumPage').then((m) => ({ default: m.ForumPage }))
-);
-const LandingPage = lazy(() =>
-  import('@/features/landing/pages/LandingPage').then((m) => ({ default: m.LandingPage }))
-);
-const PrivacyPolicyPage = lazy(() =>
-  import('@/features/legal/pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage }))
-);
-const TermsPage = lazy(() =>
-  import('@/features/legal/pages/TermsPage').then((m) => ({ default: m.TermsPage }))
-);
+const LoginPage = lazyWithRetry(() => import('@/features/auth/pages/LoginPage'), 'LoginPage');
+const RegisterPage = lazyWithRetry(() => import('@/features/auth/pages/RegisterPage'), 'RegisterPage');
+const ForgotPasswordPage = lazyWithRetry(() => import('@/features/auth/pages/ForgotPasswordPage'), 'ForgotPasswordPage');
+const ResetPasswordPage = lazyWithRetry(() => import('@/features/auth/pages/ResetPasswordPage'), 'ResetPasswordPage');
+const DashboardPage = lazyWithRetry(() => import('@/features/dashboard/pages/DashboardPage'), 'DashboardPage');
+const NotFoundPage = lazyWithRetry(() => import('@/features/misc/pages/NotFoundPage'), 'NotFoundPage');
+const UnauthorizedPage = lazyWithRetry(() => import('@/features/misc/pages/UnauthorizedPage'), 'UnauthorizedPage');
+const MembersPage = lazyWithRetry(() => import('@/features/members/pages/MembersPage'), 'MembersPage');
+const EventsPage = lazyWithRetry(() => import('@/features/events/pages/EventsPage'), 'EventsPage');
+const PaymentsPage = lazyWithRetry(() => import('@/features/payments/pages/PaymentsPage'), 'PaymentsPage');
+const AnnouncementsPage = lazyWithRetry(() => import('@/features/announcements/pages/AnnouncementsPage'), 'AnnouncementsPage');
+const OfficersPage = lazyWithRetry(() => import('@/features/officers/pages/OfficersPage'), 'OfficersPage');
+const ReportsPage = lazyWithRetry(() => import('@/features/reports/pages/ReportsPage'), 'ReportsPage');
+const NotificationsPage = lazyWithRetry(() => import('@/features/notifications/pages/NotificationsPage'), 'NotificationsPage');
+const SettingsPage = lazyWithRetry(() => import('@/features/settings/pages/SettingsPage'), 'SettingsPage');
+const PartnersPage = lazyWithRetry(() => import('@/features/partners/pages/PartnersPage'), 'PartnersPage');
+const LiveEventsPage = lazyWithRetry(() => import('@/features/live-events/pages/LiveEventsPage'), 'LiveEventsPage');
+const MyEventsPage = lazyWithRetry(() => import('@/features/my-events/pages/MyEventsPage'), 'MyEventsPage');
+const InstitutionMembersPage = lazyWithRetry(() => import('@/features/institution-members/pages/InstitutionMembersPage'), 'InstitutionMembersPage');
+const ElectionsPage = lazyWithRetry(() => import('@/features/elections/pages/ElectionsPage'), 'ElectionsPage');
+const ForumPage = lazyWithRetry(() => import('@/features/forum/pages/ForumPage'), 'ForumPage');
+const LandingPage = lazyWithRetry(() => import('@/features/landing/pages/LandingPage'), 'LandingPage');
+const PrivacyPolicyPage = lazyWithRetry(() => import('@/features/legal/pages/PrivacyPolicyPage'), 'PrivacyPolicyPage');
+const TermsPage = lazyWithRetry(() => import('@/features/legal/pages/TermsPage'), 'TermsPage');
 
 
 export const App = () => {

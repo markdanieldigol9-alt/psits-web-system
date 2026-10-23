@@ -5,7 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
@@ -163,6 +163,7 @@ export const EventsPage = () => {
 
   const [memberPayments, setMemberPayments] = useState<any[]>([]);
   const [failedBanners, setFailedBanners] = useState<Record<string, boolean>>({});
+  const [isRegisteringEvent, setIsRegisteringEvent] = useState(false);
 
   const [paymentForm, setPaymentForm] = useState<{
     method: 'through_officer' | 'bank_transfer' | 'cheque' | 'gcash' | string;
@@ -1046,6 +1047,8 @@ export const EventsPage = () => {
   };
 
   const registerForEvent = async (event: any, silent = false) => {
+    if (isRegisteringEvent) return;
+    setIsRegisteringEvent(true);
     try {
       const mode = String(event?.registrationMode || 'individual');
       if (!isInstitution && ['team', 'pair'].includes(mode) && !teamProfileFile) {
@@ -1079,17 +1082,26 @@ export const EventsPage = () => {
 
       if (participantsToUpload.length > 0) {
         try {
-          await api.bulkUploadInstitutionMembers(participantsToUpload);
-        } catch {
-          // ignore
+          await api.bulkUploadInstitutionMembers({
+            members: participantsToUpload,
+            skipBilling: true,
+            eventId: event.id,
+            eventTitle: event.title,
+          });
+        } catch (uploadErr) {
+          console.warn('Batch roster sync warning:', uploadErr);
         }
       }
 
       let teamProfileUrl: string | null = null;
       if (teamProfileFile) {
-        const dataUrl = await readAsDataUrl(teamProfileFile);
-        const { data: upload } = await api.uploadTeamProfile(dataUrl, teamProfileFile.name);
-        teamProfileUrl = upload?.url || null;
+        try {
+          const dataUrl = await readAsDataUrl(teamProfileFile);
+          const { data: upload } = await api.uploadTeamProfile(dataUrl, teamProfileFile.name);
+          teamProfileUrl = upload?.url || null;
+        } catch (fileErr) {
+          console.warn('Team profile upload warning:', fileErr);
+        }
       }
 
       const countToSubmit = Math.max(
@@ -1106,6 +1118,18 @@ export const EventsPage = () => {
         setRegisteredEventIds((prev) => ({ ...prev, [String(event.id)]: true }));
         setMemberStatusByEvent((prev) => ({ ...prev, [String(event.id)]: registration.status || 'pending' }));
       }
+      setEvents((prev) =>
+        prev.map((ev) =>
+          String(ev.id) === String(event.id)
+            ? {
+                ...ev,
+                registrations: (ev.registrations || 0) + (isInstitution ? countToSubmit : 1),
+                participantsCount: (ev.participantsCount || 0) + (isInstitution ? countToSubmit : 1),
+              }
+            : ev
+        )
+      );
+
       if (!silent) {
         addNotification({
           userId: 'current',
@@ -1129,14 +1153,17 @@ export const EventsPage = () => {
         setTeamProfilePreview('');
       }
       setTeamProfileError(null);
+      setDetailsEvent(null);
     } catch (err) {
       addNotification({
         userId: 'current',
-        title: 'Error',
+        title: 'Registration Error',
         message: err instanceof Error ? err.message : 'Failed to register for event.',
         type: 'error',
         isRead: false,
       });
+    } finally {
+      setIsRegisteringEvent(false);
     }
   };
 
@@ -1150,20 +1177,32 @@ export const EventsPage = () => {
   };
 
   const handleRegister = async (event: any) => {
+    if (isRegisteringEvent) return;
     const mode = String(event?.registrationMode || 'individual');
+
+    const showValidationError = (msg: string) => {
+      setTeamProfileError(msg);
+      addNotification({
+        userId: 'current',
+        title: 'Registration Requirement',
+        message: msg,
+        type: 'error',
+        isRead: false,
+      });
+    };
 
     if (isInstitution) {
       if (registrationSource === 'select') {
         if (selectedMembers.length === 0) {
-          setTeamProfileError('Please select at least one institution member to register.');
+          showValidationError('Please select at least one institution member to register.');
           return;
         }
         if (mode === 'pair' && selectedMembers.length !== 2) {
-          setTeamProfileError(`Pair / Duo registration requires exactly 2 members (currently selected: ${selectedMembers.length}).`);
+          showValidationError(`Pair / Duo registration requires exactly 2 members (currently selected: ${selectedMembers.length}).`);
           return;
         }
         if (mode === 'team' && selectedMembers.length < 2) {
-          setTeamProfileError(`Team registration requires at least 2 members (currently selected: ${selectedMembers.length}).`);
+          showValidationError(`Team registration requires at least 2 members (currently selected: ${selectedMembers.length}).`);
           return;
         }
         if (event?.requiresCoach ?? event?.requires_coach) {
@@ -1171,19 +1210,19 @@ export const EventsPage = () => {
             (m) => (m.position || '').toLowerCase().includes('coach') || String(m.id) === String(selectedCoachMemberId)
           );
           if (!hasCoach) {
-            setTeamProfileError('This event requires an assigned Coach. Please select a Coach from your institution members.');
+            showValidationError('This event requires an assigned Coach. Please select a Coach from your institution members.');
             return;
           }
         }
       } else {
         if (['team', 'pair'].includes(mode) && !teamProfileFile) {
-          setTeamProfileError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
+          showValidationError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
           return;
         }
       }
     } else if (['team', 'pair'].includes(mode) && !teamProfileFile) {
       setDetailsEvent(event);
-      setTeamProfileError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
+      showValidationError(`${mode === 'pair' ? 'Pair / Duo' : 'Team'} batch upload file is required for this registration mode.`);
       return;
     }
 
@@ -1479,10 +1518,18 @@ export const EventsPage = () => {
                         variant={isRegistered ? 'secondary' : 'primary'}
                         size="sm"
                         onClick={() => void handleRegister(event)}
-                        disabled={isRegistered || regState.key !== 'open'}
+                        disabled={isRegistered || regState.key !== 'open' || isRegisteringEvent}
+                        isLoading={isRegisteringEvent}
                         className="min-w-[140px]"
                       >
-                        <CheckCircle size={16} /> {isRegistered ? 'Registered (Ready)' : (isPaidEvent ? 'Register & Upload Proof' : 'Register for Event')}
+                        <CheckCircle size={16} />{' '}
+                        {isRegisteringEvent
+                          ? 'Registering...'
+                          : isRegistered
+                          ? 'Registered (Ready)'
+                          : isPaidEvent
+                          ? 'Register & Upload Proof'
+                          : 'Register for Event'}
                       </Button>
                     )}
                   </div>
@@ -3097,17 +3144,33 @@ export const EventsPage = () => {
             )}
 
             {isMember && (
-              <div className="flex justify-end">
+              <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-3 w-full pt-2">
+                {teamProfileError ? (
+                  <p className="text-xs text-red-600 font-semibold flex items-center gap-1.5">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{teamProfileError}</span>
+                  </p>
+                ) : (
+                  <div />
+                )}
                 <Button
                   type="button"
                   variant={isRegistered ? 'secondary' : 'primary'}
                   onClick={() => {
                     void handleRegister(detailsEvent);
                   }}
-                  disabled={isRegistered}
-                  className="w-full sm:w-auto"
+                  disabled={isRegistered || isRegisteringEvent}
+                  isLoading={isRegisteringEvent}
+                  className="w-full sm:w-auto shrink-0"
                 >
-                  <CheckCircle size={16} /> {isRegistered ? 'Registered' : (isPaidEvent ? 'Register & Upload Proof' : 'Register for Event')}
+                  <CheckCircle size={16} />{' '}
+                  {isRegisteringEvent
+                    ? 'Submitting Registration...'
+                    : isRegistered
+                    ? 'Registered'
+                    : isPaidEvent
+                    ? 'Register & Upload Proof'
+                    : 'Register for Event'}
                 </Button>
               </div>
             )}

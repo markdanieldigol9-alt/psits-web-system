@@ -279,20 +279,35 @@ async function bulkCreateInstitutionMembers(req, res) {
       [values]
     );
 
-    for (const row of cleanRows) {
-      if (row.email) {
-        try {
-          await ensureInstitutionParticipantUser({
+    await Promise.all(
+      cleanRows
+        .filter((row) => row.email)
+        .map((row) =>
+          ensureInstitutionParticipantUser({
             email: row.email,
             fullName: row.fullName,
             contactNumber: row.contactNumber,
             passwordHash: row.passwordHash,
             institutionUserId,
-          });
-        } catch (err) {
-          console.error('Account provisioning warning:', err);
-        }
-      }
+          }).catch((err) => {
+            console.error('Account provisioning warning:', err);
+            return null;
+          })
+        )
+    );
+
+    const shouldSkipBilling = Boolean(
+      body.skipBilling ||
+      body.forEventRegistration ||
+      (!body.billing && cleanRows.some((r) => r.eventId))
+    );
+
+    if (shouldSkipBilling) {
+      return json(res, 201, {
+        success: true,
+        inserted: cleanRows.length,
+        billing: null,
+      });
     }
 
     // Billing Calculation (250 per head, 2 free slots discount, partial payment support)
