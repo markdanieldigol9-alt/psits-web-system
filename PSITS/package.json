@@ -11,7 +11,7 @@
     "build": "tsc -b && vite build",
     "build:pretty": "vite build --mode pretty",
     "lint": "eslint .",
-    "test": "vitest run --pool=forks --passWithNoTests",
+    "test": "vitest run --passWithNoTests",
     "test:ui": "playwright test",
     "preview": "vite preview"
   },

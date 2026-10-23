@@ -627,7 +627,7 @@ export const EventsPage = () => {
       guidelinesFileUrl: event.guidelinesFileUrl || '',
       guidelinesFileName: event.guidelinesFileName || '',
       guidelineFileName: '',
-      registrationMode: event.registrationMode || 'individual',
+      registrationMode: isSemOrConf ? 'individual' : (event.registrationMode || 'individual'),
       registrationOverride: (event.registrationOverride || '') as RegistrationOverride,
       registrationStartDate: isSemOrConf ? '' : regStart.date,
       registrationStartTime: isSemOrConf ? '' : regStart.time,
@@ -648,12 +648,12 @@ export const EventsPage = () => {
       isEsports: isEsp,
       esportsGame: event.esportsGame || '',
       esportsBracketFormat: event.esportsBracketFormat || '',
-      bannerUrl: event.bannerUrl || '',
+      bannerUrl: isSemOrConf ? '' : (event.bannerUrl || ''),
       bannerFile: null,
-      bannerPreviewUrl: event.bannerUrl || '',
+      bannerPreviewUrl: isSemOrConf ? '' : (event.bannerUrl || ''),
       themeColor: event.themeColor || '#2563eb',
       customBadge: event.customBadge || '',
-      requiresCoach: Boolean(event.requiresCoach ?? event.requires_coach),
+      requiresCoach: isSemOrConf ? false : Boolean(event.requiresCoach ?? event.requires_coach),
       hasOfficerModerator: Boolean(event.hasModerator ?? event.has_moderator ?? event.moderatorOfficerName ?? event.moderator_officer_name),
       moderatorOfficerId: event.moderatorOfficerId || event.moderator_officer_id || '',
       moderatorOfficerName: event.moderatorOfficerName || event.moderator_officer_name || '',
@@ -688,6 +688,11 @@ export const EventsPage = () => {
         isEsports: false,
         ...(isSemOrConf
           ? {
+              registrationMode: 'individual',
+              requiresCoach: false,
+              bannerFile: null,
+              bannerPreviewUrl: '',
+              bannerUrl: '',
               registrationStartDate: '',
               registrationStartTime: '',
               registrationEndDate: '',
@@ -902,8 +907,8 @@ export const EventsPage = () => {
       }
     }
 
-    let finalBannerUrl = formData.bannerUrl || null;
-    if (formData.bannerFile) {
+    let finalBannerUrl = isSeminarOrConf ? null : (formData.bannerUrl || null);
+    if (!isSeminarOrConf && formData.bannerFile) {
       try {
         const dataUrl = await readAsDataUrl(formData.bannerFile);
         const { data: upload } = await api.uploadEventBanner(dataUrl);
@@ -944,7 +949,7 @@ export const EventsPage = () => {
       guidelines: formData.guidelines.trim(),
       guidelinesFileUrl: finalGuidelinesFileUrl,
       guidelinesFileName: finalGuidelinesFileName,
-      registrationMode: formData.registrationMode || 'individual',
+      registrationMode: isSeminarOrConf ? 'individual' : (formData.registrationMode || 'individual'),
       registrationOverride: null,
       registrationStartAt: isSeminarOrConf ? null : (registrationStartAt || null),
       registrationEndAt: isSeminarOrConf ? null : (registrationEndAt || null),
@@ -958,10 +963,10 @@ export const EventsPage = () => {
       isEsports: finalIsEsports,
       esportsGame: finalIsEsports ? formData.esportsGame : null,
       esportsBracketFormat: finalIsEsports ? formData.esportsBracketFormat : null,
-      bannerUrl: finalBannerUrl,
+      bannerUrl: isSeminarOrConf ? null : finalBannerUrl,
       themeColor: formData.themeColor || '#2563eb',
       customBadge: formData.customBadge.trim() || null,
-      requiresCoach: formData.requiresCoach,
+      requiresCoach: isSeminarOrConf ? false : formData.requiresCoach,
       hasModerator: formData.hasOfficerModerator,
       moderatorOfficerId: formData.hasOfficerModerator ? (formData.moderatorOfficerId || null) : null,
       moderatorOfficerName: formData.hasOfficerModerator ? (formData.moderatorOfficerName || null) : null,
@@ -1222,6 +1227,10 @@ export const EventsPage = () => {
       setEventParticipants((prev) => prev.map((x) => (String(x.id) === String(updated.id) ? updated : x)));
     }
   };
+
+  const isSeminarOrConference = ['seminar', 'conference'].includes(
+    String(formData.categorySelect || formData.eventType || '').toLowerCase()
+  );
 
   if (!user) return null;
 
@@ -1561,16 +1570,28 @@ export const EventsPage = () => {
                   value={formData.categorySelect}
                   onChange={(e) => handleCategoryChange((e.target as HTMLSelectElement).value)}
                 />
-                <Select
-                  label="Registration Mode"
-                  options={[
-                    { value: 'individual', label: 'Individual Registration' },
-                    { value: 'pair', label: 'Pair (2 Members)' },
-                    { value: 'team', label: 'Team / Group' },
-                  ]}
-                  value={formData.registrationMode}
-                  onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
-                />
+                <div className="space-y-1">
+                  <Select
+                    label="Registration Mode"
+                    disabled={isSeminarOrConference}
+                    options={
+                      isSeminarOrConference
+                        ? [{ value: 'individual', label: 'Individual Registration' }]
+                        : [
+                            { value: 'individual', label: 'Individual Registration' },
+                            { value: 'pair', label: 'Pair (2 Members)' },
+                            { value: 'team', label: 'Team / Group' },
+                          ]
+                    }
+                    value={isSeminarOrConference ? 'individual' : (formData.registrationMode || 'individual')}
+                    onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
+                  />
+                  {isSeminarOrConference && (
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                      Seminars and Conferences are automatically set to Individual Registration.
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* If "Other" category is selected, allow user to type what is needed */}
@@ -1601,23 +1622,25 @@ export const EventsPage = () => {
                 onChange={(e) => setFormData((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))}
               />
 
-              {/* Coach Requirement Checkbox Button */}
-              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <UserCheck size={18} className="text-blue-600 shrink-0" />
-                  <div>
-                    <span className="text-sm font-bold text-gray-900 block">Require Coach for this Event</span>
-                    <span className="text-xs text-gray-500">Check if institutions must designate an official Coach from their roster during registration.</span>
+              {/* Coach Requirement Checkbox Button - Hidden for Seminars and Conferences */}
+              {!isSeminarOrConference && (
+                <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between animate-fadeIn">
+                  <div className="flex items-center gap-2.5">
+                    <UserCheck size={18} className="text-blue-600 shrink-0" />
+                    <div>
+                      <span className="text-sm font-bold text-gray-900 block">Require Coach for this Event</span>
+                      <span className="text-xs text-gray-500">Check if institutions must designate an official Coach from their roster during registration.</span>
+                    </div>
                   </div>
+                  <input
+                    type="checkbox"
+                    id="requiresCoachTab"
+                    checked={formData.requiresCoach}
+                    onChange={(e) => setFormData((p) => ({ ...p, requiresCoach: e.target.checked }))}
+                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer shrink-0"
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  id="requiresCoachTab"
-                  checked={formData.requiresCoach}
-                  onChange={(e) => setFormData((p) => ({ ...p, requiresCoach: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer shrink-0"
-                />
-              </div>
+              )}
 
               {/* Officer Moderator Checkbox Card */}
               <div className="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/50 rounded-xl flex items-center justify-between transition-all">
@@ -1872,7 +1895,7 @@ export const EventsPage = () => {
               </div>
 
               {/* Registration Window (Moved to Step 2 - Not applicable for Seminars or Conferences) */}
-              {!['seminar', 'conference'].includes(String(formData.categorySelect || formData.eventType || '').toLowerCase()) && (
+              {!isSeminarOrConference && (
                 <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-slate-800 animate-fadeIn">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
@@ -2035,46 +2058,48 @@ export const EventsPage = () => {
                 </div>
               </div>
 
-              {/* Event Banner */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Event Banner (Optional)</label>
-                {formData.bannerPreviewUrl && (
-                  <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-100">
-                    <img
-                      src={formData.bannerPreviewUrl}
-                      alt="Banner preview"
-                      className="w-full h-full object-cover"
+              {/* Event Banner - Hidden for Seminars and Conferences */}
+              {!isSeminarOrConference && (
+                <div className="space-y-2 animate-fadeIn">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Event Banner (Optional)</label>
+                  {formData.bannerPreviewUrl && (
+                    <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-100">
+                      <img
+                        src={formData.bannerPreviewUrl}
+                        alt="Banner preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData((p) => ({ ...p, bannerFile: null, bannerPreviewUrl: '', bannerUrl: '' }))}
+                        className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 shadow text-xs"
+                        title="Remove banner"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 hover:border-primary rounded-lg px-4 py-3 text-sm text-gray-600 hover:text-primary transition-colors">
+                    <Upload size={16} />
+                    <span>{formData.bannerPreviewUrl ? 'Change Banner Image' : 'Upload Banner Image'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setFormData((p) => ({
+                          ...p,
+                          bannerFile: file,
+                          bannerPreviewUrl: URL.createObjectURL(file),
+                        }));
+                        e.target.value = '';
+                      }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setFormData((p) => ({ ...p, bannerFile: null, bannerPreviewUrl: '', bannerUrl: '' }))}
-                      className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 shadow text-xs"
-                      title="Remove banner"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
-                <label className="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 hover:border-primary rounded-lg px-4 py-3 text-sm text-gray-600 hover:text-primary transition-colors">
-                  <Upload size={16} />
-                  <span>{formData.bannerPreviewUrl ? 'Change Banner Image' : 'Upload Banner Image'}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setFormData((p) => ({
-                        ...p,
-                        bannerFile: file,
-                        bannerPreviewUrl: URL.createObjectURL(file),
-                      }));
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
+                  </label>
+                </div>
+              )}
 
               {/* Theme Color & Custom Badge */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
