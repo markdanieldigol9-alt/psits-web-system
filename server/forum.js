@@ -164,9 +164,8 @@ async function deletePost(req, res) {
   const post = rows[0];
 
   const role = String(req.user?.role || '').toLowerCase();
-  const isOwner = Number(post.author_id) === Number(req.user?.id);
-  const canModerate = ['super_admin', 'admin'].includes(role);
-  if (!canModerate && !isOwner) return json(res, 403, { success: false, message: 'Forbidden.' });
+  const isAdmin = ['super_admin', 'admin'].includes(role);
+  if (!isAdmin) return json(res, 403, { success: false, message: 'Forbidden. Only administrators can delete forum posts.' });
 
   await pool.execute('DELETE FROM forum_posts WHERE id = ?', [id]);
   return json(res, 200, { success: true });

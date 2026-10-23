@@ -853,7 +853,7 @@ app.post('/api/elections/:id/vote', requireMigrationReady, authMiddleware, requi
 app.get('/api/forum/posts', requireMigrationReady, authMiddleware, listPosts);
 app.post('/api/forum/posts', requireMigrationReady, authMiddleware, createPost);
 app.put('/api/forum/posts/:id', requireMigrationReady, authMiddleware, updatePost);
-app.delete('/api/forum/posts/:id', requireMigrationReady, authMiddleware, deletePost);
+app.delete('/api/forum/posts/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deletePost);
 app.get('/api/forum/posts/:id/comments', requireMigrationReady, authMiddleware, listComments);
 app.post('/api/forum/posts/:id/comments', requireMigrationReady, authMiddleware, addComment);
 app.post('/api/forum/posts/:id/like', requireMigrationReady, authMiddleware, setLike);

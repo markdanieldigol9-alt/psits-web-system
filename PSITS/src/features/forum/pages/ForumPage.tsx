@@ -337,7 +337,7 @@ export const ForumPage = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingPost) return;
+    if (!deletingPost || !isAdmin) return;
     setIsLoading(true);
     try {
       await api.deleteForumPost(String(deletingPost.id));
@@ -829,7 +829,7 @@ export const ForumPage = () => {
                         >
                           <Pencil size={15} /> Edit
                         </Button>
-                        {(isAdmin || String(p.authorId) === String(user?.id)) && (
+                        {isAdmin && (
                           <Button
                             variant="outline"
                             size="sm"
