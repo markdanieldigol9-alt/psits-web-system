@@ -971,7 +971,7 @@ app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['s
 app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteInstitutionMember);
 app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
 
-  app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getDashboardReport);
+  app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getDashboardReport);
   app.get('/api/reports/members', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getAllMembersReport);
   app.get('/api/reports/event-participation', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getEventParticipationReport);
   app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getElectionReport);

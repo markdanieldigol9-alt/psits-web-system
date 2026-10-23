@@ -65,6 +65,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data } = await api.getMe();
         if (!data?.success || !data?.user) throw new Error('Session expired');
 
+        let officerPos = data.user.position ?? data.user.officerPosition ?? null;
+        if (data.user.role === 'officer' && !officerPos) {
+          try {
+            const offRes = await api.getOfficers('active');
+            if (offRes.data?.success && Array.isArray(offRes.data.officers)) {
+              const myOff = offRes.data.officers.find(
+                (o: any) =>
+                  String(o.userId || o.id) === String(data.user.id) ||
+                  (o.email && data.user.email && o.email.toLowerCase() === data.user.email.toLowerCase()) ||
+                  (o.name && data.user.fullName && o.name.toLowerCase().trim() === data.user.fullName.toLowerCase().trim()) ||
+                  (o.fullName && data.user.fullName && o.fullName.toLowerCase().trim() === data.user.fullName.toLowerCase().trim())
+              );
+              if (myOff?.position) officerPos = myOff.position;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
         const refreshedUser: User = {
           id: String(data.user.id),
           email: data.user.email,
@@ -75,6 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sector: data.user.sector,
           sectorDetails: data.user.sectorDetails,
           memberType: data.user.memberType,
+          position: officerPos,
           membershipStartedAt: data.user.membershipStartedAt ?? null,
           membershipExpiresAt: data.user.membershipExpiresAt ?? null,
           status: data.user.status ?? null,
@@ -119,6 +139,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data } = await api.login(email, password);
       if (!data?.success) throw new Error(data?.message || 'Login failed');
 
+      let officerPos = data.user.position ?? data.user.officerPosition ?? null;
+      if (data.user.role === 'officer' && !officerPos) {
+        try {
+          const offRes = await api.getOfficers('active');
+          if (offRes.data?.success && Array.isArray(offRes.data.officers)) {
+            const myOff = offRes.data.officers.find(
+              (o: any) =>
+                String(o.userId || o.id) === String(data.user.id) ||
+                (o.email && data.user.email && o.email.toLowerCase() === data.user.email.toLowerCase()) ||
+                (o.name && data.user.fullName && o.name.toLowerCase().trim() === data.user.fullName.toLowerCase().trim()) ||
+                (o.fullName && data.user.fullName && o.fullName.toLowerCase().trim() === data.user.fullName.toLowerCase().trim())
+            );
+            if (myOff?.position) officerPos = myOff.position;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const loggedInUser: User = {
         id: String(data.user.id),
         email: data.user.email,
@@ -129,6 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         sector: data.user.sector,
         sectorDetails: data.user.sectorDetails,
         memberType: data.user.memberType,
+        position: officerPos,
         membershipStartedAt: data.user.membershipStartedAt ?? null,
         membershipExpiresAt: data.user.membershipExpiresAt ?? null,
         status: data.user.status ?? null,
