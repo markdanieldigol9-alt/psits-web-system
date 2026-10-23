@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
 import { printReportDocument } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
@@ -96,15 +96,17 @@ export const FinancialReportView = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'verified' | 'pending' | 'partial' | 'rejected'>('all');
   const [selectedMethod, setSelectedMethod] = useState<string>(initialMethodFilter || 'all');
+  const [prevInitialMethod, setPrevInitialMethod] = useState(initialMethodFilter);
   const [selectedPurpose, setSelectedPurpose] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(15);
 
-  useEffect(() => {
+  if (initialMethodFilter !== prevInitialMethod) {
+    setPrevInitialMethod(initialMethodFilter);
     if (initialMethodFilter) {
       setSelectedMethod(initialMethodFilter);
     }
-  }, [initialMethodFilter]);
+  }
 
   // Helper formatters
   const formatPHP = (val: number | string | null | undefined) => {

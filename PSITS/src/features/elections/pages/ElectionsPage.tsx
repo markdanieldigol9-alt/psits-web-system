@@ -11,7 +11,7 @@ import { Plus, Users, Trophy, Lock, Eye, Trash2, Info } from 'lucide-react';
 
 type ElectionStatus = 'draft' | 'open' | 'closed' | 'archived';
 
-export const isElectionClosed = (election?: any): boolean => {
+const isElectionClosed = (election?: any): boolean => {
   if (!election) return false;
   if (election.status === 'closed' || election.status === 'archived') return true;
   if (!election.endDate) return false;

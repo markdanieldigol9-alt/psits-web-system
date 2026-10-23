@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Input, Button, Select } from '@/shared/components/Form';
 import { Alert } from '@/shared/components/Common';
 import { validateEmail } from '@/shared/utils/helpers';
@@ -25,24 +25,28 @@ export const AddPartnerModal = ({ isOpen, onClose, onSubmit, isLoading = false, 
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        company: initialData.company || '',
-        type: initialData.type || 'Industry',
-        contactPerson: initialData.contactPerson || '',
-        location: initialData.location || '',
-        email: initialData.email || '',
-        phone: initialData.phone || '',
-        website: initialData.website || '',
-      });
-    } else {
-      setFormData({ company: '', type: 'Industry', contactPerson: '', location: '', email: '', phone: '', website: '' });
-    }
+  if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
+    setPrevInitialData(initialData);
+    setPrevIsOpen(isOpen);
+    setFormData(
+      initialData
+        ? {
+            company: initialData.company || '',
+            type: initialData.type || 'Industry',
+            contactPerson: initialData.contactPerson || '',
+            location: initialData.location || '',
+            email: initialData.email || '',
+            phone: initialData.phone || '',
+            website: initialData.website || '',
+          }
+        : { company: '', type: 'Industry', contactPerson: '', location: '', email: '', phone: '', website: '' }
+    );
     setErrors({});
     setError(null);
-  }, [initialData, isOpen]);
+  }
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

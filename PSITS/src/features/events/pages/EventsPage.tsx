@@ -15,7 +15,7 @@ import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructions
 type EventStatus = 'draft' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type RegistrationOverride = '' | 'open' | 'closed';
 
-export const EVENT_CATEGORIES = [
+const EVENT_CATEGORIES = [
   { value: 'competition', label: 'Competition' },
   { value: 'contest', label: 'Contest' },
   { value: 'esports', label: 'Esports' },
@@ -24,13 +24,13 @@ export const EVENT_CATEGORIES = [
   { value: 'other', label: 'Other' },
 ];
 
-export const getCategoryLabel = (val?: string) => {
+const getCategoryLabel = (val?: string) => {
   if (!val) return 'Seminar';
   const found = EVENT_CATEGORIES.find((c) => c.value.toLowerCase() === val.toLowerCase());
   return found ? found.label : (val.charAt(0).toUpperCase() + val.slice(1));
 };
 
-export const getParticipantCapacityLabel = (mode?: string) => {
+const getParticipantCapacityLabel = (mode?: string) => {
   const m = String(mode || '').toLowerCase();
   if (m === 'pair') return 'Pair Participant';
   if (m === 'team') return 'Team Participant';
@@ -977,7 +977,7 @@ export const EventsPage = () => {
           setTeamProfileError(`Team registration requires at least 2 members (currently selected: ${selectedMembers.length}).`);
           return;
         }
-        if (Boolean(event?.requiresCoach ?? event?.requires_coach)) {
+        if (event?.requiresCoach ?? event?.requires_coach) {
           const hasCoach = selectedMembers.some(
             (m) => (m.position || '').toLowerCase().includes('coach') || String(m.id) === String(selectedCoachMemberId)
           );
@@ -2932,7 +2932,7 @@ export const EventsPage = () => {
                                         type: 'success',
                                         isRead: false,
                                       });
-                                    } catch (err) {
+                                    } catch {
                                       // ignore
                                     } finally {
                                       setIsUploadingParticipants(false);

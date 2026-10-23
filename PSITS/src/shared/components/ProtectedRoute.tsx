@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
 import { LoadingSpinner } from '@/shared/components/Common';
@@ -16,6 +17,7 @@ export const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
+  const [currentTime] = useState(() => Date.now());
 
   if (isLoading) {
     return (
@@ -40,7 +42,7 @@ export const ProtectedRoute = ({
 
   // Lockout logic for suspended accounts (strictly allow Settings module only)
   if (user?.status === 'suspended') {
-    if (!window.location.pathname.startsWith('/settings')) {
+    if (!location.pathname.startsWith('/settings')) {
       return <Navigate to="/settings" replace />;
     }
   }
@@ -48,7 +50,7 @@ export const ProtectedRoute = ({
   // Lockout logic for expired members
   if (user?.role === 'member' && !allowExpired) {
     const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;
-    if (expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+    if (expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < currentTime) {
       // Membership is expired and this route does not allow expired members.
       return <Navigate to="/dashboard" replace />;
     }
@@ -56,3 +58,4 @@ export const ProtectedRoute = ({
 
   return <>{children}</>;
 };
+
