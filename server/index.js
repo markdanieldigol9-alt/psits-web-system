@@ -773,8 +773,8 @@ app.get('/api/members/:id/status-logs', requireMigrationReady, authMiddleware, r
 app.get('/api/memberships/:id/status-logs', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), listMemberStatusLogs);
 app.get('/api/members/:id/details', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getMemberDetails);
 app.get('/api/memberships/:id/details', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getMemberDetails);
-app.delete('/api/members/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteMember);
-app.delete('/api/memberships/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteMember);
+app.delete('/api/members/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteMember);
+app.delete('/api/memberships/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteMember);
 app.post('/api/members/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
 app.post('/api/memberships/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
 app.post('/api/members/trigger-expiration-check', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), triggerExpirationCheck);
@@ -784,17 +784,17 @@ app.get('/api/officers', requireMigrationReady, authMiddleware, listOfficers);
 app.post('/api/officers', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createOfficer);
 app.post('/api/officers/assign', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), assignOfficer);
 app.put('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateOfficer);
-app.post('/api/officers/swap', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), swapOfficers);
-app.delete('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteOfficer);
+app.post('/api/officers/swap', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), swapOfficers);
+app.delete('/api/officers/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteOfficer);
 app.get('/api/officer-positions', requireMigrationReady, authMiddleware, listOfficerPositions);
 app.post('/api/officer-positions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createOfficerPosition);
-app.delete('/api/officer-positions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteOfficerPosition);
+app.delete('/api/officer-positions/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteOfficerPosition);
 
 // Events
 app.get('/api/events', requireMigrationReady, authMiddleware, listEvents);
 app.post('/api/events', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createEvent);
 app.put('/api/events/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateEvent);
-app.delete('/api/events/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteEvent);
+app.delete('/api/events/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteEvent);
 app.post('/api/events/:id/register', requireMigrationReady, authMiddleware, requireRole(['member']), registerForEvent);
 app.post('/api/events/:id/payment', requireMigrationReady, authMiddleware, requireRole(['member']), (req, res) => {
   req.body = { ...(req.body || {}), eventId: req.params.id };
@@ -811,7 +811,7 @@ app.get('/api/events/institution-leaderboard', requireMigrationReady, authMiddle
 app.get('/api/announcements', authMiddleware, listAnnouncements);
 app.post('/api/announcements', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createAnnouncement);
 app.put('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateAnnouncement);
-app.delete('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteAnnouncement);
+app.delete('/api/announcements/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteAnnouncement);
 
 // Announcement interactions (comments + likes)
 app.get('/api/announcements/:id/comments', authMiddleware, listAnnouncementComments);
@@ -844,8 +844,8 @@ app.put('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole
 app.post('/api/elections/:id/candidates', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), addCandidate);
 app.put('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateCandidate);
 app.post('/api/elections/:id/candidates/:candidateId/winner', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), markWinner);
-app.delete('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteCandidate);
-app.delete('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteElection);
+app.delete('/api/elections/:id/candidates/:candidateId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteCandidate);
+app.delete('/api/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin']), deleteElection);
 app.get('/api/elections/:id/voted', requireMigrationReady, authMiddleware, requireRole(['member']), checkVotedStatus);
 app.post('/api/elections/:id/vote', requireMigrationReady, authMiddleware, requireRole(['member']), castVote);
 
@@ -967,7 +967,7 @@ app.post('/api/uploads/avatar', authMiddleware, express.raw({ type: '*/*', limit
 app.get('/api/institution-members', authMiddleware, listInstitutionMembers);
 app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), bulkCreateInstitutionMembers);
 app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), approveInstitutionMember);
-app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteInstitutionMember);
+app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteInstitutionMember);
 app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
 
   app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getDashboardReport);

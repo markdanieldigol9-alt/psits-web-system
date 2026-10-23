@@ -135,6 +135,7 @@ export const AnnouncementsPage = () => {
   });
 
   const canCreateAnnouncements = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
   const isMember = user?.role === 'member';
   const canModerateComments = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
@@ -629,19 +630,21 @@ export const AnnouncementsPage = () => {
                       >
                         <Edit2 size={16} className="text-blue-600" />
                       </button>
-                      <button
-                        type="button"
-                        className={iconButtonClassName}
-                        onClick={() => {
-                          setPendingId(String(announcement.id));
-                          setPendingPayload(null);
-                          setVerifyAction('delete');
-                        }}
-                        aria-label="Delete announcement"
-                        title={announcement.status === 'archived' ? 'Permanently Delete' : 'Delete'}
-                      >
-                        <Trash2 size={16} className="text-red-600" />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className={iconButtonClassName}
+                          onClick={() => {
+                            setPendingId(String(announcement.id));
+                            setPendingPayload(null);
+                            setVerifyAction('delete');
+                          }}
+                          aria-label="Delete announcement"
+                          title={announcement.status === 'archived' ? 'Permanently Delete' : 'Delete'}
+                        >
+                          <Trash2 size={16} className="text-red-600" />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

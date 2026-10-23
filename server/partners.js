@@ -162,7 +162,7 @@ async function updatePartner(req, res) {
   const partner = partnerRows[0];
 
   const role = req.user?.role;
-  const isPrivileged = ['super_admin', 'admin', 'officer'].includes(role);
+  const isPrivileged = ['super_admin', 'admin'].includes(role);
   const isOwner = Number(partner.user_id) === Number(req.user?.id) || Number(partner.created_by) === Number(req.user?.id);
 
   if (!isPrivileged && !isOwner) {
@@ -223,7 +223,7 @@ async function deletePartner(req, res) {
   const partner = partnerRows[0];
 
   const role = req.user?.role;
-  const isPrivileged = ['super_admin', 'admin', 'officer'].includes(role);
+  const isPrivileged = ['super_admin', 'admin'].includes(role);
   const isOwner = Number(partner.user_id) === Number(req.user?.id) || Number(partner.created_by) === Number(req.user?.id);
 
   if (!isPrivileged && !isOwner) {
@@ -343,8 +343,10 @@ async function updatePartnerContribution(req, res) {
 }
 
 async function deletePartnerContribution(req, res) {
-  if (!canManagePartners(req.user)) {
-    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators, officers, and industry members can delete partner contributions.' });
+  const role = req.user?.role;
+  const isPrivileged = ['super_admin', 'admin'].includes(role);
+  if (!isPrivileged) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Only administrators can delete partner contributions.' });
   }
 
   const id = Number(req.params.id);

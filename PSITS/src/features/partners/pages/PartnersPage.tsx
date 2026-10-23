@@ -288,6 +288,9 @@ export const PartnersPage = () => {
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {partners.map((p) => {
+            const isAdmin = Boolean(
+              user && ['admin', 'super_admin'].includes(user.role)
+            );
             const isPrivileged = Boolean(
               user && ['admin', 'super_admin', 'officer'].includes(user.role)
             );
@@ -299,7 +302,7 @@ export const PartnersPage = () => {
               )
             );
             const canEdit = isPrivileged || isMyCompany;
-            const canDelete = isPrivileged || isMyCompany;
+            const canDelete = isAdmin || isMyCompany;
             const canLogDeal = isPrivileged || isMyCompany;
 
             return (
@@ -447,14 +450,16 @@ export const PartnersPage = () => {
                                     >
                                       <Pencil size={14} />
                                     </button>
-                                    <button
-                                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition"
-                                      aria-label="Delete contribution"
-                                      title="Delete Deal"
-                                      onClick={() => void handleDeleteContrib(c.id, p.id)}
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
+                                    {isAdmin && (
+                                      <button
+                                        className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition"
+                                        aria-label="Delete contribution"
+                                        title="Delete Deal"
+                                        onClick={() => void handleDeleteContrib(c.id, p.id)}
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </div>

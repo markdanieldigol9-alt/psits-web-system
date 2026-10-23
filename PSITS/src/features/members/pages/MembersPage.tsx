@@ -418,6 +418,7 @@ export const MembersPage = () => {
   };
 
   const canManageMembers = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
   const handleExportCSV = () => {
     const dataToExport = filteredMembers.map(m => ({
@@ -759,15 +760,17 @@ export const MembersPage = () => {
                               >
                                 <Edit2 size={16} className="text-blue-600" />
                               </button>
-                              <button
-                                aria-label="Archive member"
-                                className="rounded p-2 transition-colors hover:bg-gray-100 disabled:opacity-50"
-                                onClick={() => setConfirmArchive({ id: String(member.id), name: member.fullName || member.email || 'Member' })}
-                                title={member.status === 'archived' ? 'Already archived' : 'Archive member'}
-                                disabled={member.status === 'archived'}
-                              >
-                                <Archive size={16} className="text-amber-700" />
-                              </button>
+                              {isAdmin && (
+                                <button
+                                  aria-label="Archive member"
+                                  className="rounded p-2 transition-colors hover:bg-gray-100 disabled:opacity-50"
+                                  onClick={() => setConfirmArchive({ id: String(member.id), name: member.fullName || member.email || 'Member' })}
+                                  title={member.status === 'archived' ? 'Already archived' : 'Archive member'}
+                                  disabled={member.status === 'archived'}
+                                >
+                                  <Archive size={16} className="text-amber-700" />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>

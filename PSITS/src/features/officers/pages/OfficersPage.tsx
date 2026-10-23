@@ -40,6 +40,7 @@ export const OfficersPage = () => {
   const [confirmToggleStatus, setConfirmToggleStatus] = useState<{ id: string; name: string; currentStatus: string; newStatus: 'active' | 'inactive' } | null>(null);
 
   const canManageOfficers = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
   useEffect(() => {
     let cancelled = false;
@@ -107,20 +108,22 @@ export const OfficersPage = () => {
           </div>
           {canManageOfficers && (
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => {
-                  setDirectSwapSource(null);
-                  setDirectSwapTargetId('');
-                  setIsDirectSwapOpen(true);
-                }}
-                className="w-full sm:w-auto flex items-center gap-1.5"
-                title="Swap executive positions between two officers"
-              >
-                <ArrowLeftRight size={16} />
-                Swap Positions
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    setDirectSwapSource(null);
+                    setDirectSwapTargetId('');
+                    setIsDirectSwapOpen(true);
+                  }}
+                  className="w-full sm:w-auto flex items-center gap-1.5"
+                  title="Swap executive positions between two officers"
+                >
+                  <ArrowLeftRight size={16} />
+                  Swap Positions
+                </Button>
+              )}
               <Button variant="outline" size="md" onClick={() => setIsManagePositionsOpen(true)} className="w-full sm:w-auto">
                 Manage Positions
               </Button>
@@ -209,20 +212,22 @@ export const OfficersPage = () => {
                     </td>
                     {canManageOfficers && (
                       <td className="px-6 py-4">
-                        <button
-                          type="button"
-                          className="p-2 hover:bg-gray-100 rounded transition-colors"
-                          onClick={() =>
-                            setConfirmDelete({
-                              id: String(officer.id),
-                              name: officer.fullName || officer.email || 'this officer',
-                            })
-                          }
-                          aria-label="Archive officer"
-                          title="Archive officer"
-                        >
-                          <Archive size={16} className="text-amber-700" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="p-2 hover:bg-gray-100 rounded transition-colors"
+                            onClick={() =>
+                              setConfirmDelete({
+                                id: String(officer.id),
+                                name: officer.fullName || officer.email || 'this officer',
+                              })
+                            }
+                            aria-label="Archive officer"
+                            title="Archive officer"
+                          >
+                            <Archive size={16} className="text-amber-700" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="ml-2 px-2.5 py-1 text-xs rounded border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 font-medium"
@@ -232,7 +237,7 @@ export const OfficersPage = () => {
                         >
                           Edit
                         </button>
-                        {officer.officerStatus === 'active' && (
+                        {isAdmin && officer.officerStatus === 'active' && (
                           <button
                             type="button"
                             className="ml-1.5 px-2.5 py-1 text-xs rounded border border-blue-200 dark:border-blue-800/80 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-medium inline-flex items-center gap-1 transition-colors"

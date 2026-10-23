@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/shared/context/ThemeContext';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { LoadingSpinner } from '@/shared/components/Common';
 import { Toasts } from '@/shared/components/Toasts';
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() =>
@@ -86,18 +87,19 @@ const TermsPage = lazy(() =>
 export const App = () => {
   return (
     <Router>
-      <ThemeProvider>
-        <AuthProvider>
-          <NotificationProvider>
-          <Suspense
-            fallback={
-              <div className="h-screen flex items-center justify-center">
-                <LoadingSpinner size="lg" />
-              </div>
-            }
-          >
-            <Toasts />
-            <Routes>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <Suspense
+                fallback={
+                  <div className="h-screen flex items-center justify-center">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                }
+              >
+                <Toasts />
+                <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />

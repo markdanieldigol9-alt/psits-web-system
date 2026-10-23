@@ -24,6 +24,7 @@ export const ElectionsPage = () => {
   const { addNotification } = useNotification();
 
   const canManage = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
   const [statusFilter, setStatusFilter] = useState<'all' | ElectionStatus>('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -472,7 +473,7 @@ export const ElectionsPage = () => {
                       </Button>
                     )}
                   </div>
-                  {canManage && (
+                  {isAdmin && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -832,15 +833,17 @@ export const ElectionsPage = () => {
                                   >
                                     <Trophy size={13} /> {c.status === 'winner' ? 'Winner' : 'Mark Winner'}
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmDeleteCandidate({ id: String(c.id), name: c.memberName || c.memberEmail })}
-                                    className="py-1 px-2 text-xs text-red-600 hover:bg-red-50"
-                                    title="Delete Candidate"
-                                  >
-                                    <Trash2 size={13} />
-                                  </Button>
+                                  {isAdmin && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setConfirmDeleteCandidate({ id: String(c.id), name: c.memberName || c.memberEmail })}
+                                      className="py-1 px-2 text-xs text-red-600 hover:bg-red-50"
+                                      title="Delete Candidate"
+                                    >
+                                      <Trash2 size={13} />
+                                    </Button>
+                                  )}
                                 </div>
                               )}
                             </div>

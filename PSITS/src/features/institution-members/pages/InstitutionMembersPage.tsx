@@ -213,6 +213,7 @@ export const InstitutionMembersPage = () => {
     (user?.memberType === 'institution' || getUserInterfaceKey(user) === 'member_institutional');
   const canViewAll = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
   const canApprove = canViewAll;
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
   const [institutionPayments, setInstitutionPayments] = useState<any[]>([]);
 
@@ -1437,15 +1438,17 @@ export const InstitutionMembersPage = () => {
                           <Button size="sm" variant="danger" onClick={() => updateStatus(String(member.id), false)} disabled={member.status === 'rejected'}>
                             Reject
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-rose-600 hover:text-white hover:bg-rose-600 hover:border-rose-600 dark:text-rose-400 dark:hover:bg-rose-600 px-2 py-1.5"
-                            onClick={() => handleDeleteMember(String(member.id), member.fullName || 'Member')}
-                            title="Remove Member"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-rose-600 hover:text-white hover:bg-rose-600 hover:border-rose-600 dark:text-rose-400 dark:hover:bg-rose-600 px-2 py-1.5"
+                              onClick={() => handleDeleteMember(String(member.id), member.fullName || 'Member')}
+                              title="Remove Member"
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     )}

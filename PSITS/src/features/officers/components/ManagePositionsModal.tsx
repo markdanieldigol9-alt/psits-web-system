@@ -3,6 +3,7 @@ import { Input, Button, TextArea } from '@/shared/components/Form';
 import { Alert, Badge } from '@/shared/components/Common';
 import api from '@/shared/services/api';
 import { getPositionRank } from '@/shared/utils/helpers';
+import { useAuth } from '@/shared/context/AuthContext';
 import { X, Plus, Trash2, ShieldAlert } from 'lucide-react';
 
 interface ManagePositionsModalProps {
@@ -29,6 +30,8 @@ export const ManagePositionsModal = ({
   onClose,
   onPositionsChange,
 }: ManagePositionsModalProps) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
   const [positions, setPositions] = useState<OfficerPositionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -235,7 +238,7 @@ export const ManagePositionsModal = ({
                     )}
                   </div>
 
-                  {!pos.isDefault && (
+                  {!pos.isDefault && isAdmin && (
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(pos)}
