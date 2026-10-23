@@ -488,13 +488,14 @@ async function login(req, res) {
   );
   let user = rows[0] || null;
 
-  // Allow approved institutional participants (from institution_members) to log in using their institution account password.
+  // Allow approved institutional participants (from institution_members) to log in using their individual password or institution account password.
   if (!user) {
     const [participantRows] = await pool.execute(
       `SELECT
          im.institution_user_id,
          im.full_name,
          im.contact_number,
+         im.password_hash AS member_password_hash,
          i.password_hash AS institution_password_hash,
          i.sector_details AS institution_name
        FROM institution_members im
@@ -510,11 +511,18 @@ async function login(req, res) {
     }
 
     const participant = participantRows[0];
-    if (!verifyPassword(password, participant.institution_password_hash)) {
+    const isMemberPwValid = participant.member_password_hash && verifyPassword(password, participant.member_password_hash);
+    const isInstPwValid = participant.institution_password_hash && verifyPassword(password, participant.institution_password_hash);
+
+    if (!isMemberPwValid && !isInstPwValid) {
       return json(res, 401, { success: false, message: 'Invalid email or password.' });
     }
 
-    // Provision user on first login (password hash copied from institution + link stored in institution_owner_id).
+    const assignedPasswordHash = isMemberPwValid
+      ? participant.member_password_hash
+      : (participant.institution_password_hash || hashPassword(password));
+
+    // Provision user on first login (password hash copied from individual member password or institution + link stored in institution_owner_id).
     const base = String(email.split('@')[0] || 'instmember')
       .replace(/[^a-zA-Z0-9_]+/g, '_')
       .replace(/^_+|_+$/g, '')
@@ -534,7 +542,7 @@ async function login(req, res) {
             email,
             username,
             String(participant.full_name || '').trim() || base,
-            participant.institution_password_hash,
+            assignedPasswordHash,
             String(participant.contact_number || '').trim(),
             participant.institution_name || null,
             participant.institution_user_id,
@@ -573,8 +581,16 @@ async function login(req, res) {
     if (!Number.isNaN(lockTime) && lockTime > Date.now()) {
       // If the legitimate user enters the correct password, clear the lockout and allow login
       const isOwnerValid = verifyPassword(password, user.password_hash);
+      let isImValid = false;
       let isInstValid = false;
-      if (!isOwnerValid && user.institution_owner_id) {
+      if (!isOwnerValid && (user.institution_owner_id || user.sector === 'institution')) {
+        const [imRows] = await pool.execute('SELECT password_hash FROM institution_members WHERE email = ? ORDER BY id DESC LIMIT 1', [user.email]);
+        const imHash = imRows[0]?.password_hash || null;
+        if (imHash && verifyPassword(password, imHash)) {
+          isImValid = true;
+        }
+      }
+      if (!isOwnerValid && !isImValid && user.institution_owner_id) {
         const [instRows] = await pool.execute('SELECT password_hash FROM users WHERE id = ? LIMIT 1', [user.institution_owner_id]);
         const instHash = instRows[0]?.password_hash || null;
         if (instHash && verifyPassword(password, instHash)) {
@@ -582,7 +598,7 @@ async function login(req, res) {
         }
       }
 
-      if (isOwnerValid || isInstValid) {
+      if (isOwnerValid || isImValid || isInstValid) {
         await pool.execute(
           `UPDATE users SET failed_login_count = 0, lock_until = NULL WHERE id = ?`,
           [user.id]
@@ -604,8 +620,31 @@ async function login(req, res) {
 
   let matchedInstitutionPassword = false;
   if (!verifyPassword(password, user.password_hash)) {
-    // If this is a provisioned institutional participant, allow the institution owner's password too.
-    if (user.institution_owner_id) {
+    // Check if user is an institution member and has updated individual password in institution_members
+    if (user.institution_owner_id || user.sector === 'institution') {
+      const [imRows] = await pool.execute(
+        'SELECT password_hash FROM institution_members WHERE email = ? ORDER BY id DESC LIMIT 1',
+        [user.email]
+      );
+      const imHash = imRows[0]?.password_hash || null;
+      if (imHash && verifyPassword(password, imHash)) {
+        matchedInstitutionPassword = true;
+        try {
+          await pool.execute(
+            `UPDATE users
+             SET password_hash = ?, failed_login_count = 0, lock_until = NULL
+             WHERE id = ?`,
+            [imHash, user.id]
+          );
+          user.password_hash = imHash;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // Fallback: Check if participant matches their institution owner's password
+    if (!matchedInstitutionPassword && user.institution_owner_id) {
       const [instRows] = await pool.execute(
         'SELECT password_hash FROM users WHERE id = ? LIMIT 1',
         [user.institution_owner_id]
@@ -708,6 +747,42 @@ async function authMiddleware(req, res, next) {
     rawUser.position = rawUser.officer_position;
   }
   req.user = rawUser;
+  next();
+}
+
+async function optionalAuthMiddleware(req, res, next) {
+  const header = req.header('authorization') || '';
+  const token =
+    (header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '') ||
+    String(req.query?.token || '').trim();
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT u.*, o.position AS officer_position
+       FROM sessions s
+       JOIN users u ON u.id = s.user_id
+       LEFT JOIN officers o ON o.user_id = u.id AND (o.officer_status IS NULL OR o.officer_status = 'active')
+       WHERE s.token = ? AND s.expires_at > NOW()
+       LIMIT 1`,
+      [token]
+    );
+
+    if (rows.length) {
+      const rawUser = rows[0];
+      if (rawUser.officer_position) {
+        rawUser.position = rawUser.officer_position;
+      }
+      req.user = rawUser;
+    } else {
+      req.user = null;
+    }
+  } catch {
+    req.user = null;
+  }
   next();
 }
 
@@ -1087,6 +1162,7 @@ async function resetPassword(req, res) {
 
 module.exports = {
   authMiddleware,
+  optionalAuthMiddleware,
   requireRole,
   register,
   login,
@@ -1097,6 +1173,8 @@ module.exports = {
   forgotPassword,
   verifyResetToken,
   resetPassword,
+  hashPassword,
+  verifyPassword,
 };
 
 

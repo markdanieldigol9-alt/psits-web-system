@@ -283,16 +283,16 @@ class ApiService {
   }
 
   getLiveEventRecordingStreamUrl(id: string) {
-    let base = this.client.defaults.baseURL || '/api';
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      const envApiUrl = (import.meta as any)?.env?.VITE_API_URL || (globalThis as any).__VITE_API_URL__ || '';
-      const serverBase = envApiUrl ? String(envApiUrl).replace(/\/api\/?$/, '') : 'https://psits-web-system.onrender.com';
-      if (!base.startsWith('http://') && !base.startsWith('https://')) {
-        base = `${serverBase}/api`;
-      }
-    }
+    const base = this.client.defaults.baseURL || '/api';
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     return `${base}/live-events/${id}/recording/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  }
+
+  getLiveEventRecordingDirectStreamUrl(id: string) {
+    const envApiUrl = (import.meta as any)?.env?.VITE_API_URL || (globalThis as any).__VITE_API_URL__ || '';
+    const serverBase = envApiUrl ? String(envApiUrl).replace(/\/api\/?$/, '') : 'https://psits-web-system.onrender.com';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return `${serverBase}/api/live-events/${id}/recording/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   }
 
   // Event Registration
@@ -464,6 +464,10 @@ class ApiService {
 
   approveInstitutionMember(id: string, data: any) {
     return this.client.put(`/institution-members/${id}/approval`, data);
+  }
+
+  generateInstitutionMemberPassword(id: string) {
+    return this.client.post<{ success: boolean; message: string; password?: string }>(`/institution-members/${id}/generate-password`);
   }
 
   deleteInstitutionMember(id: string) {

@@ -68,6 +68,7 @@ export const LiveEventsPage = () => {
   const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null);
   const [isVideoLoadingBlob, setIsVideoLoadingBlob] = useState(false);
   const [videoPlayError, setVideoPlayError] = useState(false);
+  const [videoStreamMode, setVideoStreamMode] = useState<'proxy' | 'direct' | 'blob'>('proxy');
 
   useEffect(() => {
     return () => {
@@ -78,28 +79,54 @@ export const LiveEventsPage = () => {
   }, [videoBlobUrl]);
 
   useEffect(() => {
+    if (videoBlobUrl) {
+      URL.revokeObjectURL(videoBlobUrl);
+    }
     setVideoBlobUrl(null);
     setVideoPlayError(false);
     setIsVideoLoadingBlob(false);
+    setVideoStreamMode('proxy');
   }, [activeSession?.id, activeSession?.recordingUrl]);
 
   const handleVideoError = async () => {
-    if (!activeSession || videoBlobUrl || isVideoLoadingBlob) {
-      setVideoPlayError(true);
+    if (!activeSession || isVideoLoadingBlob) return;
+
+    // Stage 1: If proxy stream failed, try direct Render stream
+    if (videoStreamMode === 'proxy') {
+      setVideoStreamMode('direct');
       return;
     }
-    try {
-      setIsVideoLoadingBlob(true);
-      const res = await api.downloadLiveEventRecording(activeSession.id);
-      const blob = res.data as Blob;
-      const url = URL.createObjectURL(blob);
-      setVideoBlobUrl(url);
-      setVideoPlayError(false);
-    } catch {
-      setVideoPlayError(true);
-    } finally {
-      setIsVideoLoadingBlob(false);
+
+    // Stage 2: If direct stream also failed, fetch blob via Axios download
+    if (videoStreamMode === 'direct' && !videoBlobUrl) {
+      try {
+        setIsVideoLoadingBlob(true);
+        const res = await api.downloadLiveEventRecording(activeSession.id);
+        const blob = res.data as Blob;
+        const url = URL.createObjectURL(blob);
+        setVideoBlobUrl(url);
+        setVideoStreamMode('blob');
+        setVideoPlayError(false);
+        return;
+      } catch {
+        setVideoPlayError(true);
+      } finally {
+        setIsVideoLoadingBlob(false);
+      }
+      return;
     }
+
+    setVideoPlayError(true);
+  };
+
+  const handleRetryVideo = () => {
+    if (videoBlobUrl) {
+      URL.revokeObjectURL(videoBlobUrl);
+      setVideoBlobUrl(null);
+    }
+    setVideoPlayError(false);
+    setIsVideoLoadingBlob(false);
+    setVideoStreamMode('proxy');
   };
 
   const refresh = async () => {
@@ -478,10 +505,7 @@ export const LiveEventsPage = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setVideoPlayError(false);
-                              void handleVideoError();
-                            }}
+                            onClick={handleRetryVideo}
                             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                           >
                             <RotateCcw size={14} /> Retry
@@ -491,13 +515,19 @@ export const LiveEventsPage = () => {
                     ) : null}
 
                     <video
-                      key={videoBlobUrl || activeSession.recordingUrl}
+                      key={`${activeSession.id}-${videoStreamMode}-${videoBlobUrl ? 'blob' : 'stream'}`}
                       controls
                       autoPlay
                       playsInline
-                      preload="metadata"
+                      preload="auto"
+                      crossOrigin="anonymous"
                       className="h-full w-full object-contain"
-                      src={videoBlobUrl || api.getLiveEventRecordingStreamUrl(activeSession.id)}
+                      src={
+                        videoBlobUrl ||
+                        (videoStreamMode === 'direct'
+                          ? api.getLiveEventRecordingDirectStreamUrl(activeSession.id)
+                          : api.getLiveEventRecordingStreamUrl(activeSession.id))
+                      }
                       onError={handleVideoError}
                     >
                       Your browser does not support HTML5 video streaming.

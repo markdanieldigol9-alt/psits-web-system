@@ -13,6 +13,7 @@ const { pool } = require('./db');
 const { isDbError, getDbUnavailableMessage } = require('./isDbError');
 const {
   authMiddleware,
+  optionalAuthMiddleware,
   requireRole,
   register,
   login,
@@ -84,6 +85,7 @@ const {
   approveInstitutionMember,
   deleteInstitutionMember,
   cleanupTestInstitutionMembers,
+  generateInstitutionMemberPassword,
 } = require('./institutionMembers');
 const { getInstitutionLeaderboard } = require('./institutionLeaderboard');
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
@@ -173,6 +175,15 @@ app.use(cors({
       .filter(Boolean);
     if (extra.includes(origin)) return cb(null, true);
 
+    // Always allow official and preview Vercel / Render domains
+    if (
+      origin === 'https://psits-web-system.vercel.app' ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.onrender.com')
+    ) {
+      return cb(null, true);
+    }
+
     // Dev convenience: allow localhost/loopback + private LAN IPs on any port.
     // This prevents browser "Network Error" when opening Vite via IPv6 or your machine IP.
     if (!isProd) {
@@ -183,13 +194,21 @@ app.use(cors({
     return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'X-Requested-With', 'Accept', 'Origin', 'x-filename'],
+  exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length', 'Content-Type', 'Content-Disposition'],
 }));
 // Registration includes a base64-encoded payment proof data URL.
 // Base64 overhead can push an ~8MB image beyond the default 10MB JSON limit.
 app.use(express.json({ limit: '15mb' }));
 
-// Serve uploaded assets (local dev / self-hosted)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded assets (local dev / self-hosted) with CORS and Range headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Accept-Ranges', 'bytes');
+  },
+}));
 
 let migrationReady = false;
 let migrationError = null;
@@ -967,6 +986,7 @@ app.post('/api/uploads/avatar', authMiddleware, express.raw({ type: '*/*', limit
 // Institutional participants upload/list
 app.get('/api/institution-members', authMiddleware, listInstitutionMembers);
 app.post('/api/institution-members/bulk', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), bulkCreateInstitutionMembers);
+app.post('/api/institution-members/:id/generate-password', authMiddleware, requireRole(['member', 'super_admin', 'admin', 'officer']), generateInstitutionMemberPassword);
 app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('institution_members'), approveInstitutionMember);
 app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteInstitutionMember);
 app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
@@ -1004,10 +1024,10 @@ app.put(
   express.raw({ type: '*/*', limit: '1024mb' }),
   uploadLiveEventRecording
 );
-app.get('/api/live-events/:id/recording/download', authMiddleware, downloadLiveEventRecording);
-app.get('/api/stream-events/:id/recording/download', authMiddleware, downloadLiveEventRecording);
-app.get('/api/live-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
-app.get('/api/stream-events/:id/recording/stream', authMiddleware, streamLiveEventRecording);
+app.get('/api/live-events/:id/recording/download', optionalAuthMiddleware, downloadLiveEventRecording);
+app.get('/api/stream-events/:id/recording/download', optionalAuthMiddleware, downloadLiveEventRecording);
+app.get('/api/live-events/:id/recording/stream', optionalAuthMiddleware, streamLiveEventRecording);
+app.get('/api/stream-events/:id/recording/stream', optionalAuthMiddleware, streamLiveEventRecording);
 app.delete('/api/live-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
 app.delete('/api/stream-events/:id/recording', authMiddleware, requireRole(['super_admin', 'admin']), deleteLiveEventRecording);
 app.post('/api/live-events', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('stream_events'), createLiveEvent);

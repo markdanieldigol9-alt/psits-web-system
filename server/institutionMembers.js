@@ -6,6 +6,16 @@ function json(res, status, body) {
   res.status(status).json(body);
 }
 
+function generateRandomPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let randomPart = '';
+  const bytes = crypto.randomBytes(6);
+  for (let i = 0; i < 6; i += 1) {
+    randomPart += chars.charAt(bytes[i] % chars.length);
+  }
+  return `Psits#${randomPart}`;
+}
+
 function toDto(row) {
   const createdAt = row.created_at ? new Date(row.created_at) : null;
   const date = createdAt ? createdAt.toISOString().slice(0, 10) : '';
@@ -18,6 +28,7 @@ function toDto(row) {
     institutionEmail: row.institution_email || '',
     fullName: row.full_name,
     email: row.email,
+    password: row.initial_password || null,
     contactNumber: row.contact_number,
     gender: row.gender,
     position: row.position,
@@ -170,7 +181,7 @@ async function listInstitutionMembers(req, res) {
        im.id, im.institution_user_id, im.event_id, im.full_name, im.email,
        im.contact_number, im.gender, im.position, im.event_title, im.status,
        im.approved_by, im.approved_at, im.rejection_reason, im.notes,
-       im.created_at, im.updated_at,
+       im.created_at, im.updated_at, im.initial_password,
        i.full_name AS institution_full_name,
        i.email AS institution_email,
        i.sector_details AS institution_name,
@@ -215,8 +226,11 @@ async function bulkCreateInstitutionMembers(req, res) {
 
     const cleanRows = incoming
       .map((row) => {
-        const rawPw = row.password ? String(row.password).trim() : '';
-        const pwHash = rawPw ? hashPassword(rawPw) : (row.passwordHash ? String(row.passwordHash).trim() : null);
+        let rawPw = row.password ? String(row.password).trim() : '';
+        if (!rawPw) {
+          rawPw = generateRandomPassword();
+        }
+        const pwHash = hashPassword(rawPw);
         return {
           eventId: row.eventId ? Number(row.eventId) : null,
           fullName: String(row.fullName || '').trim(),
@@ -226,6 +240,7 @@ async function bulkCreateInstitutionMembers(req, res) {
           position: row.position ? String(row.position).trim() : null,
           eventTitle: row.eventTitle ? String(row.eventTitle).trim() : null,
           notes: row.notes ? String(row.notes).trim() : null,
+          password: rawPw,
           passwordHash: pwHash,
         };
       })
@@ -252,13 +267,14 @@ async function bulkCreateInstitutionMembers(req, res) {
       new Date(),
       null,
       row.passwordHash,
+      row.password,
       row.notes,
       createdBy,
     ]);
 
     await pool.query(
       `INSERT INTO institution_members
-        (institution_user_id, event_id, full_name, email, contact_number, gender, position, event_title, status, approved_by, approved_at, rejection_reason, password_hash, notes, created_by)
+        (institution_user_id, event_id, full_name, email, contact_number, gender, position, event_title, status, approved_by, approved_at, rejection_reason, password_hash, initial_password, notes, created_by)
        VALUES ?`,
       [values]
     );
@@ -426,7 +442,7 @@ async function approveInstitutionMember(req, res) {
        im.id, im.institution_user_id, im.event_id, im.full_name, im.email,
        im.contact_number, im.gender, im.position, im.event_title, im.status,
        im.approved_by, im.approved_at, im.rejection_reason, im.notes,
-       im.created_at, im.updated_at, im.password_hash,
+       im.created_at, im.updated_at, im.password_hash, im.initial_password,
        i.full_name AS institution_full_name,
        i.email AS institution_email,
        i.sector_details AS institution_name,
@@ -442,20 +458,36 @@ async function approveInstitutionMember(req, res) {
   );
   if (!rows.length) return json(res, 404, { success: false, message: 'Participant not found.' });
 
-  if (status === 'approved' && rows[0].email) {
-    try {
-      await ensureInstitutionParticipantUser({
-        email: rows[0].email,
-        fullName: rows[0].full_name,
-        contactNumber: rows[0].contact_number,
-        passwordHash: rows[0].password_hash,
-        institutionUserId: rows[0].institution_user_id,
-      });
-    } catch {
-      // Keep approval successful even if account provisioning fails due to constraints.
+  const currentMember = rows[0];
+  let finalPasswordHash = currentMember.password_hash;
+
+  if (status === 'approved') {
+    if (!currentMember.initial_password) {
+      const generated = generateRandomPassword();
+      finalPasswordHash = hashPassword(generated);
+      await pool.execute(
+        'UPDATE institution_members SET initial_password = ?, password_hash = ? WHERE id = ?',
+        [generated, finalPasswordHash, id]
+      );
+      currentMember.initial_password = generated;
+      currentMember.password_hash = finalPasswordHash;
+    }
+
+    if (currentMember.email) {
+      try {
+        await ensureInstitutionParticipantUser({
+          email: currentMember.email,
+          fullName: currentMember.full_name,
+          contactNumber: currentMember.contact_number,
+          passwordHash: finalPasswordHash,
+          institutionUserId: currentMember.institution_user_id,
+        });
+      } catch {
+        // Keep approval successful even if account provisioning fails due to constraints.
+      }
     }
   }
-  return json(res, 200, { success: true, member: toDto(rows[0]) });
+  return json(res, 200, { success: true, member: toDto(currentMember) });
 }
 
 async function deleteInstitutionMember(req, res) {
@@ -504,10 +536,56 @@ async function cleanupTestInstitutionMembers(req, res) {
   }
 }
 
+async function generateInstitutionMemberPassword(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
+
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, institution_user_id, full_name, email FROM institution_members WHERE id = ? LIMIT 1',
+      [id]
+    );
+    if (!rows.length) return json(res, 404, { success: false, message: 'Institution member not found.' });
+
+    const member = rows[0];
+    const role = req.user?.role;
+    const isOwner = Number(req.user?.id) === Number(member.institution_user_id);
+    if (!isOwner && !canViewAll(role)) {
+      return json(res, 403, { success: false, message: 'Forbidden. You do not have permission to manage this member.' });
+    }
+
+    const newPassword = generateRandomPassword();
+    const newHash = hashPassword(newPassword);
+
+    await pool.execute(
+      'UPDATE institution_members SET initial_password = ?, password_hash = ? WHERE id = ?',
+      [newPassword, newHash, id]
+    );
+
+    if (member.email) {
+      await pool.execute(
+        'UPDATE users SET password_hash = ?, failed_login_count = 0, lock_until = NULL WHERE email = ?',
+        [newHash, member.email]
+      ).catch(() => {});
+    }
+
+    return json(res, 200, {
+      success: true,
+      message: `Password regenerated successfully for ${member.full_name}.`,
+      password: newPassword,
+    });
+  } catch (err) {
+    console.error('Error generating member password:', err);
+    return json(res, 500, { success: false, message: 'Failed to generate member password.' });
+  }
+}
+
 module.exports = {
   listInstitutionMembers,
   bulkCreateInstitutionMembers,
   approveInstitutionMember,
   deleteInstitutionMember,
   cleanupTestInstitutionMembers,
+  generateInstitutionMemberPassword,
+  generateRandomPassword,
 };

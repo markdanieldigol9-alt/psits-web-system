@@ -7,6 +7,14 @@
 **/.env
 **/.env.*
 **/uploads/
+!server/uploads/
+server/uploads/*
+!server/uploads/live-recordings/
+!server/uploads/live-recordings/**
+!server/uploads/event-banners/
+!server/uploads/event-banners/**
+!server/uploads/qr-codes/
+!server/uploads/qr-codes/**
 **/*.log
 **/*.err.log
 **/*.out.log
@@ -14,5 +22,3 @@
 server/exports/
 ~$*
 *.backup.docx
-
-

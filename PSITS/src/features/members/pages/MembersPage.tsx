@@ -173,17 +173,6 @@ export const MembersPage = () => {
     currentPage * itemsPerPage
   );
 
-  const getEmailBadge = (member: any) => {
-    if (member.status !== 'active') return null;
-    if (member.approvalEmailStatus === 'sent') {
-      return <Badge variant="success">Email Sent</Badge>;
-    }
-    if (member.approvalEmailStatus === 'failed') {
-      return <Badge variant="warning">Email Not Sent</Badge>;
-    }
-    return <Badge variant="info">Email Not Sent</Badge>;
-  };
-
   const handleAddMember = async (memberData: any) => {
     setPendingMemberData(memberData);
     setConfirmCreateMember(true);
@@ -560,7 +549,6 @@ export const MembersPage = () => {
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Organization / Representative</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Expiry (1 Year Limit)</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Email Status</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -607,9 +595,6 @@ export const MembersPage = () => {
                         ) : (
                           expiryDate.toLocaleDateString()
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {getEmailBadge(member)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">

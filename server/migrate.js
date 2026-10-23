@@ -1339,6 +1339,7 @@ async function migrate() {
       approved_at DATETIME NULL,
       rejection_reason VARCHAR(255) NULL,
       password_hash VARCHAR(255) NULL,
+      initial_password VARCHAR(255) NULL,
       notes VARCHAR(255) NULL,
       created_by INT UNSIGNED NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1372,6 +1373,7 @@ async function migrate() {
       'approved_at DATETIME NULL',
       'rejection_reason VARCHAR(255) NULL',
       'password_hash VARCHAR(255) NULL',
+      'initial_password VARCHAR(255) NULL',
       'notes VARCHAR(255) NULL',
       'created_by INT UNSIGNED NULL',
       'checked_in TINYINT(1) NOT NULL DEFAULT 0',
@@ -1383,6 +1385,37 @@ async function migrate() {
       } catch {
         // ignore if already exists
       }
+    }
+
+    // Backfill missing initial_password for existing institution members
+    try {
+      const [nullPwMembers] = await pool.query(
+        "SELECT id, email FROM institution_members WHERE initial_password IS NULL OR initial_password = ''"
+      );
+      if (nullPwMembers.length > 0) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        for (const m of nullPwMembers) {
+          let randomPart = '';
+          const bytes = crypto.randomBytes(6);
+          for (let i = 0; i < 6; i += 1) {
+            randomPart += chars.charAt(bytes[i] % chars.length);
+          }
+          const genPassword = `Psits#${randomPart}`;
+          const genHash = hashPassword(genPassword);
+          await pool.execute(
+            'UPDATE institution_members SET initial_password = ?, password_hash = ? WHERE id = ?',
+            [genPassword, genHash, m.id]
+          );
+          if (m.email) {
+            await pool.execute(
+              'UPDATE users SET password_hash = ? WHERE email = ? AND member_type = "individual"',
+              [genHash, m.email]
+            ).catch(() => {});
+          }
+        }
+      }
+    } catch (bfErr) {
+      console.warn('Institution members password backfill warning:', bfErr?.message);
     }
   } catch {
     // ignore
