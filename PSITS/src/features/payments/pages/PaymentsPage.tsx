@@ -631,7 +631,7 @@ export const PaymentsPage = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-              {!isAdminOrOfficer && !isInstitution && (
+              {isIndustry && (
                 <Button
                   variant="primary"
                   size="lg"
@@ -639,9 +639,7 @@ export const PaymentsPage = () => {
                   className="w-full sm:w-auto shrink-0 font-medium"
                 >
                   <DollarSign size={18} />
-                  {isIndustry
-                    ? 'Submit Sponsorship / Contribution'
-                    : 'Submit Payment / Pay Fee'}
+                  Submit Sponsorship / Contribution
                 </Button>
               )}
               {canVerify && (
@@ -1166,12 +1164,7 @@ export const PaymentsPage = () => {
                   )}
                   {!hasActiveFilters && (
                     <>
-                      {isIndividualMember && (
-                        <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
-                          <DollarSign size={15} />
-                          Pay Membership Fee (₱250)
-                        </Button>
-                      )}
+
                       {isIndustry && (
                         <Button variant="primary" size="sm" onClick={handleOpenPayModal}>
                           <DollarSign size={15} />
@@ -1819,12 +1812,9 @@ export const PaymentsPage = () => {
           <div>
             <Select
               label="Payment Method"
+              hidePlaceholder
               options={[
                 { value: 'through_officer', label: 'Cash via Officer (OR Issued)' },
-                { value: 'cheque', label: 'Cheque / Bank Draft' },
-                { value: 'bank_transfer', label: 'Bank Transfer' },
-                { value: 'gcash', label: 'GCash' },
-                { value: 'paymaya', label: 'PayMaya' },
               ]}
               value={recordForm.method}
               onChange={(e) => setRecordForm(prev => ({ ...prev, method: e.target.value }))}

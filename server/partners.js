@@ -240,13 +240,15 @@ async function deletePartner(req, res) {
 }
 
 function toContributionDto(row) {
+  const startDate = row.event_start_date ? (row.event_start_date instanceof Date ? row.event_start_date.toISOString() : String(row.event_start_date)) : null;
+  const endDate = row.event_end_date ? (row.event_end_date instanceof Date ? row.event_end_date.toISOString() : String(row.event_end_date)) : null;
   return {
     id: String(row.id),
     partnerId: String(row.partner_id),
     eventId: row.event_id ? String(row.event_id) : null,
     eventTitle: row.event_title || null,
-    eventStartDate: row.event_start_date || null,
-    eventEndDate: row.event_end_date || null,
+    eventStartDate: startDate,
+    eventEndDate: endDate,
     eventStatus: row.event_status || null,
     dealTitle: row.deal_title,
     contributionType: row.contribution_type,
@@ -261,7 +263,7 @@ async function listPartnerContributions(req, res) {
   if (!Number.isFinite(id)) return res.status(400).json({ success: false, message: 'Invalid partner id.' });
 
   const [rows] = await pool.execute(
-    `SELECT pc.*, e.title AS event_title, e.start_date AS event_start_date, e.end_date AS event_end_date, e.status AS event_status
+    `SELECT pc.*, e.title AS event_title, e.start_at AS event_start_date, e.end_at AS event_end_date, e.status AS event_status
      FROM partner_contributions pc
      LEFT JOIN events e ON e.id = pc.event_id
      WHERE pc.partner_id = ?
@@ -303,7 +305,7 @@ async function createPartnerContribution(req, res) {
   );
 
   const [rows] = await pool.execute(
-    `SELECT pc.*, e.title AS event_title, e.start_date AS event_start_date, e.end_date AS event_end_date, e.status AS event_status
+    `SELECT pc.*, e.title AS event_title, e.start_at AS event_start_date, e.end_at AS event_end_date, e.status AS event_status
      FROM partner_contributions pc
      LEFT JOIN events e ON e.id = pc.event_id
      WHERE pc.id = ? LIMIT 1`,
@@ -357,7 +359,7 @@ async function updatePartnerContribution(req, res) {
 
   await pool.execute(`UPDATE partner_contributions SET ${sets.join(', ')} WHERE id = ?`, params);
   const [rows] = await pool.execute(
-    `SELECT pc.*, e.title AS event_title, e.start_date AS event_start_date, e.end_date AS event_end_date, e.status AS event_status
+    `SELECT pc.*, e.title AS event_title, e.start_at AS event_start_date, e.end_at AS event_end_date, e.status AS event_status
      FROM partner_contributions pc
      LEFT JOIN events e ON e.id = pc.event_id
      WHERE pc.id = ? LIMIT 1`,
