@@ -40,7 +40,7 @@ describe('PaymentInstructionsCard Component', () => {
     render(<PaymentInstructionsCard method="bank_transfer" settings={{ bank_transfer_details: '' }} />);
 
     expect(screen.getByText(/bank transfer payment/i)).toBeInTheDocument();
-    expect(screen.getByText(/0142-8823-91/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/0142-8823-91/i)[0]).toBeInTheDocument();
     expect(screen.getByText(/temporary account/i)).toBeInTheDocument();
   });
 

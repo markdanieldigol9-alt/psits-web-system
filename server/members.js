@@ -715,9 +715,9 @@ async function createMember(req, res) {
     try {
       const [result] = await pool.execute(
         `INSERT INTO users
-          (email, username, full_name, password_hash, role, contact_number, sector, sector_details, member_type, terms_accepted, status, birthdate, address, gender, occupation, representative_name, representative_name_2, position, representative_position_2, company_email, website, membership_mode)
+          (email, username, full_name, password_hash, role, contact_number, sector, sector_details, member_type, terms_accepted, status, birthdate, address, gender, occupation, representative_name, representative_name_2, position, representative_position_2, company_email, website, membership_mode, membership_started_at, membership_expires_at)
          VALUES
-          (?, ?, ?, ?, 'member', ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (?, ?, ?, ?, 'member', ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR))`,
         [email, username, fullName, passwordHash, contactNumber, sector, sectorDetails, memberType, 1, birthdate, address, gender, occupation, representativeName, representativeName2, position, representativePosition2, companyEmail, website, membershipMode]
       );
 
@@ -801,6 +801,16 @@ async function updateMember(req, res) {
   if (website !== null) { sets.push('website = ?'); params.push(website); }
   if (membershipMode !== null) { sets.push('membership_mode = ?'); params.push(membershipMode); }
   if (hasBirthdate) { sets.push('birthdate = ?'); params.push(birthdate); }
+  if (body.membershipExpiresAt !== undefined) {
+    const exp = body.membershipExpiresAt ? new Date(body.membershipExpiresAt) : null;
+    sets.push('membership_expires_at = ?');
+    params.push(exp);
+  }
+  if (body.membershipStartedAt !== undefined) {
+    const start = body.membershipStartedAt ? new Date(body.membershipStartedAt) : null;
+    sets.push('membership_started_at = ?');
+    params.push(start);
+  }
 
   if (!sets.length) return json(res, 400, { success: false, message: 'No fields to update.' });
   params.push(id);
@@ -951,6 +961,86 @@ async function triggerExpirationCheck(req, res) {
   }
 }
 
+async function setDefaultExpiryForUnset(req, res) {
+  try {
+    const [result] = await pool.execute(`
+      UPDATE users
+      SET
+        membership_started_at = COALESCE(membership_started_at, created_at, NOW()),
+        membership_expires_at = CASE
+          WHEN membership_expires_at IS NOT NULL THEN membership_expires_at
+          WHEN DATE_ADD(COALESCE(membership_started_at, created_at, NOW()), INTERVAL 1 YEAR) > NOW()
+            THEN DATE_ADD(COALESCE(membership_started_at, created_at, NOW()), INTERVAL 1 YEAR)
+          ELSE DATE_ADD(NOW(), INTERVAL 1 YEAR)
+        END
+      WHERE role = 'member' AND membership_expires_at IS NULL
+    `);
+
+    const affected = result.affectedRows || 0;
+    return json(res, 200, {
+      success: true,
+      updatedCount: affected,
+      message: affected > 0
+        ? `Successfully set 1-year expiry limit for ${affected} member(s).`
+        : 'All members already have their expiry limits set.',
+    });
+  } catch (err) {
+    console.error('Failed to set default expiry for unset members:', err);
+    return json(res, 500, {
+      success: false,
+      message: err instanceof Error ? err.message : 'Failed to set expiry limit.',
+    });
+  }
+}
+
+async function setMemberExpiry(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return json(res, 400, { success: false, message: 'Invalid id.' });
+
+  const body = req.body || {};
+  let targetExpiry;
+  if (body.customDate) {
+    const parsed = new Date(body.customDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return json(res, 400, { success: false, message: 'Invalid customDate.' });
+    }
+    targetExpiry = parsed;
+  } else {
+    const years = Number(body.years || 1);
+    const months = Number(body.months || 0);
+    const now = new Date();
+    targetExpiry = new Date(now);
+    targetExpiry.setFullYear(targetExpiry.getFullYear() + years);
+    targetExpiry.setMonth(targetExpiry.getMonth() + months);
+  }
+
+  try {
+    await pool.execute(
+      `UPDATE users
+       SET
+         membership_started_at = COALESCE(membership_started_at, NOW()),
+         membership_expires_at = ?
+       WHERE id = ? AND role = 'member'`,
+      [targetExpiry, id]
+    );
+
+    const [rows] = await pool.execute('SELECT * FROM users WHERE id = ? AND role = \'member\'', [id]);
+    if (!rows.length) return json(res, 404, { success: false, message: 'Member not found.' });
+
+    return json(res, 200, {
+      success: true,
+      member: toMemberDto(rows[0]),
+      message: '1-Year membership expiry limit applied successfully.',
+    });
+  } catch (err) {
+    console.error('Failed to set member expiry:', err);
+    return json(res, 500, {
+      success: false,
+      message: err instanceof Error ? err.message : 'Failed to update member expiry.',
+    });
+  }
+}
+
 module.exports = {
   listMembers,
   listMemberStatusLogs,
@@ -961,6 +1051,8 @@ module.exports = {
   deleteMember,
   resendApprovalEmail,
   triggerExpirationCheck,
+  setDefaultExpiryForUnset,
+  setMemberExpiry,
 };
 
 

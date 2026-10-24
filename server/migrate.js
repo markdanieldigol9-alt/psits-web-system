@@ -240,6 +240,27 @@ async function migrate() {
   try { await pool.query('ALTER TABLE users ADD COLUMN membership_started_at DATETIME NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE users ADD COLUMN membership_expires_at DATETIME NULL'); } catch { /* ignore */ }
 
+  // Ensure existing members with role='member' and NULL membership_expires_at are backfilled with a 1-year limit
+  try {
+    const [backfillResult] = await pool.query(`
+      UPDATE users
+      SET
+        membership_started_at = COALESCE(membership_started_at, created_at, NOW()),
+        membership_expires_at = CASE
+          WHEN membership_expires_at IS NOT NULL THEN membership_expires_at
+          WHEN DATE_ADD(COALESCE(membership_started_at, created_at, NOW()), INTERVAL 1 YEAR) > NOW()
+            THEN DATE_ADD(COALESCE(membership_started_at, created_at, NOW()), INTERVAL 1 YEAR)
+          ELSE DATE_ADD(NOW(), INTERVAL 1 YEAR)
+        END
+      WHERE role = 'member' AND membership_expires_at IS NULL
+    `);
+    if (backfillResult?.affectedRows > 0) {
+      console.log(`[Migrate] Backfilled 1-year membership expiry for ${backfillResult.affectedRows} member(s).`);
+    }
+  } catch (backfillErr) {
+    console.error('Failed to backfill missing membership_expires_at in migrate.js:', backfillErr);
+  }
+
   // Membership lifecycle metadata (panel requirement). Best-effort adds for existing DBs.
   try {
     const membershipColumns = [

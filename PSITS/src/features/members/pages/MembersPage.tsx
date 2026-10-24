@@ -7,7 +7,7 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { AddMemberModal } from '@/features/members/components/AddMemberModal';
-import { Plus, Search, Edit2, Archive, Eye, CheckCircle, Building2, Factory, UserRound, Mail, XCircle, UserX, UserCheck, PauseCircle, Ban, Download } from 'lucide-react';
+import { Plus, Search, Edit2, Archive, Eye, CheckCircle, Building2, Factory, UserRound, Mail, XCircle, UserX, UserCheck, PauseCircle, Ban, Download, Clock } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import { getUserDisplayName } from '@/shared/utils/userInterface';
 import api from '@/shared/services/api';
@@ -82,8 +82,90 @@ export const MembersPage = () => {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [isSettingAllExpiry, setIsSettingAllExpiry] = useState(false);
+  const [settingExpiryId, setSettingExpiryId] = useState<string | null>(null);
 
   const itemsPerPage = 10;
+
+  const refreshMembers = async () => {
+    try {
+      const { data } = await api.getMembers();
+      if (data?.success) {
+        setMembers(data.members || []);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const unsetExpiryCount = useMemo(() => {
+    return members.filter((m) => {
+      const raw = (m as any).membershipExpiresAt;
+      if (!raw) return true;
+      const d = new Date(String(raw));
+      return Number.isNaN(d.getTime());
+    }).length;
+  }, [members]);
+
+  const handleSetAllUnsetExpiry = async () => {
+    if (isSettingAllExpiry) return;
+    setIsSettingAllExpiry(true);
+    try {
+      const res = await api.setDefaultExpiryForUnset();
+      if (res.data?.success) {
+        addNotification({
+          userId: 'current',
+          type: 'success',
+          title: 'Expiry Limits Updated',
+          message: res.data.message || '1-Year membership limit applied to unset members.',
+          isRead: false,
+        });
+        await refreshMembers();
+      }
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        type: 'error',
+        title: 'Update Failed',
+        message: err?.response?.data?.message || err?.message || 'Failed to update expiry limits.',
+        isRead: false,
+      });
+    } finally {
+      setIsSettingAllExpiry(false);
+    }
+  };
+
+  const handleSetSingleMemberExpiry = async (memberId: string) => {
+    if (settingExpiryId) return;
+    setSettingExpiryId(memberId);
+    try {
+      const res = await api.setMemberExpiry(memberId, { years: 1 });
+      if (res.data?.success && res.data.member) {
+        const updated = res.data.member;
+        setMembers((prev) => prev.map((m) => (String(m.id) === String(memberId) ? { ...m, ...updated } : m)));
+        if (viewingMember && String(viewingMember.id) === String(memberId)) {
+          setViewingMember((prev: any) => ({ ...prev, ...updated }));
+        }
+        addNotification({
+          userId: 'current',
+          type: 'success',
+          title: '1-Year Expiry Set',
+          message: res.data.message || '1-Year expiry limit applied successfully.',
+          isRead: false,
+        });
+      }
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        type: 'error',
+        title: 'Update Failed',
+        message: err?.response?.data?.message || err?.message || 'Failed to set member expiry.',
+        isRead: false,
+      });
+    } finally {
+      setSettingExpiryId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -438,7 +520,20 @@ export const MembersPage = () => {
             <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">Membership registry for individual, institutional chapters, and industry partner profiles.</p>
           </div>
           {canManageMembers && (
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              {unsetExpiryCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleSetAllUnsetExpiry}
+                  disabled={isSettingAllExpiry}
+                  className="w-full sm:w-auto border-amber-300 dark:border-amber-600/50 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                  title="Apply 1-year expiry limit to all members without an expiration date"
+                >
+                  <Clock size={18} className={isSettingAllExpiry ? 'animate-spin' : ''} />
+                  {isSettingAllExpiry ? 'Setting Expiry...' : `Set 1-Yr Expiry (${unsetExpiryCount} Unset)`}
+                </Button>
+              )}
               <Button variant="outline" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto border-blue-200 dark:border-cyan-500/30 hover:border-blue-400 dark:hover:border-cyan-400">
                 <Download size={18} />
                 Export CSV
@@ -581,15 +676,57 @@ export const MembersPage = () => {
                         {!hasExpiryWindow ? (
                           '-'
                         ) : !expiryDate || Number.isNaN(expiryDate.getTime()) ? (
-                          <Badge variant="warning">Not Set</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="warning">Not Set</Badge>
+                            {canManageMembers && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetSingleMemberExpiry(String(member.id))}
+                                disabled={settingExpiryId === String(member.id)}
+                                className="inline-flex items-center gap-1 rounded bg-blue-50 dark:bg-cyan-950/50 border border-blue-200 dark:border-cyan-800 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:text-cyan-300 hover:bg-blue-100 dark:hover:bg-cyan-900/60 transition-colors disabled:opacity-50"
+                                title="Set 1-Year Expiry Limit"
+                              >
+                                <Clock size={11} className={settingExpiryId === String(member.id) ? 'animate-spin' : ''} />
+                                Set 1-Year
+                              </button>
+                            )}
+                          </div>
                         ) : daysLeft !== null && daysLeft < 0 ? (
                           <div className="space-y-1">
-                            <Badge variant="error">Expired</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="error">Expired</Badge>
+                              {canManageMembers && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetSingleMemberExpiry(String(member.id))}
+                                  disabled={settingExpiryId === String(member.id)}
+                                  className="inline-flex items-center gap-1 rounded bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                                  title="Renew / Extend by 1 Year"
+                                >
+                                  <Clock size={11} className={settingExpiryId === String(member.id) ? 'animate-spin' : ''} />
+                                  +1 Year
+                                </button>
+                              )}
+                            </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">{expiryDate.toLocaleDateString()}</div>
                           </div>
                         ) : daysLeft !== null && daysLeft <= 30 ? (
                           <div className="space-y-1">
-                            <Badge variant="warning">Expiring ({daysLeft}d)</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="warning">Expiring ({daysLeft}d)</Badge>
+                              {canManageMembers && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetSingleMemberExpiry(String(member.id))}
+                                  disabled={settingExpiryId === String(member.id)}
+                                  className="inline-flex items-center gap-1 rounded bg-blue-50 dark:bg-cyan-950/50 border border-blue-200 dark:border-cyan-800 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:text-cyan-300 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                  title="Extend by 1 Year"
+                                >
+                                  <Clock size={11} className={settingExpiryId === String(member.id) ? 'animate-spin' : ''} />
+                                  +1 Year
+                                </button>
+                              )}
+                            </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">{expiryDate.toLocaleDateString()}</div>
                           </div>
                         ) : (
@@ -961,6 +1098,31 @@ export const MembersPage = () => {
                   <div><span className="font-semibold">Address:</span> {viewingMember.address || '-'}</div>
                   <div><span className="font-semibold">Gender:</span> {viewingMember.gender || '-'}</div>
                   <div><span className="font-semibold">Membership Mode:</span> {viewingMember.membershipMode || '-'}</div>
+                  <div>
+                    <span className="font-semibold">Membership Started:</span>{' '}
+                    {viewingMember.membershipStartedAt ? new Date(viewingMember.membershipStartedAt).toLocaleDateString() : '-'}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Expiry (1 Year Limit):</span>{' '}
+                    {viewingMember.membershipExpiresAt ? (
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                        {new Date(viewingMember.membershipExpiresAt).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="font-medium text-amber-600">Not Set</span>
+                    )}
+                    {canManageMembers && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetSingleMemberExpiry(String(viewingMember.id))}
+                        disabled={settingExpiryId === String(viewingMember.id)}
+                        className="ml-2 inline-flex items-center gap-1 rounded bg-blue-50 dark:bg-cyan-950/50 border border-blue-200 dark:border-cyan-800 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:text-cyan-300 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                      >
+                        <Clock size={11} className={settingExpiryId === String(viewingMember.id) ? 'animate-spin' : ''} />
+                        {viewingMember.membershipExpiresAt ? 'Extend 1 Year' : 'Set 1-Year Expiry'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {(viewingMember.sectorDetails || viewingMember.representativeName || viewingMember.representativeName2 || viewingMember.position || viewingMember.representativePosition2 || viewingMember.companyEmail || viewingMember.website || viewingMember.occupation) && (

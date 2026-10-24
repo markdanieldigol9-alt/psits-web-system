@@ -139,6 +139,14 @@ class ApiService {
     return this.client.post(`/members/${id}/resend-approval-email`);
   }
 
+  setDefaultExpiryForUnset() {
+    return this.client.post<{ success: boolean; updatedCount: number; message: string }>('/members/set-default-expiry');
+  }
+
+  setMemberExpiry(id: string, data?: { months?: number; years?: number; customDate?: string }) {
+    return this.client.post<{ success: boolean; member: any; message: string }>(`/members/${id}/set-expiry`, data || {});
+  }
+
   /** Fetch list of officers (optional status filter: 'active', 'past', 'all') */
   getOfficers(status?: string) {
     return this.client.get('/officers', { params: status ? { status } : undefined });

@@ -312,6 +312,8 @@ async function register(req, res) {
     add('website', website);
     add('membership_mode', membershipMode);
     add('renew_reference_id', renewReferenceId);
+    add('membership_started_at', new Date());
+    add('membership_expires_at', new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
 
     const placeholders = columns.map(() => '?').join(', ');
     const columnSql = columns.map((c) => `\`${c}\``).join(', ');

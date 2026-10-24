@@ -35,6 +35,8 @@ const {
   deleteMember,
   resendApprovalEmail,
   triggerExpirationCheck,
+  setDefaultExpiryForUnset,
+  setMemberExpiry,
 } = require('./members');
 const { getDashboardReport, getElectionReport, getPartnerContributionsReport, getAllMembersReport, getEventParticipationReport } = require('./reports');
 const { getMe, updateMe } = require('./me');
@@ -886,6 +888,10 @@ app.delete('/api/memberships/:id', requireMigrationReady, authMiddleware, requir
 app.post('/api/members/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
 app.post('/api/memberships/:id/resend-approval-email', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), resendApprovalEmail);
 app.post('/api/members/trigger-expiration-check', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), triggerExpirationCheck);
+app.post('/api/members/set-default-expiry', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), setDefaultExpiryForUnset);
+app.post('/api/memberships/set-default-expiry', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), setDefaultExpiryForUnset);
+app.post('/api/members/:id/set-expiry', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), setMemberExpiry);
+app.post('/api/memberships/:id/set-expiry', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), setMemberExpiry);
 
 // Officers
 app.get('/api/officers', requireMigrationReady, authMiddleware, listOfficers);
