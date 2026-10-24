@@ -5,6 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Input, Button, Badge, Select, TextArea } from '@/shared/components/Form';
 import { Pagination, Modal } from '@/shared/components/Common';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
+import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
@@ -33,6 +34,7 @@ import {
   Copy,
   Check,
   RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import { getUserInterfaceKey } from '@/shared/utils/userInterface';
@@ -335,6 +337,7 @@ export const InstitutionMembersPage = () => {
   const [partialPaymentFile, setPartialPaymentFile] = useState<File | null>(null);
   const [partialPaymentPreview, setPartialPaymentPreview] = useState<string>('');
   const [isSubmittingPartialPayment, setIsSubmittingPartialPayment] = useState<boolean>(false);
+  const [partialPaymentError, setPartialPaymentError] = useState<string | null>(null);
 
   // Financial aggregates for the institution (or global when admin)
   const totalInstitutionHeads = members.length;
@@ -707,12 +710,15 @@ export const InstitutionMembersPage = () => {
   };
 
   const handleConfirmPartialPayment = async () => {
+    setPartialPaymentError(null);
     const amountNum = parseFloat(partialPaymentAmount);
     if (!amountNum || amountNum <= 0) {
+      const msg = 'Please enter a valid payment amount greater than 0.';
+      setPartialPaymentError(msg);
       addNotification({
         userId: 'current',
         title: 'Validation Error',
-        message: 'Please enter a valid payment amount greater than 0.',
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -725,10 +731,12 @@ export const InstitutionMembersPage = () => {
     const targetUserId = targetInst?.id || user?.id;
 
     if (amountNum > effectiveRemaining) {
+      const msg = `Payment amount cannot exceed the remaining balance of ₱${effectiveRemaining.toLocaleString()}.`;
+      setPartialPaymentError(msg);
       addNotification({
         userId: 'current',
         title: 'Validation Error',
-        message: `Payment amount cannot exceed the remaining balance of ₱${effectiveRemaining.toLocaleString()}.`,
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -736,10 +744,12 @@ export const InstitutionMembersPage = () => {
     }
 
     if (partialPaymentMethod === 'gcash' && !partialPaymentRefNumber.trim()) {
+      const msg = 'Please enter the GCash reference number from your transaction receipt.';
+      setPartialPaymentError(msg);
       addNotification({
         userId: 'current',
         title: 'Reference Number Required',
-        message: 'Please enter the GCash reference number.',
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -747,12 +757,14 @@ export const InstitutionMembersPage = () => {
     }
 
     if (!partialPaymentFile && !canViewAll) {
+      const msg = (partialPaymentMethod === 'through_officer' || partialPaymentMethod === 'cash_officer')
+        ? 'Please attach a photo or scan of the Official Receipt (OR) issued by the officer.'
+        : 'Please attach a photo or screenshot of your payment receipt.';
+      setPartialPaymentError(msg);
       addNotification({
         userId: 'current',
         title: 'Receipt Required',
-        message: (partialPaymentMethod === 'through_officer' || partialPaymentMethod === 'cash_officer')
-          ? 'Please attach a photo or scan of the Official Receipt (OR) issued by the officer.'
-          : 'Please attach a photo or screenshot of your payment receipt.',
+        message: msg,
         type: 'error',
         isRead: false,
       });
@@ -787,7 +799,7 @@ export const InstitutionMembersPage = () => {
       const isStillPartial = amountNum < effectiveRemaining;
       const newRemaining = Math.max(0, effectiveRemaining - amountNum);
 
-      await api.createPayment({
+      const payRes = await api.createPayment({
         amount: amountNum,
         paymentMethod: partialPaymentMethod,
         method: partialPaymentMethod,
@@ -810,6 +822,10 @@ export const InstitutionMembersPage = () => {
         notes: `Partial payment recorded for ${targetInstName}.`,
       });
 
+      if (!payRes?.data?.success && payRes?.data?.message) {
+        throw new Error(payRes.data.message);
+      }
+
       // Reload members & payments
       const [membersRes, paymentsRes] = await Promise.allSettled([
         api.getInstitutionMembers(),
@@ -828,6 +844,7 @@ export const InstitutionMembersPage = () => {
       setPartialPaymentRefNumber('');
       setPartialPaymentFile(null);
       setPartialPaymentPreview('');
+      setPartialPaymentError(null);
 
       addNotification({
         userId: 'current',
@@ -837,10 +854,12 @@ export const InstitutionMembersPage = () => {
         isRead: false,
       });
     } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Could not submit partial payment.';
+      setPartialPaymentError(errMsg);
       addNotification({
         userId: 'current',
         title: 'Submission Failed',
-        message: err?.response?.data?.message || err?.message || 'Could not submit partial payment.',
+        message: errMsg,
         type: 'error',
         isRead: false,
       });
@@ -1003,6 +1022,7 @@ export const InstitutionMembersPage = () => {
                   setPartialPaymentRefNumber('');
                   setPartialPaymentFile(null);
                   setPartialPaymentPreview('');
+                  setPartialPaymentError(null);
                   setShowPartialPaymentModal(true);
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 shadow-sm"
@@ -1122,6 +1142,7 @@ export const InstitutionMembersPage = () => {
                         setPartialPaymentRefNumber('');
                         setPartialPaymentFile(null);
                         setPartialPaymentPreview('');
+                        setPartialPaymentError(null);
                         setShowPartialPaymentModal(true);
                       }}
                       className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
@@ -1345,6 +1366,11 @@ export const InstitutionMembersPage = () => {
                                   onClick={() => {
                                     setBoardTargetInstitution(inst);
                                     setPartialPaymentAmount(String(inst.remainingBalance));
+                                    setPartialPaymentMethod('gcash');
+                                    setPartialPaymentRefNumber('');
+                                    setPartialPaymentFile(null);
+                                    setPartialPaymentPreview('');
+                                    setPartialPaymentError(null);
                                     setShowPartialPaymentModal(true);
                                   }}
                                   className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -2124,6 +2150,7 @@ export const InstitutionMembersPage = () => {
           if (!isSubmittingPartialPayment) {
             setShowPartialPaymentModal(false);
             setBoardTargetInstitution(null);
+            setPartialPaymentError(null);
           }
         }}
         title={boardTargetInstitution ? `Record Payment - ${boardTargetInstitution.name}` : "Institution Partial Payment"}
@@ -2175,6 +2202,7 @@ export const InstitutionMembersPage = () => {
                       onClick={() => {
                         setShowPartialPaymentModal(false);
                         setBoardTargetInstitution(null);
+                        setPartialPaymentError(null);
                       }}
                     >
                       Close
@@ -2202,7 +2230,10 @@ export const InstitutionMembersPage = () => {
                           <button
                             key={amt}
                             type="button"
-                            onClick={() => setPartialPaymentAmount(String(amt))}
+                            onClick={() => {
+                              setPartialPaymentAmount(String(amt));
+                              if (partialPaymentError) setPartialPaymentError(null);
+                            }}
                             className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
                               partialPaymentAmount === String(amt)
                                 ? 'bg-blue-600 text-white border-blue-600'
@@ -2214,7 +2245,10 @@ export const InstitutionMembersPage = () => {
                         ))}
                       <button
                         type="button"
-                        onClick={() => setPartialPaymentAmount(String(modalRemainingBalance))}
+                        onClick={() => {
+                          setPartialPaymentAmount(String(modalRemainingBalance));
+                          if (partialPaymentError) setPartialPaymentError(null);
+                        }}
                         className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition-colors cursor-pointer ${
                           partialPaymentAmount === String(modalRemainingBalance)
                             ? 'bg-emerald-600 text-white border-emerald-600'
@@ -2232,7 +2266,10 @@ export const InstitutionMembersPage = () => {
                       step="any"
                       placeholder="Enter amount to pay (e.g. 300)"
                       value={partialPaymentAmount}
-                      onChange={(e) => setPartialPaymentAmount(e.target.value)}
+                      onChange={(e) => {
+                        setPartialPaymentAmount(e.target.value);
+                        if (partialPaymentError) setPartialPaymentError(null);
+                      }}
                     />
 
                     {parseFloat(partialPaymentAmount) > 0 && (
@@ -2260,7 +2297,10 @@ export const InstitutionMembersPage = () => {
                         { value: 'cheque', label: 'Cheque' },
                       ]}
                       value={partialPaymentMethod}
-                      onChange={(e) => setPartialPaymentMethod((e.target as HTMLSelectElement).value)}
+                      onChange={(e) => {
+                        setPartialPaymentMethod((e.target as HTMLSelectElement).value);
+                        if (partialPaymentError) setPartialPaymentError(null);
+                      }}
                     />
 
                     <PaymentInstructionsCard method={partialPaymentMethod} />
@@ -2268,10 +2308,19 @@ export const InstitutionMembersPage = () => {
                     {/* Reference Number Field */}
                     {partialPaymentMethod === 'gcash' ? (
                       <Input
-                        label="GCash Reference Number *"
+                        label="GCash Reference Number"
                         placeholder="e.g. 100234567890"
                         value={partialPaymentRefNumber}
-                        onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
+                        onChange={(e) => {
+                          setPartialPaymentRefNumber(e.target.value);
+                          if (partialPaymentError) setPartialPaymentError(null);
+                        }}
+                        error={
+                          partialPaymentError && !partialPaymentRefNumber.trim()
+                            ? partialPaymentError
+                            : undefined
+                        }
+                        helperText="Required for GCash: enter the 10-13 digit reference number from your receipt, or let the smart scanner detect it below."
                         required
                       />
                     ) : (
@@ -2285,7 +2334,15 @@ export const InstitutionMembersPage = () => {
                         }
                         placeholder="Enter reference or OR number"
                         value={partialPaymentRefNumber}
-                        onChange={(e) => setPartialPaymentRefNumber(e.target.value)}
+                        onChange={(e) => {
+                          setPartialPaymentRefNumber(e.target.value);
+                          if (partialPaymentError) setPartialPaymentError(null);
+                        }}
+                        helperText={
+                          partialPaymentMethod === 'through_officer'
+                            ? 'Optional: enter the Official Receipt # issued by the officer'
+                            : undefined
+                        }
                       />
                     )}
 
@@ -2301,6 +2358,7 @@ export const InstitutionMembersPage = () => {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           setPartialPaymentFile(file);
+                          if (partialPaymentError) setPartialPaymentError(null);
                           const reader = new FileReader();
                           reader.onload = () => setPartialPaymentPreview(reader.result as string);
                           reader.readAsDataURL(file);
@@ -2308,15 +2366,51 @@ export const InstitutionMembersPage = () => {
                         className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300"
                       />
                       {partialPaymentPreview && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <img src={partialPaymentPreview} alt="Receipt preview" className="h-12 w-12 object-cover rounded-lg border" />
-                          <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                            <CheckCircle2 size={14} /> Receipt attached
-                          </span>
+                        <div className="mt-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <img src={partialPaymentPreview} alt="Receipt preview" className="h-14 w-14 object-cover rounded-lg border border-gray-200 dark:border-slate-700" />
+                            <div className="text-xs">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                <CheckCircle2 size={14} /> Receipt attached
+                              </span>
+                              <span className="text-[11px] text-gray-400">
+                                {partialPaymentFile?.name || 'Receipt Proof'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <ReceiptScannerBadge
+                            imageSource={partialPaymentFile || partialPaymentPreview}
+                            expectedAmount={parseFloat(partialPaymentAmount) || 0}
+                            referenceNumber={partialPaymentRefNumber}
+                            onApplyReferenceNumber={(detectedRef) => {
+                              setPartialPaymentRefNumber(detectedRef);
+                              setPartialPaymentError(null);
+                            }}
+                            onScanComplete={(result) => {
+                              if (result.detectedRefNumber && !partialPaymentRefNumber.trim()) {
+                                setPartialPaymentRefNumber(result.detectedRefNumber);
+                                setPartialPaymentError(null);
+                              }
+                            }}
+                            label="Receipt Scanner & OCR Detector"
+                            autoScan={true}
+                          />
                         </div>
                       )}
                     </div>
                   </div>
+
+                  {/* Inline Error Notice */}
+                  {partialPaymentError && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
+                      <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-500" />
+                      <div className="space-y-0.5">
+                        <p className="font-bold">Cannot submit payment</p>
+                        <p>{partialPaymentError}</p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-slate-800">
@@ -2326,6 +2420,7 @@ export const InstitutionMembersPage = () => {
                       onClick={() => {
                         setShowPartialPaymentModal(false);
                         setBoardTargetInstitution(null);
+                        setPartialPaymentError(null);
                       }}
                       disabled={isSubmittingPartialPayment}
                     >
@@ -2336,14 +2431,7 @@ export const InstitutionMembersPage = () => {
                       variant="primary"
                       isLoading={isSubmittingPartialPayment}
                       onClick={handleConfirmPartialPayment}
-                      disabled={
-                        isSubmittingPartialPayment ||
-                        !partialPaymentAmount ||
-                        parseFloat(partialPaymentAmount) <= 0 ||
-                        parseFloat(partialPaymentAmount) > modalRemainingBalance ||
-                        (!canViewAll && !partialPaymentFile) ||
-                        (partialPaymentMethod === 'gcash' && !partialPaymentRefNumber.trim())
-                      }
+                      disabled={isSubmittingPartialPayment}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
                     >
                       <Coins size={16} />
