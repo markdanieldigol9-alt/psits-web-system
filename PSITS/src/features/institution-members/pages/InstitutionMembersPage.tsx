@@ -2196,7 +2196,7 @@ export const InstitutionMembersPage = () => {
 
                     {/* Quick Chips */}
                     <div className="flex flex-wrap gap-1.5">
-                      {[500, 1000, 2000, 5000]
+                      {[300, 1000, 2000, 5000]
                         .filter((amt) => amt < modalRemainingBalance)
                         .map((amt) => (
                           <button
@@ -2230,7 +2230,7 @@ export const InstitutionMembersPage = () => {
                       min="1"
                       max={modalRemainingBalance}
                       step="any"
-                      placeholder="Enter amount to pay (e.g. 500)"
+                      placeholder="Enter amount to pay (e.g. 300)"
                       value={partialPaymentAmount}
                       onChange={(e) => setPartialPaymentAmount(e.target.value)}
                     />
