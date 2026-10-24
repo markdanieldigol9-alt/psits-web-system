@@ -28,7 +28,8 @@ export function getUserInterfaceKey(user: User | null | undefined): UserInterfac
   if (user.role === 'officer') return 'officer';
 
   // Explicit memberType takes absolute precedence
-  const memberType = user.memberType?.toLowerCase();
+  const rawMemberType = user.memberType || (user as any)?.member_type;
+  const memberType = typeof rawMemberType === 'string' ? rawMemberType.toLowerCase() : '';
   if (memberType === 'individual' || memberType === 'student' || memberType === 'school') {
     return 'member_individual';
   }
@@ -41,7 +42,8 @@ export function getUserInterfaceKey(user: User | null | undefined): UserInterfac
 
   // Fallback for accounts missing memberType:
   const sector = user.sector?.toLowerCase();
-  if (sector === 'institution' && (user.sectorDetails || user.representativeName)) {
+  const position = user.position?.toLowerCase() || '';
+  if (sector === 'institution' && (user.sectorDetails || user.representativeName) && !position.includes('student')) {
     return 'member_institutional';
   }
   if (sector === 'industry' && (user.sectorDetails || user.representativeName)) {

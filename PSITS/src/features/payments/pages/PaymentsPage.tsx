@@ -49,22 +49,30 @@ export const PaymentsPage = () => {
   const isAdminOrOfficer =
     ['super_admin', 'admin', 'officer'].includes(user?.role || '') ||
     ['super_admin', 'admin', 'officer'].includes(uiKey);
+
+  const rawMemberType = String(user?.memberType || (user as any)?.member_type || '').toLowerCase();
+  const isIndividualMember =
+    !isAdminOrOfficer &&
+    (rawMemberType === 'individual' ||
+      rawMemberType === 'student' ||
+      rawMemberType === 'school' ||
+      uiKey === 'member_individual');
+
   const isInstitution =
     !isAdminOrOfficer &&
-    (uiKey === 'member_institutional' ||
+    !isIndividualMember &&
+    (rawMemberType === 'institution' ||
       (user?.role as string) === 'institution' ||
-      user?.memberType === 'institution' ||
-      (user as any)?.member_type === 'institution' ||
-      (user?.sector === 'institution' && user?.memberType !== 'individual'));
+      uiKey === 'member_institutional');
+
   const isIndustry =
     !isAdminOrOfficer &&
+    !isIndividualMember &&
     !isInstitution &&
-    (uiKey === 'member_industry' ||
+    (rawMemberType === 'industry' ||
       (user?.role as string) === 'industry' ||
-      user?.memberType === 'industry' ||
-      (user as any)?.member_type === 'industry' ||
+      uiKey === 'member_industry' ||
       user?.sector === 'industry');
-  const isIndividualMember = !isAdminOrOfficer && !isInstitution && !isIndustry;
 
   // State for submitting a new payment / membership dues
   const [showPayFeeModal, setShowPayFeeModal] = useState(false);
