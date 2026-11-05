@@ -165,32 +165,61 @@ const forgotPasswordLimiter = createRateLimiter({
   redis,
 });
 
-app.use(cors({
-  origin: (origin, cb) => {
-    // Allow non-browser tools (no Origin header)
-    if (!origin) return cb(null, true);
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
 
-    // Allow additional origins via env: "https://example.com,http://localhost:5173"
-    const extra = String(process.env.CORS_ORIGIN || '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (extra.includes(origin)) return cb(null, true);
+  // Allow additional origins via env: "https://example.com,http://localhost:5173"
+  const extra = String(process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (extra.includes(origin)) return true;
 
-    // Always allow official and preview Vercel / Render domains
-    if (
-      origin === 'https://psits-web-system.vercel.app' ||
-      origin.endsWith('.vercel.app') ||
-      origin.endsWith('.onrender.com')
-    ) {
-      return cb(null, true);
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname.toLowerCase();
+
+    // Official production domain & subdomains (e.g. psitsregion12.com, www.psitsregion12.com)
+    if (hostname === 'psitsregion12.com' || hostname.endsWith('.psitsregion12.com')) {
+      return true;
     }
 
-    // Dev convenience: allow localhost/loopback + private LAN IPs on any port.
-    // This prevents browser "Network Error" when opening Vite via IPv6 or your machine IP.
-    if (!isProd) {
-      if (/^http:\/\/(\[::1\]|localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
-      if (/^http:\/\/(10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[0-1])(\.\d{1,3}){2})(:\d+)?$/.test(origin)) return cb(null, true);
+    // Official Vercel and Render deployments & preview branches
+    if (
+      hostname === 'psits-web-system.vercel.app' ||
+      hostname.endsWith('.vercel.app') ||
+      hostname.endsWith('.onrender.com')
+    ) {
+      return true;
+    }
+
+    // Additional domains if configured
+    if (
+      hostname === 'psits.org' ||
+      hostname.endsWith('.psits.org') ||
+      hostname === 'psits.com' ||
+      hostname.endsWith('.psits.com')
+    ) {
+      return true;
+    }
+  } catch {
+    // If not a parseable URL, fallback
+  }
+
+  // Dev convenience: allow localhost/loopback + private LAN IPs on any port.
+  // This prevents browser "Network Error" when opening Vite via IPv6 or your machine IP.
+  if (!isProd) {
+    if (/^http:\/\/(\[::1\]|localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    if (/^http:\/\/(10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[0-1])(\.\d{1,3}){2})(:\d+)?$/.test(origin)) return true;
+  }
+
+  return false;
+}
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (isAllowedOrigin(origin)) {
+      return cb(null, true);
     }
 
     return cb(new Error(`CORS blocked for origin: ${origin}`));

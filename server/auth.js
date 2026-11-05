@@ -575,7 +575,9 @@ async function login(req, res) {
 
   if (!user) return json(res, 401, { success: false, message: 'Invalid email or password.' });
 
-  if (user.institution_owner_id && user.member_type !== 'individual') {
+  // Only normalize member_type to 'individual' for provisioned institution participants
+  // (users auto-created from institution_members). Do NOT touch actual institution owner accounts.
+  if (user.institution_owner_id && user.member_type !== 'individual' && user.member_type !== 'institution') {
     try {
       await pool.execute("UPDATE users SET member_type = 'individual' WHERE id = ?", [user.id]);
       user.member_type = 'individual';

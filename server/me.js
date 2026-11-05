@@ -98,6 +98,13 @@ async function updateMe(req, res) {
     if (mt === 'school') mt = 'student';
     addField('member_type', mt);
   }
+  if (body.sector !== undefined) {
+    const allowedSectors = ['school', 'industry', 'institution'];
+    const sv = typeof body.sector === 'string' ? body.sector.trim() : null;
+    if (sv && allowedSectors.includes(sv)) {
+      addField('sector', sv);
+    }
+  }
   
   if (body.birthdate !== undefined || body.birthDate !== undefined) {
     const bdate = body.birthdate !== undefined ? body.birthdate : body.birthDate;

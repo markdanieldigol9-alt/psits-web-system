@@ -16,6 +16,9 @@ const getApiErrorMessage = (err: unknown, fallback: string) => {
         : '';
   const message = apiMessage || anyErr?.message || rawText || fallback;
   if (message === 'Network Error') {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return 'Cannot reach the API server. Please check your internet connection or try again in a few moments.';
+    }
     return 'Cannot reach the API. Start both servers from the repo root with: npm run dev (API on http://localhost:3000), or from the PSITS folder run: npm run dev:full. If you opened the site via a LAN IP/IPv6, allow that origin via CORS_ORIGIN or use http://localhost:5173.';
   }
   if (status === 503) {
