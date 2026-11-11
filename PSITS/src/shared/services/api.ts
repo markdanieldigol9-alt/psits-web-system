@@ -650,6 +650,10 @@ class ApiService {
       events: Array<{
         id: string;
         title: string;
+        registrationMode?: 'individual' | 'pair' | 'team' | string;
+        eventType?: string;
+        isEsports?: boolean;
+        esportsGame?: string | null;
         date: string;
         time?: string;
         location?: string;
@@ -658,6 +662,10 @@ class ApiService {
       selectedEvent: {
         id: string;
         title: string;
+        registrationMode?: 'individual' | 'pair' | 'team' | string;
+        eventType?: string;
+        isEsports?: boolean;
+        esportsGame?: string | null;
         date: string;
         time?: string;
         startAt?: string | null;
@@ -695,9 +703,22 @@ class ApiService {
           checkedOutAt?: string | null;
         }>;
       }>;
+      registeredParticipants?: Array<{
+        id: string;
+        participantKey: string;
+        fullName: string;
+        institutionName: string;
+        position?: string;
+        email?: string;
+        contactNumber?: string;
+        registrationSource?: string;
+        isCheckedIn?: boolean;
+      }>;
       eventWinners?: Array<{
         id: string;
         eventId: string;
+        eventTitle?: string;
+        eventMode?: 'individual' | 'pair' | 'team' | string;
         rankPosition: number;
         awardTitle: string;
         institutionName: string;
@@ -841,6 +862,7 @@ class ApiService {
     participantName: string;
     points?: number;
     scoreOrNotes?: string;
+    eventMode?: string;
   }) {
     return this.client.post<{
       success: boolean;
@@ -865,6 +887,7 @@ class ApiService {
     participantName: string;
     points?: number;
     scoreOrNotes?: string;
+    eventMode?: string;
   }) {
     return this.client.put<{
       success: boolean;

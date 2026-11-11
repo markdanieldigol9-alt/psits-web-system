@@ -39,12 +39,13 @@ async function getEventWinners(req, res) {
     }
 
     const [eventRows] = await pool.execute(
-      `SELECT id, title, event_type, status, location, start_at FROM events WHERE id = ? LIMIT 1`,
+      `SELECT id, title, event_type, registration_mode, status, location, start_at FROM events WHERE id = ? LIMIT 1`,
       [eventId]
     );
     if (!eventRows.length) {
       return json(res, 404, { success: false, message: 'Event not found.' });
     }
+    const fallbackMode = eventRows[0].registration_mode === 'group' ? 'team' : (eventRows[0].registration_mode || 'individual');
 
     const [winners] = await pool.execute(
       `SELECT
@@ -56,6 +57,7 @@ async function getEventWinners(req, res) {
          participant_name,
          points,
          score_or_notes,
+         event_mode,
          created_at,
          updated_at
        FROM event_competition_winners
@@ -70,6 +72,8 @@ async function getEventWinners(req, res) {
       winners: winners.map((w) => ({
         id: String(w.id),
         eventId: String(w.event_id),
+        eventTitle: eventRows[0].title,
+        eventMode: w.event_mode || fallbackMode,
         rankPosition: Number(w.rank_position),
         awardTitle: w.award_title,
         institutionName: w.institution_name,
@@ -100,6 +104,7 @@ async function createEventWinner(req, res) {
       participantName,
       points,
       scoreOrNotes,
+      eventMode,
     } = req.body;
 
     if (!eventId || Number.isNaN(eventId)) {
@@ -117,10 +122,14 @@ async function createEventWinner(req, res) {
       return json(res, 400, { success: false, message: `Rank position must be a whole number between 1 and ${MAX_RANK}.` });
     }
 
-    const [eventRows] = await pool.execute('SELECT id, status FROM events WHERE id = ? LIMIT 1', [eventId]);
+    const [eventRows] = await pool.execute('SELECT id, title, registration_mode, status FROM events WHERE id = ? LIMIT 1', [eventId]);
     if (!eventRows.length) {
       return json(res, 404, { success: false, message: 'Event not found.' });
     }
+    const fallbackMode = eventRows[0].registration_mode === 'group' ? 'team' : (eventRows[0].registration_mode || 'individual');
+    const resolvedMode = ['individual', 'pair', 'team'].includes(String(eventMode || '').toLowerCase())
+      ? String(eventMode).toLowerCase()
+      : fallbackMode;
 
     const computedPoints = normalizePoints(points, rank);
 
@@ -134,8 +143,8 @@ async function createEventWinner(req, res) {
 
     const [insertResult] = await pool.execute(
       `INSERT INTO event_competition_winners
-       (event_id, rank_position, award_title, institution_name, participant_name, points, score_or_notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (event_id, rank_position, award_title, institution_name, participant_name, points, score_or_notes, event_mode, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         eventId,
         rank,
@@ -144,6 +153,7 @@ async function createEventWinner(req, res) {
         participantName.trim(),
         computedPoints,
         scoreOrNotes ? scoreOrNotes.trim() : null,
+        resolvedMode,
         user?.id || null,
       ]
     );
@@ -156,6 +166,8 @@ async function createEventWinner(req, res) {
       winner: {
         id: String(winnerId),
         eventId: String(eventId),
+        eventTitle: eventRows[0].title,
+        eventMode: resolvedMode,
         rankPosition: rank,
         awardTitle: finalTitle,
         institutionName: institutionName.trim(),
@@ -184,6 +196,7 @@ async function updateEventWinner(req, res) {
       participantName,
       points,
       scoreOrNotes,
+      eventMode,
     } = req.body;
 
     if (!winnerId || Number.isNaN(winnerId)) {
@@ -202,6 +215,10 @@ async function updateEventWinner(req, res) {
     }
     const computedPoints = normalizePoints(points, rank);
 
+    const resolvedMode = ['individual', 'pair', 'team'].includes(String(eventMode || '').toLowerCase())
+      ? String(eventMode).toLowerCase()
+      : null;
+
     const [updateRes] = await pool.execute(
       `UPDATE event_competition_winners
        SET rank_position = ?,
@@ -209,7 +226,8 @@ async function updateEventWinner(req, res) {
            institution_name = ?,
            participant_name = ?,
            points = ?,
-           score_or_notes = ?
+           score_or_notes = ?,
+           event_mode = COALESCE(?, event_mode)
        WHERE id = ? AND event_id = ?`,
       [
         rank,
@@ -218,6 +236,7 @@ async function updateEventWinner(req, res) {
         participantName ? participantName.trim() : 'Participant',
         computedPoints,
         scoreOrNotes ? scoreOrNotes.trim() : null,
+        resolvedMode,
         winnerId,
         eventId,
       ]

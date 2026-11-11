@@ -208,6 +208,8 @@ export interface EventLeaderboardParticipant {
 export interface EventWinnerRecord {
   id: string;
   eventId: string;
+  eventTitle?: string;
+  eventMode?: 'individual' | 'pair' | 'team' | string;
   rankPosition: number;
   awardTitle: string;
   institutionName: string;
@@ -215,6 +217,18 @@ export interface EventWinnerRecord {
   points: number;
   scoreOrNotes?: string;
   createdAt?: string;
+}
+
+export interface EventRegisteredParticipantOption {
+  id: string;
+  participantKey: string;
+  fullName: string;
+  institutionName: string;
+  position?: string;
+  email?: string;
+  contactNumber?: string;
+  registrationSource?: string;
+  isCheckedIn?: boolean;
 }
 
 export interface OverallCompetitionStanding {
@@ -324,6 +338,10 @@ export interface InstitutionLeaderboardData {
   events: Array<{
     id: string;
     title: string;
+    registrationMode?: 'individual' | 'pair' | 'team' | string;
+    eventType?: string;
+    isEsports?: boolean;
+    esportsGame?: string | null;
     date: string;
     time?: string;
     location?: string;
@@ -332,6 +350,10 @@ export interface InstitutionLeaderboardData {
   selectedEvent: {
     id: string;
     title: string;
+    registrationMode?: 'individual' | 'pair' | 'team' | string;
+    eventType?: string;
+    isEsports?: boolean;
+    esportsGame?: string | null;
     date: string;
     time?: string;
     startAt?: string | null;
@@ -341,6 +363,7 @@ export interface InstitutionLeaderboardData {
   } | null;
   summary: EventLeaderboardSummary;
   leaderboard: EventLeaderboardInstitution[];
+  registeredParticipants?: EventRegisteredParticipantOption[];
   eventWinners?: EventWinnerRecord[];
   overallStandings?: OverallCompetitionStanding[];
 }

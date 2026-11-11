@@ -17,7 +17,7 @@ async function getInstitutionLeaderboard(req, res) {
   try {
     // 1. Fetch available events for the selector
     const [eventRows] = await pool.execute(
-      `SELECT id, title, start_at, end_at, location, status
+      `SELECT id, title, registration_mode, event_type, is_esports, esports_game, start_at, end_at, location, status
        FROM events
        WHERE status <> 'draft'
        ORDER BY
@@ -40,14 +40,21 @@ async function getInstitutionLeaderboard(req, res) {
           totalRegisteredParticipants: 0,
         },
         leaderboard: [],
+        registeredParticipants: [],
       });
     }
+
+    const normalizeMode = (raw) => (raw === 'group' ? 'team' : (raw || 'individual'));
 
     const events = eventRows.map((e) => {
       const startAt = e.start_at ? new Date(e.start_at) : null;
       return {
         id: String(e.id),
         title: e.title,
+        registrationMode: normalizeMode(e.registration_mode),
+        eventType: e.event_type || 'competition',
+        isEsports: Boolean(e.is_esports),
+        esportsGame: e.esports_game || null,
         date: startAt ? toLocalDate(startAt) : '',
         time: startAt ? startAt.toTimeString().slice(0, 5) : '',
         location: e.location || 'Venue TBA',
@@ -72,10 +79,15 @@ async function getInstitutionLeaderboard(req, res) {
     const selectedEventTitle = selectedEventRow.title;
     const selectedStartAt = selectedEventRow.start_at ? new Date(selectedEventRow.start_at) : null;
     const selectedEndAt = selectedEventRow.end_at ? new Date(selectedEventRow.end_at) : null;
+    const selectedEventMode = normalizeMode(selectedEventRow.registration_mode);
 
     const selectedEvent = {
       id: String(selectedEventRow.id),
       title: selectedEventRow.title,
+      registrationMode: selectedEventMode,
+      eventType: selectedEventRow.event_type || 'competition',
+      isEsports: Boolean(selectedEventRow.is_esports),
+      esportsGame: selectedEventRow.esports_game || null,
       date: selectedStartAt ? toLocalDate(selectedStartAt) : '',
       time: selectedStartAt ? selectedStartAt.toTimeString().slice(0, 5) : '',
       startAt: selectedStartAt ? selectedStartAt.toISOString() : null,
@@ -112,7 +124,7 @@ async function getInstitutionLeaderboard(req, res) {
       [selectedEventId, selectedEventTitle]
     );
 
-    // 3. Fetch institution registrations from event_registrations
+    // 3. Fetch all non-rejected registrations from event_registrations
     const [regRows] = await pool.execute(
       `SELECT
          er.id AS registration_id,
@@ -122,17 +134,20 @@ async function getInstitutionLeaderboard(req, res) {
          er.checked_in_count,
          er.is_checked_in,
          er.checked_in_at,
+         er.checked_out_at,
          er.status AS registration_status,
          u.full_name,
          u.sector_details,
+         u.sector,
+         u.occupation,
          u.member_type,
          u.avatar_url,
-         u.email
+         u.email,
+         u.contact_number
        FROM event_registrations er
        JOIN users u ON u.id = er.member_id
        WHERE er.event_id = ?
-         AND er.status <> 'rejected'
-         AND (u.member_type = 'institution' OR u.sector = 'institution' OR er.participant_count > 1)`,
+         AND er.status <> 'rejected'`,
       [selectedEventId]
     );
 
@@ -146,7 +161,8 @@ async function getInstitutionLeaderboard(req, res) {
          institution_name,
          participant_name,
          points,
-         score_or_notes
+         score_or_notes,
+         event_mode
        FROM event_competition_winners
        WHERE event_id = ?
        ORDER BY rank_position ASC, points DESC, id ASC`,
@@ -248,21 +264,63 @@ async function getInstitutionLeaderboard(req, res) {
     }
 
     // Merge or add from event_registrations
+    const registeredParticipantsMap = new Map();
+    for (const row of partRows) {
+      const pKey = `inst-${row.participant_id}`;
+      registeredParticipantsMap.set(pKey, {
+        id: String(row.participant_id),
+        participantKey: pKey,
+        fullName: row.full_name,
+        institutionName: row.inst_sector_details || row.inst_full_name || 'Institution',
+        position: row.position || 'Participant',
+        email: row.email || '',
+        contactNumber: row.contact_number || '',
+        registrationSource: 'Institution Roster',
+        isCheckedIn: row.checked_in === 1,
+      });
+    }
+
     for (const row of regRows) {
-      const instId = String(row.member_id);
+      const isInstAccount = row.member_type === 'institution' || row.sector === 'institution' || Number(row.participant_count || 1) > 1;
+      const instName = (row.sector_details || (isInstAccount ? row.full_name : 'PSITS Individual Member')).trim();
+      let instId = isInstAccount ? String(row.member_id) : `school:${instName.toLowerCase()}`;
+      if (!isInstAccount) {
+        const existingByName = Array.from(institutionMap.values()).find(
+          (i) => i.institutionName.trim().toLowerCase() === instName.toLowerCase()
+        );
+        if (existingByName) instId = existingByName.institutionId;
+      }
       const regCheckedIn = Number(row.checked_in_count || (row.is_checked_in ? 1 : 0));
+      const isChecked = Boolean(row.is_checked_in === 1 || regCheckedIn > 0);
+
+      // Add individual registrant to the unified registeredParticipants list
+      if (!isInstAccount && row.full_name) {
+        const pKey = `reg-${row.registration_id}`;
+        registeredParticipantsMap.set(pKey, {
+          id: String(row.registration_id),
+          participantKey: pKey,
+          fullName: row.full_name,
+          institutionName: instName,
+          position: row.occupation || row.sector || 'Member',
+          email: row.email || '',
+          contactNumber: row.contact_number || '',
+          registrationSource: 'Individual Registration',
+          isCheckedIn: isChecked,
+        });
+      }
+
       if (!institutionMap.has(instId)) {
         institutionMap.set(instId, {
           institutionId: instId,
-          institutionName: row.sector_details || row.full_name || 'Institution',
-          institutionEmail: row.email || '',
-          institutionAvatar: row.avatar_url || null,
+          institutionName: instName,
+          institutionEmail: isInstAccount ? (row.email || '') : '',
+          institutionAvatar: isInstAccount ? (row.avatar_url || null) : null,
           registrationId: String(row.registration_id),
           participants: [],
-          registeredCount: Math.max(1, Number(row.participant_count || 1)),
-          checkedInCount: regCheckedIn,
+          registeredCount: isInstAccount ? Math.max(1, Number(row.participant_count || 1)) : 0,
+          checkedInCount: isInstAccount ? regCheckedIn : 0,
         });
-      } else {
+      } else if (isInstAccount) {
         const inst = institutionMap.get(instId);
         inst.registrationId = String(row.registration_id);
         const regCount = Math.max(1, Number(row.participant_count || 1));
@@ -273,7 +331,30 @@ async function getInstitutionLeaderboard(req, res) {
           inst.checkedInCount = regCheckedIn;
         }
       }
+
+      if (!isInstAccount && row.full_name) {
+        const inst = institutionMap.get(instId);
+        inst.participants.push({
+          id: String(row.registration_id),
+          participantKey: `reg-${row.registration_id}`,
+          fullName: row.full_name,
+          email: row.email || '',
+          contactNumber: row.contact_number || '',
+          gender: '',
+          position: row.occupation || row.sector || 'Member',
+          status: row.registration_status || 'approved',
+          isCheckedIn: isChecked,
+          checkedInAt: row.checked_in_at ? new Date(row.checked_in_at).toISOString() : null,
+          checkedOutAt: isChecked && row.checked_out_at ? new Date(row.checked_out_at).toISOString() : null,
+        });
+        inst.registeredCount += 1;
+        if (isChecked) inst.checkedInCount += 1;
+      }
     }
+
+    const registeredParticipants = Array.from(registeredParticipantsMap.values()).sort((a, b) =>
+      a.fullName.localeCompare(b.fullName)
+    );
 
     // 7. Finalize calculations for each institution
     const rawList = Array.from(institutionMap.values()).map((inst) => {
@@ -325,9 +406,12 @@ async function getInstitutionLeaderboard(req, res) {
         overallAttendanceRate,
       },
       leaderboard,
+      registeredParticipants,
       eventWinners: winnerRows.map((w) => ({
         id: String(w.id),
         eventId: String(w.event_id),
+        eventTitle: selectedEventTitle,
+        eventMode: w.event_mode || selectedEventMode,
         rankPosition: Number(w.rank_position),
         awardTitle: w.award_title,
         institutionName: w.institution_name,

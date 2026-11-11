@@ -4,6 +4,7 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { Card, Button, Badge, Input } from '@/shared/components/Form';
 import { Modal } from '@/shared/components/Common';
+import { EventAttendanceSheet } from './EventAttendanceSheet';
 import {
   Trophy,
   Building2,
@@ -14,8 +15,6 @@ import {
   RefreshCw,
   ChevronRight,
   X,
-  CheckCircle2,
-  Clock,
   UserCheck,
   Medal,
   Crown,
@@ -23,10 +22,16 @@ import {
   Trash2,
   Sparkles,
   Award,
+  ClipboardCheck,
+  Pencil,
+  ArrowUp,
+  ArrowDown,
+  Lock,
 } from 'lucide-react';
 import type {
   InstitutionLeaderboardData,
   EventLeaderboardInstitution,
+  EventWinnerRecord,
   OverallCompetitionStanding,
 } from '@/shared/types';
 
@@ -37,7 +42,7 @@ export const InstitutionEventLeaderboard = () => {
   const isOfficerOrAdmin = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
   // Navigation tab for the board
-  const [activeTab, setActiveTab] = useState<'delegation' | 'event_winners' | 'overall_championship'>('delegation');
+  const [activeTab, setActiveTab] = useState<'delegation' | 'attendance_sheet' | 'event_winners' | 'overall_championship'>('delegation');
 
   const [data, setData] = useState<InstitutionLeaderboardData | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
@@ -45,16 +50,16 @@ export const InstitutionEventLeaderboard = () => {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Modal state for viewing institution participants & check-in
+  // Modal state for viewing institution participants & time-in / time-out sheet
   const [activeInstitution, setActiveInstitution] = useState<EventLeaderboardInstitution | null>(null);
-  const [participantSearch, setParticipantSearch] = useState<string>('');
-  const [isUpdatingAttendance, setIsUpdatingAttendance] = useState<string | null>(null);
-  const [isBulkCheckingIn, setIsBulkCheckingIn] = useState<boolean>(false);
 
-  // Winner management modal state
+  // Winner management modal state (Admin & Officer only)
   const [isWinnerModalOpen, setIsWinnerModalOpen] = useState<boolean>(false);
+  const [winnerParticipantSearch, setWinnerParticipantSearch] = useState<string>('');
   const [winnerForm, setWinnerForm] = useState<{
     id?: string;
+    eventId?: string;
+    eventMode: 'individual' | 'pair' | 'team';
     rankPosition: number;
     awardTitle: string;
     institutionName: string;
@@ -62,6 +67,8 @@ export const InstitutionEventLeaderboard = () => {
     points: number;
     scoreOrNotes: string;
   }>({
+    eventId: '',
+    eventMode: 'individual',
     rankPosition: 1,
     awardTitle: 'Champion',
     institutionName: '',
@@ -71,6 +78,7 @@ export const InstitutionEventLeaderboard = () => {
   });
   const [isSubmittingWinner, setIsSubmittingWinner] = useState<boolean>(false);
   const [deletingWinnerId, setDeletingWinnerId] = useState<string | null>(null);
+  const [movingWinnerId, setMovingWinnerId] = useState<string | null>(null);
 
   const loadLeaderboard = useCallback(
     async (eventId?: string, showRefreshIndicator = false) => {
@@ -96,7 +104,7 @@ export const InstitutionEventLeaderboard = () => {
         addNotification({
           userId: 'current',
           title: 'Leaderboard Error',
-          message: err?.response?.data?.message || err?.message || 'Failed to load institution leaderboard.',
+          message: err?.response?.data?.message || err?.message || 'Failed to load events leaderboard.',
           type: 'error',
           isRead: false,
         });
@@ -118,131 +126,92 @@ export const InstitutionEventLeaderboard = () => {
     void loadLeaderboard(eventId);
   };
 
-  // Toggle in-venue attendance for a participant
-  const handleToggleAttendance = async (participantKey: string, currentStatus: boolean) => {
-    if (!selectedEventId || !participantKey) return;
-    setIsUpdatingAttendance(participantKey);
-
-    const nextStatus = !currentStatus;
-
-    try {
-      const res = await api.toggleEventAttendance(selectedEventId, participantKey, nextStatus);
-      if (res.data?.success) {
-        addNotification({
-          userId: 'current',
-          title: nextStatus ? 'Attendee Checked In' : 'Attendance Reverted',
-          message: nextStatus ? 'Participant marked as present in venue.' : 'Attendance status reset to not in venue.',
-          type: 'success',
-          isRead: false,
-        });
-
-        // Optimistically update active institution participants
-        if (activeInstitution) {
-          const updatedParticipants = activeInstitution.participants.map((p) => {
-            if (p.participantKey === participantKey || p.id === participantKey.replace(/^(inst-|reg-)/, '')) {
-              return {
-                ...p,
-                isCheckedIn: nextStatus,
-                checkedInAt: nextStatus ? new Date().toISOString() : null,
-              };
-            }
-            return p;
-          });
-
-          const checkedCount = updatedParticipants.filter((p) => p.isCheckedIn).length;
-          setActiveInstitution({
-            ...activeInstitution,
-            checkedInCount: checkedCount,
-            attendanceRate: activeInstitution.registeredCount > 0
-              ? Number(((checkedCount / activeInstitution.registeredCount) * 100).toFixed(1))
-              : 0,
-            participants: updatedParticipants,
-          });
-        }
-
-        // Silent refresh of the full board
-        void loadLeaderboard(selectedEventId, false);
-      }
-    } catch (err: any) {
-      addNotification({
-        userId: 'current',
-        title: 'Check-In Error',
-        message: err?.response?.data?.message || err?.message || 'Failed to update attendance.',
-        type: 'error',
-        isRead: false,
-      });
-    } finally {
-      setIsUpdatingAttendance(null);
-    }
+  const normalizeEventMode = (raw?: string | null): 'individual' | 'pair' | 'team' => {
+    const val = String(raw || '').toLowerCase();
+    if (val === 'pair') return 'pair';
+    if (val === 'team' || val === 'group') return 'team';
+    return 'individual';
   };
 
-  // Bulk check-in all participants of the active institution
-  const handleBulkCheckIn = async (checkedIn: boolean) => {
-    if (!activeInstitution || !selectedEventId) return;
-    const keys = activeInstitution.participants
-      .map((p) => p.participantKey || (p.id ? `inst-${p.id}` : null))
-      .filter(Boolean) as string[];
-
-    if (keys.length === 0) return;
-    setIsBulkCheckingIn(true);
-
-    try {
-      const res = await api.bulkCheckInAttendance(selectedEventId, keys, checkedIn);
-      if (res.data?.success) {
-        addNotification({
-          userId: 'current',
-          title: checkedIn ? 'All Delegation Checked In' : 'Delegation Check-In Cleared',
-          message: `Updated in-venue attendance for ${res.data.updatedCount || keys.length} delegates.`,
-          type: 'success',
-          isRead: false,
-        });
-        void loadLeaderboard(selectedEventId, false);
-      }
-    } catch (err: any) {
-      addNotification({
-        userId: 'current',
-        title: 'Bulk Check-In Error',
-        message: err?.response?.data?.message || err?.message || 'Failed to bulk update attendance.',
-        type: 'error',
-        isRead: false,
-      });
-    } finally {
-      setIsBulkCheckingIn(false);
-    }
+  const formatEventModeLabel = (raw?: string | null) => {
+    const m = normalizeEventMode(raw);
+    if (m === 'pair') return 'Pair / Duo';
+    if (m === 'team') return 'Team / Group';
+    return 'Individual';
   };
 
-  // Winner Management Handlers
-  const handleOpenAddWinnerModal = () => {
+  // Winner Management Handlers (Admin & Officer only)
+  const handleOpenAddWinnerModal = (presetRank?: number) => {
+    if (!isOfficerOrAdmin) return;
+    const rank = presetRank ?? (data?.eventWinners?.length || 0) + 1;
+    const pts = rank === 1 ? 10 : rank === 2 ? 7 : rank === 3 ? 5 : rank === 4 ? 3 : 2;
+    const title =
+      rank === 1
+        ? 'Champion'
+        : rank === 2
+        ? '1st Runner Up'
+        : rank === 3
+        ? '2nd Runner Up'
+        : rank === 4
+        ? '3rd Runner Up'
+        : `${rank}th Place`;
+
+    setWinnerParticipantSearch('');
     setWinnerForm({
-      rankPosition: (data?.eventWinners?.length || 0) + 1,
-      awardTitle:
-        (data?.eventWinners?.length || 0) === 0 ? 'Champion' :
-        (data?.eventWinners?.length || 0) === 1 ? '1st Runner Up' :
-        (data?.eventWinners?.length || 0) === 2 ? '2nd Runner Up' : 'Finalist',
+      id: undefined,
+      eventId: selectedEventId,
+      eventMode: normalizeEventMode(data?.selectedEvent?.registrationMode),
+      rankPosition: rank,
+      awardTitle: title,
       institutionName: data?.leaderboard?.[0]?.institutionName || '',
       participantName: '',
-      points:
-        (data?.eventWinners?.length || 0) === 0 ? 10 :
-        (data?.eventWinners?.length || 0) === 1 ? 7 :
-        (data?.eventWinners?.length || 0) === 2 ? 5 : 3,
+      points: pts,
       scoreOrNotes: '',
     });
     setIsWinnerModalOpen(true);
   };
 
+  const handleOpenEditWinnerModal = (winner: EventWinnerRecord) => {
+    if (!isOfficerOrAdmin) return;
+    setWinnerParticipantSearch('');
+    setWinnerForm({
+      id: winner.id,
+      eventId: winner.eventId || selectedEventId,
+      eventMode: normalizeEventMode(winner.eventMode || data?.selectedEvent?.registrationMode),
+      rankPosition: winner.rankPosition,
+      awardTitle: winner.awardTitle,
+      institutionName: winner.institutionName,
+      participantName: winner.participantName,
+      points: winner.points,
+      scoreOrNotes: winner.scoreOrNotes || '',
+    });
+    setIsWinnerModalOpen(true);
+  };
+
   const handleRankChange = (rank: number) => {
-    const pts = rank === 1 ? 10 : rank === 2 ? 7 : rank === 3 ? 5 : 3;
-    const title = rank === 1 ? 'Champion' : rank === 2 ? '1st Runner Up' : rank === 3 ? '2nd Runner Up' : `${rank}th Place`;
+    const safeRank = Math.max(1, Math.min(100, Number(rank) || 1));
+    const pts = safeRank === 1 ? 10 : safeRank === 2 ? 7 : safeRank === 3 ? 5 : safeRank === 4 ? 3 : 2;
+    const title =
+      safeRank === 1
+        ? 'Champion'
+        : safeRank === 2
+        ? '1st Runner Up'
+        : safeRank === 3
+        ? '2nd Runner Up'
+        : safeRank === 4
+        ? '3rd Runner Up'
+        : `${safeRank}th Place`;
     setWinnerForm((prev) => ({
       ...prev,
-      rankPosition: rank,
+      rankPosition: safeRank,
       awardTitle: title,
       points: pts,
     }));
   };
 
   const handleSaveWinner = async () => {
-    if (!selectedEventId) return;
+    const targetEventId = winnerForm.eventId || selectedEventId;
+    if (!isOfficerOrAdmin || !targetEventId) return;
     if (!winnerForm.institutionName.trim() || !winnerForm.participantName.trim()) {
       addNotification({
         userId: 'current',
@@ -257,26 +226,26 @@ export const InstitutionEventLeaderboard = () => {
     setIsSubmittingWinner(true);
     try {
       if (winnerForm.id) {
-        await api.updateEventWinner(selectedEventId, winnerForm.id, winnerForm);
+        await api.updateEventWinner(targetEventId, winnerForm.id, winnerForm);
         addNotification({
           userId: 'current',
-          title: 'Winner Updated',
-          message: 'Competition winner details updated successfully.',
+          title: 'Winner Ranking Updated',
+          message: 'Competition winner ranking updated successfully.',
           type: 'success',
           isRead: false,
         });
       } else {
-        await api.createEventWinner(selectedEventId, winnerForm);
+        await api.createEventWinner(targetEventId, winnerForm);
         addNotification({
           userId: 'current',
-          title: 'Winner Awarded',
-          message: 'Winner proclaimed and points added to overall championship.',
+          title: 'Winner Ranked & Proclaimed',
+          message: 'Winner ranked and points added to overall championship.',
           type: 'success',
           isRead: false,
         });
       }
       setIsWinnerModalOpen(false);
-      void loadLeaderboard(selectedEventId, false);
+      void loadLeaderboard(targetEventId, false);
     } catch (err: any) {
       addNotification({
         userId: 'current',
@@ -290,8 +259,34 @@ export const InstitutionEventLeaderboard = () => {
     }
   };
 
+  const handleMoveWinner = async (winnerId: string, direction: 'up' | 'down') => {
+    if (!isOfficerOrAdmin || !selectedEventId || !winnerId) return;
+    setMovingWinnerId(winnerId);
+    try {
+      await api.moveEventWinner(selectedEventId, winnerId, direction);
+      addNotification({
+        userId: 'current',
+        title: 'Ranking Adjusted',
+        message: `Moved winner ${direction === 'up' ? 'up' : 'down'} in the ranking.`,
+        type: 'success',
+        isRead: false,
+      });
+      void loadLeaderboard(selectedEventId, false);
+    } catch (err: any) {
+      addNotification({
+        userId: 'current',
+        title: 'Reorder Error',
+        message: err?.response?.data?.message || err?.message || 'Failed to reorder winner ranking.',
+        type: 'error',
+        isRead: false,
+      });
+    } finally {
+      setMovingWinnerId(null);
+    }
+  };
+
   const handleDeleteWinner = async (winnerId: string) => {
-    if (!selectedEventId || !winnerId) return;
+    if (!isOfficerOrAdmin || !selectedEventId || !winnerId) return;
     setDeletingWinnerId(winnerId);
     try {
       await api.deleteEventWinner(selectedEventId, winnerId);
@@ -334,18 +329,86 @@ export const InstitutionEventLeaderboard = () => {
     return list;
   }, [data?.leaderboard, searchQuery]);
 
-  // Modal participants filtered
-  const filteredParticipants = useMemo(() => {
-    if (!activeInstitution?.participants) return [];
-    if (!participantSearch.trim()) return activeInstitution.participants;
-    const q = participantSearch.toLowerCase();
-    return activeInstitution.participants.filter(
-      (p) =>
-        (p.fullName && p.fullName.toLowerCase().includes(q)) ||
-        (p.email && p.email.toLowerCase().includes(q)) ||
-        (p.position && p.position.toLowerCase().includes(q))
-    );
-  }, [activeInstitution?.participants, participantSearch]);
+  // Registered participants for fast winner selection in the modal
+  const allRegisteredParticipants = useMemo(() => {
+    if (data?.registeredParticipants && data.registeredParticipants.length > 0) {
+      return data.registeredParticipants;
+    }
+    if (!data?.leaderboard) return [];
+    const list: Array<{
+      id: string;
+      participantKey: string;
+      fullName: string;
+      institutionName: string;
+      position?: string;
+      isCheckedIn?: boolean;
+      registrationSource?: string;
+    }> = [];
+    const seen = new Set<string>();
+    for (const inst of data.leaderboard) {
+      for (const p of inst.participants || []) {
+        const key = p.participantKey || `inst-${p.id}`;
+        if (!p.fullName || seen.has(key)) continue;
+        seen.add(key);
+        list.push({
+          id: p.id,
+          participantKey: key,
+          fullName: p.fullName,
+          institutionName: inst.institutionName,
+          position: p.position || 'Participant',
+          isCheckedIn: p.isCheckedIn,
+          registrationSource: key.startsWith('reg-') ? 'Individual Registration' : 'Institution Roster',
+        });
+      }
+    }
+    return list.sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [data?.registeredParticipants, data?.leaderboard]);
+
+  const filteredWinnerParticipantOptions = useMemo(() => {
+    const q = winnerParticipantSearch.trim().toLowerCase();
+    const targetSchool = winnerForm.institutionName.trim().toLowerCase();
+    return allRegisteredParticipants
+      .filter((p) => {
+        if (!q) return true;
+        return (
+          p.fullName.toLowerCase().includes(q) ||
+          p.institutionName.toLowerCase().includes(q) ||
+          (p.position && p.position.toLowerCase().includes(q))
+        );
+      })
+      .sort((a, b) => {
+        // Prioritize participants belonging to the currently selected school
+        const aMatch = targetSchool && a.institutionName.toLowerCase() === targetSchool ? 0 : 1;
+        const bMatch = targetSchool && b.institutionName.toLowerCase() === targetSchool ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+        return a.fullName.localeCompare(b.fullName);
+      });
+  }, [allRegisteredParticipants, winnerParticipantSearch, winnerForm.institutionName]);
+
+  const handleSelectRegisteredWinner = (
+    participant: { fullName: string; institutionName: string },
+    appendIfMultiMode = false
+  ) => {
+    setWinnerForm((prev) => {
+      const canAppend = appendIfMultiMode && (prev.eventMode === 'pair' || prev.eventMode === 'team') && prev.participantName.trim().length > 0;
+      const existingNames = prev.participantName
+        .split(/\s*(?:&|,)\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const alreadyIncluded = existingNames.some((n) => n.toLowerCase() === participant.fullName.toLowerCase());
+      const nextParticipantName = canAppend
+        ? alreadyIncluded
+          ? prev.participantName
+          : `${prev.participantName.trim()} & ${participant.fullName}`
+        : participant.fullName;
+
+      return {
+        ...prev,
+        participantName: nextParticipantName,
+        institutionName: participant.institutionName || prev.institutionName,
+      };
+    });
+  };
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) {
@@ -388,6 +451,30 @@ export const InstitutionEventLeaderboard = () => {
   const eventWinners = data?.eventWinners || [];
   const overallStandings = data?.overallStandings || [];
 
+  const formattedScheduleRange = useMemo(() => {
+    if (!selectedEvent) return 'TBA';
+    if (selectedEvent.startAt) {
+      const s = new Date(selectedEvent.startAt);
+      const startStr = s.toLocaleString('en-PH', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      if (selectedEvent.endAt) {
+        const e = new Date(selectedEvent.endAt);
+        const sameDay = s.toDateString() === e.toDateString();
+        const endStr = sameDay
+          ? e.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+          : e.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        return `${startStr} – ${endStr}`;
+      }
+      return startStr;
+    }
+    return `${selectedEvent.date}${selectedEvent.time ? ` at ${selectedEvent.time}` : ''}`;
+  }, [selectedEvent]);
+
   return (
     <div className="space-y-6">
       {/* ── Main Leaderboard Card ────────────────────────────── */}
@@ -405,7 +492,7 @@ export const InstitutionEventLeaderboard = () => {
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                    Institution Event Leaderboard
+                    Events Leaderboard
                   </h2>
                 </div>
               </div>
@@ -418,6 +505,7 @@ export const InstitutionEventLeaderboard = () => {
                   value={selectedEventId}
                   onChange={(e) => handleEventChange(e.target.value)}
                   disabled={isLoading || events.length === 0}
+                  aria-label="Select Event"
                   className="w-full px-5 sm:px-6 py-3.5 sm:py-4 md:py-4.5 bg-white/15 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/35 hover:border-white/55 rounded-2xl text-base sm:text-lg md:text-xl font-black tracking-tight focus:outline-none focus:ring-4 focus:ring-white/30 cursor-pointer appearance-none pr-14 sm:pr-16 shadow-lg transition-all min-h-[52px] sm:min-h-[58px] md:min-h-[64px] flex items-center"
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
@@ -432,7 +520,7 @@ export const InstitutionEventLeaderboard = () => {
                   ) : (
                     events.map((evt) => (
                       <option key={evt.id} value={evt.id} className="text-gray-900 bg-white font-bold text-base sm:text-lg py-2">
-                        {evt.title} ({evt.status})
+                        {evt.title} • {formatEventModeLabel(evt.registrationMode)} ({evt.status})
                       </option>
                     ))
                   )}
@@ -444,6 +532,7 @@ export const InstitutionEventLeaderboard = () => {
                 onClick={() => void loadLeaderboard(selectedEventId, true)}
                 disabled={isRefreshing || isLoading}
                 title="Refresh Leaderboard Data"
+                aria-label="Refresh Leaderboard Data"
                 className="h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] md:h-[64px] md:w-[64px] flex items-center justify-center bg-white/15 hover:bg-white/25 active:scale-95 text-white border-2 border-white/35 hover:border-white/55 rounded-2xl shrink-0 transition-all shadow-lg disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -455,12 +544,20 @@ export const InstitutionEventLeaderboard = () => {
           {selectedEvent && (
             <div className="relative z-10 mt-4 pt-4 border-t border-white/15 flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-medium text-blue-100">
               <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                <Trophy size={13} className="text-amber-300" />
+                <span>Event: <strong className="text-white">{selectedEvent.title}</strong></span>
+              </span>
+              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                <Users size={13} className="text-cyan-300" />
+                <span>Mode: <strong className="text-white">{formatEventModeLabel(selectedEvent.registrationMode)}</strong></span>
+              </span>
+              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
                 <MapPin size={13} className="text-amber-300" />
                 <span>Venue: <strong className="text-white">{selectedEvent.location || 'TBA'}</strong></span>
               </span>
               <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
                 <Calendar size={13} className="text-blue-200" />
-                <span>Schedule: <strong className="text-white">{selectedEvent.date}{selectedEvent.time ? ` at ${selectedEvent.time}` : ''}</strong></span>
+                <span>Schedule: <strong className="text-white">{formattedScheduleRange}</strong></span>
               </span>
               <Badge
                 variant={
@@ -478,7 +575,7 @@ export const InstitutionEventLeaderboard = () => {
           )}
         </div>
 
-        {/* ── Mode Switcher Tabs (Attendance vs Winners vs Overall Championship) ── */}
+        {/* ── Mode Switcher Tabs (Delegations, Venue Attendance Table, Winners Ranking, Overall Championship) ── */}
         <div className="bg-slate-100 dark:bg-slate-800/80 p-2 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -489,12 +586,30 @@ export const InstitutionEventLeaderboard = () => {
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50 dark:hover:bg-slate-800'
             }`}
           >
-            <UserCheck size={16} />
-            <span>Venue Attendance & Delegation</span>
+            <Building2 size={16} />
+            <span>Participating Delegations</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
               {summary.totalInstitutions}
             </span>
           </button>
+
+          {isOfficerOrAdmin && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('attendance_sheet')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'attendance_sheet'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <ClipboardCheck size={16} />
+              <span>Event Attendance (Time In / Out)</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                {summary.totalCheckedInParticipants || 0}/{summary.totalRegisteredParticipants}
+              </span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -506,10 +621,10 @@ export const InstitutionEventLeaderboard = () => {
             }`}
           >
             <Medal size={16} />
-            <span>Event Winners Ranking</span>
+            <span>Winner Ranking</span>
             {eventWinners.length > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                {eventWinners.length} Proclaimed
+                {eventWinners.length} Ranked
               </span>
             )}
           </button>
@@ -533,7 +648,7 @@ export const InstitutionEventLeaderboard = () => {
           </button>
         </div>
 
-        {/* ── TAB 1: VENUE ATTENDANCE & DELEGATION ────────────────── */}
+        {/* ── TAB 1: PARTICIPATING DELEGATIONS ──────────────────────── */}
         {activeTab === 'delegation' && (
           <div>
             {/* Summary Statistics Cards Grid */}
@@ -546,13 +661,13 @@ export const InstitutionEventLeaderboard = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
-                      Institutions
+                      Registered Institutions
                     </p>
                     <p className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                       {summary.totalInstitutions}
                     </p>
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                      Participating Schools
+                      Participating Schools / Organizations
                     </p>
                   </div>
                 </div>
@@ -564,13 +679,13 @@ export const InstitutionEventLeaderboard = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
-                      Total Registered
+                      Total Participants
                     </p>
                     <p className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                       {summary.totalRegisteredParticipants}
                     </p>
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                      Delegates enrolled
+                      Total delegation registered for this event
                     </p>
                   </div>
                 </div>
@@ -608,9 +723,19 @@ export const InstitutionEventLeaderboard = () => {
                       style={{ width: `${Math.min(100, summary.overallAttendanceRate || 0)}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5 truncate">
-                    Real-time participant verification
-                  </p>
+                  {isOfficerOrAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('attendance_sheet')}
+                      className="mt-2 text-left text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    >
+                      Open Time In / Time Out Sheet →
+                    </button>
+                  ) : (
+                    <p className="text-[10px] text-slate-500 mt-1.5 truncate">
+                      Real-time participant verification
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -641,7 +766,7 @@ export const InstitutionEventLeaderboard = () => {
               </div>
             </div>
 
-            {/* Leaderboard Table / Cards */}
+            {/* Leaderboard Cards */}
             <div className="p-4 sm:p-6">
               {isLoading ? (
                 <div className="space-y-3 py-8">
@@ -726,11 +851,17 @@ export const InstitutionEventLeaderboard = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                                <span>{totalReg} registered</span>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                <span>{totalReg} registered participants</span>
+                                {inst.institutionEmail && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate">{inst.institutionEmail}</span>
+                                  </>
+                                )}
                                 <span>•</span>
                                 <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
-                                  <UserCheck size={13} /> {checkedIn} checked-in ({rate.toFixed(0)}%)
+                                  <UserCheck size={13} /> {checkedIn} in venue ({rate.toFixed(0)}%)
                                 </span>
                               </div>
                             </div>
@@ -738,20 +869,11 @@ export const InstitutionEventLeaderboard = () => {
 
                           {/* Right: Turnout Progress + Roster Action */}
                           <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
-                            {/* Attendance mini pill */}
-                            <div className="hidden md:flex flex-col items-end min-w-[100px]">
-                              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                                {checkedIn} / {totalReg} in Venue
-                              </span>
-                              <div className="w-20 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1">
-                                <div
-                                  className="bg-emerald-500 h-full rounded-full"
-                                  style={{ width: `${Math.min(100, rate)}%` }}
-                                />
-                              </div>
-                            </div>
+                            <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                              {totalReg} Participants
+                            </span>
 
-                            {/* View Delegation Roster & Check-In button */}
+                            {/* View Delegation Roster / Attendance button */}
                             <Button
                               variant="outline"
                               size="sm"
@@ -759,7 +881,7 @@ export const InstitutionEventLeaderboard = () => {
                               className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                             >
                               <UserCheck size={14} className="text-blue-600 dark:text-blue-400" />
-                              <span>Attendance Roster</span>
+                              <span>Roster</span>
                               <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center">
                                 {inst.participants.length || totalReg}
                               </span>
@@ -776,30 +898,72 @@ export const InstitutionEventLeaderboard = () => {
           </div>
         )}
 
-        {/* ── TAB 2: COMPETITION WINNER RANKINGS (PER EVENT) ──────── */}
+        {/* ── TAB 2: VENUE ATTENDANCE SHEET (TIME IN / TIME OUT TABLE) ── */}
+        {activeTab === 'attendance_sheet' && isOfficerOrAdmin && selectedEventId && (
+          <EventAttendanceSheet
+            eventId={selectedEventId}
+            eventTitle={selectedEvent?.title}
+            eventLocation={selectedEvent?.location}
+            canManage={isOfficerOrAdmin}
+            onAttendanceChanged={() => void loadLeaderboard(selectedEventId, false)}
+          />
+        )}
+
+        {/* ── TAB 3: COMPETITION WINNER RANKINGS (PER EVENT) ──────── */}
         {activeTab === 'event_winners' && (
           <div className="p-5 sm:p-6 space-y-6">
-            {/* Header with Title and Proclaim/Add Winner Action */}
+            {/* Header with Title and Manual Set Winner Ranking Action (Admin & Officer only) */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Medal className="text-amber-500" />
-                  <span>Competition Winners & Rankings: {selectedEvent?.title || 'Selected Event'}</span>
-                </h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Medal className="text-amber-500" />
+                    <span>Event Winner Ranking: {selectedEvent?.title || 'Selected Event'}</span>
+                  </h3>
+                  {selectedEvent && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
+                      <Users size={12} /> Mode: {formatEventModeLabel(selectedEvent.registrationMode)}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Official proclamation of winners, rankings, and tournament points for this event.
+                  Official event winner rankings and championship points manually set by authorized administrators and officers.
                 </p>
               </div>
 
-              {isOfficerOrAdmin && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleOpenAddWinnerModal}
-                  className="flex items-center gap-1.5 font-bold shrink-0 bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  <Plus size={15} /> Proclaim / Record Winner
-                </Button>
+              {isOfficerOrAdmin ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { rank: 1, label: 'Set 1st Place', icon: '🥇' },
+                    { rank: 2, label: 'Set 2nd Place', icon: '🥈' },
+                    { rank: 3, label: 'Set 3rd Place', icon: '🥉' },
+                  ]
+                    .filter((slot) => !eventWinners.some((w) => w.rankPosition === slot.rank))
+                    .map((slot) => (
+                      <Button
+                        key={slot.rank}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenAddWinnerModal(slot.rank)}
+                        className="flex items-center gap-1.5 text-xs font-bold"
+                      >
+                        <span>{slot.icon}</span>
+                        <span>{slot.label}</span>
+                      </Button>
+                    ))}
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleOpenAddWinnerModal()}
+                    className="flex items-center gap-1.5 font-bold shrink-0 bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <Plus size={15} /> Set Winner Ranking
+                  </Button>
+                </div>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
+                  <Lock size={13} /> Managed by Admins & Officers
+                </span>
               )}
             </div>
 
@@ -812,7 +976,17 @@ export const InstitutionEventLeaderboard = () => {
                   if (!champion) return null;
                   return (
                     <div className="order-1 md:order-2 p-5 rounded-2xl bg-gradient-to-b from-amber-500/15 via-yellow-500/10 to-transparent border-2 border-amber-400 dark:border-amber-500/50 shadow-lg text-center relative overflow-hidden">
-                      <div className="absolute top-2 right-2">
+                      <div className="absolute top-2 right-2 flex items-center gap-1">
+                        {isOfficerOrAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditWinnerModal(champion)}
+                            title="Edit 1st Place Winner"
+                            className="p-1.5 rounded-lg bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                        )}
                         <Sparkles size={18} className="text-amber-500 animate-pulse" />
                       </div>
                       <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-amber-500/30">
@@ -844,7 +1018,17 @@ export const InstitutionEventLeaderboard = () => {
                   const silver = eventWinners.find((w) => w.rankPosition === 2);
                   if (!silver) return null;
                   return (
-                    <div className="order-2 md:order-1 p-5 rounded-2xl bg-gradient-to-b from-slate-200/40 via-gray-100/30 to-transparent border border-slate-300 dark:border-slate-700 shadow-md text-center">
+                    <div className="order-2 md:order-1 p-5 rounded-2xl bg-gradient-to-b from-slate-200/40 via-gray-100/30 to-transparent border border-slate-300 dark:border-slate-700 shadow-md text-center relative">
+                      {isOfficerOrAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditWinnerModal(silver)}
+                          title="Edit 2nd Place Winner"
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
                       <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-tr from-slate-300 to-gray-200 text-slate-800 flex items-center justify-center font-black text-xl shadow-xs">
                         🥈
                       </div>
@@ -869,7 +1053,17 @@ export const InstitutionEventLeaderboard = () => {
                   const bronze = eventWinners.find((w) => w.rankPosition === 3);
                   if (!bronze) return null;
                   return (
-                    <div className="order-3 p-5 rounded-2xl bg-gradient-to-b from-amber-700/10 via-amber-800/5 to-transparent border border-amber-700/30 shadow-md text-center">
+                    <div className="order-3 p-5 rounded-2xl bg-gradient-to-b from-amber-700/10 via-amber-800/5 to-transparent border border-amber-700/30 shadow-md text-center relative">
+                      {isOfficerOrAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditWinnerModal(bronze)}
+                          title="Edit 3rd Place Winner"
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
                       <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-tr from-amber-700 to-amber-600 text-white flex items-center justify-center font-black text-xl shadow-xs">
                         🥉
                       </div>
@@ -896,19 +1090,19 @@ export const InstitutionEventLeaderboard = () => {
               <div className="py-12 text-center bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                 <Trophy size={36} className="mx-auto text-amber-400 mb-2 opacity-60" />
                 <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  No Winners Proclaimed Yet
+                  No Winners Ranked Yet
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-                  Once this competition concludes, authorized officers can proclaim and rank the winning participants or school teams here.
+                  Once this competition concludes, authorized admins and officers can manually set the winner ranking for participants or school teams here.
                 </p>
                 {isOfficerOrAdmin && (
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={handleOpenAddWinnerModal}
+                    onClick={() => handleOpenAddWinnerModal(1)}
                     className="mt-4 inline-flex items-center gap-1.5 font-bold bg-amber-600 hover:bg-amber-700 text-white"
                   >
-                    <Plus size={15} /> Proclaim First Winner
+                    <Plus size={15} /> Set 1st Place Winner
                   </Button>
                 )}
               </div>
@@ -917,24 +1111,33 @@ export const InstitutionEventLeaderboard = () => {
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-4 py-3 text-center w-12">Rank</th>
+                      <th className="px-4 py-3 text-center w-14">Rank</th>
                       <th className="px-4 py-3">Award / Title</th>
+                      <th className="px-4 py-3">Event &amp; Mode</th>
                       <th className="px-4 py-3">Winner (Participant / Team)</th>
                       <th className="px-4 py-3">School / Institution</th>
                       <th className="px-4 py-3 text-center">Points</th>
                       <th className="px-4 py-3">Score / Notes</th>
-                      {isOfficerOrAdmin && <th className="px-4 py-3 text-right">Actions</th>}
+                      {isOfficerOrAdmin && <th className="px-4 py-3 text-right">Manage Ranking</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                    {eventWinners.map((winner) => (
+                    {eventWinners.map((winner, index) => (
                       <tr key={winner.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-4 py-3 text-center font-bold">
-                          {getRankBadge(winner.rankPosition)}
+                          <div className="flex items-center justify-center">{getRankBadge(winner.rankPosition)}</div>
                         </td>
                         <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
                             {winner.awardTitle}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                            {winner.eventTitle || selectedEvent?.title || 'Event'}
+                          </p>
+                          <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800">
+                            {formatEventModeLabel(winner.eventMode || selectedEvent?.registrationMode)}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-extrabold text-slate-900 dark:text-slate-100">
@@ -954,15 +1157,47 @@ export const InstitutionEventLeaderboard = () => {
                         </td>
                         {isOfficerOrAdmin && (
                           <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => void handleDeleteWinner(winner.id)}
-                              disabled={deletingWinnerId === winner.id}
-                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                              title="Delete Winner"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            <div className="inline-flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveWinner(winner.id, 'up')}
+                                disabled={index === 0 || movingWinnerId !== null}
+                                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                title="Move Rank Up"
+                                aria-label={`Move ${winner.participantName} up`}
+                              >
+                                <ArrowUp size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveWinner(winner.id, 'down')}
+                                disabled={index === eventWinners.length - 1 || movingWinnerId !== null}
+                                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                title="Move Rank Down"
+                                aria-label={`Move ${winner.participantName} down`}
+                              >
+                                <ArrowDown size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditWinnerModal(winner)}
+                                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                title="Edit Winner Ranking"
+                                aria-label={`Edit ${winner.participantName}`}
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteWinner(winner.id)}
+                                disabled={deletingWinnerId === winner.id}
+                                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete Winner"
+                                aria-label={`Delete ${winner.participantName}`}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -974,7 +1209,7 @@ export const InstitutionEventLeaderboard = () => {
           </div>
         )}
 
-        {/* ── TAB 3: OVERALL EVENT CHAMPIONSHIP ───────────────────── */}
+        {/* ── TAB 4: OVERALL EVENT CHAMPIONSHIP ───────────────────── */}
         {activeTab === 'overall_championship' && (
           <div className="p-5 sm:p-6 space-y-6">
             {/* Overall Champion Banner */}
@@ -1038,7 +1273,7 @@ export const InstitutionEventLeaderboard = () => {
                     No Overall Standings Yet
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-                    As competition winners are proclaimed per event, their points and medal counts will automatically calculate and display the overall champion school here.
+                    As competition winners are ranked per event, their points and medal counts will automatically calculate and display the overall champion school here.
                   </p>
                 </div>
               ) : (
@@ -1127,228 +1362,343 @@ export const InstitutionEventLeaderboard = () => {
         )}
       </Card>
 
-      {/* ── Institution Participants Delegation Roster & Check-In Modal ───── */}
+      {/* ── Institution Delegation Roster Modal ─────────────────────── */}
       {activeInstitution && (
         <Modal
           isOpen={Boolean(activeInstitution)}
-          onClose={() => {
-            setActiveInstitution(null);
-            setParticipantSearch('');
-          }}
+          onClose={() => setActiveInstitution(null)}
           title={activeInstitution.institutionName}
-          subtitle={`Event In-Venue Attendance Roster • ${selectedEvent?.title || 'Selected Event'}`}
-          size="xl"
+          subtitle={`Delegation Roster & Venue Attendance • ${selectedEvent?.title || 'Selected Event'}`}
+          size={isOfficerOrAdmin ? '2xl' : 'lg'}
         >
-          <div className="space-y-4">
-            {/* Modal Header Stats Banner */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/60 border border-blue-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                  Institution Delegation Attendance
-                </p>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xl font-black text-gray-900 dark:text-slate-100">
-                    {activeInstitution.registeredCount} Enrolled
-                  </span>
-                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
-                    {activeInstitution.checkedInCount || 0} In Venue ({activeInstitution.attendanceRate || 0}%)
-                  </span>
+          {isOfficerOrAdmin && selectedEventId ? (
+            <EventAttendanceSheet
+              eventId={selectedEventId}
+              eventTitle={selectedEvent?.title}
+              eventLocation={selectedEvent?.location}
+              canManage={isOfficerOrAdmin}
+              initialInstitution={activeInstitution.institutionName}
+              onAttendanceChanged={() => void loadLeaderboard(selectedEventId, false)}
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/60 border border-blue-100 dark:border-slate-700 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                    Institution Delegation
+                  </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-xl font-black text-gray-900 dark:text-slate-100">
+                      {activeInstitution.registeredCount} Registered
+                    </span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
+                      {activeInstitution.checkedInCount || 0} In Venue ({activeInstitution.attendanceRate || 0}%)
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {isOfficerOrAdmin && activeInstitution.participants.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => void handleBulkCheckIn(true)}
-                    disabled={isBulkCheckingIn}
-                    isLoading={isBulkCheckingIn}
-                    className="flex items-center gap-1.5 font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    <CheckCircle2 size={14} /> Check In All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void handleBulkCheckIn(false)}
-                    disabled={isBulkCheckingIn}
-                    className="text-xs font-semibold"
-                  >
-                    Reset All
-                  </Button>
+              {activeInstitution.participants.length === 0 ? (
+                <div className="p-8 text-center bg-gray-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
+                  <Users size={28} className="mx-auto mb-2 text-slate-400" />
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Bulk Registration ({activeInstitution.registeredCount} seats)
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <th className="px-3 py-2.5">#</th>
+                        <th className="px-3 py-2.5">Participant</th>
+                        <th className="px-3 py-2.5">Role / Position</th>
+                        <th className="px-3 py-2.5">Time In</th>
+                        <th className="px-3 py-2.5">Time Out</th>
+                        <th className="px-3 py-2.5">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {activeInstitution.participants.map((p, idx) => (
+                        <tr key={p.id}>
+                          <td className="px-3 py-2.5 text-slate-400 font-bold">{idx + 1}</td>
+                          <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">{p.fullName}</td>
+                          <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{p.position || 'Participant'}</td>
+                          <td className="px-3 py-2.5 tabular-nums">
+                            {p.checkedInAt ? new Date(p.checkedInAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) : '—'}
+                          </td>
+                          <td className="px-3 py-2.5 tabular-nums">
+                            {p.checkedOutAt ? new Date(p.checkedOutAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) : '—'}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                p.checkedOutAt
+                                  ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                                  : p.isCheckedIn
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                              }`}
+                            >
+                              {p.checkedOutAt ? 'Timed Out' : p.isCheckedIn ? 'In Venue' : 'Not in Venue'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
-
-            {/* Search inside roster */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search participant by name or role..."
-                value={participantSearch}
-                onChange={(e) => setParticipantSearch(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-
-            {/* Participants List */}
-            {activeInstitution.participants.length === 0 ? (
-              <div className="p-8 text-center bg-gray-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                <Users size={28} className="mx-auto mb-2 text-slate-400" />
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Bulk Registration ({activeInstitution.registeredCount} seats)
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1 max-w-sm mx-auto">
-                  This institution registered with a head count of {activeInstitution.registeredCount} participants.
-                  Detailed individual names can be registered through the Institution Members portal.
-                </p>
-              </div>
-            ) : filteredParticipants.length === 0 ? (
-              <div className="py-8 text-center text-slate-600 dark:text-slate-400 font-medium text-xs">
-                No participants matched &quot;{participantSearch}&quot;.
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                {filteredParticipants.map((part) => {
-                  const isCheckedIn = Boolean(part.isCheckedIn);
-                  const pKey = part.participantKey || `inst-${part.id}`;
-                  const isUpdating = isUpdatingAttendance === pKey;
-
-                  return (
-                    <div
-                      key={part.id}
-                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
-                        isCheckedIn
-                          ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900'
-                          : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isCheckedIn
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
-                          }`}
-                        >
-                          {(part.fullName || 'Participant').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                              {part.fullName}
-                            </p>
-                            {isCheckedIn ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                <CheckCircle2 size={11} /> Checked In
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                <Clock size={11} /> Not in Venue
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate mt-0.5">
-                            {part.position || 'Participant'}
-                            {part.contactNumber ? ` • ${part.contactNumber}` : ''}
-                            {part.email ? ` • ${part.email}` : ''}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Check In Action for Officers & Admins */}
-                      {isOfficerOrAdmin && (
-                        <div className="shrink-0">
-                          <Button
-                            variant={isCheckedIn ? 'outline' : 'primary'}
-                            size="sm"
-                            disabled={isUpdating}
-                            isLoading={isUpdating}
-                            onClick={() => void handleToggleAttendance(pKey, isCheckedIn)}
-                            className={`text-xs font-bold px-3 py-1.5 ${
-                              isCheckedIn
-                                ? 'text-rose-600 hover:bg-rose-50 border-rose-200 dark:border-rose-900'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                            }`}
-                          >
-                            {isCheckedIn ? 'Revert Check-In' : 'Mark Checked In'}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="pt-3 border-t border-gray-100 dark:border-slate-800 flex justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setActiveInstitution(null);
-                  setParticipantSearch('');
-                }}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
+          )}
         </Modal>
       )}
 
-      {/* ── Modal to Record / Manage Winners ────────────────────────── */}
-      {isWinnerModalOpen && (
+      {/* ── Modal to Set / Edit Winner Ranking (Admin & Officer only) ── */}
+      {isOfficerOrAdmin && isWinnerModalOpen && (
         <Modal
           isOpen={isWinnerModalOpen}
           onClose={() => setIsWinnerModalOpen(false)}
-          title={winnerForm.id ? 'Edit Winner Entry' : 'Proclaim / Record Competition Winner'}
-          subtitle={`Event: ${selectedEvent?.title || 'Selected Event'}`}
-          size="md"
+          title={winnerForm.id ? 'Edit Competition Winner Ranking' : 'Proclaim / Record Competition Winner'}
+          subtitle={`Event: ${selectedEvent?.title || 'Selected Event'} (${formatEventModeLabel(winnerForm.eventMode)} Mode) • Admin & Officer Only`}
+          size="lg"
         >
           <div className="space-y-4">
+            {/* Event Name & Mode of the Event */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                    Event Name
+                  </label>
+                  <select
+                    value={winnerForm.eventId || selectedEventId}
+                    onChange={(e) => {
+                      const nextId = e.target.value;
+                      const foundEvt = events.find((ev) => ev.id === nextId);
+                      setWinnerForm((prev) => ({
+                        ...prev,
+                        eventId: nextId,
+                        eventMode: normalizeEventMode(foundEvt?.registrationMode || prev.eventMode),
+                      }));
+                      if (nextId && nextId !== selectedEventId) {
+                        handleEventChange(nextId);
+                      }
+                    }}
+                    disabled={Boolean(winnerForm.id)}
+                    aria-label="Event Name"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-slate-100 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer disabled:opacity-60"
+                  >
+                    {events.map((evt) => (
+                      <option key={evt.id} value={evt.id}>
+                        {evt.title} ({evt.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                    Mode of the Event
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        { mode: 'individual', label: 'Individual', icon: '👤' },
+                        { mode: 'pair', label: 'Pair / Duo', icon: '👥' },
+                        { mode: 'team', label: 'Team / Group', icon: '🛡️' },
+                      ] as const
+                    ).map((m) => (
+                      <button
+                        key={m.mode}
+                        type="button"
+                        onClick={() => setWinnerForm((prev) => ({ ...prev, eventMode: m.mode }))}
+                        className={`px-2.5 py-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          winnerForm.eventMode === m.mode
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-100 font-bold shadow-2xs'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold'
+                        }`}
+                      >
+                        <span className="text-xs mr-1">{m.icon}</span>
+                        <span className="text-[11px]">{m.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                 Rank Position
               </label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {[
                   { rank: 1, label: '1st (Gold)', icon: '🥇' },
                   { rank: 2, label: '2nd (Silver)', icon: '🥈' },
                   { rank: 3, label: '3rd (Bronze)', icon: '🥉' },
-                  { rank: 4, label: 'Finalist', icon: '🎖️' },
+                  { rank: 4, label: '4th Place', icon: '🎖️' },
+                  { rank: 5, label: 'Finalist', icon: '🏅' },
                 ].map((r) => (
                   <button
                     key={r.rank}
                     type="button"
                     onClick={() => handleRankChange(r.rank)}
-                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       winnerForm.rankPosition === r.rank
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <div className="text-xl">{r.icon}</div>
-                    <div className="text-xs font-bold mt-1">{r.label}</div>
+                    <div className="text-lg">{r.icon}</div>
+                    <div className="text-[11px] font-bold mt-0.5">{r.label}</div>
                   </button>
                 ))}
               </div>
             </div>
 
-            <Input
-              label="Award Title"
-              value={winnerForm.awardTitle}
-              onChange={(e) => setWinnerForm((p) => ({ ...p, awardTitle: e.target.value }))}
-              placeholder="e.g. Champion, 1st Runner Up, Best Pitch"
-              required
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label="Rank Position (#)"
+                type="number"
+                min={1}
+                max={100}
+                value={winnerForm.rankPosition}
+                onChange={(e) => handleRankChange(Number(e.target.value) || 1)}
+                required
+              />
+              <div className="sm:col-span-2">
+                <Input
+                  label="Award Title"
+                  value={winnerForm.awardTitle}
+                  onChange={(e) => setWinnerForm((p) => ({ ...p, awardTitle: e.target.value }))}
+                  placeholder="e.g. Champion, 1st Runner Up, Best Pitch"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Fast Selection of Registered Participant in the Event */}
+            <div className="p-3.5 rounded-2xl bg-blue-50/50 dark:bg-slate-800/50 border border-blue-200/80 dark:border-slate-700 space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
+                    Select Registered Participant in Event (Fast Fill)
+                  </label>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Choose a registered participant to auto-fill Winner &amp; School/Institution
+                    {(winnerForm.eventMode === 'pair' || winnerForm.eventMode === 'team') && ' (use "+ Add" to combine teammates)'}.
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 shrink-0 self-start sm:self-center">
+                  {allRegisteredParticipants.length} Registered
+                </span>
+              </div>
+
+              {allRegisteredParticipants.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                  No individual participant names found for this event yet — you can type the winner and school below.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={winnerParticipantSearch}
+                        onChange={(e) => setWinnerParticipantSearch(e.target.value)}
+                        placeholder="Search registered participant or school..."
+                        className="w-full pl-8 pr-7 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                      {winnerParticipantSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setWinnerParticipantSearch('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const key = e.target.value;
+                        const found = allRegisteredParticipants.find((p) => p.participantKey === key);
+                        if (found) handleSelectRegisteredWinner(found, false);
+                      }}
+                      aria-label="Quick select registered participant"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                    >
+                      <option value="">
+                        — Quick Select from {filteredWinnerParticipantOptions.length} Participant(s) —
+                      </option>
+                      {filteredWinnerParticipantOptions.map((p) => (
+                        <option key={p.participantKey} value={p.participantKey}>
+                          {p.fullName} — {p.institutionName} ({p.isCheckedIn ? 'Checked In' : 'Registered'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Clickable participant chips */}
+                  <div className="max-h-32 overflow-y-auto flex flex-wrap gap-1.5 pt-1">
+                    {filteredWinnerParticipantOptions.slice(0, 30).map((p) => {
+                      const isSelected = winnerForm.participantName
+                        .toLowerCase()
+                        .split(/\s*(?:&|,)\s*/)
+                        .includes(p.fullName.toLowerCase());
+                      const isMulti = winnerForm.eventMode === 'pair' || winnerForm.eventMode === 'team';
+
+                      return (
+                        <div
+                          key={p.participantKey}
+                          className={`inline-flex items-center rounded-xl border text-xs transition-all overflow-hidden ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-600 text-white font-bold shadow-2xs'
+                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:border-blue-400'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSelectRegisteredWinner(p, false)}
+                            className="px-2.5 py-1 text-left cursor-pointer flex items-center gap-1.5"
+                            title={`Select ${p.fullName} (${p.institutionName})`}
+                          >
+                            <span className="truncate max-w-[150px]">{p.fullName}</span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded-full truncate max-w-[120px] ${
+                                isSelected
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                              }`}
+                            >
+                              {p.institutionName}
+                            </span>
+                          </button>
+                          {isMulti && !isSelected && winnerForm.participantName.trim().length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleSelectRegisteredWinner(p, true)}
+                              title={`Add ${p.fullName} to ${winnerForm.eventMode}`}
+                              className="px-2 py-1 border-l border-slate-200 dark:border-slate-700 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[10px] hover:bg-indigo-100 cursor-pointer"
+                            >
+                              + Add
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                School / Institution Name
+                School / Institution Name *
               </label>
               <input
                 type="text"
@@ -1366,18 +1716,39 @@ export const InstitutionEventLeaderboard = () => {
               </datalist>
             </div>
 
-            <Input
-              label="Winner (Participant or Team Name)"
-              value={winnerForm.participantName}
-              onChange={(e) => setWinnerForm((p) => ({ ...p, participantName: e.target.value }))}
-              placeholder="e.g. Team Phoenix or Juan Dela Cruz"
-              required
-            />
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                Winner ({winnerForm.eventMode === 'team' ? 'Team or Participants Name' : winnerForm.eventMode === 'pair' ? 'Pair / Duo Names' : 'Participant Name'}) *
+              </label>
+              <input
+                type="text"
+                list="participants-datalist"
+                value={winnerForm.participantName}
+                onChange={(e) => setWinnerForm((p) => ({ ...p, participantName: e.target.value }))}
+                placeholder={
+                  winnerForm.eventMode === 'team'
+                    ? 'e.g. Team Phoenix or Juan Dela Cruz & Maria Santos'
+                    : winnerForm.eventMode === 'pair'
+                    ? 'e.g. Juan Dela Cruz & Maria Santos'
+                    : 'e.g. Juan Dela Cruz'
+                }
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-slate-100 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                required
+              />
+              <datalist id="participants-datalist">
+                {filteredWinnerParticipantOptions.map((p) => (
+                  <option key={p.participantKey} value={p.fullName}>
+                    {p.institutionName} ({p.position || 'Participant'})
+                  </option>
+                ))}
+              </datalist>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Championship Points"
                 type="number"
+                min={0}
                 value={winnerForm.points}
                 onChange={(e) => setWinnerForm((p) => ({ ...p, points: Number(e.target.value) || 0 }))}
                 placeholder="10"
@@ -1408,7 +1779,7 @@ export const InstitutionEventLeaderboard = () => {
                 isLoading={isSubmittingWinner}
                 className="font-bold bg-amber-600 hover:bg-amber-700 text-white"
               >
-                Save & Proclaim Winner
+                {winnerForm.id ? 'Update Winner Ranking' : 'Save & Proclaim Winner'}
               </Button>
             </div>
           </div>

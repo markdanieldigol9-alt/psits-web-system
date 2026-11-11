@@ -331,7 +331,7 @@ export const DashboardPage = () => {
             </Card>
           </div>
 
-          {/* Institution Event Delegation Leaderboard */}
+          {/* Events Leaderboard */}
           <InstitutionEventLeaderboard />
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -578,6 +578,9 @@ export const DashboardPage = () => {
           })}
         </div>
 
+        {/* Events Leaderboard */}
+        <InstitutionEventLeaderboard />
+
         {/* Executive Command & Quick Shortcuts (Pillar 1: UI & Navigation) */}
         <Card
           title="Executive Command & Quick Shortcuts"
@@ -721,9 +724,6 @@ export const DashboardPage = () => {
             </button>
           </div>
         </Card>
-
-        {/* Institution Event Delegation Leaderboard */}
-        <InstitutionEventLeaderboard />
       </div>
     </MainLayout>
   );

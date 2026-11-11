@@ -506,6 +506,7 @@ async function migrate() {
       participant_name VARCHAR(191) NOT NULL,
       points INT NOT NULL DEFAULT 0,
       score_or_notes VARCHAR(255) NULL,
+      event_mode VARCHAR(50) NULL,
       created_by INT UNSIGNED NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -521,6 +522,7 @@ async function migrate() {
         ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+  try { await pool.query('ALTER TABLE event_competition_winners ADD COLUMN event_mode VARCHAR(50) NULL'); } catch { /* ignore */ }
 
   // Event details (type-specific fields; flexible schema)
   await pool.query(`
