@@ -88,6 +88,8 @@ async function getInstitutionLeaderboard(req, res) {
          im.gender,
          im.position,
          im.status AS participant_status,
+         im.checked_in,
+         im.checked_in_at,
          u.full_name AS inst_full_name,
          u.sector_details AS inst_sector_details,
          u.avatar_url AS inst_avatar,
@@ -107,6 +109,9 @@ async function getInstitutionLeaderboard(req, res) {
          er.event_id,
          er.member_id,
          er.participant_count,
+         er.checked_in_count,
+         er.is_checked_in,
+         er.checked_in_at,
          er.status AS registration_status,
          u.full_name,
          u.sector_details,
@@ -121,7 +126,78 @@ async function getInstitutionLeaderboard(req, res) {
       [selectedEventId]
     );
 
-    // 4. Group data by institution
+    // 4. Fetch competition winners for this selected event
+    const [winnerRows] = await pool.execute(
+      `SELECT
+         id,
+         event_id,
+         rank_position,
+         award_title,
+         institution_name,
+         participant_name,
+         points,
+         score_or_notes
+       FROM event_competition_winners
+       WHERE event_id = ?
+       ORDER BY rank_position ASC, points DESC, id ASC`,
+      [selectedEventId]
+    );
+
+    // 5. Fetch overall medal & points standings across all competitive events
+    const [allWinnersRows] = await pool.query(
+      `SELECT
+         w.id,
+         w.event_id,
+         w.rank_position,
+         w.award_title,
+         w.institution_name,
+         w.participant_name,
+         w.points,
+         e.title AS event_title
+       FROM event_competition_winners w
+       JOIN events e ON e.id = w.event_id
+       WHERE e.status <> 'cancelled'
+       ORDER BY w.rank_position ASC, w.points DESC`
+    );
+
+    const overallMap = new Map();
+    for (const w of allWinnersRows) {
+      const instName = w.institution_name.trim();
+      if (!overallMap.has(instName)) {
+        overallMap.set(instName, {
+          institutionName: instName,
+          goldCount: 0,
+          silverCount: 0,
+          bronzeCount: 0,
+          totalMedals: 0,
+          totalPoints: 0,
+          eventsWonCount: 0,
+        });
+      }
+      const item = overallMap.get(instName);
+      const r = Number(w.rank_position);
+      if (r === 1) item.goldCount++;
+      else if (r === 2) item.silverCount++;
+      else if (r === 3) item.bronzeCount++;
+      item.totalMedals = item.goldCount + item.silverCount + item.bronzeCount;
+      item.totalPoints += Number(w.points || 0);
+      item.eventsWonCount++;
+    }
+
+    const overallStandings = Array.from(overallMap.values());
+    overallStandings.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if (b.goldCount !== a.goldCount) return b.goldCount - a.goldCount;
+      if (b.silverCount !== a.silverCount) return b.silverCount - a.silverCount;
+      return b.bronzeCount - a.bronzeCount;
+    });
+    const rankedOverallStandings = overallStandings.map((s, idx) => ({
+      ...s,
+      rank: idx + 1,
+      isOverallChampion: idx === 0,
+    }));
+
+    // 6. Group data by institution
     const institutionMap = new Map();
 
     // Add from institution_members
@@ -136,25 +212,34 @@ async function getInstitutionLeaderboard(req, res) {
           registrationId: null,
           participants: [],
           registeredCount: 0,
+          checkedInCount: 0,
         });
       }
 
       const inst = institutionMap.get(instId);
+      const isChecked = row.checked_in === 1;
       inst.participants.push({
         id: String(row.participant_id),
+        participantKey: `inst-${row.participant_id}`,
         fullName: row.full_name,
         email: row.email || '',
         contactNumber: row.contact_number || '',
         gender: row.gender || '',
         position: row.position || 'Participant',
         status: row.participant_status || 'approved',
+        isCheckedIn: isChecked,
+        checkedInAt: row.checked_in_at ? new Date(row.checked_in_at).toISOString() : null,
       });
       inst.registeredCount += 1;
+      if (isChecked) {
+        inst.checkedInCount += 1;
+      }
     }
 
     // Merge or add from event_registrations
     for (const row of regRows) {
       const instId = String(row.member_id);
+      const regCheckedIn = Number(row.checked_in_count || (row.is_checked_in ? 1 : 0));
       if (!institutionMap.has(instId)) {
         institutionMap.set(instId, {
           institutionId: instId,
@@ -164,6 +249,7 @@ async function getInstitutionLeaderboard(req, res) {
           registrationId: String(row.registration_id),
           participants: [],
           registeredCount: Math.max(1, Number(row.participant_count || 1)),
+          checkedInCount: regCheckedIn,
         });
       } else {
         const inst = institutionMap.get(instId);
@@ -172,12 +258,17 @@ async function getInstitutionLeaderboard(req, res) {
         if (regCount > inst.registeredCount) {
           inst.registeredCount = regCount;
         }
+        if (regCheckedIn > inst.checkedInCount) {
+          inst.checkedInCount = regCheckedIn;
+        }
       }
     }
 
-    // 5. Finalize calculations for each institution
+    // 7. Finalize calculations for each institution
     const rawList = Array.from(institutionMap.values()).map((inst) => {
       const reg = Math.max(1, inst.registeredCount);
+      const checkedIn = Math.min(reg, inst.checkedInCount);
+      const attendanceRate = reg > 0 ? Number(((checkedIn / reg) * 100).toFixed(1)) : 0;
 
       return {
         institutionId: inst.institutionId,
@@ -186,11 +277,13 @@ async function getInstitutionLeaderboard(req, res) {
         institutionAvatar: inst.institutionAvatar,
         registrationId: inst.registrationId,
         registeredCount: reg,
+        checkedInCount: checkedIn,
+        attendanceRate,
         participants: inst.participants,
       };
     });
 
-    // 6. Sort by registeredCount DESC, name ASC
+    // 8. Sort by registeredCount DESC, name ASC
     rawList.sort((a, b) => {
       if (b.registeredCount !== a.registeredCount) return b.registeredCount - a.registeredCount;
       return a.institutionName.localeCompare(b.institutionName);
@@ -202,9 +295,13 @@ async function getInstitutionLeaderboard(req, res) {
       rank: index + 1,
     }));
 
-    // 7. Calculate overall summary
+    // 9. Calculate overall summary
     const totalInstitutions = leaderboard.length;
     const totalRegisteredParticipants = leaderboard.reduce((acc, cur) => acc + cur.registeredCount, 0);
+    const totalCheckedInParticipants = leaderboard.reduce((acc, cur) => acc + cur.checkedInCount, 0);
+    const overallAttendanceRate = totalRegisteredParticipants > 0
+      ? Number(((totalCheckedInParticipants / totalRegisteredParticipants) * 100).toFixed(1))
+      : 0;
 
     return json(res, 200, {
       success: true,
@@ -213,8 +310,21 @@ async function getInstitutionLeaderboard(req, res) {
       summary: {
         totalInstitutions,
         totalRegisteredParticipants,
+        totalCheckedInParticipants,
+        overallAttendanceRate,
       },
       leaderboard,
+      eventWinners: winnerRows.map((w) => ({
+        id: String(w.id),
+        eventId: String(w.event_id),
+        rankPosition: Number(w.rank_position),
+        awardTitle: w.award_title,
+        institutionName: w.institution_name,
+        participantName: w.participant_name,
+        points: Number(w.points || 0),
+        scoreOrNotes: w.score_or_notes || '',
+      })),
+      overallStandings: rankedOverallStandings,
     });
   } catch (err) {
     console.error('getInstitutionLeaderboard error:', err);

@@ -1,0 +1,125 @@
+@startuml PSITS_Use_Case_Officer
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+skinparam shadowing true
+skinparam actorStyle awesome
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+
+skinparam actor {
+    BackgroundColor #0D9488
+    BorderColor #0F766E
+    FontColor #0F172A
+    FontSize 13
+}
+
+skinparam usecase {
+    BackgroundColor #F8FAFC
+    BorderColor #0D9488
+    BorderThickness 1.5
+    FontColor #0F172A
+    ArrowColor #0D9488
+}
+
+skinparam package {
+    BackgroundColor #F0FDFA
+    BorderColor #5EEAD4
+    FontColor #0F766E
+    FontStyle bold
+}
+
+left to right direction
+
+' ========================================================
+' ACTORS
+' ========================================================
+actor "PSITS Regional Officer\n(Committee / Executive)" as Officer #0D9488
+actor "System Notifier\n(Automated Alert)" as SystemNotifier #64748B
+
+' ========================================================
+' SYSTEM BOUNDARY: OFFICER OPERATIONS PORTAL
+' ========================================================
+rectangle "PSITS Region XII Web System — Officer Operations Portal" as OfficerPortal {
+
+    package "1. Payment Auditing & Financial Controls" {
+        usecase "Review Pending Payments Queue" as UC_ReviewQueue
+        usecase "Inspect Uploaded Proofs\n(OR / GCash / Bank Transfer)" as UC_InspectProof
+        usecase "Verify Payment & Activate Member\n(ACID Transaction: +1 Yr Expiry)" as UC_VerifyPay
+        usecase "Reject Payment with Audit Remarks" as UC_RejectPay
+        usecase "Record Officer Cash Remittance\n(Direct Cash: No File Required)" as UC_RecordCash
+        usecase "Inspect Payment Audit Logs\n(payment_status_logs)" as UC_StatusLogs
+        usecase "Dispatch Automated Member Alert" as UC_DispatchAlert
+    }
+
+    package "2. Event Management & On-Site Logistics" {
+        usecase "Create & Update Events\n(Schedule-Driven Registration)" as UC_CreateEvent
+        usecase "Upload Dual Guidelines\n(Markdown Text + PDF/DOCX File)" as UC_UploadGuidelines
+        usecase "Configure Esports Tournament Brackets\n(Category-Driven Activation)" as UC_EsportsBrackets
+        usecase "Access Dual-Sourced Roster\n(Individual & Institution Rosters)" as UC_ViewRoster
+        usecase "Check-In In-Venue Attendance\n(Real-Time Attendance Toggle)" as UC_Attendance
+        usecase "Export Event Roster to CSV" as UC_ExportRosterCSV
+    }
+
+    package "3. Election Administration" {
+        usecase "Screen & Approve Candidate Applications" as UC_ScreenCandidates
+        usecase "Upload Candidate Platforms & Photos" as UC_UploadPlatform
+        usecase "Monitor Real-Time Chapter Turnout" as UC_MonitorTurnout
+    }
+
+    package "4. Organizational Comms & Media Studio" {
+        usecase "Publish Official Announcements\n(Normal / Urgent / Critical Banner)" as UC_PostAnnounce
+        usecase "Moderate Community Forum\n(Review & Remove Inappropriate Posts)" as UC_ModForum
+        usecase "Manage Live Stream Broadcasts\n(Live Studio Console / Stream Keys)" as UC_LiveStudio
+        usecase "Upload Recorded Seminar Videos" as UC_UploadRecordings
+    }
+
+    package "5. Operational Reporting & Data Export" {
+        usecase "Generate Structured Tabular Reports\n(Table-First Architecture)" as UC_TableReports
+        usecase "Export Reports to Excel (XLSX / CSV)\n(Direct Tabular Data Mapping)" as UC_ExportExcel
+        usecase "Print Unpaginated Reports\n(@media print Clean Layout)" as UC_PrintReport
+    }
+}
+
+' ========================================================
+' ASSOCIATIONS (OFFICER)
+' ========================================================
+Officer --> UC_ReviewQueue
+Officer --> UC_InspectProof
+Officer --> UC_VerifyPay
+Officer --> UC_RejectPay
+Officer --> UC_RecordCash
+Officer --> UC_StatusLogs
+
+Officer --> UC_CreateEvent
+Officer --> UC_UploadGuidelines
+Officer --> UC_EsportsBrackets
+Officer --> UC_ViewRoster
+Officer --> UC_Attendance
+Officer --> UC_ExportRosterCSV
+
+Officer --> UC_ScreenCandidates
+Officer --> UC_UploadPlatform
+Officer --> UC_MonitorTurnout
+
+Officer --> UC_PostAnnounce
+Officer --> UC_ModForum
+Officer --> UC_LiveStudio
+Officer --> UC_UploadRecordings
+
+Officer --> UC_TableReports
+Officer --> UC_ExportExcel
+Officer --> UC_PrintReport
+
+' System Secondary Actor
+UC_DispatchAlert <-- SystemNotifier
+
+' ========================================================
+' INCLUDE & EXTEND RELATIONSHIPS
+' ========================================================
+UC_VerifyPay ..> UC_InspectProof : <<include>>
+UC_VerifyPay ..> UC_DispatchAlert : <<include>>
+UC_VerifyPay <.. UC_RejectPay : <<extend>>
+UC_Attendance ..> UC_ViewRoster : <<include>>
+UC_CreateEvent ..> UC_UploadGuidelines : <<include>>
+
+@enduml

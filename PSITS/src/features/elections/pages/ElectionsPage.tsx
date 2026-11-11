@@ -7,15 +7,21 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { getPositionRank } from '@/shared/utils/helpers';
-import { Plus, Users, Trophy, Lock, Eye, Trash2, Info } from 'lucide-react';
+import { Plus, Users, Trophy, Lock, Eye, Trash2, Info, ArrowUp, ArrowDown } from 'lucide-react';
 
 type ElectionStatus = 'draft' | 'open' | 'closed' | 'archived';
+
+export interface AllowedPositionConfig {
+  name: string;
+  maxWinners: number;
+}
 
 const isElectionClosed = (election?: any): boolean => {
   if (!election) return false;
   if (election.status === 'closed' || election.status === 'archived') return true;
   if (!election.endDate) return false;
-  const end = new Date(election.endDate + 'T23:59:59');
+  const timeStr = election.endTime ? String(election.endTime).slice(0, 5) : '23:59';
+  const end = new Date(`${election.endDate}T${timeStr}:00`);
   return !isNaN(end.getTime()) && new Date() > end;
 };
 
@@ -33,7 +39,16 @@ export const ElectionsPage = () => {
   // Create / Edit Election Modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingElection, setEditingElection] = useState<any | null>(null);
-  const [form, setForm] = useState({ title: '', description: '', startDate: '', endDate: '', status: 'draft' as ElectionStatus, allowedPositions: [] as string[] });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    startTime: '',
+    endTime: '',
+    status: 'draft' as ElectionStatus,
+    allowedPositions: [] as AllowedPositionConfig[],
+  });
 
   // Dynamic Custom Positions State
   const [showAddCustomPos, setShowAddCustomPos] = useState(false);
@@ -70,7 +85,7 @@ export const ElectionsPage = () => {
 
   const [hasVoted, setHasVoted] = useState(false);
   const [showVotingModal, setShowVotingModal] = useState(false);
-  const [selectedVotes, setSelectedVotes] = useState<Record<string, string>>({});
+  const [selectedVotes, setSelectedVotes] = useState<Record<string, string[]>>({});
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
@@ -127,14 +142,33 @@ export const ElectionsPage = () => {
     }
   };
 
+  const normalizeAllowedPositions = (positions: any[]): AllowedPositionConfig[] => {
+    if (!Array.isArray(positions)) return [];
+    return positions.map((p) => {
+      if (typeof p === 'string') {
+        return { name: p, maxWinners: 1 };
+      }
+      if (p && typeof p === 'object') {
+        return {
+          name: String(p.name || p.position || '').trim(),
+          maxWinners: Math.max(1, Number(p.maxWinners || p.max_winners || 1)),
+        };
+      }
+      return { name: String(p), maxWinners: 1 };
+    }).filter((p) => Boolean(p.name));
+  };
+
   const handleAddCustomPosition = () => {
     const trimmed = customPosName.trim();
     if (!trimmed) return;
     if (!allOfficerPositions.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
       setAllOfficerPositions((prev) => [...prev, trimmed]);
     }
-    if (!form.allowedPositions.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
-      setForm((prev) => ({ ...prev, allowedPositions: [...prev.allowedPositions, trimmed] }));
+    if (!form.allowedPositions.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
+      setForm((prev) => ({
+        ...prev,
+        allowedPositions: [...prev.allowedPositions, { name: trimmed, maxWinners: 1 }],
+      }));
     }
     setCustomPosName('');
     setShowAddCustomPos(false);
@@ -148,8 +182,10 @@ export const ElectionsPage = () => {
       description: '',
       startDate: '',
       endDate: '',
+      startTime: '08:00',
+      endTime: '17:00',
       status: 'draft',
-      allowedPositions: [...allOfficerPositions]
+      allowedPositions: allOfficerPositions.map((p) => ({ name: p, maxWinners: 1 })),
     });
     setShowEditModal(true);
   };
@@ -157,13 +193,16 @@ export const ElectionsPage = () => {
   const openEdit = (election: any) => {
     setEditingElection(election);
     setCreateCandidates([]);
+    const norm = normalizeAllowedPositions(election.allowedPositions || []);
     setForm({
       title: election.title || '',
       description: election.description || '',
       startDate: election.startDate || '',
       endDate: election.endDate || '',
+      startTime: election.startTime || '',
+      endTime: election.endTime || '',
       status: (election.status || 'draft') as ElectionStatus,
-      allowedPositions: election.allowedPositions || [...allOfficerPositions]
+      allowedPositions: norm.length > 0 ? norm : allOfficerPositions.map((p) => ({ name: p, maxWinners: 1 })),
     });
     setShowEditModal(true);
   };
@@ -174,8 +213,9 @@ export const ElectionsPage = () => {
     setSelectedMemberIds([]);
     setCandidatePlatforms({});
     setMemberSearchQuery('');
-    const posList = source === 'create_modal' ? form.allowedPositions : (details?.election?.allowedPositions || form.allowedPositions);
-    setCandidateTargetPosition(defaultPos || (posList.length ? posList[0] : 'President'));
+    const posListRaw = source === 'create_modal' ? form.allowedPositions : (details?.election?.allowedPositions || form.allowedPositions);
+    const posNames = posListRaw.map((p: any) => (typeof p === 'string' ? p : p.name));
+    setCandidateTargetPosition(defaultPos || (posNames.length ? posNames[0] : 'President'));
     setShowAddCandidate(true);
     if (!activeMembers.length) {
       await loadActiveMembers();
@@ -334,7 +374,8 @@ export const ElectionsPage = () => {
   useEffect(() => {
     if (!details?.election || details.election.status !== 'open') return;
     const interval = setInterval(() => {
-      const end = new Date(details.election.endDate + 'T23:59:59');
+      const timeStr = details.election.endTime ? String(details.election.endTime).slice(0, 5) : '23:59';
+      const end = new Date(`${details.election.endDate}T${timeStr}:00`);
       const diff = end.getTime() - new Date().getTime();
       if (diff <= 0) {
         setTimeLeft('Election Ended');
@@ -412,7 +453,42 @@ export const ElectionsPage = () => {
       if (!grouped[pos]) grouped[pos] = [];
       grouped[pos].push(c);
     });
-    return grouped;
+
+    // Map allowedPositions order from election details if available
+    const allowedPosList = Array.isArray(details?.election?.allowedPositions)
+      ? details.election.allowedPositions
+      : [];
+    const orderMap = new Map<string, number>();
+    allowedPosList.forEach((item: any, idx: number) => {
+      const name = typeof item === 'string' ? item : item?.name;
+      if (name) orderMap.set(name.toLowerCase(), idx);
+    });
+
+    // Sort positions descending from President down
+    const sortedEntries = Object.entries(grouped).sort(([posA], [posB]) => {
+      const rankA = getPositionRank(posA);
+      const rankB = getPositionRank(posB);
+      if (rankA !== rankB) return rankA - rankB; // President (10) first, etc.
+
+      // If ranks are equal (e.g. custom positions both 999), respect the configured ballot order
+      const orderA = orderMap.has(posA.toLowerCase()) ? orderMap.get(posA.toLowerCase())! : 999;
+      const orderB = orderMap.has(posB.toLowerCase()) ? orderMap.get(posB.toLowerCase())! : 999;
+      if (orderA !== orderB) return orderA - orderB;
+
+      return posA.localeCompare(posB);
+    });
+
+    const result: Record<string, any[]> = {};
+    sortedEntries.forEach(([pos, list]) => {
+      // Also sort candidates inside the position: winner first, then highest votes, then name
+      result[pos] = list.slice().sort((a, b) => {
+        if (a.status === 'winner' && b.status !== 'winner') return -1;
+        if (b.status === 'winner' && a.status !== 'winner') return 1;
+        if ((b.votesCount || 0) !== (a.votesCount || 0)) return (b.votesCount || 0) - (a.votesCount || 0);
+        return (a.memberName || '').localeCompare(b.memberName || '');
+      });
+    });
+    return result;
   }, [details]);
 
   return (
@@ -453,7 +529,9 @@ export const ElectionsPage = () => {
                   <div className="min-w-0">
                     <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{e.title}</p>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 truncate">{e.description || '—'}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono">{e.startDate} → {e.endDate}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono">
+                      {e.startDate}{e.startTime ? ` ${e.startTime}` : ''} → {e.endDate}{e.endTime ? ` ${e.endTime}` : ''}
+                    </p>
                   </div>
                   {(() => {
                     const isClosed = isElectionClosed(e);
@@ -498,14 +576,23 @@ export const ElectionsPage = () => {
           <Input label="Election Year" placeholder="e.g. 2026 Election" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
           <TextArea label="Description" rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: (e.target as HTMLTextAreaElement).value }))} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input label="Start Date" type="date" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
-            <Input label="End Date" type="date" value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <Input label="Start Date" type="date" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
+              <Input label="Start Time" type="time" value={form.startTime} onChange={(e) => setForm((p) => ({ ...p, startTime: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Input label="End Date" type="date" value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+              <Input label="End Time" type="time" value={form.endTime} onChange={(e) => setForm((p) => ({ ...p, endTime: e.target.value }))} />
+            </div>
           </div>
 
-          {/* Contested Positions Selection with Dynamic + Add Position */}
-          <div className="space-y-2">
+          {/* Contested Positions Selection with Dynamic + Add Position & Max Winners & Ballot Repositioning */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-semibold text-gray-700">Contested Officer Positions</label>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">Contested Officer Positions & Ballot Order</label>
+                <p className="text-xs text-gray-500">Configure winners per position, reorder ballot positions using arrow buttons, or toggle participation.</p>
+              </div>
               {!showAddCustomPos && (
                 <button
                   type="button"
@@ -516,7 +603,6 @@ export const ElectionsPage = () => {
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500">Select the officer positions that will be active and voted for in this election.</p>
 
             {/* Dynamic Custom Position Input */}
             {showAddCustomPos && (
@@ -537,37 +623,145 @@ export const ElectionsPage = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-              {allOfficerPositions.map((pos) => {
-                const isChecked = form.allowedPositions.includes(pos);
+            {/* Selected positions list with repositioning and max winners */}
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1 border border-gray-200 rounded-xl p-2.5 bg-gray-50/60">
+              {form.allowedPositions.map((posCfg, idx) => {
+                const moveUp = () => {
+                  if (idx === 0) return;
+                  setForm((prev) => {
+                    const list = [...prev.allowedPositions];
+                    const temp = list[idx - 1];
+                    list[idx - 1] = list[idx];
+                    list[idx] = temp;
+                    return { ...prev, allowedPositions: list };
+                  });
+                };
+
+                const moveDown = () => {
+                  if (idx === form.allowedPositions.length - 1) return;
+                  setForm((prev) => {
+                    const list = [...prev.allowedPositions];
+                    const temp = list[idx + 1];
+                    list[idx + 1] = list[idx];
+                    list[idx] = temp;
+                    return { ...prev, allowedPositions: list };
+                  });
+                };
+
+                const updateMaxWinners = (newMax: number) => {
+                  const val = Math.max(1, Math.min(20, newMax));
+                  setForm((prev) => ({
+                    ...prev,
+                    allowedPositions: prev.allowedPositions.map((item, i) =>
+                      i === idx ? { ...item, maxWinners: val } : item
+                    ),
+                  }));
+                };
+
+                const removePosition = () => {
+                  setForm((prev) => ({
+                    ...prev,
+                    allowedPositions: prev.allowedPositions.filter((_, i) => i !== idx),
+                  }));
+                };
+
                 return (
-                  <label
-                    key={pos}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer select-none transition-all ${
-                      isChecked
-                        ? 'border-blue-500 bg-blue-50/20 text-blue-900 font-semibold ring-1 ring-blue-500'
-                        : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-                    }`}
+                  <div
+                    key={posCfg.name}
+                    className="flex items-center justify-between gap-3 p-2.5 bg-white rounded-lg border border-gray-250 shadow-xs"
                   >
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                      checked={isChecked}
-                      onChange={() => {
-                        setForm((prev) => {
-                          const exist = prev.allowedPositions.includes(pos);
-                          const next = exist
-                            ? prev.allowedPositions.filter((p) => p !== pos)
-                            : [...prev.allowedPositions, pos];
-                          return { ...prev, allowedPositions: next };
-                        });
-                      }}
-                    />
-                    <span className="text-sm truncate">{pos}</span>
-                  </label>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {/* Repositioning arrows */}
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={moveUp}
+                          title="Move up ballot order"
+                          className="p-1 rounded text-gray-500 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === form.allowedPositions.length - 1}
+                          onClick={moveDown}
+                          title="Move down ballot order"
+                          className="p-1 rounded text-gray-500 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                      </div>
+
+                      <span className="text-xs font-mono font-semibold text-gray-400 w-5">#{idx + 1}</span>
+                      <span className="font-semibold text-sm text-gray-900 truncate">{posCfg.name}</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* Max Winners / Max to vote selector */}
+                      <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-250 rounded-lg px-2 py-1">
+                        <label className="text-[11px] font-medium text-gray-600 whitespace-nowrap">
+                          Winners:
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={posCfg.maxWinners}
+                          onChange={(e) => updateMaxWinners(Number(e.target.value) || 1)}
+                          className="w-12 text-center text-xs font-bold text-blue-700 bg-white border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          title="Maximum winners elected / allowed to vote for this position"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={removePosition}
+                        title="Remove position from election"
+                        className="text-gray-400 hover:text-red-600 p-1 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
+
+              {form.allowedPositions.length === 0 && (
+                <div className="text-center py-4 text-xs text-gray-500">
+                  No positions configured. Select from available positions below or add a custom one.
+                </div>
+              )}
             </div>
+
+            {/* Quick-add unselected default officer positions */}
+            {(() => {
+              const selectedNames = new Set(form.allowedPositions.map((p) => p.name.toLowerCase()));
+              const unselected = allOfficerPositions.filter((p) => !selectedNames.has(p.toLowerCase()));
+              if (unselected.length === 0) return null;
+              return (
+                <div className="pt-1">
+                  <span className="text-xs font-medium text-gray-500 block mb-1">Add available positions to ballot:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {unselected.map((pos) => (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            allowedPositions: [...prev.allowedPositions, { name: pos, maxWinners: 1 }],
+                          }))
+                        }
+                        className="text-xs bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-250 hover:border-blue-300 rounded-lg px-2.5 py-1 transition-colors flex items-center gap-1"
+                      >
+                        <Plus size={12} /> {pos}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Inline Candidates Lineup Setup */}
@@ -676,7 +870,9 @@ export const ElectionsPage = () => {
                 <div className="min-w-0">
                   <p className="font-semibold text-gray-900">{details.election.title}</p>
                   <p className="text-sm text-gray-600 mt-1">{details.election.description || '—'}</p>
-                  <p className="text-xs text-gray-500 mt-2">{details.election.startDate} → {details.election.endDate}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {details.election.startDate}{details.election.startTime ? ` ${details.election.startTime}` : ''} → {details.election.endDate}{details.election.endTime ? ` ${details.election.endTime}` : ''}
+                  </p>
                 </div>
                 <Badge variant={details.election.status === 'open' ? 'success' : details.election.status === 'closed' ? 'warning' : 'info'}>{String(details.election.status).toUpperCase()}</Badge>
               </div>
@@ -751,10 +947,24 @@ export const ElectionsPage = () => {
                 const maxVotes = Math.max(...positionCandidates.map((c) => c.votesCount || 0));
                 const totalPosVotes = positionCandidates.reduce((acc, curr) => acc + (curr.votesCount || 0), 0);
 
+                // Find max winners configured for this position
+                const posConfig = (details.election.allowedPositions || []).find((p: any) => {
+                  const pName = typeof p === 'string' ? p : p?.name;
+                  return pName && pName.toLowerCase() === position.toLowerCase();
+                });
+                const maxWinners = typeof posConfig === 'object' && posConfig?.maxWinners ? posConfig.maxWinners : 1;
+
                 return (
                   <div key={position} className="border border-gray-250 rounded-xl p-4 bg-gray-50/40 space-y-3 shadow-sm">
                     <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 text-sm flex items-center justify-between">
-                      <span>{position}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{position}</span>
+                        {maxWinners > 1 && (
+                          <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                            {maxWinners} Winners
+                          </span>
+                        )}
+                      </div>
                       {(canManage || isClosed || details.election.status === 'closed' || details.election.status === 'archived') && <span className="text-xs text-gray-500 font-normal">Total Votes: {totalPosVotes}</span>}
                     </h4>
                     <div className="space-y-3">
@@ -905,71 +1115,130 @@ export const ElectionsPage = () => {
               <h3 className="font-bold text-blue-900 text-lg">{details.election.title}</h3>
               <p className="text-blue-700 text-sm mt-1">{details.election.description || 'No description provided.'}</p>
               <div className="mt-3 flex items-center justify-between text-xs text-blue-800 font-semibold bg-blue-100/50 rounded p-2">
-                <span>VOTING ENDS: {details.election.endDate}</span>
+                <span>
+                  VOTING ENDS: {details.election.endDate}{details.election.endTime ? ` at ${details.election.endTime}` : ''}
+                </span>
                 {timeLeft && <span className="animate-pulse text-red-600">⌛ {timeLeft}</span>}
               </div>
             </div>
 
             <div className="space-y-6">
-              {Object.entries(candidatesByPosition).map(([position, positionCandidates]) => (
-                <div key={position} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm space-y-4">
-                  <h4 className="text-md font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center justify-between">
-                    <span>{position}</span>
-                    <span className="text-xs font-normal text-gray-500">Select exactly 1 candidate</span>
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {positionCandidates.map((c: any) => {
-                      const isSelected = selectedVotes[position] === String(c.id);
-                      return (
-                        <div
-                          key={c.id}
-                          onClick={() => setSelectedVotes((prev) => ({ ...prev, [position]: String(c.id) }))}
-                          className={`relative border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                            isSelected
-                              ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-600'
-                              : 'border-gray-200 hover:border-blue-300'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-800 font-bold text-lg select-none shrink-0">
-                              {c.memberName ? c.memberName.split(' ').map((n: string) => n[0]).slice(0,2).join('') : 'C'}
+              {Object.entries(candidatesByPosition).map(([position, positionCandidates]) => {
+                const posConfig = (details.election.allowedPositions || []).find((p: any) => {
+                  const pName = typeof p === 'string' ? p : p?.name;
+                  return pName && pName.toLowerCase() === position.toLowerCase();
+                });
+                const maxWinners = typeof posConfig === 'object' && posConfig?.maxWinners ? posConfig.maxWinners : 1;
+                const currentSelections: string[] = selectedVotes[position] || [];
+
+                const toggleCandidate = (candidateIdStr: string) => {
+                  setSelectedVotes((prev) => {
+                    const existing = prev[position] || [];
+                    const isAlreadySelected = existing.includes(candidateIdStr);
+
+                    if (isAlreadySelected) {
+                      // Deselect candidate
+                      const next = existing.filter((id) => id !== candidateIdStr);
+                      if (next.length === 0) {
+                        const copy = { ...prev };
+                        delete copy[position];
+                        return copy;
+                      }
+                      return { ...prev, [position]: next };
+                    }
+
+                    // For single-winner position: replace selection
+                    if (maxWinners === 1) {
+                      return { ...prev, [position]: [candidateIdStr] };
+                    }
+
+                    // For multi-winner position: check limit
+                    if (existing.length >= maxWinners) {
+                      addNotification({
+                        userId: 'current',
+                        title: 'Selection Limit Reached',
+                        message: `You can only select up to ${maxWinners} candidate(s) for ${position}.`,
+                        type: 'warning',
+                        isRead: false,
+                      });
+                      return prev;
+                    }
+
+                    return { ...prev, [position]: [...existing, candidateIdStr] };
+                  });
+                };
+
+                return (
+                  <div key={position} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm space-y-4">
+                    <h4 className="text-md font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span>{position}</span>
+                        {maxWinners > 1 && (
+                          <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                            Select up to {maxWinners}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-normal text-gray-500">
+                        {maxWinners === 1
+                          ? 'Select 1 candidate (click again to deselect)'
+                          : `${currentSelections.length} of ${maxWinners} selected (click again to deselect)`}
+                      </span>
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {positionCandidates.map((c: any) => {
+                        const isSelected = currentSelections.includes(String(c.id));
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => toggleCandidate(String(c.id))}
+                            className={`relative border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md select-none ${
+                              isSelected
+                                ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-600'
+                                : 'border-gray-200 hover:border-blue-300'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-800 font-bold text-lg select-none shrink-0">
+                                {c.memberName ? c.memberName.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : 'C'}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-gray-900 truncate">{c.memberName || c.memberEmail}</p>
+                                <p className="text-xs text-gray-500 font-medium">BS Information Technology</p>
+                                <p className="text-xs text-gray-600 mt-2 line-clamp-2 italic">
+                                  "{c.platform || 'No platform bio provided.'}"
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewingCandidate(c);
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline flex items-center gap-1 mt-2"
+                                >
+                                  <Eye size={12} /> View Full Platform
+                                </button>
+                              </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-gray-900 truncate">{c.memberName || c.memberEmail}</p>
-                              <p className="text-xs text-gray-500 font-medium">BS Information Technology</p>
-                              <p className="text-xs text-gray-600 mt-2 line-clamp-2 italic">
-                                "{c.platform || 'No platform bio provided.'}"
-                              </p>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setViewingCandidate(c);
-                                }}
-                                className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline flex items-center gap-1 mt-2"
-                              >
-                                <Eye size={12} /> View Full Platform
-                              </button>
-                            </div>
+                            {isSelected && (
+                              <span className="absolute top-3 right-3 text-blue-600">
+                                <Trophy size={18} className="fill-blue-600" />
+                              </span>
+                            )}
                           </div>
-                          {isSelected && (
-                            <span className="absolute top-3 right-3 text-blue-600">
-                              <Trophy size={18} className="fill-blue-600" />
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-150">
               <Button variant="outline" onClick={() => setShowVotingModal(false)}>Cancel</Button>
               <Button
                 variant="primary"
-                disabled={Object.keys(selectedVotes).length === 0}
+                disabled={Object.values(selectedVotes).every((arr) => !arr || arr.length === 0)}
                 onClick={() => setShowConfirmSubmit(true)}
               >
                 Submit Vote
@@ -1036,10 +1305,17 @@ export const ElectionsPage = () => {
                   label="Assigned Position *"
                   options={[
                     { value: '', label: 'Select position' },
-                    ...(candidateModalSource === 'create_modal' ? form.allowedPositions : (details?.election?.allowedPositions || form.allowedPositions)).map((pos: string) => ({
-                      value: pos,
-                      label: pos,
-                    })),
+                    ...(candidateModalSource === 'create_modal'
+                      ? form.allowedPositions.map((p) => p.name)
+                      : (details?.election?.allowedPositions || form.allowedPositions).map((p: any) =>
+                          typeof p === 'string' ? p : p?.name
+                        )
+                    )
+                      .filter((pos: any): pos is string => Boolean(pos && String(pos).trim()))
+                      .map((pos: string) => ({
+                        value: pos,
+                        label: pos,
+                      })),
                   ]}
                   value={candidateTargetPosition}
                   onChange={(e) => setCandidateTargetPosition((e.target as HTMLSelectElement).value)}

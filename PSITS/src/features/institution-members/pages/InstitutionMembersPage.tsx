@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Input, Button, Badge, Select, TextArea } from '@/shared/components/Form';
-import { Pagination, Modal } from '@/shared/components/Common';
+import { Pagination, Modal, TableSkeleton } from '@/shared/components/Common';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
 import { useAuth } from '@/shared/context/AuthContext';
@@ -113,6 +114,7 @@ export const InstitutionMembersPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 250);
   const [members, setMembers] = useState<InstitutionMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -327,6 +329,7 @@ export const InstitutionMembersPage = () => {
   // Admin Institution Filter & Board State
   const [selectedInstitutionFilter, setSelectedInstitutionFilter] = useState<string>('all');
   const [boardSearchTerm, setBoardSearchTerm] = useState<string>('');
+  const debouncedBoardSearchTerm = useDebounce(boardSearchTerm, 250);
   const [boardStatusFilter, setBoardStatusFilter] = useState<'all' | 'with_balance' | 'settled'>('all');
 
   // Institution Partial Payment Modal State
@@ -467,15 +470,15 @@ export const InstitutionMembersPage = () => {
     return institutionAccounts.filter((inst) => {
       if (boardStatusFilter === 'with_balance' && inst.remainingBalance <= 0) return false;
       if (boardStatusFilter === 'settled' && inst.remainingBalance > 0) return false;
-      if (boardSearchTerm.trim()) {
-        const term = boardSearchTerm.trim().toLowerCase();
+      if (debouncedBoardSearchTerm.trim()) {
+        const term = debouncedBoardSearchTerm.trim().toLowerCase();
         const matchName = inst.name.toLowerCase().includes(term);
         const matchEmail = (inst.email || '').toLowerCase().includes(term);
         if (!matchName && !matchEmail) return false;
       }
       return true;
     });
-  }, [institutionAccounts, boardStatusFilter, boardSearchTerm]);
+  }, [institutionAccounts, boardStatusFilter, debouncedBoardSearchTerm]);
 
   const filteredMembers = useMemo(() => {
     let result = members;
@@ -486,7 +489,7 @@ export const InstitutionMembersPage = () => {
           m.institutionName === selectedInstitutionFilter
       );
     }
-    const q = searchTerm.trim().toLowerCase();
+    const q = debouncedSearchTerm.trim().toLowerCase();
     if (!q) return result;
     return result.filter((m) =>
       [m.fullName, m.email, m.contactNumber, m.gender, m.position, m.eventTitle, m.institutionName]
@@ -495,7 +498,7 @@ export const InstitutionMembersPage = () => {
         .toLowerCase()
         .includes(q)
     );
-  }, [members, searchTerm, selectedInstitutionFilter, canViewAll]);
+  }, [members, debouncedSearchTerm, selectedInstitutionFilter, canViewAll]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
@@ -1195,8 +1198,18 @@ export const InstitutionMembersPage = () => {
                   placeholder="Search institution..."
                   value={boardSearchTerm}
                   onChange={(e) => setBoardSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
+                {boardSearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setBoardSearchTerm('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
+                    aria-label="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center rounded-xl border border-gray-200 dark:border-slate-800 p-1 bg-gray-50 dark:bg-slate-900/60 text-xs">
@@ -1444,13 +1457,39 @@ export const InstitutionMembersPage = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-10"
+                className="pl-10 pr-10"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                  aria-label="Clear search"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px]">
+          {isLoading ? (
+            <TableSkeleton columns={canViewAll ? 10 : 9} rows={6} />
+          ) : (
+            <>
+              <div
+                className="overflow-x-auto focus:ring-2 focus:ring-blue-500/20 rounded-xl"
+                role="region"
+                aria-label="Institution Roster Table"
+                tabIndex={0}
+              >
+                <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>👉 Swipe table horizontally to view full row</span>
+                  <span className="font-mono text-[10px]">{filteredMembers.length} records</span>
+                </div>
+                <table className="w-full min-w-[1100px]">
               <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Member</th>
@@ -1560,10 +1599,12 @@ export const InstitutionMembersPage = () => {
             </table>
           </div>
 
-          {paginated.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
-              {isLoading ? 'Loading member list...' : 'No member records found.'}
-            </div>
+              {paginated.length === 0 && (
+                <div className="p-8 text-center text-gray-500">
+                  No member records found.
+                </div>
+              )}
+            </>
           )}
 
           <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

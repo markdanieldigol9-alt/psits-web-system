@@ -193,12 +193,95 @@ export interface ReportData {
 // Event Institution Delegation Leaderboard Types
 export interface EventLeaderboardParticipant {
   id: string;
+  participantKey?: string;
   fullName: string;
   email?: string;
   contactNumber?: string;
   gender?: string;
   position?: string;
   status?: string;
+  isCheckedIn?: boolean;
+  checkedInAt?: string | null;
+}
+
+export interface EventWinnerRecord {
+  id: string;
+  eventId: string;
+  rankPosition: number;
+  awardTitle: string;
+  institutionName: string;
+  participantName: string;
+  points: number;
+  scoreOrNotes?: string;
+  createdAt?: string;
+}
+
+export interface OverallCompetitionStanding {
+  rank: number;
+  institutionName: string;
+  goldCount: number;
+  silverCount: number;
+  bronzeCount: number;
+  totalMedals: number;
+  totalPoints: number;
+  eventsWonCount: number;
+  inVenueAttendees?: number;
+  isOverallChampion?: boolean;
+  awards?: Array<{
+    id: string;
+    eventId: string;
+    eventTitle: string;
+    eventType?: string;
+    rankPosition: number;
+    awardTitle: string;
+    participantName: string;
+    points: number;
+    scoreOrNotes?: string;
+  }>;
+}
+
+export interface EventAttendanceParticipant {
+  participantKey: string;
+  registrationSource: string;
+  recordId: number | string;
+  fullName: string;
+  email?: string;
+  contactNumber?: string;
+  institutionName: string;
+  position?: string;
+  registrationStatus: string;
+  isCheckedIn: boolean;
+  checkedInAt?: string | null;
+  registeredAt?: string | null;
+}
+
+export interface EventAttendanceBreakdown {
+  institutionName: string;
+  registeredCount: number;
+  checkedInCount: number;
+  attendanceRate: number;
+}
+
+export interface EventAttendanceData {
+  event: {
+    id: string;
+    title: string;
+    status: string;
+    location?: string;
+    startAt?: string;
+    endAt?: string;
+    capacity?: number;
+    themeColor?: string;
+  };
+  summary: {
+    totalRegistered: number;
+    totalCheckedIn: number;
+    notCheckedIn: number;
+    attendanceRate: number;
+    totalInstitutions: number;
+  };
+  institutionBreakdown: EventAttendanceBreakdown[];
+  participants: EventAttendanceParticipant[];
 }
 
 export interface EventLeaderboardInstitution {
@@ -209,12 +292,16 @@ export interface EventLeaderboardInstitution {
   institutionAvatar?: string | null;
   registrationId?: string | null;
   registeredCount: number;
+  checkedInCount?: number;
+  attendanceRate?: number;
   participants: EventLeaderboardParticipant[];
 }
 
 export interface EventLeaderboardSummary {
   totalInstitutions: number;
   totalRegisteredParticipants: number;
+  totalCheckedInParticipants?: number;
+  overallAttendanceRate?: number;
 }
 
 export interface InstitutionLeaderboardData {
@@ -236,5 +323,7 @@ export interface InstitutionLeaderboardData {
   } | null;
   summary: EventLeaderboardSummary;
   leaderboard: EventLeaderboardInstitution[];
+  eventWinners?: EventWinnerRecord[];
+  overallStandings?: OverallCompetitionStanding[];
 }
 

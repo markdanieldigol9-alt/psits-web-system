@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input } from '@/shared/components/Form';
-import { Badge, EmptyState, Modal, Pagination, StatusBadge } from '@/shared/components/Common';
+import { Badge, EmptyState, Modal, Pagination, StatusBadge, TableSkeleton } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { AddMemberModal } from '@/features/members/components/AddMemberModal';
 import { Plus, Search, Edit2, Archive, Eye, CheckCircle, Building2, Factory, UserRound, Mail, XCircle, UserX, UserCheck, PauseCircle, Ban, Download, Clock } from 'lucide-react';
@@ -32,6 +33,7 @@ export const MembersPage = () => {
   const { addNotification } = useNotification();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 250);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'pending' | 'suspended' | 'banned' | 'archived' | 'rejected'>('all');
   const [filterType, setFilterType] = useState<MemberTypeFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -242,7 +244,7 @@ export const MembersPage = () => {
       .join(' ')
       .toLowerCase();
 
-    const matchesSearch = searchable.includes(searchTerm.toLowerCase());
+    const matchesSearch = searchable.includes(debouncedSearchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || member.status === filterStatus;
     const normalizedType = normalizeMemberType(member.memberType);
     const matchesType = filterType === 'all' || normalizedType === filterType;
@@ -594,8 +596,21 @@ export const MembersPage = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-10"
+                className="pl-10 pr-9"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCurrentPage(1);
+                  }}
+                  aria-label="Clear search query"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  <XCircle size={16} />
+                </button>
+              )}
             </div>
             <select
               aria-label="Filter member status"
@@ -633,8 +648,20 @@ export const MembersPage = () => {
         </Card>
 
         <Card className="border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px]">
+          {isLoading ? (
+            <TableSkeleton columns={8} rows={6} />
+          ) : (
+            <div
+              className="overflow-x-auto focus:ring-2 focus:ring-blue-500/20 rounded-xl"
+              role="region"
+              aria-label="Members Directory Table"
+              tabIndex={0}
+            >
+              <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>👉 Swipe table horizontally to view full row</span>
+                <span className="font-mono text-[10px]">{filteredMembers.length} records</span>
+              </div>
+              <table className="w-full min-w-[1200px]">
               <thead className="border-b border-gray-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80">
                 <tr>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Name</th>
@@ -903,10 +930,11 @@ export const MembersPage = () => {
               </tbody>
             </table>
           </div>
+          )}
 
-          {paginatedMembers.length === 0 && (
+          {!isLoading && paginatedMembers.length === 0 && (
             <div className="p-8 text-center text-gray-500">
-              {isLoading ? 'Loading members...' : 'No members found matching your filters.'}
+              No members found matching your filters.
             </div>
           )}
 

@@ -1,0 +1,141 @@
+<mxfile host="app.diagrams.net" modified="2026-11-09T02:00:00.000Z" agent="PSITS Diagram Generator" version="24.0.0" type="device">
+  <diagram id="PSITS_UseCase_Admin" name="Admin Executive Governance Use Case Diagram">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- SYSTEM BOUNDARY -->
+        <mxCell id="system_box" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;PSITS Region XII Web System — Executive Administration Portal&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#F8FAFC;strokeColor=#7C3AED;strokeWidth=2;arcSize=8;rounded=1;fontFamily=Helvetica;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="260" y="40" width="980" height="860" as="geometry" />
+        </mxCell>
+
+        <!-- PACKAGES -->
+        <!-- 1. Officer Governance -->
+        <mxCell id="p_off_gov" value="1. Officer Hierarchy &amp; Governance" style="swimlane;fontStyle=1;startSize=24;fillColor=#FAF5FF;strokeColor=#C084FC;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="30" y="50" width="300" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_pos" value="Manage Leadership Positions&#xa;(Dynamic Titles, Hierarchy &amp; Order)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="85" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_appoint" value="Appoint &amp; Relieve Officers&#xa;(Set Campus &amp; Term Period)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="135" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_perm" value="Assign Granular Access Permissions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#CA8A04;strokeWidth=1.5;fontSize=10;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="185" width="245" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_hist" value="Inspect Historical Officer Service" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="230" width="245" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Member Lifecycle -->
+        <mxCell id="p_mem_gov" value="2. Member Directory &amp; Discipline" style="swimlane;fontStyle=1;startSize=24;fillColor=#EFF6FF;strokeColor=#60A5FA;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="360" y="50" width="300" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_memdir" value="Manage Central Member Directory&#xa;(Multi-University Filter)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="85" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_override" value="Manual Account Status Overrides" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="135" width="245" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_discipline" value="Enforce Disciplinary Actions&#xa;(Suspend / Ban Accounts)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DC2626;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="182" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_revokesess" value="Revoke Active Login Sessions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#EF4444;strokeWidth=1.5;fontSize=10;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="232" width="245" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_resetpass" value="Issue Admin Password Resets" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="275" width="245" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Elections & Certification -->
+        <mxCell id="p_elect_gov" value="3. Election Supervision &amp; Results" style="swimlane;fontStyle=1;startSize=24;fillColor=#FAF5FF;strokeColor=#C084FC;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="690" y="50" width="260" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_createl" value="Create &amp; Schedule Elections&#xa;(Strict Voting Timestamps)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="85" width="225" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_allowpos" value="Configure Allowed Ballot Positions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#CA8A04;strokeWidth=1.5;fontSize=10;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="135" width="225" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_audittally" value="Audit Real-Time Vote Tallies" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="180" width="225" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_certify" value="Certify &amp; Publish Official Results" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="225" width="225" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Partners & Sponsorships -->
+        <mxCell id="p_part_gov" value="4. Corporate Partners &amp; Grants" style="swimlane;fontStyle=1;startSize=24;fillColor=#FFFBEB;strokeColor=#FBBF24;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="30" y="320" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_partdir" value="Manage Industry Partners Directory&#xa;(Corporate Sponsors &amp; MOAs)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="360" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_grants" value="Track Sponsorship Resource Grants&#xa;(Cash, Equipment &amp; Venues)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="412" width="245" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- 5. Business Intelligence & Reports -->
+        <mxCell id="p_bi_gov" value="5. Executive Analytics &amp; Reports" style="swimlane;fontStyle=1;startSize=24;fillColor=#F0FDF4;strokeColor=#4ADE80;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="360" y="320" width="300" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_dashboard" value="Inspect Executive KPI Dashboard&#xa;(Consolidated Parallel Analytics)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="360" width="245" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_delinquent" value="Monitor Delinquencies &amp; Balances" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="415" width="245" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_auditlog" value="Export System Audit Trail (audit_logs)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="460" width="245" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_savepdf" value="Save Institutional PDF Reports&#xa;(Authorized Signature Blocks)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="505" width="245" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- 6. Infrastructure & DB -->
+        <mxCell id="p_infra_gov" value="6. Infrastructure &amp; DB Tuning" style="swimlane;fontStyle=1;startSize=24;fillColor=#F3F4F6;strokeColor=#9CA3AF;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="690" y="320" width="260" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_qr" value="Configure Regional GCash QR Code" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="360" width="225" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_settings" value="Manage System Settings" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="410" width="225" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_slowlog" value="Monitor Slow Query Logs&#xa;(&gt;100ms Profiling &amp; Fingerprints)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="458" width="225" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_a_migrate" value="Execute Schema Migrations &amp; Indexing" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="510" width="225" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- ACTOR -->
+        <mxCell id="act_admin" value="Super Admin / Director&#xa;(System Administrator)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#7C3AED;strokeColor=#5B21B6;strokeWidth=2;fontFamily=Helvetica;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="320" width="60" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES -->
+        <mxCell id="ea_pos" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_pos"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_appoint" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_appoint"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_memdir" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_memdir"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_discipline" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="act_admin" target="uc_a_discipline"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_createl" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_createl"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_certify" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="act_admin" target="uc_a_certify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_part" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_partdir"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_dash" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="act_admin" target="uc_a_dashboard"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_auditlog" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_auditlog"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_qr" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_qr"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_slow" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_slowlog"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- INCLUDES & EXTENDS -->
+        <mxCell id="inc_perm" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#CA8A04;" edge="1" parent="1" source="uc_a_pos" target="uc_a_perm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="inc_revokesess" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#EF4444;" edge="1" parent="1" source="uc_a_discipline" target="uc_a_revokesess"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="inc_allowpos" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#CA8A04;" edge="1" parent="1" source="uc_a_createl" target="uc_a_allowpos"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="inc_cert_audit" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#7C3AED;" edge="1" parent="1" source="uc_a_certify" target="uc_a_audittally"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ext_pdf" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#16A34A;" edge="1" parent="1" source="uc_a_savepdf" target="uc_a_dashboard"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

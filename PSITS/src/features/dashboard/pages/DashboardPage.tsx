@@ -630,6 +630,150 @@ export const DashboardPage = () => {
           })}
         </div>
 
+        {/* Executive Command & Quick Shortcuts (Pillar 1: UI & Navigation) */}
+        <Card
+          title="Executive Command & Quick Shortcuts"
+          subtitle="Fast-track administrative routing and operational actions"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/members')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Users size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Members Roster</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Approvals & directory</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/institution-members')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-teal-500/40 hover:bg-teal-50/40 dark:hover:bg-teal-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Building2 size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">School Rosters</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Batch uploads & reps</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-teal-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/events')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-amber-500/40 hover:bg-amber-50/40 dark:hover:bg-amber-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <CalendarDays size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Event Rosters</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Registrations & schedules</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/payments')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <DollarSign size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Financial Ledger</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Remittance & OR audit</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/stream-events')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-purple-500/40 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Video size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Stream Events</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Clips & live broadcast</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/elections')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-cyan-500/40 hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-cyan-50 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Vote size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Election Hub</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Ballots & live tallies</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-cyan-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/reports')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-rose-500/40 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <FileText size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Export Center</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Official PDFs & Excel</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-rose-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/announcements')}
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-indigo-500/40 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Megaphone size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Announcements</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Publish news & updates</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+            </button>
+          </div>
+        </Card>
+
         {/* Institution Event Delegation Leaderboard */}
         <InstitutionEventLeaderboard />
 

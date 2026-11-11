@@ -3,12 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/shared/layouts';
 
 import { Card, Button, TextArea, Input, Select } from '@/shared/components/Form';
-import { Badge, Pagination, Modal } from '@/shared/components/Common';
-import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus, RotateCcw, Receipt } from 'lucide-react';
+import { Badge, Pagination, Modal, TableSkeleton } from '@/shared/components/Common';
+import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus, RotateCcw, Receipt, X } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import api from '@/shared/services/api';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
@@ -30,6 +31,7 @@ export const PaymentsPage = () => {
   const initialSearch = searchParams.get('search') || searchParams.get('member') || '';
   const initialCategory = (searchParams.get('category') as any) || 'all';
   const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const debouncedSearchTerm = useDebounce(searchTerm, 250);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [filterCategory, setFilterCategory] = useState<'all' | 'institution' | 'individual' | 'event' | 'sponsorship'>(
     ['institution', 'individual', 'event', 'sponsorship'].includes(initialCategory) ? initialCategory : 'all'
@@ -289,9 +291,9 @@ export const PaymentsPage = () => {
       if (filterCategory === 'sponsorship' && !isSponsorshipPayment(payment)) return false;
     }
 
-    if (!searchTerm.trim()) return true;
+    if (!debouncedSearchTerm.trim()) return true;
 
-    const term = searchTerm.toLowerCase().trim();
+    const term = debouncedSearchTerm.toLowerCase().trim();
     return (
       (payment.memberName && String(payment.memberName).toLowerCase().includes(term)) ||
       (payment.institutionName && String(payment.institutionName).toLowerCase().includes(term)) ||
@@ -863,8 +865,22 @@ export const PaymentsPage = () => {
                   setSearchParams({});
                 }
               }}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-900 dark:text-white placeholder-slate-400"
+              className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-900 dark:text-white placeholder-slate-400"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSearchParams({});
+                  setCurrentPage(1);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                aria-label="Clear search"
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -937,8 +953,21 @@ export const PaymentsPage = () => {
 
         {/* Payments Table */}
         <Card className="border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px]">
+          {isLoading ? (
+            <TableSkeleton columns={(isAdminOrOfficer || isInstitution) ? 7 : 6} rows={6} />
+          ) : (
+            <>
+              <div
+                className="overflow-x-auto focus:ring-2 focus:ring-blue-500/20 rounded-xl"
+                role="region"
+                aria-label="Payments Ledger Table"
+                tabIndex={0}
+              >
+                <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>👉 Swipe table horizontally to view all columns</span>
+                  <span className="font-mono text-[10px]">{filteredPayments.length} records</span>
+                </div>
+                <table className="w-full min-w-[1000px]">
               <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
                   {(isAdminOrOfficer || isInstitution) && (
@@ -1196,6 +1225,8 @@ export const PaymentsPage = () => {
               )}
             </div>
           )}
+        </>
+      )}
 
           {totalPages > 1 && itemsPerPage !== 'all' && (
             <Pagination

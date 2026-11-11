@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
-import { Modal } from '@/shared/components/Common';
+import { Modal, CardSkeleton } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw, AlertCircle, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { PaymentInstructionsCard } from '@/shared/components/PaymentInstructionsCard';
 import { ReceiptScannerBadge } from '@/shared/components/ReceiptScannerBadge';
@@ -117,6 +118,8 @@ export const EventsPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'draft'>('upcoming');
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 250);
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<any | null>(null);
@@ -465,10 +468,17 @@ export const EventsPage = () => {
   }, [selectedMembers, registrationSource, isInstitution, detailsEvent]);
 
 
-  const filteredEvents = useMemo(
-    () => events.filter((event) => filterStatus === 'all' || event.status === filterStatus),
-    [events, filterStatus]
-  );
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const matchesStatus = filterStatus === 'all' || event.status === filterStatus;
+      if (!matchesStatus) return false;
+      const q = debouncedSearchTerm.trim().toLowerCase();
+      if (!q) return true;
+      return [event.title, event.description, event.location, event.eventType, event.category]
+        .filter(Boolean)
+        .some((val) => String(val).toLowerCase().includes(q));
+    });
+  }, [events, filterStatus, debouncedSearchTerm]);
 
   const getStatusColor = (status: string): 'primary' | 'success' | 'warning' | 'error' | 'info' => {
     switch (status) {
@@ -1302,24 +1312,53 @@ export const EventsPage = () => {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Select
-            label="Filter Status"
-            options={[
-              { value: 'all', label: 'All Events' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'upcoming', label: 'Upcoming' },
-              { value: 'ongoing', label: 'Ongoing' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'cancelled', label: 'Cancelled' },
-            ]}
-            value={filterStatus}
-            onChange={(e) => setFilterStatus((e.target as HTMLSelectElement).value as any)}
-          />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-end">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Search Events</label>
+            <div className="relative">
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search events by title, description, location, or category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm text-slate-900 dark:text-white placeholder-slate-400"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                  aria-label="Clear search"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+          <div>
+            <Select
+              label="Filter Status"
+              options={[
+                { value: 'all', label: 'All Events' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'upcoming', label: 'Upcoming' },
+                { value: 'ongoing', label: 'Ongoing' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'cancelled', label: 'Cancelled' },
+              ]}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus((e.target as HTMLSelectElement).value as any)}
+            />
+          </div>
         </div>
 
         <div className="space-y-4">
-          {filteredEvents.map((event) => {
+          {isLoading ? (
+            <CardSkeleton count={3} />
+          ) : (
+            <>
+              {filteredEvents.map((event) => {
             const isRegistered = !!registeredEventIds[String(event.id)];
             const statusText = memberStatusByEvent[String(event.id)] || event.status;
             const isPaidEvent = Number(event?.fee || 0) > 0;
@@ -1537,14 +1576,15 @@ export const EventsPage = () => {
               </div>
             </Card>
             );
-          })}
+              })}
+              {filteredEvents.length === 0 && (
+                <Card className="p-8 text-center text-gray-500">
+                  No events found matching your criteria.
+                </Card>
+              )}
+            </>
+          )}
         </div>
-
-        {filteredEvents.length === 0 && (
-          <Card className="p-8 text-center text-gray-500">
-            {isLoading ? 'Loading...' : 'No events found matching your criteria.'}
-          </Card>
-        )}
       </div>
       <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={editingEventId ? 'Edit Event' : 'Create Event Wizard'} size="lg">
         {/* Navigation Tabs Header */}

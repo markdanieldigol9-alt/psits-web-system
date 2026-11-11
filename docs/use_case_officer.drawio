@@ -1,0 +1,134 @@
+<mxfile host="app.diagrams.net" modified="2026-11-09T02:00:00.000Z" agent="PSITS Diagram Generator" version="24.0.0" type="device">
+  <diagram id="PSITS_UseCase_Officer" name="Officer Operations Use Case Diagram">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- SYSTEM BOUNDARY -->
+        <mxCell id="system_box" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;PSITS Region XII Web System — Officer Operations Portal&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#F8FAFC;strokeColor=#0D9488;strokeWidth=2;arcSize=8;rounded=1;fontFamily=Helvetica;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="260" y="40" width="980" height="860" as="geometry" />
+        </mxCell>
+
+        <!-- PACKAGES -->
+        <!-- 1. Payment Auditing -->
+        <mxCell id="p_audit" value="1. Financial Verification &amp; Auditing" style="swimlane;fontStyle=1;startSize=24;fillColor=#F0FDFA;strokeColor=#5EEAD4;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="30" y="50" width="300" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_queue" value="Review Pending Payments Queue" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="85" width="245" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_inspect" value="Inspect Uploaded Proofs&#xa;(Official Receipt / GCash / Bank Slip)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#CA8A04;strokeWidth=1.5;fontSize=10;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="135" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_verify" value="Verify Payment &amp; Activate Member&#xa;(ACID Transaction: +1 Yr Validity)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="188" width="245" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_reject" value="Reject Payment with Audit Remarks&#xa;(Requires Rejection Reason)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DC2626;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="245" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_cash" value="Record Officer Cash Remittance&#xa;(Direct Cash: No File Required)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="298" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_logs" value="Inspect Status Audit Logs&#xa;(payment_status_logs)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="348" width="245" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Event Logistics -->
+        <mxCell id="p_event_mgmt" value="2. Event Operations &amp; Logistics" style="swimlane;fontStyle=1;startSize=24;fillColor=#FEF2F2;strokeColor=#F87171;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="360" y="50" width="300" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_eventcreate" value="Create &amp; Update Events&#xa;(Schedule-Driven Registration)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="85" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_guidelines" value="Upload Dual Guidelines&#xa;(Markdown Text + Attached PDF/DOCX)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="138" width="245" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_bracketmgmt" value="Configure Esports Tournament Brackets&#xa;(Category-Driven Activation)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="192" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_roster" value="Access Dual-Sourced Participant Roster&#xa;(Self-Registrations &amp; School Batches)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="244" width="245" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_checkin" value="Check-In In-Venue Attendance&#xa;(Real-Time Turnout Toggle)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="300" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_csvroster" value="Export Participant Roster to CSV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="348" width="245" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Comms, News & Media -->
+        <mxCell id="p_comms_mgmt" value="3. News, Studio &amp; Moderation" style="swimlane;fontStyle=1;startSize=24;fillColor=#FFFBEB;strokeColor=#FBBF24;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="690" y="50" width="260" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_ann" value="Publish Official Announcements&#xa;(Normal / Urgent / Critical Banners)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="85" width="225" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_mod" value="Moderate Community Forum&#xa;(Flag &amp; Delete Offensive Content)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="140" width="225" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_studio" value="Manage Live Studio Console&#xa;&amp; Broadcast Links" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="192" width="225" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_video" value="Archive Recorded Seminar Videos" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="705" y="244" width="225" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Candidate Screening -->
+        <mxCell id="p_cand_mgmt" value="4. Candidate Screening" style="swimlane;fontStyle=1;startSize=24;fillColor=#FAF5FF;strokeColor=#C084FC;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="30" y="420" width="300" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_screen" value="Screen &amp; Approve Candidates" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="460" width="245" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_platform" value="Upload Platforms &amp; Photos" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="510" width="245" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_turnout" value="Monitor University Turnout Rates" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="55" y="560" width="245" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 5. Field Reporting -->
+        <mxCell id="p_report_mgmt" value="5. Operational Reporting" style="swimlane;fontStyle=1;startSize=24;fillColor=#F3F4F6;strokeColor=#9CA3AF;strokeWidth=1;rounded=1;" vertex="1" parent="system_box">
+          <mxGeometry x="360" y="420" width="300" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_tabreport" value="Generate Structured Tabular Reports&#xa;(Table-First Architecture)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="460" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_excel" value="Export Active Table to Excel (XLSX)&#xa;(Direct Field Mapping)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="510" width="245" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_o_print" value="Print Unpaginated Reports&#xa;(@media print Optimization)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;strokeWidth=1.5;fontSize=11;" vertex="1" parent="system_box">
+          <mxGeometry x="385" y="560" width="245" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- ACTOR -->
+        <mxCell id="act_officer" value="PSITS Regional Officer&#xa;(Committee / Executive)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#0D9488;strokeColor=#0F766E;strokeWidth=2;fontFamily=Helvetica;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="320" width="60" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES -->
+        <mxCell id="eo_queue" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_queue"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_verify" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;" edge="1" parent="1" source="act_officer" target="uc_o_verify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_reject" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_reject"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_cash" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_cash"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_event" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_eventcreate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_guide" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_guidelines"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_roster" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_roster"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_checkin" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;" edge="1" parent="1" source="act_officer" target="uc_o_checkin"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_screen" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_screen"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_ann" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_ann"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_mod" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_mod"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_studio" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_studio"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_report" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_tabreport"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_excel" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_excel"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- INCLUDES & EXTENDS -->
+        <mxCell id="inc_inspect" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#CA8A04;" edge="1" parent="1" source="uc_o_verify" target="uc_o_inspect"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ext_reject" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#DC2626;" edge="1" parent="1" source="uc_o_reject" target="uc_o_verify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="inc_checkin_roster" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#E11D48;" edge="1" parent="1" source="uc_o_checkin" target="uc_o_roster"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

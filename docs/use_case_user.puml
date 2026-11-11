@@ -1,0 +1,124 @@
+@startuml PSITS_Use_Case_User
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+skinparam shadowing true
+skinparam actorStyle awesome
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+
+skinparam actor {
+    BackgroundColor #0284C7
+    BorderColor #0369A1
+    FontColor #0F172A
+    FontSize 13
+}
+
+skinparam usecase {
+    BackgroundColor #F8FAFC
+    BorderColor #0284C7
+    BorderThickness 1.5
+    FontColor #0F172A
+    ArrowColor #0284C7
+}
+
+skinparam package {
+    BackgroundColor #F0F9FF
+    BorderColor #7DD3FC
+    FontColor #0369A1
+    FontStyle bold
+}
+
+left to right direction
+
+' ========================================================
+' ACTORS
+' ========================================================
+actor "Individual Member\n(Student / Faculty)" as Member #38BDF8
+actor "Institution Representative\n(School Chapter Head)" as InstRep #0284C7
+
+' Generalization
+Member <|-- InstRep : <<specialization>>
+
+' ========================================================
+' SYSTEM BOUNDARY: USER / MEMBER PORTAL
+' ========================================================
+rectangle "PSITS Region XII Web System — User & Member Portal" as UserPortal {
+
+    package "1. Authentication & Account Management" {
+        usecase "Register Account\n(Individual / School Roster)" as UC_Reg
+        usecase "Log In & Manage Profile" as UC_Login
+        usecase "Reset Forgotten Password" as UC_Reset
+        usecase "Toggle Dark / Light Mode" as UC_Theme
+    }
+
+    package "2. Membership Dues & Payment Tracking" {
+        usecase "Submit Membership Payment\n(OR, GCash, Bank Transfer)" as UC_Pay
+        usecase "Upload Receipt & Reference #" as UC_UploadProof
+        usecase "Re-upload Corrected Receipt\n(When Flagged/Rejected)" as UC_Reupload
+        usecase "View Personal Billing History\n& Status Logs" as UC_History
+        usecase "View Expiration Alerts & Status" as UC_Expiry
+    }
+
+    package "3. Event Participation & Guidelines" {
+        usecase "Browse Events Schedule\n(Auto-Status: Upcoming/Ongoing)" as UC_BrowseEvents
+        usecase "Download & Preview Guidelines\n(Markdown / PDF / DOCX)" as UC_Guidelines
+        usecase "Register for Event (Self)" as UC_RegEventSelf
+        usecase "Manage School Batch Roster\n(Add/Edit Student Delegates)" as UC_BatchRoster
+        usecase "Register Batch Delegation for Event" as UC_RegEventBatch
+        usecase "View Esports Match Brackets\n(Single / Double Elimination)" as UC_EsportsBrackets
+        usecase "View Institution Leaderboard" as UC_Leaderboard
+    }
+
+    package "4. Democratic Elections" {
+        usecase "View Candidate Profiles & Platforms" as UC_ViewCandidates
+        usecase "Cast Secret Ballot Vote" as UC_Vote
+        usecase "Verify Active Voting Eligibility" as UC_CheckElig
+    }
+
+    package "5. Community & Live Media" {
+        usecase "Engage in Community Forum\n(Create Post, Comment, Like)" as UC_Forum
+        usecase "Read Announcements & News" as UC_Announcements
+        usecase "Watch Live Stream Events & Recordings" as UC_WatchLive
+        usecase "Receive In-App Notifications" as UC_Notifs
+    }
+}
+
+' ========================================================
+' ASSOCIATIONS (INDIVIDUAL MEMBER)
+' ========================================================
+Member --> UC_Reg
+Member --> UC_Login
+Member --> UC_Reset
+Member --> UC_Theme
+Member --> UC_Pay
+Member --> UC_Reupload
+Member --> UC_History
+Member --> UC_Expiry
+Member --> UC_BrowseEvents
+Member --> UC_Guidelines
+Member --> UC_RegEventSelf
+Member --> UC_EsportsBrackets
+Member --> UC_Leaderboard
+Member --> UC_ViewCandidates
+Member --> UC_Vote
+Member --> UC_Forum
+Member --> UC_Announcements
+Member --> UC_WatchLive
+Member --> UC_Notifs
+
+' ========================================================
+' ASSOCIATIONS (INSTITUTION REPRESENTATIVE SPECIALIZED)
+' ========================================================
+InstRep --> UC_BatchRoster
+InstRep --> UC_RegEventBatch
+
+' ========================================================
+' INCLUDE & EXTEND RELATIONSHIPS
+' ========================================================
+UC_Pay ..> UC_UploadProof : <<include>>
+UC_Pay <.. UC_Reupload : <<extend>>
+UC_Vote ..> UC_CheckElig : <<include>>
+UC_RegEventSelf ..> UC_BrowseEvents : <<include>>
+UC_RegEventBatch ..> UC_BatchRoster : <<include>>
+
+@enduml

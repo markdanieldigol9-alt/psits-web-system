@@ -175,6 +175,67 @@ export const LoadingSpinner = ({ size = 'md', fullPage = false, label }: Loading
   return <div className="flex items-center justify-center p-6">{spinner}</div>;
 };
 
+// ─── TableSkeleton ──────────────────────────────────────────
+export interface TableSkeletonProps {
+  columns?: number;
+  rows?: number;
+  className?: string;
+}
+
+export const TableSkeleton = ({ columns = 5, rows = 6, className = '' }: TableSkeletonProps) => {
+  return (
+    <div className={`w-full overflow-hidden animate-pulse ${className}`} role="status" aria-label="Loading table data">
+      <div className="space-y-3 p-4">
+        {/* Table header bar skeleton */}
+        <div className="h-10 bg-slate-100 dark:bg-slate-800/80 rounded-xl flex items-center px-4 gap-4">
+          {Array.from({ length: columns }).map((_, idx) => (
+            <div
+              key={`th-${idx}`}
+              className="h-3.5 bg-slate-200 dark:bg-slate-700 rounded-md"
+              style={{ width: `${Math.max(40, 110 - idx * 10)}px` }}
+            />
+          ))}
+        </div>
+        {/* Table rows skeleton */}
+        {Array.from({ length: rows }).map((_, rIdx) => (
+          <div
+            key={`tr-${rIdx}`}
+            className="h-14 bg-slate-50/80 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-center px-4 gap-4"
+          >
+            {Array.from({ length: columns }).map((_, cIdx) => (
+              <div
+                key={`td-${rIdx}-${cIdx}`}
+                className="h-3 bg-slate-200/80 dark:bg-slate-700/70 rounded-md"
+                style={{ width: cIdx === 0 ? '140px' : cIdx === 1 ? '160px' : '90px' }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Loading content...</span>
+    </div>
+  );
+};
+
+// ─── CardSkeleton ───────────────────────────────────────────
+export const CardSkeleton = ({ count = 3, className = '' }: { count?: number; className?: string }) => {
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 animate-pulse ${className}`} role="status" aria-label="Loading cards">
+      {Array.from({ length: count }).map((_, idx) => (
+        <div key={idx} className="p-5 sm:p-6 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="h-3.5 bg-slate-200 dark:bg-slate-700 rounded-md w-28" />
+            <div className="w-10 h-10 rounded-xl bg-slate-200/80 dark:bg-slate-800" />
+          </div>
+          <div className="h-7 bg-slate-200 dark:bg-slate-700 rounded-lg w-20" />
+          <div className="h-3 bg-slate-200/60 dark:bg-slate-800 rounded-md w-36" />
+        </div>
+      ))}
+      <span className="sr-only">Loading metrics...</span>
+    </div>
+  );
+};
+
 // ─── Pagination ───────────────────────────────────────────────
 interface PaginationProps {
   currentPage: number;

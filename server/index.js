@@ -90,6 +90,18 @@ const {
   generateInstitutionMemberPassword,
 } = require('./institutionMembers');
 const { getInstitutionLeaderboard } = require('./institutionLeaderboard');
+const {
+  getEventAttendance,
+  toggleParticipantAttendance,
+  bulkCheckInParticipants,
+} = require('./eventAttendance');
+const {
+  getEventWinners,
+  createEventWinner,
+  updateEventWinner,
+  deleteEventWinner,
+  getOverallCompetitionStandings,
+} = require('./eventWinners');
 const { registerForEvent, listEventRegistrations, listMyRegistrations, approveEventRegistration } = require('./eventRegistrations');
 const { sendSmtpTest } = require('./emailTest');
 const { resendFailedApprovalEmails, sendReactivationRequestEmail } = require('./mailer');
@@ -949,6 +961,19 @@ app.put('/api/events/registrations/:id/approval', requireMigrationReady, authMid
 
 // Event Institution Leaderboard
 app.get('/api/events/institution-leaderboard', requireMigrationReady, authMiddleware, getInstitutionLeaderboard);
+
+// Event Attendance & In-Venue Check-in
+app.get('/api/events/:id/attendance', requireMigrationReady, authMiddleware, getEventAttendance);
+app.post('/api/events/:id/attendance/toggle', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), toggleParticipantAttendance);
+app.put('/api/events/:id/attendance/:participantKey', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), toggleParticipantAttendance);
+app.post('/api/events/:id/attendance/bulk', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), bulkCheckInParticipants);
+
+// Event Competition Winners & Overall Standings
+app.get('/api/events/competition/overall-standings', requireMigrationReady, authMiddleware, getOverallCompetitionStandings);
+app.get('/api/events/:id/winners', requireMigrationReady, authMiddleware, getEventWinners);
+app.post('/api/events/:id/winners', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), createEventWinner);
+app.put('/api/events/:id/winners/:winnerId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), updateEventWinner);
+app.delete('/api/events/:id/winners/:winnerId', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), deleteEventWinner);
 
 // Announcements
 app.get('/api/announcements', authMiddleware, listAnnouncements);

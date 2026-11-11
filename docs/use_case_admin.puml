@@ -1,0 +1,130 @@
+@startuml PSITS_Use_Case_Admin
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+skinparam shadowing true
+skinparam actorStyle awesome
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+
+skinparam actor {
+    BackgroundColor #7C3AED
+    BorderColor #5B21B6
+    FontColor #0F172A
+    FontSize 13
+}
+
+skinparam usecase {
+    BackgroundColor #F8FAFC
+    BorderColor #7C3AED
+    BorderThickness 1.5
+    FontColor #0F172A
+    ArrowColor #7C3AED
+}
+
+skinparam package {
+    BackgroundColor #FAF5FF
+    BorderColor #C084FC
+    FontColor #6B21A8
+    FontStyle bold
+}
+
+left to right direction
+
+' ========================================================
+' ACTORS
+' ========================================================
+actor "Super Admin / System Administrator\n(Regional Adviser / Director)" as Admin #7C3AED
+actor "Database Engine\n(MySQL Connection Pool)" as DB #334155
+
+' ========================================================
+' SYSTEM BOUNDARY: ADMIN & GOVERNANCE PORTAL
+' ========================================================
+rectangle "PSITS Region XII Web System — Executive Administration Portal" as AdminPortal {
+
+    package "1. Officer Governance & Dynamic Hierarchies" {
+        usecase "Manage Leadership Positions\n(Configure Custom Titles & Order)" as UC_ManagePositions
+        usecase "Appoint & Relieve Officers\n(Set Term Period & University)" as UC_AppointOfficers
+        usecase "Assign Granular Access Permissions" as UC_AssignPerms
+        usecase "Inspect Historical Officer Terms" as UC_OfficerHistory
+    }
+
+    package "2. Membership Lifecycle & Disciplinary Controls" {
+        usecase "Manage Central Member Directory\n(Search Across Universities)" as UC_ManageMembers
+        usecase "Manual Account Status Overrides\n(Active, Pending, Expired)" as UC_StatusOverride
+        usecase "Enforce Disciplinary Actions\n(Suspend / Ban Disobedient Accounts)" as UC_Discipline
+        usecase "Revoke Active Login Sessions" as UC_RevokeSessions
+        usecase "Issue Administrative Password Resets" as UC_AdminPassReset
+    }
+
+    package "3. Democratic Election Supervision" {
+        usecase "Create & Schedule Elections\n(Define Ballot Opening/Closing Times)" as UC_CreateElection
+        usecase "Configure Allowed Positions on Ballot" as UC_AllowedPositions
+        usecase "Audit Electronic Vote Tallies" as UC_AuditVotes
+        usecase "Certify & Publish Official Results" as UC_CertifyResults
+    }
+
+    package "4. Corporate Sponsorship & Partner Relations" {
+        usecase "Manage Industry Partners Directory\n(Tech Companies & Academic Sponsors)" as UC_ManagePartners
+        usecase "Record Partner Resource Grants\n(Cash, Equipment, Venue Sponsorships)" as UC_TrackGrants
+    }
+
+    package "5. Executive Business Intelligence & Analytics" {
+        usecase "Inspect Executive KPI Dashboard\n(Parallel Consolidated Analytics)" as UC_ExecutiveDashboard
+        usecase "Monitor Receivables & Delinquencies\n(Unpaid Balances Breakdown)" as UC_DelinquencyReport
+        usecase "Export System Audit Trail\n(audit_logs Tracking Key Actions)" as UC_AuditLogs
+        usecase "Save Formal PDF Reports\n(Institutional Header, Officers Signatures)" as UC_SavePDF
+    }
+
+    package "6. System Infrastructure & Database Tuning" {
+        usecase "Configure Regional GCash QR Code\n(Upload Global Merchant QR)" as UC_ConfigQR
+        usecase "Manage System Configuration Settings" as UC_SystemSettings
+        usecase "Monitor Slow Query Logs\n(Threshold ms & Query Fingerprints)" as UC_SlowQueryLog
+        usecase "Trigger Schema Migration & Indexing\n(ACID Safety & Self-Healing)" as UC_RunMigration
+    }
+}
+
+' ========================================================
+' ASSOCIATIONS (ADMIN)
+' ========================================================
+Admin --> UC_ManagePositions
+Admin --> UC_AppointOfficers
+Admin --> UC_AssignPerms
+Admin --> UC_OfficerHistory
+
+Admin --> UC_ManageMembers
+Admin --> UC_StatusOverride
+Admin --> UC_Discipline
+Admin --> UC_AdminPassReset
+
+Admin --> UC_CreateElection
+Admin --> UC_AllowedPositions
+Admin --> UC_AuditVotes
+Admin --> UC_CertifyResults
+
+Admin --> UC_ManagePartners
+Admin --> UC_TrackGrants
+
+Admin --> UC_ExecutiveDashboard
+Admin --> UC_DelinquencyReport
+Admin --> UC_AuditLogs
+Admin --> UC_SavePDF
+
+Admin --> UC_ConfigQR
+Admin --> UC_SystemSettings
+Admin --> UC_SlowQueryLog
+Admin --> UC_RunMigration
+
+' Database Actor Connections
+UC_SlowQueryLog <-- DB
+UC_RunMigration <-- DB
+
+' ========================================================
+' INCLUDE & EXTEND RELATIONSHIPS
+' ========================================================
+UC_ManagePositions ..> UC_AssignPerms : <<include>>
+UC_Discipline ..> UC_RevokeSessions : <<include>>
+UC_CreateElection ..> UC_AllowedPositions : <<include>>
+UC_CertifyResults ..> UC_AuditVotes : <<include>>
+UC_ExecutiveDashboard <.. UC_SavePDF : <<extend>>
+
+@enduml

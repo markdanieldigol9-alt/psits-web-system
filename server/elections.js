@@ -18,7 +18,22 @@ function toElectionDto(row) {
   let allowedPositions = [];
   try {
     if (row.allowed_positions) {
-      allowedPositions = JSON.parse(row.allowed_positions);
+      const parsed = JSON.parse(row.allowed_positions);
+      if (Array.isArray(parsed)) {
+        // Standardize items to { name: string, maxWinners: number } or preserve as needed
+        allowedPositions = parsed.map((item) => {
+          if (typeof item === 'string') {
+            return { name: item, maxWinners: 1 };
+          }
+          if (item && typeof item === 'object') {
+            return {
+              name: String(item.name || item.position || '').trim(),
+              maxWinners: Math.max(1, Number(item.maxWinners || item.max_winners || 1)),
+            };
+          }
+          return { name: String(item), maxWinners: 1 };
+        }).filter((item) => Boolean(item.name));
+      }
     }
   } catch (e) {
     // ignore
@@ -29,6 +44,8 @@ function toElectionDto(row) {
     description: row.description || '',
     startDate: formatDateOnly(row.start_date),
     endDate: formatDateOnly(row.end_date),
+    startTime: row.start_time ? String(row.start_time).slice(0, 5) : null,
+    endTime: row.end_time ? String(row.end_time).slice(0, 5) : null,
     status: row.status,
     allowedPositions,
     createdBy: row.created_by ? String(row.created_by) : null,
@@ -53,12 +70,27 @@ function toCandidateDto(row) {
   };
 }
 
+function isElectionTimePast(endDate, endTime) {
+  if (!endDate) return false;
+  const endStr = formatDateOnly(endDate);
+  if (!endStr) return false;
+  const timeStr = endTime ? String(endTime).slice(0, 5) : '23:59';
+  const endDateTime = new Date(`${endStr}T${timeStr}:00`);
+  if (Number.isNaN(endDateTime.getTime())) return false;
+  return new Date() > endDateTime;
+}
+
 async function listElections(req, res) {
-  // Automatically close any open election whose end date has passed
+  // Automatically close any open election whose end date/time has passed
   try {
-    await pool.execute(
-      "UPDATE elections SET status = 'closed' WHERE status = 'open' AND end_date < CURDATE()"
+    const [openElections] = await pool.execute(
+      "SELECT id, end_date, end_time FROM elections WHERE status = 'open'"
     );
+    for (const e of openElections) {
+      if (isElectionTimePast(e.end_date, e.end_time)) {
+        await pool.execute("UPDATE elections SET status = 'closed' WHERE id = ?", [e.id]);
+      }
+    }
   } catch {
     // best-effort
   }
@@ -94,11 +126,9 @@ async function getElectionDetails(req, res) {
   const [rows] = await pool.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [id]);
   if (!rows.length) return json(res, 404, { success: false, message: 'Election not found.' });
 
-  // Auto-close if open but end date has passed
+  // Auto-close if open but end date and time has passed
   if (rows[0].status === 'open' && rows[0].end_date) {
-    const today = new Date().toISOString().slice(0, 10);
-    const endStr = formatDateOnly(rows[0].end_date);
-    if (endStr && endStr < today) {
+    if (isElectionTimePast(rows[0].end_date, rows[0].end_time)) {
       try {
         await pool.execute("UPDATE elections SET status = 'closed' WHERE id = ?", [id]);
         rows[0].status = 'closed';
@@ -134,10 +164,24 @@ async function createElection(req, res) {
   const description = body.description ? String(body.description).trim() : null;
   const startDate = String(body.startDate || '').trim();
   const endDate = String(body.endDate || '').trim();
+  const startTime = body.startTime ? String(body.startTime).trim().slice(0, 8) : null;
+  const endTime = body.endTime ? String(body.endTime).trim().slice(0, 8) : null;
   const status = body.status ? String(body.status).trim() : 'draft';
   const allowedPositions = Array.isArray(body.allowedPositions) 
     ? JSON.stringify(body.allowedPositions) 
-    : JSON.stringify(['President', 'Vice President', 'Treasurer', 'Secretary', 'Member']);
+    : JSON.stringify([
+        { name: 'President', maxWinners: 1 },
+        { name: 'Vice President', maxWinners: 1 },
+        { name: 'Secretary', maxWinners: 1 },
+        { name: 'Treasurer', maxWinners: 1 },
+        { name: 'Auditor', maxWinners: 1 },
+        { name: 'Business Manager', maxWinners: 1 },
+        { name: 'Public Information Officer', maxWinners: 1 },
+        { name: 'Press Relations Officer', maxWinners: 1 },
+        { name: 'Protocol Officer', maxWinners: 1 },
+        { name: 'Sergeant-at-Arms', maxWinners: 1 },
+        { name: 'Member', maxWinners: 1 },
+      ]);
 
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
     return json(res, 400, { success: false, message: 'Title, startDate, and endDate are required.' });
@@ -145,14 +189,34 @@ async function createElection(req, res) {
   if (!['draft', 'open', 'closed', 'archived'].includes(status)) {
     return json(res, 400, { success: false, message: 'Invalid status.' });
   }
-  if (new Date(endDate) < new Date(startDate)) {
-    return json(res, 400, { success: false, message: 'endDate must be after startDate.' });
+  
+  const startDt = new Date(`${startDate}T${startTime ? startTime.slice(0, 5) : '00:00'}:00`);
+  const endDt = new Date(`${endDate}T${endTime ? endTime.slice(0, 5) : '23:59'}:00`);
+  if (endDt < startDt) {
+    return json(res, 400, { success: false, message: 'End date and time must be after start date and time.' });
   }
 
+  // Check columns in elections table
+  const [cols] = await pool.execute('SHOW COLUMNS FROM elections');
+  const colSet = new Set(cols.map((c) => String(c.Field)));
+
+  const insertCols = ['title', 'description', 'start_date', 'end_date', 'status', 'allowed_positions', 'created_by'];
+  const insertVals = [title, description, startDate, endDate, status, allowedPositions, req.user?.id || null];
+
+  if (colSet.has('start_time')) {
+    insertCols.push('start_time');
+    insertVals.push(startTime || null);
+  }
+  if (colSet.has('end_time')) {
+    insertCols.push('end_time');
+    insertVals.push(endTime || null);
+  }
+
+  const placeholders = insertCols.map(() => '?').join(', ');
   const [result] = await pool.execute(
-    `INSERT INTO elections (title, description, start_date, end_date, status, allowed_positions, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [title, description, startDate, endDate, status, allowedPositions, req.user?.id || null]
+    `INSERT INTO elections (${insertCols.join(', ')})
+     VALUES (${placeholders})`,
+    insertVals
   );
 
   const newElectionId = result.insertId;
@@ -203,6 +267,14 @@ async function updateElection(req, res) {
     const v = body.endDate.trim();
     if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return json(res, 400, { success: false, message: 'Invalid endDate.' });
     sets.push('end_date = ?'); params.push(v);
+  }
+  if (body.startTime !== undefined) {
+    const v = body.startTime ? String(body.startTime).trim().slice(0, 8) : null;
+    sets.push('start_time = ?'); params.push(v);
+  }
+  if (body.endTime !== undefined) {
+    const v = body.endTime ? String(body.endTime).trim().slice(0, 8) : null;
+    sets.push('end_time = ?'); params.push(v);
   }
   if (typeof body.status === 'string') {
     const s = body.status.trim();
@@ -410,13 +482,37 @@ async function markWinner(req, res) {
       return json(res, 400, { success: false, message: 'Candidate position is required.' });
     }
 
-    // Mark all candidates for that position as not-winner (keep statuses), then set winner.
-    await conn.execute(
-      `UPDATE election_candidates
-       SET status = CASE WHEN status = 'winner' THEN 'approved' ELSE status END
-       WHERE election_id = ? AND position = ?`,
-      [electionId, position]
-    );
+    // Check max_winners for this position
+    let maxWinners = 1;
+    const [eRows] = await conn.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [electionId]);
+    const election = eRows[0];
+    try {
+      if (election && election.allowed_positions) {
+        const parsed = JSON.parse(election.allowed_positions);
+        if (Array.isArray(parsed)) {
+          const matched = parsed.find((p) => {
+            if (typeof p === 'string') return p.toLowerCase() === position.toLowerCase();
+            return (p.name || p.position || '').toLowerCase() === position.toLowerCase();
+          });
+          if (matched && typeof matched === 'object') {
+            maxWinners = Math.max(1, Number(matched.maxWinners || matched.max_winners || 1));
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    if (maxWinners <= 1) {
+      // Single winner position: mark all other candidates for that position as not-winner
+      await conn.execute(
+        `UPDATE election_candidates
+         SET status = CASE WHEN status = 'winner' THEN 'approved' ELSE status END
+         WHERE election_id = ? AND position = ?`,
+        [electionId, position]
+      );
+    }
+
     await conn.execute(
       `UPDATE election_candidates
        SET status = 'winner'
@@ -425,8 +521,6 @@ async function markWinner(req, res) {
     );
 
     // Convert winning candidate into officer (term = election end date + 1 year default)
-    const [eRows] = await conn.execute('SELECT * FROM elections WHERE id = ? LIMIT 1', [electionId]);
-    const election = eRows[0];
     const termStart = formatDateOnly(election.end_date) || new Date().toISOString().slice(0, 10);
     const termEndDate = new Date(`${termStart}T00:00:00Z`);
     termEndDate.setFullYear(termEndDate.getFullYear() + 1);
@@ -532,7 +626,7 @@ async function castVote(req, res) {
     const election = eRows[0];
     const today = new Date().toISOString().slice(0, 10);
     const endStr = formatDateOnly(election.end_date);
-    const isPastEnd = endStr && endStr < today;
+    const isPastEnd = isElectionTimePast(election.end_date, election.end_time);
 
     if (election.status !== 'open' || isPastEnd) {
       if (election.status === 'open' && isPastEnd) {
@@ -571,8 +665,8 @@ async function castVote(req, res) {
       return json(res, 400, { success: false, message: 'You have already voted in this election.' });
     }
 
-    // Expecting body to contain an object where keys are positions and values are candidateIds:
-    // e.g. { votes: { "President": 12, "Vice President": 15 } }
+    // Expecting body to contain an object where keys are positions and values are candidateIds (number or array of numbers):
+    // e.g. { votes: { "President": 12, "Senator": [15, 18] } }
     const votes = req.body?.votes;
     if (!votes || typeof votes !== 'object') {
       await conn.rollback();
@@ -585,28 +679,76 @@ async function castVote(req, res) {
       return json(res, 400, { success: false, message: 'At least one vote is required.' });
     }
 
-    // Loop through the selected candidates, verify they match the position/election, and increment votes_count
-    for (const [position, candidateIdStr] of positionVotes) {
-      const candidateId = Number(candidateIdStr);
-      if (!Number.isFinite(candidateId)) {
-        await conn.rollback();
-        return json(res, 400, { success: false, message: `Invalid candidate selected for position ${position}.` });
+    // Parse allowed_positions to know max allowed votes per position
+    let positionMaxWinnersMap = new Map();
+    try {
+      if (election.allowed_positions) {
+        const parsed = JSON.parse(election.allowed_positions);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item) => {
+            if (typeof item === 'string') {
+              positionMaxWinnersMap.set(item, 1);
+            } else if (item && typeof item === 'object') {
+              positionMaxWinnersMap.set(item.name || item.position, Math.max(1, Number(item.maxWinners || item.max_winners || 1)));
+            }
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // Loop through each position vote and validate
+    for (const [position, candidateSelection] of positionVotes) {
+      if (candidateSelection === null || candidateSelection === undefined) continue;
+
+      let candidateIds = [];
+      if (Array.isArray(candidateSelection)) {
+        candidateIds = candidateSelection.map(Number).filter(Number.isFinite);
+      } else {
+        const singleId = Number(candidateSelection);
+        if (Number.isFinite(singleId)) {
+          candidateIds = [singleId];
+        }
       }
 
-      const [candRows] = await conn.execute(
-        "SELECT id FROM election_candidates WHERE id = ? AND election_id = ? AND position = ? AND status IN ('pending', 'approved', 'winner') LIMIT 1",
-        [candidateId, electionId, position]
-      );
-      if (!candRows.length) {
+      if (candidateIds.length === 0) continue;
+
+      // Check max winners limit for this position
+      const maxAllowed = positionMaxWinnersMap.get(position) || 1;
+      if (candidateIds.length > maxAllowed) {
         await conn.rollback();
-        return json(res, 400, { success: false, message: `Selected candidate for position ${position} is not valid.` });
+        return json(res, 400, {
+          success: false,
+          message: `You can only select up to ${maxAllowed} candidate(s) for ${position}.`,
+        });
       }
 
-      // Increment votes_count
-      await conn.execute(
-        'UPDATE election_candidates SET votes_count = votes_count + 1 WHERE id = ?',
-        [candidateId]
-      );
+      // Check for duplicates within selection
+      if (new Set(candidateIds).size !== candidateIds.length) {
+        await conn.rollback();
+        return json(res, 400, {
+          success: false,
+          message: `Duplicate candidate selected for position ${position}.`,
+        });
+      }
+
+      for (const candidateId of candidateIds) {
+        const [candRows] = await conn.execute(
+          "SELECT id FROM election_candidates WHERE id = ? AND election_id = ? AND position = ? AND status IN ('pending', 'approved', 'winner') LIMIT 1",
+          [candidateId, electionId, position]
+        );
+        if (!candRows.length) {
+          await conn.rollback();
+          return json(res, 400, { success: false, message: `Selected candidate for position ${position} is not valid.` });
+        }
+
+        // Increment votes_count
+        await conn.execute(
+          'UPDATE election_candidates SET votes_count = votes_count + 1 WHERE id = ?',
+          [candidateId]
+        );
+      }
     }
 
     // Record that the user has voted

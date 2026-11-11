@@ -490,6 +490,35 @@ async function migrate() {
   // Backwards compatible add for team profile upload & venue attendance count
   try { await pool.query('ALTER TABLE event_registrations ADD COLUMN team_profile_url VARCHAR(255) NULL'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE event_registrations ADD COLUMN checked_in_count INT UNSIGNED NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE event_registrations ADD COLUMN is_checked_in TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE event_registrations ADD COLUMN checked_in_at DATETIME NULL'); } catch { /* ignore */ }
+
+  // Event competition winners & ranking table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS event_competition_winners (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      event_id INT UNSIGNED NOT NULL,
+      rank_position INT UNSIGNED NOT NULL DEFAULT 1,
+      award_title VARCHAR(191) NOT NULL DEFAULT 'Champion',
+      institution_name VARCHAR(191) NOT NULL,
+      participant_name VARCHAR(191) NOT NULL,
+      points INT NOT NULL DEFAULT 0,
+      score_or_notes VARCHAR(255) NULL,
+      created_by INT UNSIGNED NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_event_winners_event (event_id),
+      KEY idx_event_winners_rank (rank_position),
+      KEY idx_event_winners_inst (institution_name),
+      CONSTRAINT fk_event_winners_event
+        FOREIGN KEY (event_id) REFERENCES events(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_event_winners_created_by
+        FOREIGN KEY (created_by) REFERENCES users(id)
+        ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `);
 
   // Event details (type-specific fields; flexible schema)
   await pool.query(`
@@ -1236,6 +1265,8 @@ async function migrate() {
   `);
 
   try { await pool.query('ALTER TABLE elections ADD COLUMN allowed_positions TEXT NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE elections ADD COLUMN start_time TIME NULL'); } catch { /* ignore */ }
+  try { await pool.query('ALTER TABLE elections ADD COLUMN end_time TIME NULL'); } catch { /* ignore */ }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS election_candidates (

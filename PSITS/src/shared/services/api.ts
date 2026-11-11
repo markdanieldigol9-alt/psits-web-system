@@ -36,7 +36,20 @@ class ApiService {
     // Handle responses and errors
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
+        const config = error.config as (typeof error.config & { _retryCount?: number }) | undefined;
+        const status = error.response?.status;
+        const msg = String(error.response?.data?.message || '');
+
+        // Auto-retry when backend API is cold-starting on Render (503 Service Unavailable / starting up)
+        if (status === 503 && msg.toLowerCase().includes('starting up') && config) {
+          config._retryCount = (config._retryCount || 0) + 1;
+          if (config._retryCount <= 2) {
+            await new Promise((resolve) => setTimeout(resolve, 2500));
+            return this.client(config);
+          }
+        }
+
         if (error.response?.status === 401) {
           localStorage.removeItem('auth_token');
           window.location.href = '/login';
@@ -519,7 +532,7 @@ class ApiService {
     return this.client.get(`/elections/${electionId}/voted`);
   }
 
-  castVote(electionId: string, votes: Record<string, string>) {
+  castVote(electionId: string, votes: Record<string, string | string[]>) {
     return this.client.post(`/elections/${electionId}/vote`, { votes });
   }
 
@@ -653,6 +666,8 @@ class ApiService {
       summary: {
         totalInstitutions: number;
         totalRegisteredParticipants: number;
+        totalCheckedInParticipants?: number;
+        overallAttendanceRate?: number;
       };
       leaderboard: Array<{
         rank: number;
@@ -662,19 +677,218 @@ class ApiService {
         institutionAvatar?: string | null;
         registrationId?: string | null;
         registeredCount: number;
+        checkedInCount?: number;
+        attendanceRate?: number;
         participants: Array<{
           id: string;
+          participantKey?: string;
           fullName: string;
           email?: string;
           contactNumber?: string;
           gender?: string;
           position?: string;
           status?: string;
+          isCheckedIn?: boolean;
+          checkedInAt?: string | null;
         }>;
+      }>;
+      eventWinners?: Array<{
+        id: string;
+        eventId: string;
+        rankPosition: number;
+        awardTitle: string;
+        institutionName: string;
+        participantName: string;
+        points: number;
+        scoreOrNotes?: string;
+      }>;
+      overallStandings?: Array<{
+        rank: number;
+        institutionName: string;
+        goldCount: number;
+        silverCount: number;
+        bronzeCount: number;
+        totalMedals: number;
+        totalPoints: number;
+        eventsWonCount: number;
+        inVenueAttendees?: number;
+        isOverallChampion?: boolean;
       }>;
     }>('/events/institution-leaderboard', {
       params: eventId ? { eventId } : undefined,
     });
+  }
+
+  // Event Attendance & In-Venue Check-in
+  getEventAttendance(eventId: string) {
+    return this.client.get<{
+      success: boolean;
+      event: {
+        id: string;
+        title: string;
+        status: string;
+        location?: string;
+        startAt?: string;
+        endAt?: string;
+        capacity?: number;
+        themeColor?: string;
+      };
+      summary: {
+        totalRegistered: number;
+        totalCheckedIn: number;
+        notCheckedIn: number;
+        attendanceRate: number;
+        totalInstitutions: number;
+      };
+      institutionBreakdown: Array<{
+        institutionName: string;
+        registeredCount: number;
+        checkedInCount: number;
+        attendanceRate: number;
+      }>;
+      participants: Array<{
+        participantKey: string;
+        registrationSource: string;
+        recordId: number | string;
+        fullName: string;
+        email?: string;
+        contactNumber?: string;
+        institutionName: string;
+        position?: string;
+        registrationStatus: string;
+        isCheckedIn: boolean;
+        checkedInAt?: string | null;
+        registeredAt?: string | null;
+      }>;
+    }>(`/events/${eventId}/attendance`);
+  }
+
+  toggleEventAttendance(eventId: string, participantKey: string, checkedIn?: boolean) {
+    return this.client.post<{
+      success: boolean;
+      message: string;
+      participantKey: string;
+      isCheckedIn: boolean;
+      checkedInAt?: string | null;
+    }>(`/events/${eventId}/attendance/toggle`, { participantKey, checkedIn });
+  }
+
+  bulkCheckInAttendance(eventId: string, participantKeys: string[], checkedIn: boolean = true) {
+    return this.client.post<{
+      success: boolean;
+      message: string;
+      updatedCount: number;
+      isCheckedIn: boolean;
+    }>(`/events/${eventId}/attendance/bulk`, { participantKeys, checkedIn });
+  }
+
+  // Event Competition Winners & Rankings
+  getEventWinners(eventId: string) {
+    return this.client.get<{
+      success: boolean;
+      event: any;
+      winners: Array<{
+        id: string;
+        eventId: string;
+        rankPosition: number;
+        awardTitle: string;
+        institutionName: string;
+        participantName: string;
+        points: number;
+        scoreOrNotes?: string;
+        createdAt?: string;
+      }>;
+    }>(`/events/${eventId}/winners`);
+  }
+
+  createEventWinner(eventId: string, data: {
+    rankPosition: number;
+    awardTitle?: string;
+    institutionName: string;
+    participantName: string;
+    points?: number;
+    scoreOrNotes?: string;
+  }) {
+    return this.client.post<{
+      success: boolean;
+      message: string;
+      winner: {
+        id: string;
+        eventId: string;
+        rankPosition: number;
+        awardTitle: string;
+        institutionName: string;
+        participantName: string;
+        points: number;
+        scoreOrNotes?: string;
+      };
+    }>(`/events/${eventId}/winners`, data);
+  }
+
+  updateEventWinner(eventId: string, winnerId: string, data: {
+    rankPosition: number;
+    awardTitle?: string;
+    institutionName: string;
+    participantName: string;
+    points?: number;
+    scoreOrNotes?: string;
+  }) {
+    return this.client.put<{
+      success: boolean;
+      message: string;
+      winner: any;
+    }>(`/events/${eventId}/winners/${winnerId}`, data);
+  }
+
+  deleteEventWinner(eventId: string, winnerId: string) {
+    return this.client.delete<{
+      success: boolean;
+      message: string;
+    }>(`/events/${eventId}/winners/${winnerId}`);
+  }
+
+  getOverallCompetitionStandings() {
+    return this.client.get<{
+      success: boolean;
+      totalCompetitiveEventsWithWinners: number;
+      totalInstitutionsRanked: number;
+      overallChampion: {
+        rank: number;
+        institutionName: string;
+        goldCount: number;
+        silverCount: number;
+        bronzeCount: number;
+        totalMedals: number;
+        totalPoints: number;
+        eventsWonCount: number;
+        inVenueAttendees?: number;
+        isOverallChampion?: boolean;
+        awards?: Array<{
+          id: string;
+          eventId: string;
+          eventTitle: string;
+          eventType?: string;
+          rankPosition: number;
+          awardTitle: string;
+          participantName: string;
+          points: number;
+          scoreOrNotes?: string;
+        }>;
+      } | null;
+      standings: Array<{
+        rank: number;
+        institutionName: string;
+        goldCount: number;
+        silverCount: number;
+        bronzeCount: number;
+        totalMedals: number;
+        totalPoints: number;
+        eventsWonCount: number;
+        inVenueAttendees?: number;
+        isOverallChampion?: boolean;
+        awards?: Array<any>;
+      }>;
+    }>('/events/competition/overall-standings');
   }
 }
 

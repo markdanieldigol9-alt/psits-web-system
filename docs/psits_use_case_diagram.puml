@@ -1,0 +1,166 @@
+@startuml PSITS_Use_Case_Diagram
+skinparam packageStyle rectangle
+skinparam roundcorner 12
+skinparam shadowing true
+skinparam actorStyle awesome
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+
+skinparam actor {
+    BackgroundColor #0284C7
+    BorderColor #0369A1
+    FontColor #0F172A
+    FontSize 13
+}
+
+skinparam usecase {
+    BackgroundColor #F8FAFC
+    BorderColor #0284C7
+    BorderThickness 1.5
+    FontColor #0F172A
+    ArrowColor #2563EB
+}
+
+skinparam package {
+    BackgroundColor #F1F5F9
+    BorderColor #94A3B8
+    FontColor #1E293B
+    FontStyle bold
+}
+
+left to right direction
+
+' ========================================================
+' ACTORS DEFINITION
+' ========================================================
+actor "Student / Member\n(Individual)" as Member #38BDF8
+actor "Institution Rep\n(School Chapter)" as InstRep #0EA5E9
+actor "PSITS Officer" as Officer #0D9488
+actor "System Administrator\n/ Super Admin" as Admin #7C3AED
+
+' Actor Generalizations
+Member <|-- InstRep : <<specialization>>
+Officer <|-- Admin : <<inherits privileges>>
+
+' ========================================================
+' SYSTEM BOUNDARY
+' ========================================================
+rectangle "PSITS Region XII Web-Based Management System" as System {
+
+    ' ----------------------------------------------------
+    ' Package 1: Authentication & Account Management
+    ' ----------------------------------------------------
+    package "1. Authentication & Account Subsystem" {
+        usecase "Register Member Account\n(Individual / School)" as UC_Register
+        usecase "Log In & Manage Profile" as UC_Login
+        usecase "Recover / Reset Password" as UC_ResetPass
+        usecase "Toggle Dark / Light Theme" as UC_Theme
+    }
+
+    ' ----------------------------------------------------
+    ' Package 2: Membership & Financial Operations
+    ' ----------------------------------------------------
+    package "2. Payment & Membership Subsystem" {
+        usecase "Submit Membership Dues / Renewal Proof\n(OR, GCash, Bank Transfer)" as UC_SubmitPay
+        usecase "Re-upload Corrected Receipt" as UC_Reupload
+        usecase "Verify & Audit Payments" as UC_VerifyPay
+        usecase "Reject Payment with Remarks" as UC_RejectPay
+        usecase "Activate Member & Extend Expiry (+1 Year)" as UC_ActivateMem
+        usecase "Record Officer Cash Remittance\n(No File Required)" as UC_RecordCash
+        usecase "View Personal Billing History" as UC_ViewBilling
+    }
+
+    ' ----------------------------------------------------
+    ' Package 3: Events, Guidelines & Attendance
+    ' ----------------------------------------------------
+    package "3. Event Logistics & Activities Subsystem" {
+        usecase "Browse Events & Download Guidelines\n(PDF/DOCX/Markdown)" as UC_BrowseEvents
+        usecase "Register for Event\n(Individual or Batch Roster)" as UC_RegisterEvent
+        usecase "Manage Events & Esports Tournament Brackets" as UC_ManageEvents
+        usecase "Check-In In-Venue Attendance" as UC_Attendance
+        usecase "Stream Live Events & Watch Video Recordings" as UC_LiveEvents
+    }
+
+    ' ----------------------------------------------------
+    ' Package 4: Democratic Digital Elections
+    ' ----------------------------------------------------
+    package "4. Officer Elections Subsystem" {
+        usecase "Cast Secret Ballot Vote" as UC_Vote
+        usecase "Verify Voter Eligibility & Active Status" as UC_CheckEligibility
+        usecase "Manage Election Candidates & Platforms" as UC_ManageCandidates
+        usecase "Certify & Publish Automated Results" as UC_CertifyResults
+    }
+
+    ' ----------------------------------------------------
+    ' Package 5: Community & Organizational Comms
+    ' ----------------------------------------------------
+    package "5. Community & Communications Subsystem" {
+        usecase "Participate in Community Forum\n(Post, Comment, Like)" as UC_Forum
+        usecase "Publish Official Announcements & News" as UC_Announcements
+        usecase "Moderate Forum Discussions" as UC_ModerateForum
+        usecase "Receive Instant In-App Notifications" as UC_Notifs
+    }
+
+    ' ----------------------------------------------------
+    ' Package 6: Governance, Reports & System Administration
+    ' ----------------------------------------------------
+    package "6. Governance, Analytics & Administration" {
+        usecase "Manage Institutional Batch Rosters" as UC_InstRosters
+        usecase "Manage Officers & Dynamic Leadership Positions" as UC_ManageOfficers
+        usecase "Manage Industry Partners & Sponsorships" as UC_Partners
+        usecase "Generate & Export Reports\n(Excel, Unpaginated Print, PDF)" as UC_Reports
+        usecase "Configure Regional Settings & GCash QR" as UC_Settings
+        usecase "Monitor Slow Query Logs & DB Performance" as UC_DBAudit
+    }
+}
+
+' ========================================================
+' RELATIONSHIPS & ASSOCIATIONS
+' ========================================================
+
+' --- USER / MEMBER SIDE ---
+Member --> UC_Register
+Member --> UC_Login
+Member --> UC_ResetPass
+Member --> UC_Theme
+Member --> UC_SubmitPay
+Member --> UC_Reupload
+Member --> UC_ViewBilling
+Member --> UC_BrowseEvents
+Member --> UC_RegisterEvent
+Member --> UC_Vote
+Member --> UC_Forum
+Member --> UC_LiveEvents
+Member --> UC_Notifs
+
+' Institutional Rep specific
+InstRep --> UC_InstRosters
+
+' --- OFFICER SIDE ---
+Officer --> UC_VerifyPay
+Officer --> UC_RejectPay
+Officer --> UC_RecordCash
+Officer --> UC_ManageEvents
+Officer --> UC_Attendance
+Officer --> UC_ManageCandidates
+Officer --> UC_Announcements
+Officer --> UC_ModerateForum
+Officer --> UC_Reports
+
+' --- ADMIN / SUPER ADMIN SIDE ---
+Admin --> UC_CertifyResults
+Admin --> UC_ManageOfficers
+Admin --> UC_Partners
+Admin --> UC_Settings
+Admin --> UC_DBAudit
+
+' ========================================================
+' INCLUDE & EXTEND DEPENDENCIES
+' ========================================================
+UC_VerifyPay ..> UC_ActivateMem : <<include>>
+UC_VerifyPay <.. UC_RejectPay : <<extend>>
+UC_Vote ..> UC_CheckEligibility : <<include>>
+UC_SubmitPay <.. UC_Reupload : <<extend>>
+UC_RegisterEvent ..> UC_BrowseEvents : <<include>>
+
+@enduml
