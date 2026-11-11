@@ -660,6 +660,8 @@ class ApiService {
         title: string;
         date: string;
         time?: string;
+        startAt?: string | null;
+        endAt?: string | null;
         location?: string;
         status: string;
       } | null;
@@ -690,6 +692,7 @@ class ApiService {
           status?: string;
           isCheckedIn?: boolean;
           checkedInAt?: string | null;
+          checkedOutAt?: string | null;
         }>;
       }>;
       eventWinners?: Array<{
@@ -737,8 +740,18 @@ class ApiService {
         totalRegistered: number;
         totalCheckedIn: number;
         notCheckedIn: number;
+        currentlyInVenue?: number;
+        totalTimedOut?: number;
+        totalLate?: number;
         attendanceRate: number;
         totalInstitutions: number;
+      };
+      schedule?: {
+        startAt?: string | null;
+        endAt?: string | null;
+        timeInOpensAt?: string | null;
+        timeInOpensBeforeMinutes: number;
+        lateGraceMinutes: number;
       };
       institutionBreakdown: Array<{
         institutionName: string;
@@ -758,9 +771,29 @@ class ApiService {
         registrationStatus: string;
         isCheckedIn: boolean;
         checkedInAt?: string | null;
+        checkedOutAt?: string | null;
         registeredAt?: string | null;
       }>;
     }>(`/events/${eventId}/attendance`);
+  }
+
+  /**
+   * Schedule-based venue attendance (admin & officer only).
+   * action: time_in | time_out | undo_time_out | auto_time_out | reset
+   */
+  recordAttendanceTime(
+    eventId: string,
+    participantKeys: string[],
+    action: 'time_in' | 'time_out' | 'undo_time_out' | 'auto_time_out' | 'reset'
+  ) {
+    return this.client.post<{
+      success: boolean;
+      action: string;
+      message: string;
+      updatedCount: number;
+      skippedCount: number;
+      recordedAt?: string | null;
+    }>(`/events/${eventId}/attendance/time`, { participantKeys, action });
   }
 
   toggleEventAttendance(eventId: string, participantKey: string, checkedIn?: boolean) {
@@ -845,6 +878,13 @@ class ApiService {
       success: boolean;
       message: string;
     }>(`/events/${eventId}/winners/${winnerId}`);
+  }
+
+  moveEventWinner(eventId: string, winnerId: string, direction: 'up' | 'down') {
+    return this.client.post<{
+      success: boolean;
+      message: string;
+    }>(`/events/${eventId}/winners/${winnerId}/move`, { direction });
   }
 
   getOverallCompetitionStandings() {

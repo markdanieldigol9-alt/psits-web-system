@@ -202,6 +202,7 @@ export interface EventLeaderboardParticipant {
   status?: string;
   isCheckedIn?: boolean;
   checkedInAt?: string | null;
+  checkedOutAt?: string | null;
 }
 
 export interface EventWinnerRecord {
@@ -252,7 +253,18 @@ export interface EventAttendanceParticipant {
   registrationStatus: string;
   isCheckedIn: boolean;
   checkedInAt?: string | null;
+  checkedOutAt?: string | null;
   registeredAt?: string | null;
+}
+
+export type AttendanceTimeAction = 'time_in' | 'time_out' | 'undo_time_out' | 'auto_time_out' | 'reset';
+
+export interface EventAttendanceSchedule {
+  startAt?: string | null;
+  endAt?: string | null;
+  timeInOpensAt?: string | null;
+  timeInOpensBeforeMinutes: number;
+  lateGraceMinutes: number;
 }
 
 export interface EventAttendanceBreakdown {
@@ -277,9 +289,13 @@ export interface EventAttendanceData {
     totalRegistered: number;
     totalCheckedIn: number;
     notCheckedIn: number;
+    currentlyInVenue?: number;
+    totalTimedOut?: number;
+    totalLate?: number;
     attendanceRate: number;
     totalInstitutions: number;
   };
+  schedule?: EventAttendanceSchedule;
   institutionBreakdown: EventAttendanceBreakdown[];
   participants: EventAttendanceParticipant[];
 }
@@ -318,6 +334,8 @@ export interface InstitutionLeaderboardData {
     title: string;
     date: string;
     time?: string;
+    startAt?: string | null;
+    endAt?: string | null;
     location?: string;
     status: string;
   } | null;

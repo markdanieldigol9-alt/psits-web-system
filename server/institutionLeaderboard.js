@@ -4,6 +4,12 @@ function json(res, status, body) {
   return res.status(status).json(body);
 }
 
+/** Local (server timezone) YYYY-MM-DD, consistent with toTimeString(). */
+function toLocalDate(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 /**
  * Fetch events list & delegation leaderboard data for a specific event
  */
@@ -42,7 +48,7 @@ async function getInstitutionLeaderboard(req, res) {
       return {
         id: String(e.id),
         title: e.title,
-        date: startAt ? startAt.toISOString().slice(0, 10) : '',
+        date: startAt ? toLocalDate(startAt) : '',
         time: startAt ? startAt.toTimeString().slice(0, 5) : '',
         location: e.location || 'Venue TBA',
         status: e.status,
@@ -65,12 +71,15 @@ async function getInstitutionLeaderboard(req, res) {
     const selectedEventId = selectedEventRow.id;
     const selectedEventTitle = selectedEventRow.title;
     const selectedStartAt = selectedEventRow.start_at ? new Date(selectedEventRow.start_at) : null;
+    const selectedEndAt = selectedEventRow.end_at ? new Date(selectedEventRow.end_at) : null;
 
     const selectedEvent = {
       id: String(selectedEventRow.id),
       title: selectedEventRow.title,
-      date: selectedStartAt ? selectedStartAt.toISOString().slice(0, 10) : '',
+      date: selectedStartAt ? toLocalDate(selectedStartAt) : '',
       time: selectedStartAt ? selectedStartAt.toTimeString().slice(0, 5) : '',
+      startAt: selectedStartAt ? selectedStartAt.toISOString() : null,
+      endAt: selectedEndAt ? selectedEndAt.toISOString() : null,
       location: selectedEventRow.location || 'Venue TBA',
       status: selectedEventRow.status,
     };
@@ -90,6 +99,7 @@ async function getInstitutionLeaderboard(req, res) {
          im.status AS participant_status,
          im.checked_in,
          im.checked_in_at,
+         im.checked_out_at,
          u.full_name AS inst_full_name,
          u.sector_details AS inst_sector_details,
          u.avatar_url AS inst_avatar,
@@ -229,6 +239,7 @@ async function getInstitutionLeaderboard(req, res) {
         status: row.participant_status || 'approved',
         isCheckedIn: isChecked,
         checkedInAt: row.checked_in_at ? new Date(row.checked_in_at).toISOString() : null,
+        checkedOutAt: isChecked && row.checked_out_at ? new Date(row.checked_out_at).toISOString() : null,
       });
       inst.registeredCount += 1;
       if (isChecked) {

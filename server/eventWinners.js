@@ -12,6 +12,22 @@ const DEFAULT_POINTS_BY_RANK = {
   5: 2,  // Finalist
 };
 
+const MAX_RANK = 100;
+
+/** Normalize a rank to an integer in [1, MAX_RANK]. Returns null when invalid. */
+function normalizeRank(value) {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1 || n > MAX_RANK) return null;
+  return n;
+}
+
+/** Normalize points to a non-negative integer, falling back to the rank default. */
+function normalizePoints(value, rank) {
+  if (value === undefined || value === null || value === '') return DEFAULT_POINTS_BY_RANK[rank] || 1;
+  const n = Math.round(Number(value));
+  return Number.isFinite(n) && n >= 0 ? Math.min(n, 1000) : DEFAULT_POINTS_BY_RANK[rank] || 1;
+}
+
 /**
  * Get all ranked winners for a specific event
  */
@@ -96,10 +112,17 @@ async function createEventWinner(req, res) {
       return json(res, 400, { success: false, message: 'Participant or Team name is required.' });
     }
 
-    const rank = Number(rankPosition) >= 1 ? Number(rankPosition) : 1;
-    let computedPoints = points !== undefined && points !== null && points !== ''
-      ? Number(points)
-      : (DEFAULT_POINTS_BY_RANK[rank] || 1);
+    const rank = normalizeRank(rankPosition ?? 1);
+    if (!rank) {
+      return json(res, 400, { success: false, message: `Rank position must be a whole number between 1 and ${MAX_RANK}.` });
+    }
+
+    const [eventRows] = await pool.execute('SELECT id, status FROM events WHERE id = ? LIMIT 1', [eventId]);
+    if (!eventRows.length) {
+      return json(res, 404, { success: false, message: 'Event not found.' });
+    }
+
+    const computedPoints = normalizePoints(points, rank);
 
     const defaultTitle =
       rank === 1 ? 'Champion' :
@@ -166,11 +189,18 @@ async function updateEventWinner(req, res) {
     if (!winnerId || Number.isNaN(winnerId)) {
       return json(res, 400, { success: false, message: 'Valid winner ID is required.' });
     }
+    if (!institutionName || !String(institutionName).trim()) {
+      return json(res, 400, { success: false, message: 'School/Institution name is required.' });
+    }
+    if (!participantName || !String(participantName).trim()) {
+      return json(res, 400, { success: false, message: 'Participant or Team name is required.' });
+    }
 
-    const rank = Number(rankPosition) >= 1 ? Number(rankPosition) : 1;
-    const computedPoints = points !== undefined && points !== null && points !== ''
-      ? Number(points)
-      : (DEFAULT_POINTS_BY_RANK[rank] || 1);
+    const rank = normalizeRank(rankPosition ?? 1);
+    if (!rank) {
+      return json(res, 400, { success: false, message: `Rank position must be a whole number between 1 and ${MAX_RANK}.` });
+    }
+    const computedPoints = normalizePoints(points, rank);
 
     const [updateRes] = await pool.execute(
       `UPDATE event_competition_winners
@@ -245,6 +275,80 @@ async function deleteEventWinner(req, res) {
   } catch (err) {
     console.error('deleteEventWinner error:', err);
     return json(res, 500, { success: false, message: 'Failed to delete winner.', error: err.message });
+  }
+}
+
+/**
+ * Manually move a winner one position up or down in the event ranking.
+ * Swaps the position-bound attributes (rank, award title, points) with the
+ * adjacent entry inside a transaction so the podium stays consistent.
+ * Body: { direction: 'up' | 'down' }
+ */
+async function moveEventWinner(req, res) {
+  const eventId = Number(req.params.id);
+  const winnerId = Number(req.params.winnerId);
+  const { direction } = req.body || {};
+
+  if (!eventId || !winnerId || Number.isNaN(eventId) || Number.isNaN(winnerId)) {
+    return json(res, 400, { success: false, message: 'Valid event and winner IDs are required.' });
+  }
+  if (direction !== 'up' && direction !== 'down') {
+    return json(res, 400, { success: false, message: "direction must be 'up' or 'down'." });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [rows] = await conn.execute(
+      `SELECT id, rank_position, award_title, points
+       FROM event_competition_winners
+       WHERE event_id = ?
+       ORDER BY rank_position ASC, points DESC, id ASC
+       FOR UPDATE`,
+      [eventId]
+    );
+
+    const index = rows.findIndex((r) => Number(r.id) === winnerId);
+    if (index === -1) {
+      await conn.rollback();
+      return json(res, 404, { success: false, message: 'Winner record not found for this event.' });
+    }
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= rows.length) {
+      await conn.rollback();
+      return json(res, 400, { success: false, message: `Winner is already at the ${direction === 'up' ? 'top' : 'bottom'} of the ranking.` });
+    }
+
+    const current = rows[index];
+    const target = rows[targetIndex];
+
+    // If both share the same rank (tie), assign distinct sequential ranks before swapping.
+    let currentRank = Number(current.rank_position);
+    let targetRank = Number(target.rank_position);
+    if (currentRank === targetRank) {
+      if (direction === 'up') currentRank = targetRank + 1;
+      else targetRank = currentRank + 1;
+    }
+
+    await conn.execute(
+      `UPDATE event_competition_winners SET rank_position = ?, award_title = ?, points = ? WHERE id = ?`,
+      [targetRank, target.award_title, target.points, current.id]
+    );
+    await conn.execute(
+      `UPDATE event_competition_winners SET rank_position = ?, award_title = ?, points = ? WHERE id = ?`,
+      [currentRank, current.award_title, current.points, target.id]
+    );
+
+    await conn.commit();
+    return json(res, 200, { success: true, message: 'Ranking updated.' });
+  } catch (err) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    console.error('moveEventWinner error:', err);
+    return json(res, 500, { success: false, message: 'Failed to reorder winner ranking.', error: err.message });
+  } finally {
+    conn.release();
   }
 }
 
@@ -385,5 +489,6 @@ module.exports = {
   createEventWinner,
   updateEventWinner,
   deleteEventWinner,
+  moveEventWinner,
   getOverallCompetitionStandings,
 };
