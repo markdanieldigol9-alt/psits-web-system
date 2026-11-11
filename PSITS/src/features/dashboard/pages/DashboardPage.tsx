@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
-import { useTheme } from '@/shared/context/ThemeContext';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Badge } from '@/shared/components/Form';
 import { LoadingSpinner } from '@/shared/components/Common';
-import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { getUserDisplayName, getUserRoleConfig, getUserInterfaceKey } from '@/shared/utils/userInterface';
 import { InstitutionEventLeaderboard } from '@/features/dashboard/components/InstitutionEventLeaderboard';
 import api from '@/shared/services/api';
@@ -15,7 +13,6 @@ import {
   Calendar,
   DollarSign,
   Clock,
-  CheckCircle,
   ArrowRight,
   Megaphone,
   CalendarDays,
@@ -27,19 +24,6 @@ import {
   Building2,
   Video,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
 
 type DashboardReport = {
   success: boolean;
@@ -83,26 +67,18 @@ type DashboardAnnouncement = {
   date: string;
 };
 
-const chartColors = ['#2563EB', '#06B6D4', '#F59E0B', '#10B981', '#8B5CF6'];
-
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addNotification } = useNotification();
-  const { effectiveTheme } = useTheme();
-  const isDark = effectiveTheme === 'dark';
   const roleConfig = getUserRoleConfig(user);
   const uiKey = getUserInterfaceKey(user);
 
   const [report, setReport] = useState<DashboardReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [confirmApprove, setConfirmApprove] = useState<{ id: string; name: string } | null>(null);
   const [memberLoading, setMemberLoading] = useState(false);
   const [memberEvents, setMemberEvents] = useState<DashboardEvent[]>([]);
   const [memberAnnouncements, setMemberAnnouncements] = useState<DashboardAnnouncement[]>([]);
-
-  const canManageMembers = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'officer';
 
   const loadReport = async () => {
     setIsLoading(true);
@@ -173,34 +149,6 @@ export const DashboardPage = () => {
     void loadReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.role]);
-
-  const handleApprove = async (memberId: string) => {
-    if (!canManageMembers) return;
-    setApprovingId(memberId);
-    try {
-      const { data } = await api.updateMember(memberId, { status: 'active' });
-      addNotification({
-        userId: 'current',
-        title: 'Member Approved',
-        message: data?.notification?.emailSent
-          ? 'Member account is now active. Approval email sent.'
-          : 'Member account is now active. Email was not sent (SMTP not configured).',
-        type: 'success',
-        isRead: false,
-      });
-      await loadReport();
-    } catch (err) {
-      addNotification({
-        userId: 'current',
-        title: 'Error',
-        message: err instanceof Error ? err.message : 'Failed to approve member.',
-        type: 'error',
-        isRead: false,
-      });
-    } finally {
-      setApprovingId(null);
-    }
-  };
 
   const upcomingEvents = useMemo(() => {
     return [...memberEvents]
@@ -776,131 +724,7 @@ export const DashboardPage = () => {
 
         {/* Institution Event Delegation Leaderboard */}
         <InstitutionEventLeaderboard />
-
-        {canManageMembers && (
-          <Card
-            title="Pending Registrations"
-            subtitle="Review and approve new collegiate members"
-            headerAction={
-              report?.pendingMembers?.length ? (
-                <Button variant="outline" size="xs" onClick={() => navigate('/members')}>
-                  View All ({report.pendingMembers.length})
-                </Button>
-              ) : null
-            }
-          >
-            {report?.pendingMembers?.length ? (
-              <div className="space-y-3">
-                {report.pendingMembers.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between gap-4 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-cyan-500/30 transition-all bg-white dark:bg-[#0B1326]">
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{m.fullName}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">{m.email}</p>
-                      <p className="text-[11px] font-mono text-slate-600 dark:text-slate-400 font-medium mt-1">{m.sector} • {m.memberType || 'member'} • {m.status}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => setConfirmApprove({ id: m.id, name: m.fullName || m.email })}
-                        disabled={approvingId === m.id}
-                      >
-                        <CheckCircle size={15} /> Approve
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => navigate('/members')}>View</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-600 dark:text-slate-400 font-medium text-center py-8 text-sm">No pending registrations requiring review.</p>
-            )}
-          </Card>
-        )}
-
-        {/* Analytics Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title="Monthly Member Growth" subtitle="Registrations over last 6 months">
-            <div className="overflow-x-auto pt-2">
-              <div className="min-w-[400px]">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={report?.memberGrowth || []}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={isDark ? 0.15 : 0.4} stroke={isDark ? '#334155' : '#E2E8F0'} />
-                    <XAxis dataKey="month" stroke={isDark ? '#94A3B8' : '#64748B'} fontSize={12} tickLine={false} />
-                    <YAxis allowDecimals={false} stroke={isDark ? '#94A3B8' : '#64748B'} fontSize={12} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: isDark ? 'rgba(11, 19, 38, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-                        borderRadius: '12px',
-                        border: isDark ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid rgba(203, 213, 225, 0.9)',
-                        color: isDark ? '#fff' : '#0F172A',
-                        boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.15)',
-                        fontSize: '12px',
-                      }}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="members" stroke="#2563EB" strokeWidth={3} dot={{ r: 4 }} name="New Registrations" />
-                    <Line type="monotone" dataKey="active" stroke="#06B6D4" strokeWidth={3} dot={{ r: 4 }} name="Approved Active" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </Card>
-
-          <Card title="Revenue Distribution" subtitle="Payment methods breakdown">
-            <div className="overflow-x-auto pt-2">
-              <div className="min-w-[300px]">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={report?.revenueByMethod || []}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={4}
-                      labelLine={false}
-                      label={({ name, value }: { name: string; value?: number }) => `${name}: ₱${((value != null && !Number.isNaN(value)) ? value : 0).toLocaleString()}`}
-                      dataKey="value"
-                    >
-                      {(report?.revenueByMethod || []).map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: isDark ? 'rgba(11, 19, 38, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-                        borderRadius: '12px',
-                        border: isDark ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid rgba(203, 213, 225, 0.9)',
-                        color: isDark ? '#fff' : '#0F172A',
-                        boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.15)',
-                        fontSize: '12px',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
-
-      <VerifyActionModal
-        isOpen={!!confirmApprove}
-        title="Approve Member"
-        message={`Approve ${confirmApprove?.name}? This will activate the member account and send login details.`}
-        confirmLabel="Accept & Activate"
-        confirmVariant="primary"
-        onCancel={() => {
-          if (approvingId) return;
-          setConfirmApprove(null);
-        }}
-        onVerified={async () => {
-          if (!confirmApprove) return;
-          await handleApprove(confirmApprove.id);
-          setConfirmApprove(null);
-        }}
-      />
     </MainLayout>
   );
 };
