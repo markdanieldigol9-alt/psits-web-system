@@ -492,6 +492,8 @@ async function migrate() {
   try { await pool.query('ALTER TABLE event_registrations ADD COLUMN checked_in_count INT UNSIGNED NOT NULL DEFAULT 0'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE event_registrations ADD COLUMN is_checked_in TINYINT(1) NOT NULL DEFAULT 0'); } catch { /* ignore */ }
   try { await pool.query('ALTER TABLE event_registrations ADD COLUMN checked_in_at DATETIME NULL'); } catch { /* ignore */ }
+  // Venue time-out (departure) timestamp for schedule-based attendance sheets
+  try { await pool.query('ALTER TABLE event_registrations ADD COLUMN checked_out_at DATETIME NULL'); } catch { /* ignore */ }
 
   // Event competition winners & ranking table
   await pool.query(`
@@ -1444,6 +1446,7 @@ async function migrate() {
       'created_by INT UNSIGNED NULL',
       'checked_in TINYINT(1) NOT NULL DEFAULT 0',
       'checked_in_at DATETIME NULL',
+      'checked_out_at DATETIME NULL',
     ];
     for (const col of instColumns) {
       try {
