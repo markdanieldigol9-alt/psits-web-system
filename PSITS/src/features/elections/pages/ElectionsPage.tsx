@@ -116,8 +116,7 @@ export const ElectionsPage = () => {
       if (electionsResp.data?.success) setElections(electionsResp.data.elections || []);
       if (posResp.data?.success && posResp.data.positions?.length > 0) {
         const sortedPos = posResp.data.positions
-          .slice()
-          .sort((a: any, b: any) => getPositionRank(a.name) - getPositionRank(b.name))
+          .toSorted((a: any, b: any) => getPositionRank(a.name) - getPositionRank(b.name))
           .map((p: any) => p.name);
         setAllOfficerPositions(sortedPos);
       }
@@ -447,12 +446,7 @@ export const ElectionsPage = () => {
 
   const candidatesByPosition = useMemo(() => {
     if (!details?.candidates) return {};
-    const grouped: Record<string, any[]> = {};
-    details.candidates.forEach((c) => {
-      const pos = c.position || 'Other';
-      if (!grouped[pos]) grouped[pos] = [];
-      grouped[pos].push(c);
-    });
+    const grouped = Object.groupBy(details.candidates, (c: any) => String(c.position || 'Other'));
 
     // Map allowedPositions order from election details if available
     const allowedPosList = Array.isArray(details?.election?.allowedPositions)
@@ -479,9 +473,9 @@ export const ElectionsPage = () => {
     });
 
     const result: Record<string, any[]> = {};
-    sortedEntries.forEach(([pos, list]) => {
+    sortedEntries.forEach(([pos, list = []]) => {
       // Also sort candidates inside the position: winner first, then highest votes, then name
-      result[pos] = list.slice().sort((a, b) => {
+      result[pos] = list.toSorted((a, b) => {
         if (a.status === 'winner' && b.status !== 'winner') return -1;
         if (b.status === 'winner' && a.status !== 'winner') return 1;
         if ((b.votesCount || 0) !== (a.votesCount || 0)) return (b.votesCount || 0) - (a.votesCount || 0);
@@ -614,7 +608,13 @@ export const ElectionsPage = () => {
                     placeholder="e.g. Public Relations Officer, Auditor, Representative"
                     value={customPosName}
                     onChange={(e) => setCustomPosName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomPosition(); } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                        handleAddCustomPosition();
+                      }
+                    }}
                     className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   />
                   <Button type="button" size="sm" variant="primary" onClick={handleAddCustomPosition}>Add</Button>

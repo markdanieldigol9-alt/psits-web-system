@@ -1476,18 +1476,20 @@ test.describe('PSITS Reports Module — E2E Suite (RBAC, R1, R2, R3)', () => {
       const area = dialog.locator('#printable-report-area');
       await expect(area).toBeVisible();
 
-      // Filter ledger to our prefix -> 18 seeded payments
+      // Filter ledger to our prefix REF- -> 18 seeded payments
       const searchInput = area.getByPlaceholder('Search name, ref #, event...');
-      await searchInput.fill(seed.prefix);
+      await searchInput.fill(`${seed.prefix}REF-`);
+
+      const ledgerRows = area.locator('table').last().locator('tbody tr');
 
       // Default pageSize is 15 on screen
-      await expect(area.locator('tbody tr')).toHaveCount(15);
+      await expect(ledgerRows).toHaveCount(15);
       await expect(area).toContainText(/Showing 1 to 15 of 18 filtered entries/i);
 
       // Apply GCash channel pill filter -> 10 seeded GCash payments
       const gcashPill = area.locator('button').filter({ hasText: /^GCash/ }).first();
       await gcashPill.click();
-      await expect(area.locator('tbody tr')).toHaveCount(10);
+      await expect(ledgerRows).toHaveCount(10);
 
       // Export CSV via in-view button and verify ONLY the 10 filtered GCash rows are exported
       const csv = await downloadAndParseCsv(page, () =>
@@ -1502,13 +1504,13 @@ test.describe('PSITS Reports Module — E2E Suite (RBAC, R1, R2, R3)', () => {
 
       // Reset to All Channels (18 rows) to verify unpagination on print
       await area.locator('button').filter({ hasText: /^All Channels/ }).first().click();
-      await expect(area.locator('tbody tr')).toHaveCount(15);
+      await expect(ledgerRows).toHaveCount(15);
 
       await stubWindowPrintWithEvents(page);
       await dialog.getByRole('button', { name: /Print \/ Save PDF/i }).click();
 
       await expect
-        .poll(async () => area.locator('tbody tr').count(), { timeout: 5000 })
+        .poll(async () => ledgerRows.count(), { timeout: 5000 })
         .toBe(18);
 
       await assertCleanPrintOutput(page, {
@@ -1517,7 +1519,7 @@ test.describe('PSITS Reports Module — E2E Suite (RBAC, R1, R2, R3)', () => {
       });
 
       await restoreWindowPrintWithAfterPrint(page);
-      await expect(area.locator('tbody tr')).toHaveCount(15);
+      await expect(ledgerRows).toHaveCount(15);
 
       // Also verify Step 3 "Save PDF" triggers unpagination cleanly
       await dialog.getByRole('button', { name: /Proceed to Export & Submit/i }).first().click();
@@ -1527,7 +1529,7 @@ test.describe('PSITS Reports Module — E2E Suite (RBAC, R1, R2, R3)', () => {
       await dialog.getByRole('button', { name: /Save PDF/i }).click();
 
       await expect
-        .poll(async () => area.locator('tbody tr').count(), { timeout: 5000 })
+        .poll(async () => ledgerRows.count(), { timeout: 5000 })
         .toBe(18);
 
       await assertCleanPrintOutput(page, {

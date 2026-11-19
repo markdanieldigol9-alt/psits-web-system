@@ -172,6 +172,7 @@ export const ForumPage = () => {
   const handleAddCustomTag = (e: React.KeyboardEvent | React.MouseEvent) => {
     if (('key' in e && (e.key === 'Enter' || e.key === ',')) || e.type === 'click') {
       e.preventDefault();
+      if ('key' in e && (e.nativeEvent.isComposing || e.keyCode === 229)) return;
       const raw = customTagInput.trim().replace(/^#+/, '');
       if (raw) {
         const clean = `#${raw}`;

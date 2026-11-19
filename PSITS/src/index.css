@@ -66,25 +66,36 @@ html.dark ::selection {
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+:root {
+  --scrollbar-thumb: #64748b;
+  --scrollbar-thumb-hover: #475569;
+  --scrollbar-track: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+html.dark {
+  --scrollbar-thumb: #64748b;
+  --scrollbar-thumb-hover: #94a3b8;
 }
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
-}
-html.dark ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+
+@supports not (scrollbar-color: auto) {
+  :root {
+    scrollbar-width: auto;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
 }
 
 /* ─── Focus Visible ────────────────────────────────────── */

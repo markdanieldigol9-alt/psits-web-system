@@ -64,14 +64,7 @@ export const truncateText = (text: string, maxLength: number): string => {
 };
 
 export const groupBy = <T,>(array: T[], key: keyof T): Record<string, T[]> => {
-  return array.reduce((result, item) => {
-    const groupKey = String(item[key]);
-    if (!result[groupKey]) {
-      result[groupKey] = [];
-    }
-    result[groupKey].push(item);
-    return result;
-  }, {} as Record<string, T[]>);
+  return Object.groupBy(array, (item) => String(item[key])) as Record<string, T[]>;
 };
 
 export const PAYMENT_METHOD_OPTIONS: { value: string; label: string }[] = [

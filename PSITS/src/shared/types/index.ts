@@ -369,3 +369,125 @@ export interface InstitutionLeaderboardData {
   overallStandings?: OverallCompetitionStanding[];
 }
 
+export interface EventWinnersReportSummary {
+  totalEvents: number;
+  eventsWithWinners: number;
+  eventsWithoutWinners: number;
+  totalWinnerEntries: number;
+  totalPointsAwarded: number;
+}
+
+export interface EventWinnersReportWinnerEntry {
+  winnerId: string;
+  rankPosition: number;
+  awardTitle: string;
+  participantName: string;
+  institutionName: string;
+  points: number;
+  scoreOrNotes: string | null;
+  eventMode: 'individual' | 'pair' | 'team' | string;
+  awardedAt: string | null;
+}
+
+export interface EventWinnersReportEvent {
+  eventId: string;
+  eventTitle: string;
+  eventType: string;
+  eventMode: 'individual' | 'pair' | 'team' | string;
+  eventStatus: string;
+  location: string;
+  startAt: string | null;
+  endAt: string | null;
+  isEsports: boolean;
+  esportsGame: string | null;
+  hasWinners: boolean;
+  winnerCount: number;
+  winners: EventWinnersReportWinnerEntry[];
+}
+
+export interface EventWinnersReportRow {
+  eventId: string;
+  eventTitle: string;
+  eventType: string;
+  eventMode: 'individual' | 'pair' | 'team' | string;
+  eventStatus: string;
+  location: string;
+  startAt: string | null;
+  endAt: string | null;
+  isEsports: boolean;
+  esportsGame: string | null;
+  hasWinners: boolean;
+  winnerCount: number;
+  winnerId: string | null;
+  rankPosition: number | null;
+  awardTitle: string;
+  participantName: string;
+  institutionName: string;
+  points: number;
+  scoreOrNotes: string | null;
+  awardedAt: string | null;
+}
+
+export interface EventWinnersReportResponse {
+  success: boolean;
+  summary: EventWinnersReportSummary;
+  events: EventWinnersReportEvent[];
+  rows: EventWinnersReportRow[];
+}
+
+export interface AttendanceReportSummary {
+  totalRecords: number;
+  checkedInCount: number;
+  timedOutCount: number;
+  inVenueCount: number;
+  notTimedOutCount: number;
+  notArrivedCount: number;
+  lateCount: number;
+  leftEarlyCount: number;
+}
+
+export interface AttendanceReportEvent {
+  id: string;
+  title: string;
+  startAt: string | null;
+  endAt: string | null;
+  status: string;
+  location: string;
+}
+
+export interface AttendanceReportRecord {
+  participantKey: string;
+  registrationSource: string;
+  sourceType: 'individual' | 'institution' | string;
+  eventId: string;
+  eventTitle: string;
+  eventStatus: string;
+  eventStartAt: string | null;
+  eventEndAt: string | null;
+  fullName: string;
+  email: string;
+  contactNumber: string;
+  institutionName: string;
+  position: string;
+  registrationStatus: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+  checkedOutAt: string | null;
+  timeOutPlaceholder: string | null;
+  attendanceStatus: 'timed_out' | 'in_venue' | 'not_timed_out' | 'not_arrived' | string;
+  attendanceStatusLabel: string;
+  isLate: boolean;
+  leftEarly: boolean;
+  durationMinutes: number | null;
+  registeredAt: string | null;
+}
+
+export interface AttendanceReportResponse {
+  success: boolean;
+  summary: AttendanceReportSummary;
+  events: AttendanceReportEvent[];
+  institutions?: string[];
+  records: AttendanceReportRecord[];
+}
+
+

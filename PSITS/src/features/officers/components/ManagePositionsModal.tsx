@@ -49,7 +49,7 @@ export const ManagePositionsModal = ({
     try {
       const { data } = await api.getOfficerPositions();
       if (data?.success) {
-        const sorted = (data.positions || []).slice().sort((a: OfficerPositionItem, b: OfficerPositionItem) => {
+        const sorted = (data.positions || []).toSorted((a: OfficerPositionItem, b: OfficerPositionItem) => {
           const rankA = getPositionRank(a.name);
           const rankB = getPositionRank(b.name);
           if (rankA !== rankB) return rankA - rankB;

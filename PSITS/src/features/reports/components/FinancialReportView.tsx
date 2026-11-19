@@ -457,7 +457,7 @@ export const FinancialReportView = ({
       }
     });
 
-    const sortedByVerified = [...methodBreakdown].sort((a, b) => b.verifiedTotal - a.verifiedTotal);
+    const sortedByVerified = methodBreakdown.toSorted((a, b) => b.verifiedTotal - a.verifiedTotal);
     const topChannel = sortedByVerified[0] || {
       channel: 'GCash',
       verifiedTotal: 0,

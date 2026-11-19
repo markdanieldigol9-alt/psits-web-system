@@ -19,7 +19,24 @@ import {
 import { EventReportView } from '../components/EventReportView';
 import { ExecutiveSummaryReportView } from '../components/ExecutiveSummaryReportView';
 import { ElectionReportView } from '../components/ElectionReportView';
+import {
+  EventWinnersReportView,
+  exportEventWinnersToCSV,
+  filterWinnerReportRows,
+  buildWinnerRowsFromEvents,
+} from '../components/EventWinnersReportView';
+import {
+  AttendanceReportView,
+  exportAttendanceRecordsToCSV,
+  filterAttendanceReportRecords,
+} from '../components/AttendanceReportView';
 import { printReportDocument } from '../utils/printReport';
+import type {
+  EventWinnersReportResponse,
+  EventWinnersReportRow,
+  AttendanceReportResponse,
+  AttendanceReportRecord,
+} from '@/shared/types';
 import {
   FileDown,
   FileSpreadsheet,
@@ -37,6 +54,8 @@ import {
   ShieldCheck,
   ListFilter,
   LayoutGrid,
+  Trophy,
+  Clock,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -95,6 +114,16 @@ const reportCards = [
     description: 'Summarize partnership deal resource values and sponsorship funds.',
     icon: Wallet,
   },
+  {
+    title: 'Event Winners',
+    description: 'Extract competition winners, rank placements, points, and awardees per event.',
+    icon: Trophy,
+  },
+  {
+    title: 'Attendance Time-In & Time-Out',
+    description: 'Audit participant check-in (time-in) and check-out (time-out) timestamps across events.',
+    icon: Clock,
+  },
 ];
 
 
@@ -139,6 +168,50 @@ export const ReportsPage = () => {
     summary: any;
   } | null>(null);
   const [isEventReportLoading, setIsEventReportLoading] = useState(false);
+
+  // Event Winners Report State (R1)
+  const [winnersReportData, setWinnersReportData] = useState<EventWinnersReportResponse | null>(null);
+  const [isWinnersReportLoading, setIsWinnersReportLoading] = useState(false);
+  const [filteredWinnerRows, setFilteredWinnerRows] = useState<EventWinnersReportRow[] | null>(null);
+  const [winnersEventFilter, setWinnersEventFilter] = useState<string>('all');
+  const [winnersHasWinnersFilter, setWinnersHasWinnersFilter] = useState<'all' | 'with_winners' | 'without_winners'>('all');
+
+  // Attendance Time-In & Time-Out Report State (R2)
+  const [attendanceReportData, setAttendanceReportData] = useState<AttendanceReportResponse | null>(null);
+  const [isAttendanceReportLoading, setIsAttendanceReportLoading] = useState(false);
+  const [filteredAttendanceRecords, setFilteredAttendanceRecords] = useState<AttendanceReportRecord[] | null>(null);
+  const [attendanceEventFilter, setAttendanceEventFilter] = useState<string>('all');
+  const [attendanceInstitutionFilter, setAttendanceInstitutionFilter] = useState<string>('all');
+  const [attendanceSourceFilter, setAttendanceSourceFilter] = useState<'all' | 'individual' | 'institution'>('all');
+  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<'all' | 'timed_out' | 'in_venue' | 'not_timed_out' | 'not_arrived'>('all');
+
+  const loadWinnersReportData = async () => {
+    setIsWinnersReportLoading(true);
+    try {
+      const { data } = await api.getEventWinnersReport();
+      if (data?.success) {
+        setWinnersReportData(data);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setIsWinnersReportLoading(false);
+    }
+  };
+
+  const loadAttendanceReportData = async () => {
+    setIsAttendanceReportLoading(true);
+    try {
+      const { data } = await api.getAttendanceReport();
+      if (data?.success) {
+        setAttendanceReportData(data);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setIsAttendanceReportLoading(false);
+    }
+  };
 
   const loadEventReportData = async () => {
     setIsEventReportLoading(true);
@@ -220,6 +293,8 @@ export const ReportsPage = () => {
 
   const openReportWizard = async (title: string, step: 1 | 2 = 1) => {
     setFilteredFinancialRecords(null);
+    setFilteredWinnerRows(null);
+    setFilteredAttendanceRecords(null);
     setWizardStep(step);
     setPreviewReport(title);
     try {
@@ -354,6 +429,18 @@ export const ReportsPage = () => {
           const { data } = await api.getElectionReport(electionIdToFetch);
           if (data?.success) setElectionReportData(data);
         }
+      } else if (title === 'Event Winners') {
+        const { data } = await api.getEventWinnersReport();
+        if (data?.success) {
+          setWinnersReportData(data);
+          setDetailedRecords(data.rows || []);
+        }
+      } else if (title === 'Attendance Time-In & Time-Out') {
+        const { data } = await api.getAttendanceReport();
+        if (data?.success) {
+          setAttendanceReportData(data);
+          setDetailedRecords(data.records || []);
+        }
       }
     } catch {
       // keep UI functional
@@ -387,6 +474,10 @@ export const ReportsPage = () => {
   useEffect(() => {
     if (previewReport === 'Event Participation' || previewReport === 'Complete Event') {
       void loadEventReportData();
+    } else if (previewReport === 'Event Winners') {
+      void loadWinnersReportData();
+    } else if (previewReport === 'Attendance Time-In & Time-Out') {
+      void loadAttendanceReportData();
     }
   }, [previewReport]);
 
@@ -650,6 +741,52 @@ export const ReportsPage = () => {
           { 'Operational Domain': 'Corporate Alliances', 'Key Performance Indicator': 'Total Strategic Partnerships / Deals', 'Recorded Figures': `${partnerReportData?.contributions?.length || 0} deals`, 'Audit Status': 'Active Network' },
         ];
         exportToCSV(`PSITS_Executive_Summary_Official_Report_${new Date().toISOString().slice(0, 10)}`, dataToExport);
+      } else if (title === 'Event Winners') {
+        if (filteredWinnerRows !== null) {
+          exportEventWinnersToCSV(filteredWinnerRows, title);
+          return;
+        }
+        let rows: EventWinnersReportRow[] = winnersReportData?.rows || [];
+        if (rows.length === 0) {
+          const { data } = await api.getEventWinnersReport();
+          if (data?.success) {
+            setWinnersReportData(data);
+            rows = Array.isArray(data.rows) && data.rows.length > 0
+              ? data.rows
+              : buildWinnerRowsFromEvents(data.events || []);
+          }
+        }
+        const scopedRows = filterWinnerReportRows(rows, {
+          eventId: winnersEventFilter,
+          hasWinners: winnersHasWinnersFilter,
+          dateRangeFilter,
+          startDateFilter,
+          endDateFilter,
+        });
+        exportEventWinnersToCSV(scopedRows, title);
+      } else if (title === 'Attendance Time-In & Time-Out') {
+        if (filteredAttendanceRecords !== null) {
+          exportAttendanceRecordsToCSV(filteredAttendanceRecords, title);
+          return;
+        }
+        let records: AttendanceReportRecord[] = attendanceReportData?.records || [];
+        if (records.length === 0) {
+          const { data } = await api.getAttendanceReport();
+          if (data?.success) {
+            setAttendanceReportData(data);
+            records = data.records || [];
+          }
+        }
+        const scopedRecords = filterAttendanceReportRecords(records, {
+          eventId: attendanceEventFilter,
+          institution: attendanceInstitutionFilter,
+          source: attendanceSourceFilter,
+          attendanceStatus: attendanceStatusFilter,
+          dateRangeFilter,
+          startDateFilter,
+          endDateFilter,
+        });
+        exportAttendanceRecordsToCSV(scopedRecords, title);
       }
     } catch {
       // ignore
@@ -665,7 +802,9 @@ export const ReportsPage = () => {
       previewReport === 'Event Participation' ||
       previewReport === 'Complete Event' ||
       previewReport === 'Executive Summary' ||
-      previewReport === 'Election Tally';
+      previewReport === 'Election Tally' ||
+      previewReport === 'Event Winners' ||
+      previewReport === 'Attendance Time-In & Time-Out';
 
     return (
       <div className="space-y-6">
@@ -875,6 +1014,57 @@ export const ReportsPage = () => {
             userRole={user?.role || 'Officer'}
             onExportCSV={() => handleGenerateExcel(previewReport)}
           />
+        )}
+
+        {previewReport === 'Event Winners' && (
+          isWinnersReportLoading && !winnersReportData ? (
+            <div className="flex items-center justify-center p-12 no-print">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <EventWinnersReportView
+              events={winnersReportData?.events || []}
+              rows={winnersReportData?.rows || []}
+              summary={winnersReportData?.summary || null}
+              reportTitle={previewReport}
+              initialEventId={winnersEventFilter}
+              initialHasWinners={winnersHasWinnersFilter}
+              dateRangeFilter={dateRangeFilter}
+              startDateFilter={startDateFilter}
+              endDateFilter={endDateFilter}
+              preparedBy={user?.fullName || 'Competitions & Awards Director'}
+              userRole={user?.role || 'Officer'}
+              onFilteredRowsChange={setFilteredWinnerRows}
+              onExportCSV={(rows) => exportEventWinnersToCSV(rows, previewReport)}
+            />
+          )
+        )}
+
+        {previewReport === 'Attendance Time-In & Time-Out' && (
+          isAttendanceReportLoading && !attendanceReportData ? (
+            <div className="flex items-center justify-center p-12 no-print">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <AttendanceReportView
+              records={attendanceReportData?.records || []}
+              events={attendanceReportData?.events || []}
+              institutions={attendanceReportData?.institutions || institutionsList}
+              summary={attendanceReportData?.summary || null}
+              reportTitle={previewReport}
+              initialEventId={attendanceEventFilter}
+              initialInstitution={attendanceInstitutionFilter}
+              initialSource={attendanceSourceFilter}
+              initialAttendanceStatus={attendanceStatusFilter}
+              dateRangeFilter={dateRangeFilter}
+              startDateFilter={startDateFilter}
+              endDateFilter={endDateFilter}
+              preparedBy={user?.fullName || 'Attendance & Registration Officer'}
+              userRole={user?.role || 'Officer'}
+              onFilteredRecordsChange={setFilteredAttendanceRecords}
+              onExportCSV={(records) => exportAttendanceRecordsToCSV(records, previewReport)}
+            />
+          )
         )}
 
         {previewReport === 'Partner Contributions' && (
@@ -1104,7 +1294,7 @@ export const ReportsPage = () => {
           )}
         </Card>
 
-        {(isLoading || isEventReportLoading) && (
+        {(isLoading || isEventReportLoading || isWinnersReportLoading || isAttendanceReportLoading) && (
           <Card className="no-print">
             <div className="text-sm text-gray-600">Loading report data...</div>
           </Card>
@@ -1167,6 +1357,8 @@ export const ReportsPage = () => {
         onClose={() => {
           setPreviewReport(null);
           setFilteredFinancialRecords(null);
+          setFilteredWinnerRows(null);
+          setFilteredAttendanceRecords(null);
         }}
         title={previewReport ? `${previewReport} - Step ${wizardStep} of 3` : 'Report Wizard'}
         size="2xl"
@@ -1309,6 +1501,103 @@ export const ReportsPage = () => {
                     </select>
                   </div>
                 )}
+
+                {previewReport === 'Event Winners' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Event</label>
+                      <select
+                        value={winnersEventFilter}
+                        onChange={(e) => setWinnersEventFilter(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">All Events ({winnersReportData?.events?.length || 0})</option>
+                        {(winnersReportData?.events || []).map((ev) => (
+                          <option key={ev.eventId} value={ev.eventId}>
+                            {ev.eventTitle} ({ev.winnerCount} {ev.winnerCount === 1 ? 'winner' : 'winners'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Winner Recording Status</label>
+                      <select
+                        value={winnersHasWinnersFilter}
+                        onChange={(e) => setWinnersHasWinnersFilter(e.target.value as any)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">All Events (With & Without Winners)</option>
+                        <option value="with_winners">Events With Proclaimed Winners</option>
+                        <option value="without_winners">Events Without Winners Recorded</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {previewReport === 'Attendance Time-In & Time-Out' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Event</label>
+                      <select
+                        value={attendanceEventFilter}
+                        onChange={(e) => setAttendanceEventFilter(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">All Events ({attendanceReportData?.events?.length || 0})</option>
+                        {(attendanceReportData?.events || []).map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Institution</label>
+                      <select
+                        value={attendanceInstitutionFilter}
+                        onChange={(e) => setAttendanceInstitutionFilter(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">All Institutions</option>
+                        {(attendanceReportData?.institutions || institutionsList).map((inst) => (
+                          <option key={inst} value={inst}>
+                            {inst}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Registration Source</label>
+                      <select
+                        value={attendanceSourceFilter}
+                        onChange={(e) => setAttendanceSourceFilter(e.target.value as any)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">All Sources (Individual & Institution)</option>
+                        <option value="individual">Individual Registration</option>
+                        <option value="institution">Institution Roster</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Venue Attendance Status</label>
+                      <select
+                        value={attendanceStatusFilter}
+                        onChange={(e) => setAttendanceStatusFilter(e.target.value as any)}
+                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="timed_out">Timed Out (Completed)</option>
+                        <option value="in_venue">In Venue (Timed In)</option>
+                        <option value="not_timed_out">Not Timed Out</option>
+                        <option value="not_arrived">Not in Venue</option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
 
               {dateRangeFilter === 'custom' && (
@@ -1326,141 +1615,139 @@ export const ReportsPage = () => {
             </div>
           )}
 
-          {/* STEP 2: INTERACTIVE DETAILED DOCUMENT PREVIEW */}
-          {wizardStep === 2 && (
+          {/* STEP 2 & STEP 3: INTERACTIVE DETAILED DOCUMENT PREVIEW, PRINT, EXPORT & SUBMIT */}
+          {(wizardStep === 2 || wizardStep === 3) && (
             <div className="space-y-4 animate-fadeIn print:space-y-0">
-              {/* Quick Action Toolbar */}
-              <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
-                    <ChevronLeft size={16} /> Parameters
-                  </Button>
-                  <span className="text-xs font-bold text-gray-700">Detailed Report Document</span>
+              {/* STEP 2 Quick Action Toolbar */}
+              {wizardStep === 2 && (
+                <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
+                      <ChevronLeft size={16} /> Parameters
+                    </Button>
+                    <span className="text-xs font-bold text-gray-700">Detailed Report Document</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => printReportDocument(previewReport || selectedReportTitle)}
+                      className="flex items-center gap-1.5 font-semibold text-gray-800 cursor-pointer"
+                    >
+                      <Printer size={15} /> Print / Save PDF
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleGenerateExcel(previewReport || '')}
+                      className="flex items-center gap-1.5 font-semibold text-emerald-700 cursor-pointer"
+                    >
+                      <FileSpreadsheet size={15} /> Export CSV
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setWizardStep(3)}
+                      className="flex items-center gap-1.5 font-semibold cursor-pointer"
+                    >
+                      Proceed to Export & Submit <ChevronRight size={15} />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => printReportDocument(previewReport || selectedReportTitle)}
-                    className="flex items-center gap-1.5 font-semibold text-gray-800 cursor-pointer"
-                  >
-                    <Printer size={15} /> Print / Save PDF
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleGenerateExcel(previewReport || '')}
-                    className="flex items-center gap-1.5 font-semibold text-emerald-700 cursor-pointer"
-                  >
-                    <FileSpreadsheet size={15} /> Export CSV
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setWizardStep(3)}
-                    className="flex items-center gap-1.5 font-semibold cursor-pointer"
-                  >
-                    Proceed to Export & Submit <ChevronRight size={15} />
-                  </Button>
-                </div>
-              </div>
+              )}
 
-              {/* Printable Report Document Container */}
+              {/* STEP 3 Action Panel */}
+              {wizardStep === 3 && (
+                <div className="no-print space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                    <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                      <CheckCircle2 size={18} className="text-emerald-600" /> Report Ready for Action
+                    </h4>
+                    <p className="text-xs text-emerald-700 mt-1">
+                      You can now print this official document directly, save as PDF, export to CSV spreadsheet, or submit into system archives.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => printReportDocument(previewReport || selectedReportTitle)}
+                      className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
+                    >
+                      <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-gray-900">Print Report</span>
+                      <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateExcel(previewReport || '')}
+                      className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
+                    >
+                      <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-gray-900">Export Excel</span>
+                      <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => printReportDocument(previewReport || selectedReportTitle)}
+                      className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
+                    >
+                      <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-gray-900">Save PDF</span>
+                      <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
+                    </button>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                    <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
+                      <ChevronLeft size={16} /> Back to Preview
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={() => {
+                        addNotification({
+                          userId: 'current',
+                          title: 'Report Submitted',
+                          message: `${previewReport} report has been recorded and submitted.`,
+                          type: 'success',
+                          isRead: false,
+                        });
+                        setPreviewReport(null);
+                        setFilteredFinancialRecords(null);
+                        setFilteredWinnerRows(null);
+                        setFilteredAttendanceRecords(null);
+                      }}
+                      className="px-6"
+                    >
+                      <CheckCircle2 size={18} /> Submit & Record Report
+                    </Button>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Eye size={14} /> Document Preview (Will be printed / saved):
+                  </div>
+                </div>
+              )}
+
+              {/* Shared Printable Report Document Container (Stays mounted across Step 2 & Step 3 to preserve in-view filters!) */}
               <div id="printable-report-area" className="printable-report-area bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
                 {renderReportDocument()}
               </div>
 
-              {/* Navigation Footer */}
-              <div className="border-t border-gray-200 pt-4 flex items-center justify-between no-print">
-                <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
-                  <ChevronLeft size={16} /> Edit Parameters
-                </Button>
-                <Button variant="primary" size="lg" onClick={() => setWizardStep(3)} className="px-6">
-                  Proceed to Export & Submit <ChevronRight size={18} />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: PRINT, EXPORT & SUBMIT */}
-          {wizardStep === 3 && (
-            <div className="space-y-5 animate-fadeIn print:space-y-0">
-              <div className="no-print space-y-4">
-                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-                  <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
-                    <CheckCircle2 size={18} className="text-emerald-600" /> Report Ready for Action
-                  </h4>
-                  <p className="text-xs text-emerald-700 mt-1">
-                    You can now print this official document directly, save as PDF, export to CSV spreadsheet, or submit into system archives.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => printReportDocument(previewReport || selectedReportTitle)}
-                    className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
-                  >
-                    <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold text-gray-900">Print Report</span>
-                    <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleGenerateExcel(previewReport || '')}
-                    className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
-                  >
-                    <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold text-gray-900">Export Excel</span>
-                    <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => printReportDocument(previewReport || selectedReportTitle)}
-                    className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
-                  >
-                    <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold text-gray-900">Save PDF</span>
-                    <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
-                  </button>
-                </div>
-
-                <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
-                  <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
-                    <ChevronLeft size={16} /> Back to Preview
+              {/* STEP 2 Navigation Footer */}
+              {wizardStep === 2 && (
+                <div className="border-t border-gray-200 pt-4 flex items-center justify-between no-print">
+                  <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
+                    <ChevronLeft size={16} /> Edit Parameters
                   </Button>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => {
-                      addNotification({
-                        userId: 'current',
-                        title: 'Report Submitted',
-                        message: `${previewReport} report has been recorded and submitted.`,
-                        type: 'success',
-                        isRead: false,
-                      });
-                      setPreviewReport(null);
-                      setFilteredFinancialRecords(null);
-                    }}
-                    className="px-6"
-                  >
-                    <CheckCircle2 size={18} /> Submit & Record Report
+                  <Button variant="primary" size="lg" onClick={() => setWizardStep(3)} className="px-6">
+                    Proceed to Export & Submit <ChevronRight size={18} />
                   </Button>
                 </div>
-              </div>
-
-              {/* Live printable document area (Always mounted in Step 3 so Print & Save PDF work seamlessly!) */}
-              <div className="mt-4 pt-4 border-t border-gray-200 print:mt-0 print:pt-0 print:border-t-0">
-                <div className="no-print mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Eye size={14} /> Document Preview (Will be printed / saved):
-                </div>
-                <div id="printable-report-area" className="printable-report-area bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
-                  {renderReportDocument()}
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>

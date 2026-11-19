@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { exportToCSV } from '@/shared/utils/export';
 import { printReportDocument } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
@@ -58,6 +59,10 @@ export interface EventParticipantItem {
   registration_source?: string;
   registration_status?: string;
   is_checked_in?: boolean | number;
+  checked_in_at?: string | null;
+  checked_out_at?: string | null;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
   registered_at?: string;
 }
 
@@ -276,20 +281,27 @@ export const EventReportView = ({
 
   const handleExportRosterCSV = () => {
     if (!selectedEvent) return;
-    const dataToExport = filteredRoster.map((p, idx) => ({
-      'No.': idx + 1,
-      'Participant Name': p.full_name,
-      'Position / Role': p.position || 'Member',
-      'Affiliation / Institution': p.institution_name || 'PSITS Individual Member',
-      'Email Address': p.email || '—',
-      'Contact Number': p.contact_number || '—',
-      'Registration Source': p.registration_source || 'Individual Registration',
-      'Registration Status': (p.registration_status || 'Approved').toUpperCase(),
-      'Checked In (In Venue)': (p.is_checked_in === true || p.is_checked_in === 1 || String(p.is_checked_in) === 'true') ? 'YES' : 'NO',
-      'Date Registered': p.registered_at ? new Date(p.registered_at).toLocaleString() : '—',
-      'Event Title': selectedEvent.title,
-      'Event ID': selectedEvent.id,
-    }));
+    const dataToExport = filteredRoster.map((p, idx) => {
+      const isCheckedIn = p.is_checked_in === true || p.is_checked_in === 1 || String(p.is_checked_in) === 'true';
+      const rawTimeIn = isCheckedIn ? (p.checkedInAt || p.checked_in_at || null) : null;
+      const rawTimeOut = isCheckedIn ? (p.checkedOutAt || p.checked_out_at || null) : null;
+      return {
+        'No.': idx + 1,
+        'Participant Name': p.full_name,
+        'Position / Role': p.position || 'Member',
+        'Affiliation / Institution': p.institution_name || 'PSITS Individual Member',
+        'Email Address': p.email || '—',
+        'Contact Number': p.contact_number || '—',
+        'Registration Source': p.registration_source || 'Individual Registration',
+        'Registration Status': (p.registration_status || 'Approved').toUpperCase(),
+        'Checked In (In Venue)': isCheckedIn ? 'YES' : 'NO',
+        'Time In': rawTimeIn ? new Date(rawTimeIn).toLocaleString() : '—',
+        'Time Out': rawTimeOut ? new Date(rawTimeOut).toLocaleString() : '—',
+        'Date Registered': p.registered_at ? new Date(p.registered_at).toLocaleString() : '—',
+        'Event Title': selectedEvent.title,
+        'Event ID': selectedEvent.id,
+      };
+    });
     const cleanTitle = selectedEvent.title.replace(/[^a-zA-Z0-9_-]/g, '_');
     exportToCSV(`${cleanTitle}_Participant_Roster`, dataToExport);
   };
@@ -546,21 +558,23 @@ export const EventReportView = ({
         </div>
       </div>
 
-      {/* Participant Roster Modal */}
-      <div className="no-print">
-        <Modal
-          isOpen={isParticipantsModalOpen}
-          onClose={() => setIsParticipantsModalOpen(false)}
-          title={selectedEvent ? `Participant Roster: ${selectedEvent.title}` : 'Event Participants'}
-          subtitle={
-            selectedEvent
-              ? `${selectedEvent.eventType || selectedEvent.category || 'General Event'} • ${selectedEvent.location || 'Venue TBD'} • ${
-                  selectedEvent.startDate ? new Date(selectedEvent.startDate).toLocaleDateString() : 'Date TBD'
-                }`
-              : undefined
-          }
-          size="2xl"
-        >
+      {/* Participant Roster Modal (Rendered via Portal outside #printable-report-area) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div className="no-print">
+            <Modal
+              isOpen={isParticipantsModalOpen}
+              onClose={() => setIsParticipantsModalOpen(false)}
+              title={selectedEvent ? `Participant Roster: ${selectedEvent.title}` : 'Event Participants'}
+              subtitle={
+                selectedEvent
+                  ? `${selectedEvent.eventType || selectedEvent.category || 'General Event'} • ${selectedEvent.location || 'Venue TBD'} • ${
+                      selectedEvent.startDate ? new Date(selectedEvent.startDate).toLocaleDateString() : 'Date TBD'
+                    }`
+                  : undefined
+              }
+              size="2xl"
+            >
         <div className="space-y-4">
           {/* Roster KPI Summary Banner */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -703,13 +717,14 @@ export const EventReportView = ({
                     <th className="px-3 py-2 text-center">Source</th>
                     <th className="px-3 py-2 text-center">Status</th>
                     <th className="px-3 py-2 text-center">Attendance</th>
+                    <th className="px-3 py-2 text-center">Time In / Out</th>
                     <th className="px-3 py-2 text-right">Registered</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {isLoadingRoster ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                      <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                           <span className="text-xs font-medium text-gray-600">Loading participant roster...</span>
@@ -718,7 +733,7 @@ export const EventReportView = ({
                     </tr>
                   ) : filteredRoster.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                      <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
                         {rosterParticipants.length === 0
                           ? 'No participants registered for this event yet.'
                           : 'No participants match the selected filter.'}
@@ -728,6 +743,8 @@ export const EventReportView = ({
                     filteredRoster.map((p, idx) => {
                       const isCheckedIn = p.is_checked_in === true || p.is_checked_in === 1 || String(p.is_checked_in) === 'true';
                       const isIndividual = p.registration_source === 'Individual Registration';
+                      const rawTimeIn = isCheckedIn ? (p.checkedInAt || p.checked_in_at || null) : null;
+                      const rawTimeOut = isCheckedIn ? (p.checkedOutAt || p.checked_out_at || null) : null;
 
                       return (
                         <tr key={p.participant_key || `${p.full_name}-${idx}`} className="hover:bg-blue-50/30 transition-colors">
@@ -792,6 +809,10 @@ export const EventReportView = ({
                               </span>
                             )}
                           </td>
+                          <td className="px-3 py-2 text-center text-[10px] font-mono text-gray-600 whitespace-nowrap">
+                            <div>In: {rawTimeIn ? new Date(rawTimeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                            <div>Out: {rawTimeOut ? new Date(rawTimeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                          </td>
                           <td className="px-3 py-2 text-right text-gray-500 text-[11px] whitespace-nowrap font-mono">
                             {p.registered_at ? new Date(p.registered_at).toLocaleDateString() : '—'}
                           </td>
@@ -821,8 +842,10 @@ export const EventReportView = ({
             </div>
           </div>
         </div>
-        </Modal>
-      </div>
+            </Modal>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

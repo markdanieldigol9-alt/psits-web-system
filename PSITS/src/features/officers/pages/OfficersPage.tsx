@@ -66,7 +66,7 @@ export const OfficersPage = () => {
       const status = officer.officerStatus || (officer.status === 'active' ? 'active' : 'inactive');
       return filterStatus === 'all' || status === filterStatus;
     });
-    return list.slice().sort((a, b) => {
+    return list.toSorted((a, b) => {
       const rankA = getPositionRank(a.position);
       const rankB = getPositionRank(b.position);
       if (rankA !== rankB) return rankA - rankB;

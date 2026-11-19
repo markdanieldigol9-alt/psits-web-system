@@ -105,10 +105,6 @@ export const printReportDocument = (reportTitle?: string, onBeforePrint?: () => 
     };
 
     window.addEventListener('afterprint', cleanup, { once: true });
-    try {
-      window.print();
-    } finally {
-      setTimeout(cleanup, 1500);
-    }
+    window.print();
   }, 200);
 };

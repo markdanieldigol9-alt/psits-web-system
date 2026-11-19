@@ -182,8 +182,7 @@ export const AddOfficerModal = ({
         if (fetchedPositions.length > 0) {
           const names = fetchedPositions
             .map((p: any) => p.name)
-            .slice()
-            .sort((a: string, b: string) => getPositionRank(a) - getPositionRank(b));
+            .toSorted((a: string, b: string) => getPositionRank(a) - getPositionRank(b));
           if (!cancelled) setAvailablePositions(names);
         }
       } catch {

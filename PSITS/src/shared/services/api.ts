@@ -466,6 +466,31 @@ class ApiService {
     return this.client.get('/reports/event-participation', { params: filters });
   }
 
+  getEventWinnersReport(filters?: {
+    eventId?: string;
+    status?: string;
+    eventType?: string;
+    hasWinners?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    return this.client.get('/reports/event-winners', { params: filters });
+  }
+
+  getAttendanceReport(filters?: {
+    eventId?: string;
+    institution?: string;
+    source?: string;
+    attendanceStatus?: string;
+    registrationStatus?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    return this.client.get('/reports/attendance', { params: filters });
+  }
+
   // Audit logs
   getAuditLogs(filters?: any) {
     return this.client.get('/audit-logs', { params: filters });

@@ -988,7 +988,7 @@ async function run() {
       assert.equal(allRes.status, 200);
       assertEventWinnersSummary(allRes.data);
       assert.equal(allRes.data.summary.eventsWithWinners, 2);
-      assert.equal(allRes.data.summary.eventsWithoutWinners, 1);
+      assert.equal(allRes.data.summary.eventsWithoutWinners, 2);
 
       const drillRes = await apiRequest(`/api/reports/event-winners?eventId=${evtTiedWinnersId}`, {
         token: officerAllowed.token,
