@@ -28,9 +28,9 @@ export const Button = ({
     primary:
       'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm hover:shadow-[0_4px_16px_rgb(37,99,235,0.35)] hover:-translate-y-[1px] active:translate-y-0',
     cyber:
-      'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 shadow-sm hover:shadow-[0_4px_20px_rgb(6,182,212,0.4)] hover:-translate-y-[1px] active:translate-y-0 border border-cyan-400/30',
+      'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 border border-cyan-400/30',
     gold:
-      'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold hover:from-amber-600 hover:to-yellow-600 shadow-sm hover:shadow-[0_4px_16px_rgb(245,158,11,0.35)] hover:-translate-y-[1px] active:translate-y-0',
+      'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold hover:from-amber-600 hover:to-yellow-600 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0',
     secondary:
       'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 active:bg-gray-300 hover:-translate-y-[1px] active:translate-y-0 border border-gray-200/60 dark:border-slate-700/60',
     danger:
@@ -42,7 +42,7 @@ export const Button = ({
     ghost:
       'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100 active:bg-gray-200 dark:active:bg-slate-700',
     gradient:
-      'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 shadow-sm hover:shadow-[0_4px_16px_rgb(6,182,212,0.35)] hover:-translate-y-[1px] active:translate-y-0',
+      'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0',
   };
 
   const sizeClasses = {
@@ -290,7 +290,7 @@ export const Card = ({
     glass:
       'bg-white/85 dark:bg-[#0B1326]/85 backdrop-blur-md border border-white/60 dark:border-slate-700/60 shadow-card',
     cyber:
-      'bg-white dark:bg-[#131B2E] border border-blue-500/20 dark:border-cyan-500/20 shadow-card hover:shadow-glow-cyan hover:border-cyan-500/40 transition-all duration-200',
+      'bg-white dark:bg-[#131B2E] border border-blue-500/20 dark:border-cyan-500/20 shadow-card hover:shadow-card-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200',
     flat:
       'bg-gray-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800',
   };
@@ -304,7 +304,7 @@ export const Card = ({
       {(title || subtitle || headerAction) && (
         <div className="border-b border-slate-200/80 dark:border-slate-800 px-5 py-4 sm:px-6 sm:py-4 rounded-t-2xl flex items-center justify-between gap-3">
           <div>
-            {title && <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight">{title}</h3>}
+            {title && <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 tracking-tight text-balance">{title}</h3>}
             {subtitle && <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium mt-0.5">{subtitle}</p>}
           </div>
           {headerAction && <div className="shrink-0">{headerAction}</div>}
@@ -345,7 +345,7 @@ export const Badge = ({ children, variant = 'primary', dot = false, className = 
 
   const dotColors = {
     primary: 'bg-blue-500', cyber: 'bg-cyan-400 animate-pulse', gold: 'bg-amber-400',
-    secondary: 'bg-gray-400', success: 'bg-emerald-500 animate-pulse',
+    secondary: 'bg-gray-400', success: 'bg-emerald-500',
     warning: 'bg-amber-500', error: 'bg-rose-500', info: 'bg-sky-500',
   };
 

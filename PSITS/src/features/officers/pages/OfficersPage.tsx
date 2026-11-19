@@ -97,7 +97,7 @@ export const OfficersPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight text-balance">
               {canManageOfficers ? 'Officer Management' : 'Officer Directory'}
             </h1>
             <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
@@ -200,9 +200,6 @@ export const OfficersPage = () => {
                           <Badge variant={officer.officerStatus === 'active' ? 'cyber' : 'error'} dot={true}>
                             {String(officer.officerStatus || '').charAt(0).toUpperCase() + String(officer.officerStatus || '').slice(1)}
                           </Badge>
-                          <span className="text-[11px] text-cyan-600 dark:text-cyan-400 underline opacity-0 group-hover:opacity-100 transition-opacity">
-                            (Toggle)
-                          </span>
                         </button>
                       ) : (
                         <Badge variant={officer.officerStatus === 'active' ? 'cyber' : officer.officerStatus === 'past' ? 'gold' : 'error'} dot={true}>

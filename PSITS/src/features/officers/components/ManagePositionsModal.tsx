@@ -131,7 +131,7 @@ export const ManagePositionsModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Manage Officer Positions</h2>
+            <h2 className="text-xl font-bold text-gray-900 text-balance">Manage Officer Positions</h2>
             <p className="text-xs text-gray-500 mt-0.5">
               Define custom officer titles for your organization
             </p>

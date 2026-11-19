@@ -84,39 +84,38 @@ rectangle "PSITS Region XII Web System — Executive Administration Portal" as A
 }
 
 ' ========================================================
-' ASSOCIATIONS (ADMIN)
+' ASSOCIATIONS (ADMIN - solid lines without arrowheads)
 ' ========================================================
-Admin --> UC_ManagePositions
-Admin --> UC_AppointOfficers
-Admin --> UC_AssignPerms
-Admin --> UC_OfficerHistory
+Admin -- UC_ManagePositions
+Admin -- UC_AppointOfficers
+Admin -- UC_AssignPerms
+Admin -- UC_OfficerHistory
 
-Admin --> UC_ManageMembers
-Admin --> UC_StatusOverride
-Admin --> UC_Discipline
-Admin --> UC_AdminPassReset
+Admin -- UC_ManageMembers
+Admin -- UC_StatusOverride
+Admin -- UC_Discipline
+Admin -- UC_AdminPassReset
 
-Admin --> UC_CreateElection
-Admin --> UC_AllowedPositions
-Admin --> UC_AuditVotes
-Admin --> UC_CertifyResults
+Admin -- UC_CreateElection
+Admin -- UC_AllowedPositions
+Admin -- UC_AuditVotes
+Admin -- UC_CertifyResults
 
-Admin --> UC_ManagePartners
-Admin --> UC_TrackGrants
+Admin -- UC_ManagePartners
+Admin -- UC_TrackGrants
 
-Admin --> UC_ExecutiveDashboard
-Admin --> UC_DelinquencyReport
-Admin --> UC_AuditLogs
-Admin --> UC_SavePDF
+Admin -- UC_ExecutiveDashboard
+Admin -- UC_DelinquencyReport
+Admin -- UC_AuditLogs
 
-Admin --> UC_ConfigQR
-Admin --> UC_SystemSettings
-Admin --> UC_SlowQueryLog
-Admin --> UC_RunMigration
+Admin -- UC_ConfigQR
+Admin -- UC_SystemSettings
+Admin -- UC_SlowQueryLog
+Admin -- UC_RunMigration
 
-' Database Actor Connections
-UC_SlowQueryLog <-- DB
-UC_RunMigration <-- DB
+' Secondary Actor Associations (solid lines without arrowheads)
+UC_SlowQueryLog -- DB
+UC_RunMigration -- DB
 
 ' ========================================================
 ' INCLUDE & EXTEND RELATIONSHIPS
@@ -125,6 +124,6 @@ UC_ManagePositions ..> UC_AssignPerms : <<include>>
 UC_Discipline ..> UC_RevokeSessions : <<include>>
 UC_CreateElection ..> UC_AllowedPositions : <<include>>
 UC_CertifyResults ..> UC_AuditVotes : <<include>>
-UC_ExecutiveDashboard <.. UC_SavePDF : <<extend>>
+UC_SavePDF ..> UC_ExecutiveDashboard : <<extend>>
 
 @enduml

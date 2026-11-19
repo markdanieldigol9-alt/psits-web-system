@@ -229,7 +229,7 @@ export const AddOfficerModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">{title || (initialMember ? 'Edit Officer Details' : 'Assign Officer Position')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-balance">{title || (initialMember ? 'Edit Officer Details' : 'Assign Officer Position')}</h2>
           <button
             onClick={onClose}
             aria-label="Close modal"

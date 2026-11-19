@@ -151,46 +151,46 @@
 
         <!-- GENERALIZATIONS -->
         <!-- InstRep -> Member -->
-        <mxCell id="gen_inst_member" value="&amp;lt;&amp;lt;specializes&amp;gt;&amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=1.5;strokeColor=#0284C7;" edge="1" parent="1" source="actor_inst" target="actor_member">
+        <mxCell id="gen_inst_member" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=1.5;strokeColor=#0284C7;" edge="1" parent="1" source="actor_inst" target="actor_member">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <!-- Admin -> Officer -->
-        <mxCell id="gen_admin_officer" value="&amp;lt;&amp;lt;inherits privileges&amp;gt;&amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=1.5;strokeColor=#7C3AED;" edge="1" parent="1" source="actor_admin" target="actor_officer">
+        <mxCell id="gen_admin_officer" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=1.5;strokeColor=#7C3AED;" edge="1" parent="1" source="actor_admin" target="actor_officer">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <!-- ASSOCIATIONS (EDGES) -->
         <!-- Member Associations -->
-        <mxCell id="e_m_reg" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_register"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_login" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_login"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_pay" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_submit_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_reup" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_reupload"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_event" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_reg_event"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_vote" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_vote"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_forum" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_forum"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_stream" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_stream"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_m_notif" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;" edge="1" parent="1" source="actor_member" target="uc_notif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_reg" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_register"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_login" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_login"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_pay" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_submit_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_reup" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_reupload"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_event" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_reg_event"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_vote" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_vote"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_forum" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_forum"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_stream" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_stream"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_m_notif" style="edgeStyle=straight;html=1;strokeColor=#0284C7;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_member" target="uc_notif"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- Institution Rep Association -->
-        <mxCell id="e_inst_roster" style="edgeStyle=straight;html=1;strokeColor=#0369A1;strokeWidth=1.5;" edge="1" parent="1" source="actor_inst" target="uc_batch_roster"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_inst_roster" style="edgeStyle=straight;html=1;strokeColor=#0369A1;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_inst" target="uc_batch_roster"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- Officer Associations -->
-        <mxCell id="e_o_verify" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;" edge="1" parent="1" source="actor_officer" target="uc_verify_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_reject" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_reject_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_cash" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_record_cash"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_manage_ev" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_manage_events"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_attend" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_attendance"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_cand" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_manage_cand"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_ann" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_announce"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_mod" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;" edge="1" parent="1" source="actor_officer" target="uc_mod_forum"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_o_rep" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;" edge="1" parent="1" source="actor_officer" target="uc_reports"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_verify" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_verify_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_reject" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_reject_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_cash" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_record_cash"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_manage_ev" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_manage_events"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_attend" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_attendance"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_cand" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_manage_cand"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_ann" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_announce"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_mod" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.2;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_mod_forum"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_o_rep" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_officer" target="uc_reports"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- Admin Associations -->
-        <mxCell id="e_a_cert" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="actor_admin" target="uc_cert_results"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_a_off" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="actor_admin" target="uc_manage_officers"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_a_part" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="actor_admin" target="uc_partners"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_a_set" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="actor_admin" target="uc_sys_settings"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_a_db" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="actor_admin" target="uc_db_audit"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_a_cert" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_admin" target="uc_cert_results"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_a_off" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_admin" target="uc_manage_officers"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_a_part" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_admin" target="uc_partners"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_a_set" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_admin" target="uc_sys_settings"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_a_db" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="actor_admin" target="uc_db_audit"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- INCLUDES & EXTENDS -->
         <!-- Verify -> Activate (include) -->

@@ -647,7 +647,7 @@ export const SettingsPage = () => {
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight text-balance">Account & System Settings</h1>
           <p className="text-gray-600 dark:text-slate-400 mt-2">Manage your account preferences, theme, and profile details.</p>
         </div>
 
@@ -661,7 +661,7 @@ export const SettingsPage = () => {
               <div className="space-y-4 flex-1 min-w-0">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold text-amber-900 dark:text-amber-200">
+                    <h2 className="text-xl font-bold text-amber-900 dark:text-amber-200 text-balance">
                       Account Suspended
                     </h2>
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
@@ -687,7 +687,7 @@ export const SettingsPage = () => {
                     <div>
                       <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm mb-1">
                         <Mail size={18} />
-                        <span>Option 1: Contact via Gmail / Email</span>
+                        <span>Contact via Gmail / Email</span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-slate-400">
                         Open your Gmail or email client to send an activation inquiry directly to the PSITS Officers and Admins.
@@ -740,7 +740,7 @@ export const SettingsPage = () => {
                     <div>
                       <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm mb-1">
                         <Bell size={18} />
-                        <span>Option 2: Send In-App Notification</span>
+                        <span>Send In-App Notification</span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-slate-400">
                         This function is available only if your account is suspended. Dispatch an immediate notification request to Officers and Admins.
@@ -797,7 +797,7 @@ export const SettingsPage = () => {
                 <Palette size={20} />
               </div>
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">Appearance & Theme</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">Appearance & Theme</h3>
                 <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
                   Customize how PSITS looks on your device • Current: <span className="font-semibold text-blue-600 dark:text-blue-400 capitalize">{themeMode === 'system' ? 'System Default' : `${themeMode} Mode`}</span>
                 </p>
@@ -901,7 +901,7 @@ export const SettingsPage = () => {
                 <User size={20} />
               </div>
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">
                   {isMember ? 'Member Profile Information' : 'Profile Information'}
                 </h3>
                 <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
@@ -1268,7 +1268,7 @@ export const SettingsPage = () => {
 
             {/* Password Update Section */}
             <div className="rounded-lg border border-gray-200 p-4 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2">Change Password</h3>
+              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2 text-balance">Change Password</h3>
               <p className="text-xs text-gray-500">Leave blank if you do not wish to change your password.</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
@@ -1323,7 +1323,7 @@ export const SettingsPage = () => {
                   <CreditCard size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">Payment Method Settings</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">Payment Method Settings</h3>
                   <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
                     Configure QR codes and instructions for registration and renewals
                   </p>
@@ -1539,7 +1539,7 @@ export const SettingsPage = () => {
                   <ShieldCheck size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">Membership Validity</h2>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">Membership Validity</h2>
                   <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
                     Status: <span className="font-semibold capitalize text-emerald-600 dark:text-emerald-400">{user.status || (user.isActive ? 'active' : 'pending')}</span> • Expires: {formatDate(user.membershipExpiresAt) || '1 Year'}
                   </p>
@@ -1601,7 +1601,7 @@ export const SettingsPage = () => {
         )}
 
         {/* ── Data Privacy & Terms Section ── */}
-        <Card variant="cyber" className="p-0 overflow-hidden">
+        <Card variant="default" className="p-0 overflow-hidden">
           <button
             type="button"
             onClick={() => toggleSection('legal')}
@@ -1612,7 +1612,7 @@ export const SettingsPage = () => {
                 <ShieldCheck size={20} />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">
                   Data Privacy & Terms of Service
                 </h2>
                 <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">

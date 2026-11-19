@@ -38,7 +38,15 @@ const {
   setDefaultExpiryForUnset,
   setMemberExpiry,
 } = require('./members');
-const { getDashboardReport, getElectionReport, getPartnerContributionsReport, getAllMembersReport, getEventParticipationReport } = require('./reports');
+const {
+  getDashboardReport,
+  getElectionReport,
+  getPartnerContributionsReport,
+  getAllMembersReport,
+  getEventParticipationReport,
+  getEventWinnersReport,
+  getAttendanceReport,
+} = require('./reports');
 const { getMe, updateMe } = require('./me');
 const { listEvents, createEvent, updateEvent, deleteEvent } = require('./events');
 const { listAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } = require('./announcements');
@@ -1143,11 +1151,13 @@ app.put('/api/institution-members/:id/approval', authMiddleware, requireRole(['s
 app.delete('/api/institution-members/:id', authMiddleware, requireRole(['super_admin', 'admin']), deleteInstitutionMember);
 app.post('/api/institution-members/cleanup-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), cleanupTestInstitutionMembers);
 
-  app.get('/api/reports/dashboard', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getDashboardReport);
-  app.get('/api/reports/members', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getAllMembersReport);
-  app.get('/api/reports/event-participation', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getEventParticipationReport);
-  app.get('/api/reports/elections/:id', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getElectionReport);
-  app.get('/api/reports/partners/contributions', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getPartnerContributionsReport);
+  app.get('/api/reports/dashboard', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), getDashboardReport);
+  app.get('/api/reports/members', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getAllMembersReport);
+  app.get('/api/reports/event-participation', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getEventParticipationReport);
+  app.get('/api/reports/event-winners', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getEventWinnersReport);
+  app.get('/api/reports/attendance', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getAttendanceReport);
+  app.get('/api/reports/elections/:id', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getElectionReport);
+  app.get('/api/reports/partners/contributions', requireMigrationReady, authMiddleware, requireRole(['super_admin', 'admin', 'officer']), requireOfficerModule('reports'), getPartnerContributionsReport);
 
 // SMTP test (admin/super_admin/officer)
 app.post('/api/email-test', authMiddleware, requireRole(['super_admin', 'admin', 'officer']), sendSmtpTest);

@@ -39,6 +39,10 @@ import {
   ChevronRight,
   Archive,
   RotateCcw,
+  AlertTriangle,
+  BookOpen,
+  Lock,
+  Clock,
 } from 'lucide-react';
 
 type PostType = 'announcement' | 'news' | 'story' | 'blog' | 'discussion' | 'question';
@@ -564,7 +568,7 @@ export const ForumPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">PSITS Community</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-balance">Community Forum &amp; Discussions</h1>
             <p className="mt-2 text-gray-600 dark:text-slate-400">News, stories, and discussions.</p>
           </div>
           <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} className="w-full sm:w-auto">
@@ -625,7 +629,7 @@ export const ForumPage = () => {
               // Determine card styling based on post type and urgency
               let cardClass = `p-5 border border-gray-200 transition-all hover:shadow-md bg-white border-l-4 ${accentBorder} `;
               if (p.type === 'question' && info.isUrgent) {
-                cardClass += "bg-amber-50/10 shadow-[0_0_15px_-4px_rgba(245,158,11,0.25)] ";
+                cardClass += "bg-amber-50/20 border-amber-300 ";
               } else if (p.type === 'story') {
                 cardClass += "bg-gradient-to-br from-violet-50/10 to-indigo-50/5 ";
               } else if (p.type === 'news') {
@@ -638,8 +642,11 @@ export const ForumPage = () => {
                 <Card key={p.id} className={cardClass}>
                   {/* News Alert Top Header */}
                   {p.type === 'news' && info.priority === 'Breaking' && (
-                    <div className="bg-red-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-t-md -mx-5 -mt-5 mb-4 uppercase tracking-widest animate-pulse flex items-center justify-between">
-                      <span>🚨 Breaking News Alert</span>
+                    <div className="bg-red-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-t-md -mx-5 -mt-5 mb-4 uppercase tracking-widest flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5">
+                        <AlertTriangle size={12} className="shrink-0" />
+                        <span>Breaking News Alert</span>
+                      </span>
                       <span>Audience: {info.audience}</span>
                     </div>
                   )}
@@ -667,37 +674,41 @@ export const ForumPage = () => {
                         )}
 
                         {p.type === 'question' && info.isUrgent && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
-                            <span className="h-1.5 w-1.5 rounded-full bg-red-600"></span> Urgent Help Needed
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600">
+                            <Flame size={12} className="shrink-0" /> Urgent Help Needed
                           </span>
                         )}
                         {p.type === 'story' && (
                           <Badge variant="secondary">
-                            ✨ {info.mood}
+                            {info.mood}
                           </Badge>
                         )}
                         {p.type === 'blog' && (
                           <Badge variant="info">
-                            📚 {info.category}
+                            <span className="inline-flex items-center gap-1">
+                              <BookOpen size={12} className="shrink-0" />
+                              <span>{info.category}</span>
+                            </span>
                           </Badge>
                         )}
                         {p.type === 'discussion' && !info.allowComments && (
                           <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-semibold bg-gray-100 px-2 py-0.5 rounded-full">
-                            🔒 Comments Locked
+                            <Lock size={12} className="shrink-0" />
+                            <span>Comments Locked</span>
                           </span>
                         )}
                       </div>
 
                       {/* Title display */}
                       <p className="font-bold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
-                        {p.type === 'question' && <span className="text-xl">❓</span>}
-                        {p.type === 'story' && <span className="text-xl">{info.emoji}</span>}
+                        {p.type === 'question' && <HelpCircle size={18} className="text-blue-600 shrink-0" />}
+                        {p.type === 'story' && <BookOpen size={18} className="text-violet-600 shrink-0" />}
                         {p.title}
                       </p>
 
                       {/* Subtitle summary for blogs */}
                       {p.type === 'blog' && info.subtitle && (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 italic font-medium -mt-1 pl-1 border-l-2 border-slate-300 dark:border-slate-700">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium -mt-1 pl-2 border-l-2 border-slate-300 dark:border-slate-700">
                           {info.subtitle}
                         </p>
                       )}
@@ -767,7 +778,10 @@ export const ForumPage = () => {
                           {p.type === 'blog' && (
                             <>
                               <span>•</span>
-                              <span className="font-medium text-slate-600">⏱️ {info.readTime} read</span>
+                              <span className="font-medium text-slate-600 inline-flex items-center gap-1">
+                                <Clock size={12} className="shrink-0" />
+                                <span>{info.readTime} read</span>
+                              </span>
                             </>
                           )}
                         </div>
@@ -1041,15 +1055,15 @@ export const ForumPage = () => {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Select
-                      label="Story Mood Emoji"
+                      label="Story Milestone"
                       options={[
-                        { value: '🚀', label: '🚀 Launching / Career' },
-                        { value: '✨', label: '✨ Inspiring / Spark' },
-                        { value: '🎓', label: '🎓 Student Success / Graduation' },
-                        { value: '💡', label: '💡 Great Idea / Solution' },
-                        { value: '🏆', label: '🏆 Competition Victory' },
-                        { value: '🤝', label: '🤝 Teamwork / Collaboration' },
-                        { value: '💼', label: '💼 First Job / Internship' },
+                        { value: '🚀', label: 'Launching / Career' },
+                        { value: '✨', label: 'Inspiring / Spark' },
+                        { value: '🎓', label: 'Student Success / Graduation' },
+                        { value: '💡', label: 'Great Idea / Solution' },
+                        { value: '🏆', label: 'Competition Victory' },
+                        { value: '🤝', label: 'Teamwork / Collaboration' },
+                        { value: '💼', label: 'First Job / Internship' },
                       ]}
                       value={storyEmoji}
                       onChange={(e) => setStoryEmoji(e.target.value)}
@@ -1085,10 +1099,10 @@ export const ForumPage = () => {
                     <Select
                       label="Estimated Read Time"
                       options={[
-                        { value: '1 min', label: '⚡ 1 min quick read' },
-                        { value: '3 min', label: '⏱️ 3 min standard' },
-                        { value: '5 min', label: '📖 5 min article' },
-                        { value: '10 min', label: '📚 10 min in-depth guide' },
+                        { value: '1 min', label: '1 min quick read' },
+                        { value: '3 min', label: '3 min standard' },
+                        { value: '5 min', label: '5 min article' },
+                        { value: '10 min', label: '10 min in-depth guide' },
                       ]}
                       value={blogReadTime}
                       onChange={(e) => setBlogReadTime(e.target.value)}
@@ -1128,7 +1142,7 @@ export const ForumPage = () => {
                       options={[
                         { value: 'Normal', label: 'Normal' },
                         { value: 'High', label: 'High Priority' },
-                        { value: 'Breaking', label: '🚨 BREAKING NEWS (Flashing banner)' },
+                        { value: 'Breaking', label: 'BREAKING NEWS (Alert banner)' },
                       ]}
                       value={newsPriority}
                       onChange={(e) => setNewsPriority(e.target.value)}
@@ -1437,8 +1451,11 @@ export const ForumPage = () => {
                   <div className={`p-5 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 border-l-4 ${accentBorder} shadow-md space-y-3`}>
                     {/* Header Ribbon for News */}
                     {postForm.type === 'news' && newsPriority === 'Breaking' && (
-                      <div className="bg-red-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-t-lg -mx-5 -mt-5 mb-3 uppercase tracking-widest animate-pulse flex items-center justify-between">
-                        <span>🚨 Breaking News Alert</span>
+                      <div className="bg-red-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-t-lg -mx-5 -mt-5 mb-3 uppercase tracking-widest flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5">
+                          <AlertTriangle size={12} className="shrink-0" />
+                          <span>Breaking News Alert</span>
+                        </span>
                         <span>Audience: {newsAudience}</span>
                       </div>
                     )}
@@ -1454,43 +1471,49 @@ export const ForumPage = () => {
                       )}
 
                       {postForm.type === 'question' && questionUrgent && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600 animate-pulse">
-                          🔥 Urgent Help Needed
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
+                          <Flame size={12} className="shrink-0" /> Urgent Help Needed
                         </span>
                       )}
 
                       {postForm.type === 'story' && (
-                        <Badge variant="secondary">✨ {storyMood}</Badge>
+                        <Badge variant="secondary">{storyMood}</Badge>
                       )}
 
                       {postForm.type === 'blog' && (
-                        <Badge variant="info">📚 {blogCategory}</Badge>
+                        <Badge variant="info">
+                          <span className="inline-flex items-center gap-1">
+                            <BookOpen size={12} className="shrink-0" />
+                            <span>{blogCategory}</span>
+                          </span>
+                        </Badge>
                       )}
 
                       {postForm.type === 'discussion' && !discussionAllowComments && (
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                          🔒 Comments Locked
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                          <Lock size={12} className="shrink-0" />
+                          <span>Comments Locked</span>
                         </span>
                       )}
                     </div>
 
                     {/* Title */}
                     <h3 className="font-bold text-lg text-gray-900 dark:text-slate-100 flex items-center gap-2">
-                      {postForm.type === 'question' && <span>❓</span>}
-                      {postForm.type === 'story' && <span>{storyEmoji}</span>}
-                      {postForm.title || <span className="italic text-gray-400">Untitled Post</span>}
+                      {postForm.type === 'question' && <HelpCircle size={18} className="text-blue-600 shrink-0" />}
+                      {postForm.type === 'story' && <BookOpen size={18} className="text-violet-600 shrink-0" />}
+                      {postForm.title || <span className="text-gray-400">Untitled Post</span>}
                     </h3>
 
                     {/* Subtitle for blog */}
                     {postForm.type === 'blog' && blogSubtitle && (
-                      <p className="text-sm text-gray-500 italic border-l-2 border-slate-300 pl-2">
+                      <p className="text-sm text-gray-500 border-l-2 border-slate-300 pl-2">
                         {blogSubtitle}
                       </p>
                     )}
 
                     {/* Content */}
                     <div className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                      {postForm.content || <span className="italic text-gray-400">Post content will appear here...</span>}
+                      {postForm.content || <span className="text-gray-400">Post content will appear here...</span>}
                     </div>
 
                     {/* Image Preview */}
@@ -1538,7 +1561,12 @@ export const ForumPage = () => {
                     {/* Author & Footer */}
                     <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-slate-800">
                       <span>By <strong className="text-gray-700 dark:text-slate-300">{user?.fullName || 'Current User'}</strong> • Just now</span>
-                      {postForm.type === 'blog' && <span>⏱️ {blogReadTime} read</span>}
+                      {postForm.type === 'blog' && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={12} className="shrink-0" />
+                          <span>{blogReadTime} read</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -1767,7 +1795,8 @@ export const ForumPage = () => {
                   </div>
                 ) : (
                   <div className="border-t border-gray-200 dark:border-slate-800 pt-4 text-center text-sm font-semibold text-gray-500 bg-gray-100/60 dark:bg-slate-900/60 p-4 rounded-lg border border-gray-200 dark:border-slate-800 flex items-center justify-center gap-2">
-                    <span>🔒 Comments are disabled for this discussion.</span>
+                    <Lock size={14} className="shrink-0" />
+                    <span>Comments are disabled for this discussion.</span>
                   </div>
                 )}
               </>

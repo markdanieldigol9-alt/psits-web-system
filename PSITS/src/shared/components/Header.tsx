@@ -184,7 +184,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
             {/* Role / status badge */}
             {user?.status === 'suspended' ? (
               <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-[11px] font-bold text-rose-700 dark:text-rose-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                 Suspended
               </span>
             ) : user && (
@@ -193,7 +193,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
                   roleConfig.pillClasses
                 }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor} animate-pulse`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor}`} />
                 {roleConfig.badgeLabel}
               </span>
             )}

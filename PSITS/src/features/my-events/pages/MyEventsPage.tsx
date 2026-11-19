@@ -39,7 +39,7 @@ export const MyEventsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">My Events</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">My Events</h1>
             <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">Track the events you joined and your approval status.</p>
           </div>
           <Button variant="outline" onClick={() => void load()} isLoading={isLoading} className="w-full sm:w-auto">

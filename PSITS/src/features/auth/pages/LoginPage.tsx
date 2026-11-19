@@ -86,7 +86,10 @@ export const LoginPage = () => {
   };
 
   return (
-    <AuthLayout title="Login">
+    <AuthLayout
+      title="Sign in to PSITS Portal"
+      subtitle="Access your event credentials, certificates, and institutional delegations."
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="space-y-3">

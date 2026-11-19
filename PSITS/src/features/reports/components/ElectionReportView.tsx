@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
-import { printReportDocument } from '../utils/printReport';
+import { printReportDocument, usePrintExpansion } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   Trophy,
@@ -94,6 +94,7 @@ export const ElectionReportView = ({
   const [selectedPositionFilter, setSelectedPositionFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(15);
+  const isPrinting = usePrintExpansion();
 
   const election = electionData?.election;
   const rawCandidates = useMemo(() => electionData?.candidates || [], [electionData?.candidates]);
@@ -236,10 +237,10 @@ export const ElectionReportView = ({
   // Pagination for Candidates
   const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredCandidates.length / pageSize);
   const paginatedCandidates = useMemo(() => {
-    if (pageSize === 'all') return filteredCandidates;
+    if (isPrinting || pageSize === 'all') return filteredCandidates;
     const start = (currentPage - 1) * pageSize;
     return filteredCandidates.slice(start, start + pageSize);
-  }, [filteredCandidates, currentPage, pageSize]);
+  }, [filteredCandidates, currentPage, pageSize, isPrinting]);
 
   // Turnout calculation
   const totalBallots = electionData?.totalVotes || electionData?.totalBallotsCast || rawVoters.length || (winnersList.length > 0 ? Math.max(...positionsList.map((p) => p.totalVotes), 1) : 0);
@@ -258,7 +259,7 @@ export const ElectionReportView = ({
       'Election Title': election?.title || 'PSITS Election',
       'Contested Position': c.position,
       'Candidate Full Name': c.name,
-      'Electoral Outcome': c.isWinner ? '🏆 PROCLAIMED ELECTED OFFICER' : 'DEFEATED / RUNNER-UP',
+      'Electoral Outcome': c.isWinner ? 'PROCLAIMED ELECTED OFFICER' : 'DEFEATED / RUNNER-UP',
       'Votes Received': c.votes_count,
       'Position Total Votes': c.positionTotalVotes,
       'Vote Share %': `${(c.voteShare || 0).toFixed(1)}%`,
@@ -289,7 +290,7 @@ export const ElectionReportView = ({
                   REF: PSITS-ELEC-{election?.id || '01'}-{new Date().getFullYear()}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5">
+              <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
               </h1>
               <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
@@ -339,7 +340,7 @@ export const ElectionReportView = ({
             <button
               type="button"
               onClick={() => {
-                printReportDocument(election?.title ? `${election.title} - Election Tally` : 'Election Tally Report', () => setPageSize('all'));
+                printReportDocument(election?.title ? `${election.title} - Election Tally` : 'Election Tally Report');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-800 hover:bg-black text-white rounded-md text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
             >
@@ -457,7 +458,7 @@ export const ElectionReportView = ({
         </div>
 
         {winnersList.length === 0 ? (
-          <div className="p-6 text-center text-xs text-gray-500 italic bg-gray-50 rounded-xl border">
+          <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl border">
             No winning candidates have been marked or tallied yet for this election.
           </div>
         ) : (
@@ -465,7 +466,7 @@ export const ElectionReportView = ({
             {winnersList.map((w) => (
               <div
                 key={w.id}
-                className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 border border-emerald-300 rounded-xl p-4 shadow-2xs space-y-2 relative overflow-hidden"
+                className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 border border-emerald-300 rounded-xl p-4 shadow-2xs space-y-2 relative overflow-hidden print:break-inside-avoid"
               >
                 <div className="absolute top-2 right-2">
                   <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
@@ -497,8 +498,8 @@ export const ElectionReportView = ({
                 </div>
 
                 {w.platform && (
-                  <div className="pt-1 text-[11px] text-gray-600 italic bg-white/60 p-2 rounded border border-emerald-100">
-                    <span className="font-semibold text-gray-700 not-italic block text-[10px] uppercase">Platform:</span>
+                  <div className="pt-1 text-[11px] text-gray-600 bg-white/60 p-2 rounded border border-emerald-100">
+                    <span className="font-semibold text-gray-700 block text-[10px] uppercase">Platform:</span>
                     "{w.platform}"
                   </div>
                 )}
@@ -535,11 +536,11 @@ export const ElectionReportView = ({
         </div>
 
         {defeatedList.length === 0 ? (
-          <div className="p-6 text-center text-xs text-gray-500 italic bg-gray-50 rounded-xl border">
+          <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl border">
             No defeated candidates or uncontested elections recorded.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto print:overflow-visible">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200">
@@ -557,7 +558,7 @@ export const ElectionReportView = ({
                   <tr key={d.id} className="hover:bg-amber-50/30 transition-colors">
                     <td className="px-3 py-2.5 font-bold text-gray-900">
                       <div>{d.name}</div>
-                      {d.platform && <div className="text-[10px] text-gray-500 italic font-normal">"{d.platform}"</div>}
+                      {d.platform && <div className="text-[10px] text-gray-500 font-normal">"{d.platform}"</div>}
                     </td>
                     <td className="px-3 py-2.5 text-gray-700 font-semibold">{d.position}</td>
                     <td className="px-3 py-2.5 text-gray-600">{d.sector_details || d.sector || 'Individual Member'}</td>
@@ -584,7 +585,7 @@ export const ElectionReportView = ({
       {/* ============================================================== */}
       {/* 5. SECTION 3: ALL PARTICIPANTS & COMPLETE CANVASS ROSTER      */}
       {/* ============================================================== */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden space-y-0">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden print:overflow-visible space-y-0">
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -597,7 +598,7 @@ export const ElectionReportView = ({
             </div>
 
             {/* In-Document Search Bar */}
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-64 no-print">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
@@ -702,7 +703,7 @@ export const ElectionReportView = ({
 
         {/* Tab 1, 2, 3: Candidates Table */}
         {activeTab !== 'voters' && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto print:overflow-visible">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200">
                 <tr>
@@ -719,7 +720,7 @@ export const ElectionReportView = ({
               <tbody className="divide-y divide-gray-200">
                 {paginatedCandidates.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500 italic">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                       No candidates match your current filter criteria.
                     </td>
                   </tr>
@@ -732,7 +733,7 @@ export const ElectionReportView = ({
                       }`}
                     >
                       <td className="px-3 py-2.5 font-mono text-[11px] text-gray-500">
-                        {pageSize === 'all' ? idx + 1 : (currentPage - 1) * pageSize + idx + 1}
+                        {(isPrinting || pageSize === 'all') ? idx + 1 : (currentPage - 1) * pageSize + idx + 1}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="font-extrabold text-gray-900">{c.name}</div>
@@ -783,7 +784,7 @@ export const ElectionReportView = ({
 
         {/* Tab 4: Voter Participants Table */}
         {activeTab === 'voters' && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto print:overflow-visible">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-purple-50 text-purple-900 font-bold border-b border-purple-200">
                 <tr>
@@ -799,7 +800,7 @@ export const ElectionReportView = ({
               <tbody className="divide-y divide-gray-200">
                 {filteredVoters.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500 italic">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                       No voter logs recorded yet for this election.
                     </td>
                   </tr>
@@ -829,7 +830,7 @@ export const ElectionReportView = ({
 
         {/* Pagination Bar for Candidates */}
         {activeTab !== 'voters' && (
-          <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600">
+          <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600 no-print">
             <div className="flex items-center gap-2">
               <span>Show:</span>
               {[15, 30, 50, 'all'].map((sz) => (
@@ -885,8 +886,8 @@ export const ElectionReportView = ({
       {/* 6. OFFICIAL COMELEC CANVASS CERTIFICATION & TRIPLE SIGN-OFF     */}
       {/* ============================================================== */}
       <div className="border border-gray-300 rounded-xl p-5 bg-gray-50/50 space-y-4 certification-block">
-        <div className="text-xs text-gray-700 italic border-l-4 border-purple-700 pl-3">
-          <p className="font-semibold text-purple-900 not-italic uppercase tracking-wide text-[11px] mb-0.5">
+        <div className="text-xs text-gray-700 border-l-4 border-purple-700 pl-3">
+          <p className="font-semibold text-purple-900 uppercase tracking-wide text-[11px] mb-0.5">
             COMELEC Canvassing Board Certification Resolution
           </p>
           "We, the members of the PSITS Regional Commission on Elections (COMELEC) and Board of Canvassers, hereby certify under official oath that the ballot tallies, elected winner proclamations, runner-up tallies, and voter registries set forth in this official document represent an audited, true, and definitive canvass of the election results in accordance with the PSITS Regional Election Code."

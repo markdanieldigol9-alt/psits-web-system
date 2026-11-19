@@ -15,6 +15,7 @@ import {
   Building2,
   UserCheck,
   Filter,
+  Gamepad2,
   X,
 } from 'lucide-react';
 import { Modal } from '@/shared/components/Common';
@@ -309,7 +310,7 @@ export const EventReportView = ({
                   REF: PSITS-EVT-{new Date().getFullYear()}-{String(events.length).padStart(3, '0')}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5">
+              <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
               </h1>
               <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
@@ -366,7 +367,7 @@ export const EventReportView = ({
       </div>
 
       {/* Events Registry Table */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden print:overflow-visible">
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
@@ -375,7 +376,7 @@ export const EventReportView = ({
             <p className="text-xs text-gray-500">Official log of events, venues, registration rates, and statuses.</p>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto no-print">
             <div className="relative flex-1 sm:w-64">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -430,7 +431,7 @@ export const EventReportView = ({
         {/* Table */}
         <div className="overflow-x-auto max-h-[460px] overflow-y-auto print:overflow-visible print:max-h-none">
           <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10">
+            <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 print:static">
               <tr>
                 <th className="px-3 py-2.5">Event Title</th>
                 <th className="px-3 py-2.5">Type / Category</th>
@@ -445,7 +446,7 @@ export const EventReportView = ({
             <tbody className="divide-y divide-gray-200">
               {filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500 italic">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     No event records found matching your filters.
                   </td>
                 </tr>
@@ -458,13 +459,17 @@ export const EventReportView = ({
                         <button
                           type="button"
                           onClick={() => handleOpenParticipants(e)}
-                          className="text-left font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
+                          className="no-print text-left font-bold text-gray-900 hover:text-primary transition-colors cursor-pointer"
                           title="Click to view participant roster"
                         >
                           {e.title}
                         </button>
+                        <span className="hidden print:inline font-bold text-gray-900">{e.title}</span>
                         {e.isEsports && e.esportsGame && (
-                          <span className="block text-[10px] text-purple-700 font-medium">🎮 {e.esportsGame}</span>
+                          <span className="flex items-center gap-1 text-[10px] text-purple-700 font-medium mt-0.5">
+                            <Gamepad2 size={11} strokeWidth={1.75} className="shrink-0" />
+                            <span>{e.esportsGame}</span>
+                          </span>
                         )}
                       </td>
                       <td className="px-3 py-2.5 capitalize">{e.eventType || e.category || 'General'}</td>
@@ -485,12 +490,13 @@ export const EventReportView = ({
                         <button
                           type="button"
                           onClick={() => handleOpenParticipants(e)}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-xs bg-blue-50 hover:bg-blue-100 text-primary border border-blue-200 transition-colors cursor-pointer"
+                          className="no-print inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-xs bg-blue-50 hover:bg-blue-100 text-primary border border-blue-200 transition-colors cursor-pointer"
                           title="Click to view participant roster"
                         >
                           <Users size={12} />
                           <span>{registeredCount.toLocaleString()}</span>
                         </button>
+                        <span className="hidden print:inline font-bold text-gray-900">{registeredCount.toLocaleString()}</span>
                       </td>
                       <td className="px-3 py-2.5 text-right font-medium">
                         {Number(e.fee ?? e.registration_fee ?? 0) > 0 ? `₱${Number(e.fee ?? e.registration_fee).toLocaleString()}` : 'Free'}
@@ -517,8 +523,8 @@ export const EventReportView = ({
 
       {/* Certification Clause */}
       <div className="border border-gray-300 rounded-xl p-5 bg-gray-50/50 space-y-4 certification-block">
-        <div className="text-xs text-gray-700 italic border-l-4 border-primary pl-3">
-          <p className="font-semibold text-gray-900 not-italic uppercase tracking-wide text-[11px] mb-0.5">
+        <div className="text-xs text-gray-700 border-l-4 border-primary pl-3">
+          <p className="font-semibold text-gray-900 uppercase tracking-wide text-[11px] mb-0.5">
             Official Certification
           </p>
           "I hereby certify that the above event participation metrics, attendance logs, and completed project outcomes are accurate and recorded in the PSITS Regional Information System."
@@ -541,19 +547,20 @@ export const EventReportView = ({
       </div>
 
       {/* Participant Roster Modal */}
-      <Modal
-        isOpen={isParticipantsModalOpen}
-        onClose={() => setIsParticipantsModalOpen(false)}
-        title={selectedEvent ? `Participant Roster: ${selectedEvent.title}` : 'Event Participants'}
-        subtitle={
-          selectedEvent
-            ? `${selectedEvent.eventType || selectedEvent.category || 'General Event'} • ${selectedEvent.location || 'Venue TBD'} • ${
-                selectedEvent.startDate ? new Date(selectedEvent.startDate).toLocaleDateString() : 'Date TBD'
-              }`
-            : undefined
-        }
-        size="2xl"
-      >
+      <div className="no-print">
+        <Modal
+          isOpen={isParticipantsModalOpen}
+          onClose={() => setIsParticipantsModalOpen(false)}
+          title={selectedEvent ? `Participant Roster: ${selectedEvent.title}` : 'Event Participants'}
+          subtitle={
+            selectedEvent
+              ? `${selectedEvent.eventType || selectedEvent.category || 'General Event'} • ${selectedEvent.location || 'Venue TBD'} • ${
+                  selectedEvent.startDate ? new Date(selectedEvent.startDate).toLocaleDateString() : 'Date TBD'
+                }`
+              : undefined
+          }
+          size="2xl"
+        >
         <div className="space-y-4">
           {/* Roster KPI Summary Banner */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -600,7 +607,7 @@ export const EventReportView = ({
           </div>
 
           {/* Search & Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-gray-50/80 p-3 rounded-xl border border-gray-200">
+          <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-gray-50/80 p-3 rounded-xl border border-gray-200">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -684,8 +691,8 @@ export const EventReportView = ({
           </div>
 
           {/* Table Container */}
-          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-            <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+          <div className="border border-gray-200 rounded-xl overflow-hidden print:overflow-visible bg-white shadow-2xs">
+            <div className="overflow-x-auto max-h-[380px] overflow-y-auto print:overflow-visible print:max-h-none">
               <table className="w-full text-left border-collapse text-xs">
                 <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10">
                   <tr>
@@ -711,7 +718,7 @@ export const EventReportView = ({
                     </tr>
                   ) : filteredRoster.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-500 italic">
+                      <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
                         {rosterParticipants.length === 0
                           ? 'No participants registered for this event yet.'
                           : 'No participants match the selected filter.'}
@@ -746,7 +753,7 @@ export const EventReportView = ({
                             {p.contact_number && (
                               <div className="text-gray-500 text-[10px]">{p.contact_number}</div>
                             )}
-                            {!p.email && !p.contact_number && <span className="text-gray-400 italic">—</span>}
+                            {!p.email && !p.contact_number && <span className="text-gray-400">—</span>}
                           </td>
                           <td className="px-3 py-2 text-center">
                             <span
@@ -802,7 +809,7 @@ export const EventReportView = ({
                 Showing <strong className="text-gray-800">{filteredRoster.length}</strong> of{' '}
                 <strong className="text-gray-800">{rosterParticipants.length}</strong> registered participants
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 no-print">
                 <button
                   type="button"
                   onClick={() => setIsParticipantsModalOpen(false)}
@@ -814,7 +821,8 @@ export const EventReportView = ({
             </div>
           </div>
         </div>
-      </Modal>
+        </Modal>
+      </div>
     </div>
   );
 };

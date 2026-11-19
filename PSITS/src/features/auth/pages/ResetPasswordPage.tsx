@@ -133,7 +133,7 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <AuthLayout title="Reset Password">
+    <AuthLayout title="Set a New Password">
       {isVerifyingToken ? (
         <div className="py-12 flex flex-col items-center justify-center space-y-3">
           <LoadingSpinner size="md" />
@@ -149,7 +149,7 @@ export const ResetPasswordPage = () => {
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white text-balance">
                 Reset Link Expired or Invalid
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -183,7 +183,7 @@ export const ResetPasswordPage = () => {
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white text-balance">
                 Password Successfully Reset!
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">

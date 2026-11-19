@@ -1,0 +1,150 @@
+<mxfile host="app.diagrams.net" version="24.0.0" type="device">
+  <diagram id="Relational_Diagram" name="Relational Database Diagram">
+    <mxGraphModel dx="1500" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="960" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- APA HEADER -->
+        <mxCell id="rel_num" value="&lt;b&gt;Figure 3&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Times New Roman;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="40" y="15" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_title" value="&lt;i&gt;Relational Database Diagram of the Web-Based Management System for PSITS Region XII&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Times New Roman;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="660" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- TABLES -->
+        <mxCell id="t_users" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;users&lt;/b&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#1E3A8A;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#1E3A8A;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="560" y="80" width="250" height="178" as="geometry" />
+        </mxCell>
+        <mxCell id="t_users_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;member_id : VARCHAR(40)&lt;br/&gt;full_name : VARCHAR(160)&lt;br/&gt;email : VARCHAR(160)&lt;br/&gt;password_hash : VARCHAR(255)&lt;br/&gt;role : ENUM('admin','officer','member')&lt;br/&gt;membership_status : VARCHAR(32)&lt;br/&gt;institution : VARCHAR(160)" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_users">
+          <mxGeometry y="28" width="250" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_sessions" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;sessions&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="260" y="80" width="220" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sessions_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;token : VARCHAR(128)&lt;br/&gt;expires_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_sessions">
+          <mxGeometry y="26" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_mem_logs" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;member_status_logs&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="190" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="t_mem_logs_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;new_status : VARCHAR(32)&lt;br/&gt;changed_by : INT" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_mem_logs">
+          <mxGeometry y="26" width="190" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_officers" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;officers&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="890" y="80" width="210" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_officers_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  position_id : INT&lt;br/&gt;term_start : DATE&lt;br/&gt;term_end : DATE" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_officers">
+          <mxGeometry y="26" width="210" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_audit" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;audit_logs&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="80" width="220" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="t_audit_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  actor_user_id : INT&lt;br/&gt;action : VARCHAR(120)&lt;br/&gt;created_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_audit">
+          <mxGeometry y="26" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_payments" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;payments&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#0F766E;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#0F766E;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="220" height="156" as="geometry" />
+        </mxCell>
+        <mxCell id="t_payments_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;amount : DECIMAL(10,2)&lt;br/&gt;payment_method : VARCHAR(40)&lt;br/&gt;reference_number : VARCHAR(100)&lt;br/&gt;receipt_path : VARCHAR(255)&lt;br/&gt;status : VARCHAR(32)" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_payments">
+          <mxGeometry y="26" width="220" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_pay_logs" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;payment_status_logs&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="220" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pay_logs_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  payment_id : INT&lt;br/&gt;new_status : VARCHAR(32)&lt;br/&gt;remarks : TEXT" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_pay_logs">
+          <mxGeometry y="26" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_events" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;events&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#1E3A8A;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="330" y="300" width="230" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="t_events_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;title : VARCHAR(200)&lt;br/&gt;category : VARCHAR(64)&lt;br/&gt;start_date : DATETIME&lt;br/&gt;end_date : DATETIME&lt;br/&gt;guidelines_file : VARCHAR(255)" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_events">
+          <mxGeometry y="26" width="230" height="114" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_ev_reg" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;event_registrations&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="330" y="490" width="230" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_ev_reg_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  event_id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;checked_in : TINYINT(1)&lt;br/&gt;registered_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_ev_reg">
+          <mxGeometry y="26" width="230" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_inst_mem" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;institution_members&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="330" y="650" width="230" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_inst_mem_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  institution_user_id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  event_id : INT&lt;br/&gt;full_name : VARCHAR(160)&lt;br/&gt;checked_in : TINYINT(1)" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_inst_mem">
+          <mxGeometry y="26" width="230" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_elections" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;elections&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#6D28D9;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#6D28D9;" vertex="1" parent="1">
+          <mxGeometry x="620" y="300" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_elections_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;title : VARCHAR(180)&lt;br/&gt;status : VARCHAR(32)&lt;br/&gt;opens_at : DATETIME&lt;br/&gt;closes_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_elections">
+          <mxGeometry y="26" width="220" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_cand" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;election_candidates&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="620" y="470" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_cand_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  election_id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;position : VARCHAR(100)&lt;br/&gt;status : VARCHAR(32)" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_cand">
+          <mxGeometry y="26" width="220" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_votes" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;election_votes&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="620" y="640" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_votes_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  election_id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  candidate_id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  voter_user_id : INT&lt;br/&gt;created_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_votes">
+          <mxGeometry y="26" width="220" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_ann" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;announcements&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="890" y="300" width="210" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_ann_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  author_id : INT&lt;br/&gt;title : VARCHAR(200)&lt;br/&gt;priority : VARCHAR(32)&lt;br/&gt;created_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_ann">
+          <mxGeometry y="26" width="210" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_partners" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;partners&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="300" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_partners_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  user_id : INT&lt;br/&gt;organization : VARCHAR(160)&lt;br/&gt;tier : VARCHAR(64)&lt;br/&gt;status : VARCHAR(32)" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_partners">
+          <mxGeometry y="26" width="220" height="94" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_part_contrib" value="&lt;b style=&quot;color:#FFFFFF;&quot;&gt;partner_contributions&lt;/b&gt;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#334155;collapsible=0;whiteSpace=wrap;html=1;strokeColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="470" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="t_part_contrib_cols" value="&lt;b style=&quot;color:#B45309;&quot;&gt;PK&lt;/b&gt;  id : INT&lt;br/&gt;&lt;b style=&quot;color:#1D4ED8;&quot;&gt;FK&lt;/b&gt;  partner_id : INT&lt;br/&gt;type : VARCHAR(64)&lt;br/&gt;amount : DECIMAL(10,2)&lt;br/&gt;contributed_at : DATETIME" style="text;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingLeft=8;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;" vertex="1" parent="t_part_contrib">
+          <mxGeometry y="26" width="220" height="94" as="geometry" />
+        </mxCell>
+
+        <!-- CROW'S FOOT RELATIONSHIPS (ERoneToMany) -->
+        <mxCell id="r1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_users" target="t_sessions"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_users" target="t_mem_logs"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_users" target="t_officers"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_users" target="t_audit"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_users" target="t_payments"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_payments" target="t_pay_logs"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_events" target="t_ev_reg"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_events" target="t_inst_mem"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_elections" target="t_cand"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_cand" target="t_votes"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_users" target="t_ann"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#334155;strokeWidth=1.5;" edge="1" parent="1" source="t_partners" target="t_part_contrib"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- APA NOTE -->
+        <mxCell id="rel_note" value="&lt;i&gt;Note.&lt;/i&gt; Relational Database Diagram derived from the production MySQL schema (server/migrate.js) showing primary keys (PK), foreign keys (FK), data types, and one-to-many crow's-foot relationships. Placed in the Methodology / Database Design chapter (excluded from Appendices)." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;strokeColor=none;fillColor=none;fontFamily=Times New Roman;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="810" width="1320" height="45" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

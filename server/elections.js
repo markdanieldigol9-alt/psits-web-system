@@ -615,7 +615,7 @@ async function castVote(req, res) {
 
     // Check if the election exists and is open
     const [eRows] = await conn.execute(
-      'SELECT status, start_date, end_date FROM elections WHERE id = ? LIMIT 1',
+      'SELECT status, start_date, end_date, end_time, allowed_positions FROM elections WHERE id = ? LIMIT 1',
       [electionId]
     );
     if (!eRows.length) {
@@ -699,6 +699,7 @@ async function castVote(req, res) {
     }
 
     // Loop through each position vote and validate
+    let totalSelectedCount = 0;
     for (const [position, candidateSelection] of positionVotes) {
       if (candidateSelection === null || candidateSelection === undefined) continue;
 
@@ -713,6 +714,7 @@ async function castVote(req, res) {
       }
 
       if (candidateIds.length === 0) continue;
+      totalSelectedCount += candidateIds.length;
 
       // Check max winners limit for this position
       const maxAllowed = positionMaxWinnersMap.get(position) || 1;
@@ -749,6 +751,11 @@ async function castVote(req, res) {
           [candidateId]
         );
       }
+    }
+
+    if (totalSelectedCount === 0) {
+      await conn.rollback();
+      return json(res, 400, { success: false, message: 'At least one vote is required.' });
     }
 
     // Record that the user has voted

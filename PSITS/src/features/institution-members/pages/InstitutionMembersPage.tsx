@@ -36,6 +36,7 @@ import {
   Check,
   RefreshCw,
   AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import { getUserInterfaceKey } from '@/shared/utils/userInterface';
@@ -947,7 +948,7 @@ export const InstitutionMembersPage = () => {
             <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-2xl">
               <Building2 size={36} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Access Restricted</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 text-balance">Access Restricted</h2>
             <p className="text-gray-600 dark:text-slate-400 text-sm max-w-sm">
               You do not have access to Institution Members. This section is reserved for institutional member accounts and administrators.
             </p>
@@ -969,7 +970,7 @@ export const InstitutionMembersPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Institution Members</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">Institution Members</h1>
             <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">
               {isInstitutionMember
                 ? 'Upload and manage your institution members for event participation and system access.'
@@ -1128,10 +1129,17 @@ export const InstitutionMembersPage = () => {
                     }`}>
                       ₱{displayRemainingBalance.toLocaleString()}
                     </div>
-                    <div className={`text-[11px] font-medium mt-0.5 ${
+                    <div className={`text-[11px] font-medium mt-0.5 flex items-center gap-1 ${
                       displayRemainingBalance > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
                     }`}>
-                      {displayRemainingBalance > 0 ? 'To be settled' : 'All balances settled ✓'}
+                      {displayRemainingBalance > 0 ? (
+                        'To be settled'
+                      ) : (
+                        <>
+                          <span>All balances settled</span>
+                          <CheckCircle2 size={12} className="shrink-0" />
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1343,10 +1351,17 @@ export const InstitutionMembersPage = () => {
                             }`}>
                               ₱{inst.remainingBalance.toLocaleString()}
                             </div>
-                            <div className={`text-[10px] font-medium ${
+                            <div className={`text-[10px] font-medium flex items-center gap-1 ${
                               inst.remainingBalance > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
                             }`}>
-                              {inst.remainingBalance > 0 ? 'Outstanding balance' : 'Fully Settled ✓'}
+                              {inst.remainingBalance > 0 ? (
+                                'Outstanding balance'
+                              ) : (
+                                <>
+                                  <span>Fully Settled</span>
+                                  <CheckCircle2 size={11} className="shrink-0" />
+                                </>
+                              )}
                             </div>
                           </td>
                           <td className="py-3.5 px-4">
@@ -1486,7 +1501,10 @@ export const InstitutionMembersPage = () => {
                 tabIndex={0}
               >
                 <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                  <span>👉 Swipe table horizontally to view full row</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ArrowRight size={12} className="shrink-0" />
+                    <span>Swipe table horizontally to view full row</span>
+                  </span>
                   <span className="font-mono text-[10px]">{filteredMembers.length} records</span>
                 </div>
                 <table className="w-full min-w-[1100px]">

@@ -8,7 +8,7 @@ import { useNotification } from '@/shared/context/NotificationContext';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
 import { AddMemberModal } from '@/features/members/components/AddMemberModal';
-import { Plus, Search, Edit2, Archive, Eye, CheckCircle, Building2, Factory, UserRound, Mail, XCircle, UserX, UserCheck, PauseCircle, Ban, Download, Clock } from 'lucide-react';
+import { Plus, Search, Edit2, Archive, Eye, CheckCircle, Building2, Factory, UserRound, Mail, XCircle, UserX, UserCheck, PauseCircle, Ban, Download, Clock, ArrowRight } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import { getUserDisplayName } from '@/shared/utils/userInterface';
 import api from '@/shared/services/api';
@@ -511,14 +511,7 @@ export const MembersPage = () => {
       <div className="space-y-6">
         <div className="module-header-banner flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="telemetry-chip">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-ping"></span>
-                ROSTER.DATABASE
-              </span>
-              <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">NODE.ACTIVE</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Members Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">Members Management</h1>
             <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">Membership registry for individual, institutional chapters, and industry partner profiles.</p>
           </div>
           {canManageMembers && (
@@ -569,11 +562,10 @@ export const MembersPage = () => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-mono font-bold tracking-widest text-blue-700 dark:text-cyan-400 uppercase">TIER.{key.toUpperCase()}</span>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-bold text-slate-900 dark:text-white">{meta.label}</p>
                       {active && <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400"></span>}
                     </div>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">{meta.label}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-mono">{memberTypeCounts[key]} registered profiles</p>
                   </div>
                   <div className={`p-3 rounded-xl border ${active ? 'bg-blue-100 dark:bg-cyan-500/20 text-blue-700 dark:text-cyan-400 border-blue-200 dark:border-cyan-500/40' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/60 group-hover:text-blue-700 dark:group-hover:text-cyan-400 group-hover:border-blue-300 dark:group-hover:border-cyan-500/30'}`}>
@@ -658,7 +650,10 @@ export const MembersPage = () => {
               tabIndex={0}
             >
               <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                <span>👉 Swipe table horizontally to view full row</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <ArrowRight size={12} className="shrink-0" />
+                  <span>Swipe table horizontally to view full row</span>
+                </span>
                 <span className="font-mono text-[10px]">{filteredMembers.length} records</span>
               </div>
               <table className="w-full min-w-[1200px]">

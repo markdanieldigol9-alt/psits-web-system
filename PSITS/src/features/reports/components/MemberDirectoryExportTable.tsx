@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
-import { printReportDocument } from '../utils/printReport';
+import { printReportDocument, usePrintExpansion } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   FileSpreadsheet,
@@ -49,6 +49,8 @@ interface MemberDirectoryExportTableProps {
   initialCategory?: 'all' | 'individual' | 'institution' | 'industry';
   initialInstitution?: string;
   hideHeaderCard?: boolean;
+  suppressPrintId?: boolean;
+  disablePrintableId?: boolean;
 }
 
 export const MemberDirectoryExportTable = ({
@@ -60,6 +62,8 @@ export const MemberDirectoryExportTable = ({
   initialCategory = 'all',
   initialInstitution = 'all',
   hideHeaderCard = false,
+  suppressPrintId = false,
+  disablePrintableId = false,
 }: MemberDirectoryExportTableProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'individual' | 'institution' | 'industry'>(initialCategory);
@@ -69,6 +73,8 @@ export const MemberDirectoryExportTable = ({
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(15);
+  const isPrinting = usePrintExpansion();
+  const omitPrintId = hideHeaderCard || suppressPrintId || disablePrintableId;
 
   // Category summary counts
   const categoryCounts = useMemo(() => {
@@ -141,10 +147,10 @@ export const MemberDirectoryExportTable = ({
 
   // Paginated records
   const paginatedMembers = useMemo(() => {
-    if (pageSize === 'all') return filteredMembers;
+    if (isPrinting || pageSize === 'all') return filteredMembers;
     const start = (currentPage - 1) * pageSize;
     return filteredMembers.slice(start, start + pageSize);
-  }, [filteredMembers, currentPage, pageSize]);
+  }, [filteredMembers, currentPage, pageSize, isPrinting]);
 
   const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredMembers.length / pageSize) || 1;
 
@@ -189,8 +195,8 @@ export const MemberDirectoryExportTable = ({
 
   return (
     <div
-      id={hideHeaderCard ? undefined : "printable-report-area"}
-      className={`space-y-4 printable-report-area ${hideHeaderCard ? '' : 'rounded-2xl border border-gray-200 bg-white p-5 shadow-xs'}`}
+      id={omitPrintId ? undefined : 'printable-report-area'}
+      className={`space-y-4 ${omitPrintId ? '' : 'printable-report-area'} ${hideHeaderCard ? '' : 'rounded-2xl border border-gray-200 bg-white p-5 shadow-xs'}`}
     >
       {/* Print-Only Official Letterhead (Visible only when printed from main page) */}
       {!hideHeaderCard && (
@@ -198,7 +204,7 @@ export const MemberDirectoryExportTable = ({
           <div className="flex items-center gap-3">
             <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
             <div>
-              <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
+              <h2 className="text-xl font-extrabold text-primary tracking-tight text-balance">PSITS REGIONAL ORGANIZATION</h2>
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Membership Directory & Registry</p>
             </div>
           </div>
@@ -214,7 +220,7 @@ export const MemberDirectoryExportTable = ({
       {!hideHeaderCard && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-gray-100 no-print">
           <div>
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 text-balance">
               <Users className="text-primary h-5 w-5" />
               {title}
             </h3>
@@ -234,7 +240,7 @@ export const MemberDirectoryExportTable = ({
             <button
               type="button"
               onClick={() => {
-                printReportDocument(title || 'Member Directory & Roster', () => setPageSize('all'));
+                printReportDocument(title || 'Member Directory & Roster');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-all cursor-pointer"
             >
@@ -273,10 +279,10 @@ export const MemberDirectoryExportTable = ({
               }}
               className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             >
-              <option value="all">👥 All Categories ({categoryCounts.total})</option>
-              <option value="individual">👤 Individual Members ({categoryCounts.individual})</option>
-              <option value="institution">🏛️ Institution Members ({categoryCounts.institution})</option>
-              <option value="industry">💼 Industry Members ({categoryCounts.industry})</option>
+              <option value="all">All Categories ({categoryCounts.total})</option>
+              <option value="individual">Individual Members ({categoryCounts.individual})</option>
+              <option value="institution">Institution Members ({categoryCounts.institution})</option>
+              <option value="industry">Industry Members ({categoryCounts.industry})</option>
             </select>
           </div>
 
@@ -290,7 +296,7 @@ export const MemberDirectoryExportTable = ({
               }}
               className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-800"
             >
-              <option value="all">🏛️ All Institutions ({availableInstitutions.length} available)</option>
+              <option value="all">All Institutions ({availableInstitutions.length} available)</option>
               {availableInstitutions.map((inst) => {
                 const count = members.filter(
                   (m) => (m.institution_name || m.institutionName || m.sectorDetails || '').toLowerCase().trim() === inst.toLowerCase().trim()
@@ -314,7 +320,7 @@ export const MemberDirectoryExportTable = ({
               }}
               className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             >
-              <option value="all">⚡ All Statuses</option>
+              <option value="all">All Statuses</option>
               <option value="active">Active / Approved</option>
               <option value="pending">Pending</option>
             </select>
@@ -383,7 +389,7 @@ export const MemberDirectoryExportTable = ({
       </div>
 
       {/* Main Table */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+      <div className="border border-gray-200 rounded-xl overflow-hidden print:overflow-visible bg-white">
         <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold uppercase tracking-wider">
@@ -417,7 +423,7 @@ export const MemberDirectoryExportTable = ({
                       <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
+                        className="no-print mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
                       >
                         <RotateCcw size={12} /> Reset Filters
                       </button>
@@ -484,7 +490,7 @@ export const MemberDirectoryExportTable = ({
                             {instName}
                           </span>
                         ) : (
-                          <span className="text-gray-400 italic">Individual (None)</span>
+                          <span className="text-gray-400">Individual (None)</span>
                         )}
                       </td>
 

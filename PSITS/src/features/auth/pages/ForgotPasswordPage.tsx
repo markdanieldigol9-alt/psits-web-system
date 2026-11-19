@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, ExternalLink, RefreshCw, FlaskConical } from 'lucide-react';
 
 import { AuthLayout } from '@/shared/layouts';
 import { Input, Button } from '@/shared/components/Form';
@@ -58,7 +58,10 @@ export const ForgotPasswordPage = () => {
   };
 
   return (
-    <AuthLayout title="Forgot Password">
+    <AuthLayout
+      title="Reset Your Password"
+      subtitle="Enter your registered email address to receive a recovery link."
+    >
       {isSuccess ? (
         <div className="space-y-5 animate-fade-in">
           <div className="p-5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-center space-y-3">
@@ -67,7 +70,7 @@ export const ForgotPasswordPage = () => {
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white text-balance">
                 Check Your Inbox
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -99,7 +102,8 @@ export const ForgotPasswordPage = () => {
                 href={devResetUrl}
                 className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-amber-500/15 dark:bg-amber-500/20 border border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold text-xs transition-colors hover:bg-amber-500/25"
               >
-                <span>🧪 Dev Quick Link: Proceed to Reset Password</span>
+                <FlaskConical size={14} strokeWidth={1.75} className="shrink-0" />
+                <span>Dev Quick Link: Proceed to Reset Password</span>
               </a>
             )}
 

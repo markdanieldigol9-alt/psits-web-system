@@ -38,9 +38,9 @@ actor "Institution Rep\n(School Chapter)" as InstRep #0EA5E9
 actor "PSITS Officer" as Officer #0D9488
 actor "System Administrator\n/ Super Admin" as Admin #7C3AED
 
-' Actor Generalizations
-Member <|-- InstRep : <<specialization>>
-Officer <|-- Admin : <<inherits privileges>>
+' Actor Generalizations (hollow triangle pointing to parent actor)
+InstRep --|> Member
+Admin --|> Officer
 
 ' ========================================================
 ' SYSTEM BOUNDARY
@@ -118,49 +118,49 @@ rectangle "PSITS Region XII Web-Based Management System" as System {
 ' RELATIONSHIPS & ASSOCIATIONS
 ' ========================================================
 
-' --- USER / MEMBER SIDE ---
-Member --> UC_Register
-Member --> UC_Login
-Member --> UC_ResetPass
-Member --> UC_Theme
-Member --> UC_SubmitPay
-Member --> UC_Reupload
-Member --> UC_ViewBilling
-Member --> UC_BrowseEvents
-Member --> UC_RegisterEvent
-Member --> UC_Vote
-Member --> UC_Forum
-Member --> UC_LiveEvents
-Member --> UC_Notifs
+' --- USER / MEMBER SIDE (Associations: solid lines without arrowheads) ---
+Member -- UC_Register
+Member -- UC_Login
+Member -- UC_ResetPass
+Member -- UC_Theme
+Member -- UC_SubmitPay
+Member -- UC_ViewBilling
+Member -- UC_BrowseEvents
+Member -- UC_RegisterEvent
+Member -- UC_Vote
+Member -- UC_Forum
+Member -- UC_LiveEvents
+Member -- UC_Notifs
 
 ' Institutional Rep specific
-InstRep --> UC_InstRosters
+InstRep -- UC_InstRosters
 
 ' --- OFFICER SIDE ---
-Officer --> UC_VerifyPay
-Officer --> UC_RejectPay
-Officer --> UC_RecordCash
-Officer --> UC_ManageEvents
-Officer --> UC_Attendance
-Officer --> UC_ManageCandidates
-Officer --> UC_Announcements
-Officer --> UC_ModerateForum
-Officer --> UC_Reports
+Officer -- UC_VerifyPay
+Officer -- UC_RecordCash
+Officer -- UC_ManageEvents
+Officer -- UC_Attendance
+Officer -- UC_ManageCandidates
+Officer -- UC_Announcements
+Officer -- UC_ModerateForum
+Officer -- UC_Reports
 
 ' --- ADMIN / SUPER ADMIN SIDE ---
-Admin --> UC_CertifyResults
-Admin --> UC_ManageOfficers
-Admin --> UC_Partners
-Admin --> UC_Settings
-Admin --> UC_DBAudit
+Admin -- UC_CertifyResults
+Admin -- UC_ManageOfficers
+Admin -- UC_Partners
+Admin -- UC_Settings
+Admin -- UC_DBAudit
 
 ' ========================================================
 ' INCLUDE & EXTEND DEPENDENCIES
+' <<include>>: Base ..> Included (always required)
+' <<extend>>:  Extension ..> Base (optional/conditional)
 ' ========================================================
-UC_VerifyPay ..> UC_ActivateMem : <<include>>
-UC_VerifyPay <.. UC_RejectPay : <<extend>>
 UC_Vote ..> UC_CheckEligibility : <<include>>
-UC_SubmitPay <.. UC_Reupload : <<extend>>
-UC_RegisterEvent ..> UC_BrowseEvents : <<include>>
+UC_RegisterEvent ..> UC_Login : <<include>>
+UC_ActivateMem ..> UC_VerifyPay : <<extend>>
+UC_RejectPay ..> UC_VerifyPay : <<extend>>
+UC_Reupload ..> UC_SubmitPay : <<extend>>
 
 @enduml

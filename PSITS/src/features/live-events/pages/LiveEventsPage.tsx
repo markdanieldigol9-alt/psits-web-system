@@ -303,7 +303,7 @@ export const LiveEventsPage = () => {
       <div className="p-6 space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Recorded Video Events</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">Recorded Video Events</h1>
             <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">
               Upload and watch recorded activity clips and event videos. All uploaded videos are retained for 1 month and then permanently deleted.
             </p>

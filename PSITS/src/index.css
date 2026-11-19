@@ -124,7 +124,7 @@ button {
     @apply bg-[#0B1326]/85 backdrop-blur-lg border border-blue-900/30 shadow-2xl text-white;
   }
   .glass-cyber {
-    @apply bg-white/85 dark:bg-[#0B1326]/85 backdrop-blur-lg border border-blue-500/20 dark:border-cyan-500/20 shadow-card hover:shadow-glow-cyan transition-all duration-200;
+    @apply bg-white/85 dark:bg-[#0B1326]/85 backdrop-blur-lg border border-blue-500/20 dark:border-cyan-500/20 shadow-card transition-all duration-200;
   }
   .glass-nav {
     @apply bg-white/90 dark:bg-[#060E20]/90 backdrop-blur-md border-b border-gray-200/70 dark:border-slate-800/70;
@@ -173,7 +173,7 @@ button {
     @apply bg-white dark:bg-[#131B2E] rounded-2xl border-2 border-gray-200 dark:border-slate-700;
   }
   .card-cyber {
-    @apply bg-white dark:bg-[#131B2E] rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 hover:shadow-glow-cyan transition-all duration-200;
+    @apply bg-white dark:bg-[#131B2E] rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200;
   }
 
   /* Nav items */
@@ -248,7 +248,7 @@ button {
     @apply bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-cyan-50/70 border-blue-200/80 shadow-xs;
   }
   html.dark .module-header-banner {
-    @apply bg-gradient-to-r from-[#0B1326] via-[#131B2E] to-[#0B1326] border-slate-800 shadow-glow-sm;
+    @apply bg-gradient-to-r from-[#0B1326] via-[#131B2E] to-[#0B1326] border-slate-800;
   }
 
   /* Telemetry tags with accessible WCAG AA contrast in both themes */
@@ -456,16 +456,32 @@ button {
     margin: 12mm 10mm 15mm 10mm;
   }
 
-  html, body, #root {
+  html,
+  html.dark,
+  body,
+  html.dark body,
+  #root,
+  main,
+  .bg-dot-grid,
+  html.dark .bg-dot-grid,
+  .page-container,
+  #root > div:has(main),
+  #root > div:has(main) > div:has(main) {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
     color: #111827 !important;
     font-size: 10pt !important;
     line-height: 1.35 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -474,34 +490,63 @@ button {
   [role="dialog"],
   [role="dialog"] > div,
   [role="dialog"] > div > div,
+  [role="dialog"] > div > div > div:nth-child(2),
   .print-expand {
+    display: block !important;
     overflow: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
-    position: static !important;
     background: #ffffff !important;
-    color: #000000 !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     padding: 0 !important;
     margin: 0 !important;
   }
 
-  /* Hide modal dialog title/close header when printing reports */
-  [role="dialog"] > div > div > div:first-child:not(#printable-report-area):not(.printable-report-area) {
+  /* Hide modal dialog header, non-report dialogs (e.g. Wizard Step 1), and nested dialogs */
+  [role="dialog"] > div > div > div:first-child:not(#printable-report-area):not(.printable-report-area),
+  [role="dialog"]:not(:has(#printable-report-area)),
+  [role="dialog"] [role="dialog"] {
     display: none !important;
   }
 
-  /* Hide app navigation chrome, modal header buttons, overlays */
+  /* Hide app navigation chrome, modal close controls, toasts, and .no-print elements */
   header,
   nav,
   aside,
   .no-print,
-  button,
-  input,
-  select,
+  [data-toast-container],
   [aria-label="Close modal"] {
+    display: none !important;
+  }
+
+  /* Isolate #printable-report-area on report views without breaking Legal pages */
+  body:has(#printable-report-area) *:not(#printable-report-area):not(:has(#printable-report-area)):not(#printable-report-area *) {
+    display: none !important;
+  }
+
+  /* Inside #printable-report-area: hide form controls & .no-print, NOT data-bearing <button>s */
+  #printable-report-area .no-print,
+  .printable-report-area .no-print,
+  #printable-report-area input,
+  #printable-report-area select,
+  #printable-report-area textarea {
+    display: none !important;
+  }
+
+  /* Backwards-compatible control hiding on non-report pages (e.g. LegalTermsModal/Privacy/Terms) */
+  body:not(:has(#printable-report-area)) button,
+  body:not(:has(#printable-report-area)) input,
+  body:not(:has(#printable-report-area)) select {
     display: none !important;
   }
 
@@ -526,6 +571,19 @@ button {
     box-shadow: none !important;
     overflow: visible !important;
     display: block !important;
+  }
+
+  /* Unclip scrollable wrappers & unstick table headers/footers inside printable area */
+  #printable-report-area .overflow-x-auto,
+  #printable-report-area .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  #printable-report-area thead,
+  #printable-report-area tfoot {
+    position: static !important;
   }
 
   /* Table print optimization */

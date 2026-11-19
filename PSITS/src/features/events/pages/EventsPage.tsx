@@ -5,7 +5,7 @@ import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, TextArea, Select, Badge } from '@/shared/components/Form';
 import { Modal, CardSkeleton } from '@/shared/components/Common';
 import { useAuth } from '@/shared/context/AuthContext';
-import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, Sparkles, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { Users, MapPin, Plus, Pencil, Power, FileSpreadsheet, Upload, CheckCircle, Megaphone, Eye, ChevronRight, ChevronLeft, Layers, Trophy, Trash2, Download, Search, Play, UserCheck, ShieldCheck, RefreshCw, AlertCircle, AlertTriangle, ExternalLink, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '@/shared/services/api';
 import { useNotification } from '@/shared/context/NotificationContext';
@@ -1289,14 +1289,7 @@ export const EventsPage = () => {
       <div className="space-y-6">
         <div className="module-header-banner flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="telemetry-chip">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-ping"></span>
-                MODULE.EVENTS
-              </span>
-              <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">SYS.OK</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Events Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">Events &amp; Competitions</h1>
             <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">Conventions, seminars, hackathons, and esports tournament activities.</p>
           </div>
           {canManageEvents && (
@@ -1378,8 +1371,7 @@ export const EventsPage = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
                     {event.customBadge && (
-                      <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-white/20">
-                        <Sparkles size={12} className="text-amber-400" />
+                      <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm border border-white/20">
                         {event.customBadge}
                       </span>
                     )}
@@ -1396,58 +1388,32 @@ export const EventsPage = () => {
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{event.title}</h3>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 font-medium">
-                          PSITS Event
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                           Scheduled on {event.date} at {event.time}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {event.customBadge && (!event.bannerUrl || failedBanners[String(event.id)]) && (
-                        <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-amber-200">
-                          <Sparkles size={12} /> {event.customBadge}
-                        </span>
-                      )}
-                      {isRegistered && <Badge variant="success">Registered</Badge>}
-                      {isPaidEvent && <Badge variant="warning">With Fee</Badge>}
                       {event.eventType && (
                         <Badge variant={['competition', 'contest', 'hackathon', 'esports'].includes(event.eventType.toLowerCase()) ? 'error' : 'info'}>
                           {getCategoryLabel(event.eventType)}
                         </Badge>
                       )}
-                      {event.requiresCoach && (
-                        <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-indigo-200">
-                          <UserCheck size={12} /> Coach Required
-                        </span>
-                      )}
-                      {Boolean(event.hasModerator || event.moderatorOfficerName) && (
-                        <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200">
-                          <ShieldCheck size={12} /> Moderator: {event.moderatorOfficerName || 'Officer Assigned'}
-                        </span>
-                      )}
-                      {/* 2-Phase Lifecycle Badge */}
-                      {event.status === 'upcoming' && (
-                        <Badge variant="info" className="bg-blue-50 text-blue-700 border-blue-200">
-                          Phase 1: Open for Registration
-                        </Badge>
-                      )}
-                      {event.status === 'ongoing' && (
-                        <Badge variant="success" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
-                          Phase 2: Event Started (Registration Closed)
-                        </Badge>
-                      )}
-                      {event.status === 'completed' && (
-                        <Badge variant="secondary">Completed</Badge>
-                      )}
-                      {event.status === 'cancelled' && (
-                        <Badge variant="error">Cancelled</Badge>
-                      )}
-                      {event.status === 'draft' && (
-                        <Badge variant="warning">Draft</Badge>
-                      )}
-                      {isMember && <Badge variant={regState.variant}>{regState.label}</Badge>}
+                      <Badge
+                        variant={
+                          event.status === 'ongoing'
+                            ? 'success'
+                            : event.status === 'upcoming'
+                            ? 'info'
+                            : event.status === 'cancelled'
+                            ? 'error'
+                            : event.status === 'draft'
+                            ? 'warning'
+                            : 'secondary'
+                        }
+                      >
+                        {String(event.status || 'upcoming').replace(/^./, (x: string) => x.toUpperCase())} • {isPaidEvent ? formatCurrency(event.fee) : 'Free'}
+                      </Badge>
                     </div>
                   </div>
 
@@ -1456,9 +1422,19 @@ export const EventsPage = () => {
                 )}
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 rounded-lg bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400" /> <span><strong>Location:</strong> {event.location}</span></div>
-                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.registrations} / {Number(event.capacity) > 0 ? event.capacity : 'Unlimited'}</span></div>
-                  <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400" /> <span><strong>Mode:</strong> {String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
+                  <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400 shrink-0" /> <span>{event.location}</span></div>
+                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400 shrink-0" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.total_participants ?? event.registrations ?? event.participantsCount ?? 0} / {Number(event.capacity) > 0 ? event.capacity : 'Unlimited'}</span></div>
+                  <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400 shrink-0" /> <span>{String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
+                  {event.requiresCoach && (
+                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-medium">
+                      <UserCheck size={16} className="shrink-0" /> <span>Coach Required</span>
+                    </div>
+                  )}
+                  {Boolean(event.hasModerator || event.moderatorOfficerName) && (
+                    <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium">
+                      <ShieldCheck size={16} className="shrink-0" /> <span>Moderator: {event.moderatorOfficerName || 'Officer Assigned'}</span>
+                    </div>
+                  )}
                   {isMember && !['seminar', 'conference'].includes(String(event.eventType || '').toLowerCase()) && (event.registrationStartAt || event.registrationEndAt) && (
                     <div className="sm:col-span-2 md:col-span-3 text-xs text-gray-500 border-t border-gray-200/60 pt-2 mt-1">
                       <strong>Registration Window:</strong> {event.registrationStartAt ? String(event.registrationStartAt).replace('T', ' ').slice(0, 16) : '—'} to {event.registrationEndAt ? String(event.registrationEndAt).replace('T', ' ').slice(0, 16) : '—'}
@@ -1473,7 +1449,7 @@ export const EventsPage = () => {
                       <div className="flex justify-between font-semibold text-gray-600">
                         <span>Paid: {formatCurrency(stats.totalVerifiedPaid)} ({stats.percentPaid}%)</span>
                         {stats.totalPendingPaid > 0 && (
-                          <span className="text-yellow-600 italic">({formatCurrency(stats.totalPendingPaid)} pending)</span>
+                          <span className="font-medium text-amber-700 dark:text-amber-400">({formatCurrency(stats.totalPendingPaid)} pending)</span>
                         )}
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -1487,12 +1463,17 @@ export const EventsPage = () => {
                 })()}
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 pt-4 mt-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
                     <span className="text-lg font-bold text-primary">Fee: {formatCurrency(event.fee)}</span>
                     {isMember && (
-                      <span className="text-sm text-gray-600">
-                        <strong>Registration Status:</strong> {String(statusText).charAt(0).toUpperCase() + String(statusText).slice(1)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={isRegistered ? 'success' : regState.variant}>
+                          {isRegistered ? 'Registered' : regState.label}
+                        </Badge>
+                        <span className="text-sm text-gray-600">
+                          <strong>Registration Status:</strong> {String(statusText).charAt(0).toUpperCase() + String(statusText).slice(1)}
+                        </span>
+                      </div>
                     )}
                   </div>
 
@@ -1586,7 +1567,7 @@ export const EventsPage = () => {
           )}
         </div>
       </div>
-      <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={editingEventId ? 'Edit Event' : 'Create Event Wizard'} size="lg">
+      <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={editingEventId ? 'Edit Event' : 'Create New Event'} size="lg">
         {/* Navigation Tabs Header */}
         <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar gap-1 bg-gray-50/80 p-1.5 rounded-xl border">
           <button
@@ -2080,9 +2061,9 @@ export const EventsPage = () => {
                             href={formData.guidelinesFileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline font-medium px-2 py-1"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium px-2 py-1"
                           >
-                            Preview ↗
+                            Preview <ExternalLink size={13} />
                           </a>
                         )}
                         <button
@@ -2832,7 +2813,7 @@ export const EventsPage = () => {
                                   const isCoachPos = (m.position || '').toLowerCase().includes('coach');
                                   return (
                                     <option key={m.id} value={String(m.id)}>
-                                      {isCoachPos ? '⭐ [COACH] ' : ''}{m.fullName} ({m.position || 'Member'}) {m.email ? `• ${m.email}` : ''}
+                                      {isCoachPos ? '[COACH] ' : ''}{m.fullName} ({m.position || 'Member'}) {m.email ? `• ${m.email}` : ''}
                                     </option>
                                   );
                                 })}
@@ -2847,7 +2828,8 @@ export const EventsPage = () => {
                                 </div>
                               ) : (
                                 <p className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
-                                  ⚠️ Please select an official Coach for this event.
+                                  <AlertTriangle size={13} className="shrink-0" />
+                                  <span>Please select an official Coach for this event.</span>
                                 </p>
                               )}
                             </div>
@@ -2957,28 +2939,51 @@ export const EventsPage = () => {
                                 <p className="font-bold text-gray-900 truncate">
                                   {selectedInstitutionMemberIds.length} member{selectedInstitutionMemberIds.length === 1 ? '' : 's'} selected for this event
                                 </p>
-                                <p className="text-[11px] text-green-700">
+                                <p className="text-[11px] text-green-700 flex items-center gap-1">
                                   {detailsEvent.registrationMode === 'pair' ? (
                                     selectedInstitutionMemberIds.length === 2 ? (
-                                      '✓ Ready for Pair / Duo event'
+                                      <>
+                                        <CheckCircle size={12} className="shrink-0" />
+                                        <span>Ready for Pair / Duo event</span>
+                                      </>
                                     ) : (
-                                      `⚠️ Exactly 2 members required for Pair / Duo (currently ${selectedInstitutionMemberIds.length})`
+                                      <span className="text-amber-700 flex items-center gap-1">
+                                        <AlertTriangle size={12} className="shrink-0" />
+                                        <span>{`Exactly 2 members required for Pair / Duo (currently ${selectedInstitutionMemberIds.length})`}</span>
+                                      </span>
                                     )
                                   ) : detailsEvent.registrationMode === 'team' ? (
                                     selectedInstitutionMemberIds.length >= 2 ? (
-                                      `✓ Ready for Team event (${selectedInstitutionMemberIds.length} members)`
+                                      <>
+                                        <CheckCircle size={12} className="shrink-0" />
+                                        <span>{`Ready for Team event (${selectedInstitutionMemberIds.length} members)`}</span>
+                                      </>
                                     ) : (
-                                      `⚠️ Minimum 2 members required for Team (currently ${selectedInstitutionMemberIds.length})`
+                                      <span className="text-amber-700 flex items-center gap-1">
+                                        <AlertTriangle size={12} className="shrink-0" />
+                                        <span>{`Minimum 2 members required for Team (currently ${selectedInstitutionMemberIds.length})`}</span>
+                                      </span>
                                     )
                                   ) : (
-                                    '✓ Ready to register'
+                                    <>
+                                      <CheckCircle size={12} className="shrink-0" />
+                                      <span>Ready to register</span>
+                                    </>
                                   )}
                                 </p>
                                 {detailsEvent.requiresCoach && (
-                                  <p className="text-[11px] font-semibold text-indigo-700 mt-0.5">
-                                    {selectedMembers.some((m) => (m.position || '').toLowerCase().includes('coach') || String(m.id) === String(selectedCoachMemberId))
-                                      ? '✓ Official Coach designated'
-                                      : '⚠️ Coach required: Please select a member with position Coach'}
+                                  <p className="text-[11px] font-semibold text-indigo-700 mt-0.5 flex items-center gap-1">
+                                    {selectedMembers.some((m) => (m.position || '').toLowerCase().includes('coach') || String(m.id) === String(selectedCoachMemberId)) ? (
+                                      <>
+                                        <CheckCircle size={12} className="shrink-0" />
+                                        <span>Official Coach designated</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-amber-700 flex items-center gap-1">
+                                        <AlertTriangle size={12} className="shrink-0" />
+                                        <span>Coach required: Please select a member with position Coach</span>
+                                      </span>
+                                    )}
                                   </p>
                                 )}
                               </div>
@@ -3074,8 +3079,9 @@ export const EventsPage = () => {
                                 <p className="font-bold text-gray-900 truncate">
                                   {teamProfileFile?.name || participantFileName}
                                 </p>
-                                <p className="text-[11px] text-green-700">
-                                  ✓ {detailsEvent.registrationMode === 'pair' ? 'Pair / Duo' : 'Team'} file attached {participantUploadCount > 0 ? `• ${participantUploadCount} participant${participantUploadCount === 1 ? '' : 's'} registered` : ''}
+                                <p className="text-[11px] text-green-700 flex items-center gap-1">
+                                  <CheckCircle size={12} className="shrink-0" />
+                                  <span>{detailsEvent.registrationMode === 'pair' ? 'Pair / Duo' : 'Team'} file attached {participantUploadCount > 0 ? `• ${participantUploadCount} participant${participantUploadCount === 1 ? '' : 's'} registered` : ''}</span>
                                 </p>
                               </div>
                             </div>
@@ -3173,7 +3179,7 @@ export const EventsPage = () => {
                       ></div>
                     </div>
                     {stats.totalPendingPaid > 0 && (
-                      <p className="text-xs text-yellow-600 italic font-medium">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
                         * PHP {stats.totalPendingPaid.toLocaleString()} pending verification
                       </p>
                     )}
@@ -3229,7 +3235,7 @@ export const EventsPage = () => {
       >
         <div className="space-y-4">
           <p className="text-xs text-gray-500">
-            {detailsEvent?.title ? `Event: ${detailsEvent.title}` : 'Guidelines'}
+            {detailsEvent?.title || 'Guidelines'}
           </p>
 
           {/* Attached Guidelines Document */}
@@ -3254,7 +3260,8 @@ export const EventsPage = () => {
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors shrink-0"
               >
                 <Download size={15} />
-                View / Download Document ↗
+                <span>View / Download Document</span>
+                <ExternalLink size={13} />
               </a>
             </div>
           )}

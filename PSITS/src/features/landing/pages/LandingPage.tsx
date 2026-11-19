@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, Sun, Moon, Target, Compass, BookOpen, Users, Award, ShieldCheck, Sparkles } from 'lucide-react';
+import { ChevronRight, Sun, Moon, Target, Compass, BookOpen, Users, Award, ShieldCheck } from 'lucide-react';
 import { Button } from '@/shared/components/Form';
 import { useTheme } from '@/shared/context/ThemeContext';
 import logo from '@/assets/image/PSITS_Logo.png';
@@ -52,25 +52,16 @@ export const LandingPage = () => {
         </div>
       </header>
 
-      {/* ── Hero Section (Mockup Matching) ───────────────────── */}
+      {/* ── Hero Section ─────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative">
-        {/* Luminous Ambient Glowing Aura (Matches Light & Dark Mockup) */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-          {/* Main Top/Center Cyan-Blue Aura */}
-          <div className="w-[500px] h-[340px] sm:w-[760px] sm:h-[440px] bg-gradient-to-b from-blue-400/25 via-cyan-300/20 to-transparent dark:from-blue-600/35 dark:via-cyan-500/20 dark:to-transparent rounded-full blur-[80px] sm:blur-[120px] -translate-y-8 animate-pulse-slow" />
-          
-          {/* Subtle Warm Amber Glow for Light Mode */}
-          <div className="absolute w-[360px] h-[220px] sm:w-[500px] sm:h-[280px] bg-amber-200/35 dark:bg-indigo-600/15 rounded-full blur-[70px] sm:blur-[100px] translate-y-28 -translate-x-10" />
-        </div>
-
         <div className="max-w-3xl mx-auto relative z-10 text-center space-y-6 sm:space-y-8">
           {/* Main Hero Headline */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.12]">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.12] text-balance">
             Empowering IT Students
           </h1>
 
           {/* Subtitle / Description */}
-          <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+          <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal text-balance">
             The official website for the Philippine Society of Information Technology Students. Manage events, process
             registrations, and collaborate with industry leaders.
           </p>
@@ -104,11 +95,7 @@ export const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 border border-blue-200/60 dark:border-blue-800/60 shadow-xs">
-              <Sparkles size={14} />
-              <span>About PSITS</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white text-balance">
               Vision &amp; Mission
             </h2>
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
@@ -125,10 +112,7 @@ export const LandingPage = () => {
                   <Target size={28} />
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono font-bold uppercase tracking-wider text-blue-600 dark:text-cyan-400">
-                    Our Vision
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight text-balance">
                     Fostering Academic &amp; Technical Excellence
                   </h3>
                 </div>
@@ -157,10 +141,7 @@ export const LandingPage = () => {
                   <Compass size={28} />
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Our Mission
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight text-balance">
                     Uniting Schools &amp; Empowering Students
                   </h3>
                 </div>

@@ -81,7 +81,7 @@ export const NotificationsPage = () => {
         {/* Header Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2.5 text-balance">
               <Bell className="text-primary h-7 w-7" />
               Notifications & Alerts
             </h1>
@@ -140,7 +140,7 @@ export const NotificationsPage = () => {
           >
             Unread
             {unreadCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-500 text-white font-extrabold animate-pulse">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-500 text-white font-extrabold">
                 {unreadCount}
               </span>
             )}
@@ -363,7 +363,7 @@ export const NotificationsPage = () => {
                   {selectedNotification.meta?.appealMessage && (
                     <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 text-xs">
                       <span className="text-gray-500 dark:text-slate-400 block font-medium">Member's Appeal Message</span>
-                      <p className="font-medium text-gray-800 dark:text-slate-200 mt-1 italic">
+                      <p className="font-medium text-gray-800 dark:text-slate-200 mt-1">
                         "{selectedNotification.meta.appealMessage}"
                       </p>
                     </div>

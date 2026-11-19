@@ -1652,20 +1652,27 @@ async function migrate() {
   await ensureIndex('events', 'idx_events_created_at', 'created_at');
   await ensureIndex('events', 'idx_events_status_start_at', 'status, start_at');
 
+  // Indexes on event_competition_winners
+  await ensureIndex('event_competition_winners', 'idx_event_winners_event_rank_pts', 'event_id, rank_position, points DESC');
+
   // Indexes on event_registrations
   await ensureIndex('event_registrations', 'idx_event_reg_event_id', 'event_id');
   await ensureIndex('event_registrations', 'idx_event_reg_member_id', 'member_id');
   await ensureIndex('event_registrations', 'idx_event_reg_status', 'status');
   await ensureIndex('event_registrations', 'idx_event_reg_event_status', 'event_id, status');
+  await ensureIndex('event_registrations', 'idx_event_reg_event_checked', 'event_id, is_checked_in, checked_in_at');
   await ensureIndex('event_registrations', 'idx_event_reg_member_status', 'member_id, status');
   await ensureIndex('event_registrations', 'idx_event_reg_created_at', 'created_at');
 
   // Indexes on institution_members
   await ensureIndex('institution_members', 'idx_inst_members_inst_user', 'institution_user_id');
   await ensureIndex('institution_members', 'idx_inst_members_event_id', 'event_id');
+  await ensureIndex('institution_members', 'idx_inst_members_event', 'event_title');
   await ensureIndex('institution_members', 'idx_inst_members_status', 'status');
   await ensureIndex('institution_members', 'idx_inst_members_inst_status', 'institution_user_id, status');
   await ensureIndex('institution_members', 'idx_inst_members_event_status', 'event_id, status');
+  await ensureIndex('institution_members', 'idx_inst_members_event_checked', 'event_id, checked_in, checked_in_at');
+  await ensureIndex('institution_members', 'idx_inst_members_title_status_checked', 'event_title, status, checked_in, checked_in_at');
   await ensureIndex('institution_members', 'idx_inst_members_created_at', 'created_at');
 
   // Indexes on payments

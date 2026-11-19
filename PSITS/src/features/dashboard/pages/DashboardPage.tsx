@@ -228,13 +228,12 @@ export const DashboardPage = () => {
 
           {/* Member Hero Banner (Role-Tailored) */}
           <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${roleConfig.heroGradient} text-white shadow-xl shadow-blue-900/20 p-6 sm:p-8 animate-fade-in border border-white/10`}>
-            <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-mono font-bold uppercase tracking-wider mb-2 border border-white/20">
-                  <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor} animate-pulse`} /> {roleConfig.portalTitle}
+                  <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor}`} /> {roleConfig.portalTitle}
                 </span>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Welcome, {getUserDisplayName(user)}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-balance">Welcome, {getUserDisplayName(user)}</h1>
                 {uiKey === 'member_institutional' && (
                   <p className="text-xs sm:text-sm font-semibold text-teal-200 mt-1 flex items-center gap-2">
                     <Building2 size={15} />
@@ -292,7 +291,7 @@ export const DashboardPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-cyan-500 shadow-card hover:shadow-glow-cyan transition-all">
+            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-cyan-500 shadow-card transition-all">
               <div className="p-3 bg-cyan-50 dark:bg-cyan-950/50 rounded-2xl text-cyan-600 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800">
                 <Users size={22} />
               </div>
@@ -457,7 +456,6 @@ export const DashboardPage = () => {
       subtitle: summary?.psitsMembers !== undefined && summary?.institutionMembers !== undefined
         ? `${summary.psitsMembers} PSITS + ${summary.institutionMembers} Inst.`
         : `${summary?.activeMembers ?? 0} active members`,
-      tag: 'SYS.OK',
       icon: Users,
       iconBg: 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 border border-blue-100 dark:border-blue-900',
     },
@@ -465,7 +463,6 @@ export const DashboardPage = () => {
       label: 'Active Tech Events',
       value: String(summary?.activeEvents ?? 0),
       subtitle: 'Scheduled & ongoing',
-      tag: 'LIVE',
       icon: Calendar,
       iconBg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900',
     },
@@ -473,7 +470,6 @@ export const DashboardPage = () => {
       label: 'Total Revenue',
       value: `PHP ${(summary?.totalRevenue ?? 0).toLocaleString()}`,
       subtitle: 'Verified collections',
-      tag: 'FINANCE',
       icon: DollarSign,
       iconBg: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900',
     },
@@ -481,7 +477,6 @@ export const DashboardPage = () => {
       label: 'Pending Approvals',
       value: String(summary?.pendingApprovals ?? 0),
       subtitle: 'Requires officer review',
-      tag: 'QUEUE',
       icon: Clock,
       iconBg: 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900',
     },
@@ -492,16 +487,13 @@ export const DashboardPage = () => {
       <div className="space-y-6">
         {/* Admin/Officer Hero Banner */}
         <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${roleConfig.heroGradient} text-white shadow-xl shadow-blue-900/20 p-8 sm:p-10 animate-fade-in border border-blue-700/40`}>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 left-10 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
-
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-300">
-                <span className={`w-2 h-2 rounded-full ${roleConfig.dotColor} animate-pulse`} />
+                <span className={`w-2 h-2 rounded-full ${roleConfig.dotColor}`} />
                 <span>{roleConfig.portalTitle}</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-balance">
                 Welcome back, {getUserDisplayName(user)}!
               </h1>
               {user.role === 'officer' && (
@@ -515,7 +507,7 @@ export const DashboardPage = () => {
               )}
               {user.role !== 'officer' && (
                 <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-xl">
-                  Central command, organizational telemetry, financial ledgers, and institutional intelligence.
+                  Organizational overview, memberships, events, and financial ledgers.
                 </p>
               )}
             </div>

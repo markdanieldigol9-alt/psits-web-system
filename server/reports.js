@@ -12,6 +12,83 @@ function addMonths(date, delta) {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
 
+const LATE_GRACE_MIN = 15;
+
+const toIso = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+};
+
+function resolveSchedule(eventRow) {
+  const startAt = eventRow.start_at ? new Date(eventRow.start_at) : null;
+  let endAt = eventRow.end_at ? new Date(eventRow.end_at) : null;
+  if (startAt && (!endAt || endAt.getTime() < startAt.getTime())) {
+    endAt = new Date(startAt);
+    endAt.setHours(23, 59, 59, 0);
+  }
+  return { startAt, endAt };
+}
+
+function isModeratorUser(req) {
+  const role = String(req?.user?.role || '');
+  return role === 'super_admin' || role === 'admin' || role === 'officer';
+}
+
+function parseOptionalPositiveInt(raw, paramName) {
+  if (raw === undefined || raw === null) {
+    return { ok: true, value: null };
+  }
+  const str = String(raw).trim();
+  if (!str || str === 'all') {
+    return { ok: true, value: null };
+  }
+  if (!/^\d+$/.test(str)) {
+    return { ok: false, message: `Invalid ${paramName}. Must be a positive integer or "all".` };
+  }
+  const num = Number(str);
+  if (num <= 0 || !Number.isSafeInteger(num)) {
+    return { ok: false, message: `Invalid ${paramName}. Must be a positive integer or "all".` };
+  }
+  return { ok: true, value: num };
+}
+
+function parseOptionalDateParam(raw, paramName) {
+  if (raw === undefined || raw === null) {
+    return { ok: true, value: null };
+  }
+  const str = String(raw).trim();
+  if (!str) {
+    return { ok: true, value: null };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return { ok: false, message: `Invalid ${paramName}. Expected YYYY-MM-DD format.` };
+  }
+  const d = new Date(`${str}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== str) {
+    return { ok: false, message: `Invalid ${paramName}. Calendar date does not exist.` };
+  }
+  return { ok: true, value: str };
+}
+
+async function fetchDistinctReportInstitutions() {
+  const [instRows] = await pool.query(`
+    SELECT DISTINCT institution_name
+    FROM (
+      SELECT COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) AS institution_name
+      FROM event_registrations er
+      JOIN users u ON u.id = er.member_id
+      UNION
+      SELECT COALESCE(u.sector_details, u.full_name, 'Institution Member') AS institution_name
+      FROM institution_members im
+      JOIN users u ON u.id = im.institution_user_id
+    ) AS inst_list
+    WHERE institution_name IS NOT NULL AND institution_name <> ''
+    ORDER BY institution_name ASC
+  `);
+  return instRows.map((r) => r.institution_name);
+}
+
 async function getDashboardReport(_req, res) {
   const user = _req?.user;
   const role = String(user?.role || '');
@@ -545,15 +622,25 @@ async function getAllMembersReport(req, res) {
 }
 
 async function getEventParticipationReport(req, res) {
-  const user = req?.user;
-  const role = String(user?.role || '');
-  const isModerator = role === 'super_admin' || role === 'admin' || role === 'officer';
-  if (!isModerator) {
+  if (!isModeratorUser(req)) {
     return res.status(403).json({ success: false, message: 'Forbidden.' });
   }
 
   try {
     const { eventId, institution, search, status } = req.query;
+
+    const eventIdCheck = parseOptionalPositiveInt(eventId, 'eventId');
+    if (!eventIdCheck.ok) {
+      return res.status(400).json({ success: false, message: eventIdCheck.message });
+    }
+    const parsedEventId = eventIdCheck.value;
+    const institutionVal = institution && String(institution).trim() && String(institution).trim() !== 'all'
+      ? String(institution).trim()
+      : null;
+    const statusVal = status && String(status).trim() && String(status).trim() !== 'all'
+      ? String(status).trim()
+      : null;
+    const searchVal = search && String(search).trim() ? String(search).trim() : null;
 
     const [events] = await pool.query(`
       SELECT 
@@ -572,38 +659,106 @@ async function getEventParticipationReport(req, res) {
         e.end_at AS endDate,
         e.is_esports AS isEsports,
         e.esports_game AS esportsGame,
-        (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) AS direct_registrations,
-        (SELECT COUNT(*) FROM institution_members im WHERE im.event_id = e.id OR (im.event_id IS NULL AND im.event_title = e.title)) AS institution_registrations,
-        (
-          (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) +
-          (SELECT COUNT(*) FROM institution_members im WHERE im.event_id = e.id OR (im.event_id IS NULL AND im.event_title = e.title))
-        ) AS total_participants,
-        (
-          (SELECT COUNT(*) FROM event_registrations er WHERE er.event_id = e.id) +
-          (SELECT COUNT(*) FROM institution_members im WHERE im.event_id = e.id OR (im.event_id IS NULL AND im.event_title = e.title))
-        ) AS registrations
+        COALESCE(reg_agg.direct_registrations, 0) AS direct_registrations,
+        (COALESCE(inst_id_agg.cnt, 0) + COALESCE(inst_title_agg.cnt, 0)) AS institution_registrations,
+        (COALESCE(reg_agg.direct_registrations, 0) + COALESCE(inst_id_agg.cnt, 0) + COALESCE(inst_title_agg.cnt, 0)) AS total_participants,
+        (COALESCE(reg_agg.direct_registrations, 0) + COALESCE(inst_id_agg.cnt, 0) + COALESCE(inst_title_agg.cnt, 0)) AS registrations
       FROM events e
+      LEFT JOIN (
+        SELECT event_id, COUNT(*) AS direct_registrations
+        FROM event_registrations
+        GROUP BY event_id
+      ) reg_agg ON reg_agg.event_id = e.id
+      LEFT JOIN (
+        SELECT event_id, COUNT(*) AS cnt
+        FROM institution_members
+        WHERE event_id IS NOT NULL
+        GROUP BY event_id
+      ) inst_id_agg ON inst_id_agg.event_id = e.id
+      LEFT JOIN (
+        SELECT event_title, COUNT(*) AS cnt
+        FROM institution_members
+        WHERE event_id IS NULL AND event_title IS NOT NULL
+        GROUP BY event_title
+      ) inst_title_agg ON inst_title_agg.event_title = e.title
       ORDER BY e.start_at DESC
     `);
 
-    const baseParticipantSql = `
+    const b1Where = [];
+    const b1Params = [];
+    const b2aWhere = ['im.event_id IS NOT NULL'];
+    const b2aParams = [];
+    const b2bWhere = ['im.event_id IS NULL', 'im.event_title IS NOT NULL'];
+    const b2bParams = [];
+
+    if (parsedEventId !== null) {
+      b1Where.push('er.event_id = ?');
+      b1Params.push(parsedEventId);
+      b2aWhere.push('im.event_id = ?');
+      b2aParams.push(parsedEventId);
+      b2bWhere.push('e.id = ?');
+      b2bParams.push(parsedEventId);
+    }
+
+    if (institutionVal) {
+      b1Where.push("COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) = ?");
+      b1Params.push(institutionVal);
+      b2aWhere.push("COALESCE(u.sector_details, u.full_name, 'Institution Member') = ?");
+      b2aParams.push(institutionVal);
+      b2bWhere.push("COALESCE(u.sector_details, u.full_name, 'Institution Member') = ?");
+      b2bParams.push(institutionVal);
+    }
+
+    if (statusVal) {
+      if (statusVal === 'checked_in') {
+        b1Where.push('(er.is_checked_in = 1 OR er.checked_in_count > 0)');
+        b2aWhere.push('im.checked_in = 1');
+        b2bWhere.push('im.checked_in = 1');
+      } else {
+        b1Where.push('er.status = ?');
+        b1Params.push(statusVal);
+        b2aWhere.push('im.status = ?');
+        b2aParams.push(statusVal);
+        b2bWhere.push('im.status = ?');
+        b2bParams.push(statusVal);
+      }
+    }
+
+    if (searchVal) {
+      const like = `%${searchVal}%`;
+      b1Where.push("(u.full_name LIKE ? OR COALESCE(u.email, '') LIKE ? OR COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) LIKE ? OR e.title LIKE ? OR COALESCE(u.occupation, u.sector, u.member_type, 'Member') LIKE ?)");
+      b1Params.push(like, like, like, like, like);
+      b2aWhere.push("(im.full_name LIKE ? OR COALESCE(im.email, '') LIKE ? OR COALESCE(u.sector_details, u.full_name, 'Institution Member') LIKE ? OR e.title LIKE ? OR COALESCE(im.position, 'Participant') LIKE ?)");
+      b2aParams.push(like, like, like, like, like);
+      b2bWhere.push("(im.full_name LIKE ? OR COALESCE(im.email, '') LIKE ? OR COALESCE(u.sector_details, u.full_name, 'Institution Member') LIKE ? OR e.title LIKE ? OR COALESCE(im.position, 'Participant') LIKE ?)");
+      b2bParams.push(like, like, like, like, like);
+    }
+
+    const b1WhereSql = b1Where.length > 0 ? `WHERE ${b1Where.join(' AND ')}` : '';
+    const b2aWhereSql = `WHERE ${b2aWhere.join(' AND ')}`;
+    const b2bWhereSql = `WHERE ${b2bWhere.join(' AND ')}`;
+
+    const finalSql = `
       SELECT 
         CONCAT('reg-', er.id) AS participant_key,
         e.id AS event_id,
         e.title AS event_title,
         e.event_type AS event_category,
-        u.full_name,
+        u.full_name AS full_name,
         u.email,
         u.contact_number,
         COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) AS institution_name,
         COALESCE(u.occupation, u.sector, u.member_type, 'Member') AS position,
         'Individual Registration' AS registration_source,
         er.status AS registration_status,
-        (er.checked_in_count > 0) AS is_checked_in,
+        (er.is_checked_in = 1 OR er.checked_in_count > 0) AS is_checked_in,
+        CASE WHEN (er.is_checked_in = 1 OR er.checked_in_count > 0) THEN er.checked_in_at ELSE NULL END AS checked_in_at,
+        CASE WHEN (er.is_checked_in = 1 OR er.checked_in_count > 0) THEN er.checked_out_at ELSE NULL END AS checked_out_at,
         er.created_at AS registered_at
       FROM event_registrations er
       JOIN events e ON e.id = er.event_id
       JOIN users u ON u.id = er.member_id
+      ${b1WhereSql}
 
       UNION ALL
 
@@ -612,7 +767,7 @@ async function getEventParticipationReport(req, res) {
         e.id AS event_id,
         e.title AS event_title,
         e.event_type AS event_category,
-        im.full_name,
+        im.full_name AS full_name,
         im.email,
         im.contact_number,
         COALESCE(u.sector_details, u.full_name, 'Institution Member') AS institution_name,
@@ -620,56 +775,56 @@ async function getEventParticipationReport(req, res) {
         'Institution Roster' AS registration_source,
         im.status AS registration_status,
         (im.checked_in = 1) AS is_checked_in,
+        CASE WHEN im.checked_in = 1 THEN im.checked_in_at ELSE NULL END AS checked_in_at,
+        CASE WHEN im.checked_in = 1 THEN im.checked_out_at ELSE NULL END AS checked_out_at,
         im.created_at AS registered_at
       FROM institution_members im
+      JOIN events e ON e.id = im.event_id
       JOIN users u ON u.id = im.institution_user_id
-      JOIN events e ON (e.id = im.event_id OR (im.event_id IS NULL AND e.title = im.event_title))
+      ${b2aWhereSql}
+
+      UNION ALL
+
+      SELECT
+        CONCAT('inst-', im.id) AS participant_key,
+        e.id AS event_id,
+        e.title AS event_title,
+        e.event_type AS event_category,
+        im.full_name AS full_name,
+        im.email,
+        im.contact_number,
+        COALESCE(u.sector_details, u.full_name, 'Institution Member') AS institution_name,
+        COALESCE(im.position, 'Participant') AS position,
+        'Institution Roster' AS registration_source,
+        im.status AS registration_status,
+        (im.checked_in = 1) AS is_checked_in,
+        CASE WHEN im.checked_in = 1 THEN im.checked_in_at ELSE NULL END AS checked_in_at,
+        CASE WHEN im.checked_in = 1 THEN im.checked_out_at ELSE NULL END AS checked_out_at,
+        im.created_at AS registered_at
+      FROM institution_members im
+      JOIN events e ON e.title = im.event_title
+      JOIN users u ON u.id = im.institution_user_id
+      ${b2bWhereSql}
+
+      ORDER BY registered_at DESC
     `;
 
-    const filterClauses = [];
-    const params = [];
+    const [[participantRows], institutions] = await Promise.all([
+      pool.query(finalSql, [...b1Params, ...b2aParams, ...b2bParams]),
+      fetchDistinctReportInstitutions(),
+    ]);
 
-    if (eventId && eventId !== 'all') {
-      filterClauses.push('p.event_id = ?');
-      params.push(Number(eventId) || String(eventId));
-    }
-
-    if (institution && institution !== 'all') {
-      filterClauses.push('p.institution_name = ?');
-      params.push(String(institution));
-    }
-
-    if (status && status !== 'all') {
-      if (status === 'checked_in') {
-        filterClauses.push('p.is_checked_in = 1');
-      } else {
-        filterClauses.push('p.registration_status = ?');
-        params.push(String(status));
-      }
-    }
-
-    if (search && String(search).trim()) {
-      filterClauses.push('(p.full_name LIKE ? OR p.email LIKE ? OR p.institution_name LIKE ? OR p.event_title LIKE ? OR p.position LIKE ?)');
-      const s = `%${String(search).trim()}%`;
-      params.push(s, s, s, s, s);
-    }
-
-    const whereClause = filterClauses.length > 0 ? `WHERE ${filterClauses.join(' AND ')}` : '';
-    const finalSql = `
-      SELECT * FROM (${baseParticipantSql}) AS p
-      ${whereClause}
-      ORDER BY p.registered_at DESC
-    `;
-
-    const [participants] = await pool.query(finalSql, params);
-
-    const [instRows] = await pool.query(`
-      SELECT DISTINCT p.institution_name 
-      FROM (${baseParticipantSql}) AS p 
-      WHERE p.institution_name IS NOT NULL AND p.institution_name <> ''
-      ORDER BY p.institution_name ASC
-    `);
-    const institutions = instRows.map((r) => r.institution_name);
+    const participants = participantRows.map((p) => {
+      const checkedInAt = p.is_checked_in ? toIso(p.checked_in_at) : null;
+      const checkedOutAt = p.is_checked_in ? toIso(p.checked_out_at) : null;
+      return {
+        ...p,
+        checked_in_at: checkedInAt,
+        checked_out_at: checkedOutAt,
+        checkedInAt,
+        checkedOutAt,
+      };
+    });
 
     return res.json({
       success: true,
@@ -687,10 +842,644 @@ async function getEventParticipationReport(req, res) {
   }
 }
 
+async function getEventWinnersReport(req, res) {
+  if (!isModeratorUser(req)) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+
+  try {
+    const eventIdCheck = parseOptionalPositiveInt(req.query?.eventId, 'eventId');
+    if (!eventIdCheck.ok) {
+      return res.status(400).json({ success: false, message: eventIdCheck.message });
+    }
+    const parsedEventId = eventIdCheck.value;
+
+    const rawStatus = req.query?.status !== undefined && req.query?.status !== null
+      ? String(req.query.status).trim()
+      : '';
+    const allowedStatuses = new Set(['', 'all', 'completed', 'ongoing', 'upcoming', 'cancelled', 'draft', 'all_including_draft']);
+    if (!allowedStatuses.has(rawStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid status filter.' });
+    }
+
+    const rawHasWinners = req.query?.hasWinners !== undefined && req.query?.hasWinners !== null
+      ? String(req.query.hasWinners).trim()
+      : '';
+    const allowedHasWinners = new Set(['', 'all', 'with_winners', 'without_winners']);
+    if (!allowedHasWinners.has(rawHasWinners)) {
+      return res.status(400).json({ success: false, message: 'Invalid hasWinners filter.' });
+    }
+
+    const startDateCheck = parseOptionalDateParam(req.query?.startDate, 'startDate');
+    if (!startDateCheck.ok) {
+      return res.status(400).json({ success: false, message: startDateCheck.message });
+    }
+    const endDateCheck = parseOptionalDateParam(req.query?.endDate, 'endDate');
+    if (!endDateCheck.ok) {
+      return res.status(400).json({ success: false, message: endDateCheck.message });
+    }
+    const startDate = startDateCheck.value;
+    const endDate = endDateCheck.value;
+    if (startDate && endDate && startDate > endDate) {
+      return res.status(400).json({ success: false, message: 'startDate cannot be after endDate.' });
+    }
+
+    const rawEventType = req.query?.eventType !== undefined && req.query?.eventType !== null
+      ? String(req.query.eventType).trim()
+      : '';
+    const searchVal = req.query?.search !== undefined && req.query?.search !== null
+      ? String(req.query.search).trim()
+      : '';
+
+    const where = [];
+    const params = [];
+
+    if (parsedEventId !== null) {
+      where.push('e.id = ?');
+      params.push(parsedEventId);
+    }
+
+    if (rawStatus === '' || rawStatus === 'all') {
+      where.push("e.status <> 'draft'");
+    } else if (rawStatus !== 'all_including_draft') {
+      where.push('e.status = ?');
+      params.push(rawStatus);
+    }
+
+    if (rawEventType && rawEventType !== 'all') {
+      where.push('e.event_type = ?');
+      params.push(rawEventType);
+    }
+
+    if (rawHasWinners === 'with_winners') {
+      where.push('w.id IS NOT NULL');
+    } else if (rawHasWinners === 'without_winners') {
+      where.push('w.id IS NULL');
+    }
+
+    if (startDate) {
+      where.push('e.start_at >= ?');
+      params.push(`${startDate} 00:00:00`);
+    }
+    if (endDate) {
+      where.push('e.start_at <= ?');
+      params.push(`${endDate} 23:59:59`);
+    }
+
+    if (searchVal) {
+      const like = `%${searchVal}%`;
+      where.push(
+        "(e.title LIKE ? OR e.location LIKE ? OR e.event_type LIKE ? OR COALESCE(e.esports_game, '') LIKE ? OR COALESCE(w.participant_name, '') LIKE ? OR COALESCE(w.institution_name, '') LIKE ? OR COALESCE(w.award_title, '') LIKE ? OR COALESCE(w.score_or_notes, '') LIKE ?)"
+      );
+      params.push(like, like, like, like, like, like, like, like);
+    }
+
+    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+    const sql = `
+      SELECT
+        e.id AS event_id,
+        e.title AS event_title,
+        e.event_type,
+        e.registration_mode,
+        e.status AS event_status,
+        e.location,
+        e.start_at,
+        e.end_at,
+        e.is_esports,
+        e.esports_game,
+        w.id AS winner_id,
+        w.rank_position,
+        w.award_title,
+        w.institution_name,
+        w.participant_name,
+        w.points,
+        w.score_or_notes,
+        COALESCE(
+          w.event_mode,
+          CASE WHEN e.registration_mode = 'group' THEN 'team' ELSE e.registration_mode END,
+          'individual'
+        ) AS resolved_event_mode,
+        w.created_at AS awarded_at
+      FROM events e
+      LEFT JOIN event_competition_winners w ON w.event_id = e.id
+      ${whereClause}
+      ORDER BY e.start_at DESC, e.id DESC, w.rank_position ASC, w.points DESC, w.id ASC
+    `;
+
+    const [joinedRows] = await pool.query(sql, params);
+
+    const eventMap = new Map();
+    for (const r of joinedRows) {
+      const eventKey = String(r.event_id);
+      const fallbackMode = r.registration_mode === 'group' ? 'team' : (r.registration_mode || 'individual');
+      if (!eventMap.has(eventKey)) {
+        eventMap.set(eventKey, {
+          eventId: eventKey,
+          eventTitle: r.event_title,
+          eventType: r.event_type || 'seminar',
+          eventMode: fallbackMode,
+          eventStatus: r.event_status,
+          location: r.location || '',
+          startAt: toIso(r.start_at),
+          endAt: toIso(r.end_at),
+          isEsports: Boolean(r.is_esports),
+          esportsGame: r.esports_game || null,
+          hasWinners: false,
+          winnerCount: 0,
+          winners: [],
+        });
+      }
+
+      if (r.winner_id !== null && r.winner_id !== undefined) {
+        eventMap.get(eventKey).winners.push({
+          winnerId: String(r.winner_id),
+          rankPosition: Number(r.rank_position),
+          awardTitle: r.award_title,
+          participantName: r.participant_name,
+          institutionName: r.institution_name,
+          points: Number(r.points || 0),
+          scoreOrNotes: r.score_or_notes ? String(r.score_or_notes) : null,
+          eventMode: r.resolved_event_mode || fallbackMode,
+          awardedAt: toIso(r.awarded_at),
+        });
+      }
+    }
+
+    const events = Array.from(eventMap.values());
+    const rows = [];
+    let eventsWithWinners = 0;
+    let eventsWithoutWinners = 0;
+    let totalWinnerEntries = 0;
+    let totalPointsAwarded = 0;
+
+    for (const ev of events) {
+      ev.winnerCount = ev.winners.length;
+      ev.hasWinners = ev.winners.length > 0;
+
+      if (ev.hasWinners) {
+        eventsWithWinners += 1;
+        for (const w of ev.winners) {
+          totalWinnerEntries += 1;
+          totalPointsAwarded += w.points;
+          rows.push({
+            eventId: ev.eventId,
+            eventTitle: ev.eventTitle,
+            eventType: ev.eventType,
+            eventMode: w.eventMode,
+            eventStatus: ev.eventStatus,
+            location: ev.location,
+            startAt: ev.startAt,
+            endAt: ev.endAt,
+            isEsports: ev.isEsports,
+            esportsGame: ev.esportsGame,
+            hasWinners: true,
+            winnerCount: ev.winnerCount,
+            winnerId: w.winnerId,
+            rankPosition: w.rankPosition,
+            awardTitle: w.awardTitle,
+            participantName: w.participantName,
+            institutionName: w.institutionName,
+            points: w.points,
+            scoreOrNotes: w.scoreOrNotes,
+            awardedAt: w.awardedAt,
+          });
+        }
+      } else {
+        eventsWithoutWinners += 1;
+        if (rawHasWinners !== 'with_winners') {
+          rows.push({
+            eventId: ev.eventId,
+            eventTitle: ev.eventTitle,
+            eventType: ev.eventType,
+            eventMode: ev.eventMode,
+            eventStatus: ev.eventStatus,
+            location: ev.location,
+            startAt: ev.startAt,
+            endAt: ev.endAt,
+            isEsports: ev.isEsports,
+            esportsGame: ev.esportsGame,
+            hasWinners: false,
+            winnerCount: 0,
+            winnerId: null,
+            rankPosition: null,
+            awardTitle: 'No Winners Recorded',
+            participantName: '—',
+            institutionName: '—',
+            points: 0,
+            scoreOrNotes: null,
+            awardedAt: null,
+          });
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      summary: {
+        totalEvents: events.length,
+        eventsWithWinners,
+        eventsWithoutWinners,
+        totalWinnerEntries,
+        totalPointsAwarded,
+      },
+      events,
+      rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+async function getAttendanceReport(req, res) {
+  if (!isModeratorUser(req)) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+
+  try {
+    const eventIdCheck = parseOptionalPositiveInt(req.query?.eventId, 'eventId');
+    if (!eventIdCheck.ok) {
+      return res.status(400).json({ success: false, message: eventIdCheck.message });
+    }
+    const parsedEventId = eventIdCheck.value;
+
+    const rawInstitution = req.query?.institution !== undefined && req.query?.institution !== null
+      ? String(req.query.institution).trim()
+      : '';
+    const institutionVal = rawInstitution && rawInstitution !== 'all' ? rawInstitution : null;
+
+    const rawSource = req.query?.source !== undefined && req.query?.source !== null
+      ? String(req.query.source).trim()
+      : '';
+    const allowedSources = new Set(['', 'all', 'individual', 'institution']);
+    if (!allowedSources.has(rawSource)) {
+      return res.status(400).json({ success: false, message: 'Invalid source filter.' });
+    }
+
+    const rawAttendanceStatus = req.query?.attendanceStatus !== undefined && req.query?.attendanceStatus !== null
+      ? String(req.query.attendanceStatus).trim()
+      : '';
+    const allowedAttendanceStatuses = new Set(['', 'all', 'timed_out', 'in_venue', 'not_timed_out', 'not_arrived']);
+    if (!allowedAttendanceStatuses.has(rawAttendanceStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid attendanceStatus filter.' });
+    }
+
+    const rawRegStatus = req.query?.registrationStatus !== undefined && req.query?.registrationStatus !== null
+      ? String(req.query.registrationStatus).trim()
+      : '';
+    const allowedRegStatuses = new Set(['', 'all', 'approved', 'pending', 'rejected']);
+    if (!allowedRegStatuses.has(rawRegStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid registrationStatus filter.' });
+    }
+
+    const startDateCheck = parseOptionalDateParam(req.query?.startDate, 'startDate');
+    if (!startDateCheck.ok) {
+      return res.status(400).json({ success: false, message: startDateCheck.message });
+    }
+    const endDateCheck = parseOptionalDateParam(req.query?.endDate, 'endDate');
+    if (!endDateCheck.ok) {
+      return res.status(400).json({ success: false, message: endDateCheck.message });
+    }
+    const startDate = startDateCheck.value;
+    const endDate = endDateCheck.value;
+    if (startDate && endDate && startDate > endDate) {
+      return res.status(400).json({ success: false, message: 'startDate cannot be after endDate.' });
+    }
+
+    const searchVal = req.query?.search !== undefined && req.query?.search !== null
+      ? String(req.query.search).trim()
+      : '';
+
+    const branches = [];
+    const unionParams = [];
+
+    if (rawSource !== 'institution') {
+      const b1Where = [];
+      const b1Params = [];
+
+      if (parsedEventId !== null) {
+        b1Where.push('er.event_id = ?');
+        b1Params.push(parsedEventId);
+      }
+      if (startDate) {
+        b1Where.push('e.start_at >= ?');
+        b1Params.push(`${startDate} 00:00:00`);
+      }
+      if (endDate) {
+        b1Where.push('e.start_at <= ?');
+        b1Params.push(`${endDate} 23:59:59`);
+      }
+      if (rawRegStatus === '') {
+        b1Where.push("er.status <> 'rejected'");
+      } else if (rawRegStatus !== 'all') {
+        b1Where.push('er.status = ?');
+        b1Params.push(rawRegStatus);
+      }
+      if (rawAttendanceStatus === 'not_arrived') {
+        b1Where.push('NOT (er.is_checked_in = 1 OR er.checked_in_count > 0)');
+      } else if (rawAttendanceStatus === 'timed_out') {
+        b1Where.push('(er.is_checked_in = 1 OR er.checked_in_count > 0) AND er.checked_out_at IS NOT NULL');
+      } else if (rawAttendanceStatus === 'in_venue' || rawAttendanceStatus === 'not_timed_out') {
+        b1Where.push('(er.is_checked_in = 1 OR er.checked_in_count > 0) AND er.checked_out_at IS NULL');
+      }
+      if (institutionVal) {
+        b1Where.push("COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) = ?");
+        b1Params.push(institutionVal);
+      }
+      if (searchVal) {
+        const like = `%${searchVal}%`;
+        b1Where.push("(u.full_name LIKE ? OR COALESCE(u.email, '') LIKE ? OR COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) LIKE ? OR COALESCE(u.occupation, u.sector, u.member_type, 'Member') LIKE ? OR e.title LIKE ?)");
+        b1Params.push(like, like, like, like, like);
+      }
+
+      const b1WhereSql = b1Where.length > 0 ? `WHERE ${b1Where.join(' AND ')}` : '';
+      branches.push(`
+        SELECT
+          CONCAT('reg-', er.id) AS participant_key,
+          'Individual Registration' AS registration_source,
+          'individual' AS source_type,
+          e.id AS event_id,
+          e.title AS event_title,
+          e.status AS event_status,
+          e.start_at AS event_start_at,
+          e.end_at AS event_end_at,
+          u.full_name AS full_name,
+          u.email,
+          u.contact_number,
+          COALESCE(u.sector_details, CASE WHEN u.member_type = 'institution' THEN u.full_name ELSE 'PSITS Individual Member' END) AS institution_name,
+          COALESCE(u.occupation, u.sector, u.member_type, 'Member') AS position,
+          er.status AS registration_status,
+          (er.is_checked_in = 1 OR er.checked_in_count > 0) AS is_checked_in,
+          CASE WHEN (er.is_checked_in = 1 OR er.checked_in_count > 0) THEN er.checked_in_at ELSE NULL END AS checked_in_at,
+          CASE WHEN (er.is_checked_in = 1 OR er.checked_in_count > 0) THEN er.checked_out_at ELSE NULL END AS checked_out_at,
+          er.created_at AS registered_at
+        FROM event_registrations er
+        JOIN events e ON e.id = er.event_id
+        JOIN users u ON u.id = er.member_id
+        ${b1WhereSql}
+      `);
+      unionParams.push(...b1Params);
+    }
+
+    if (rawSource !== 'individual') {
+      const b2aWhere = ['im.event_id IS NOT NULL'];
+      const b2aParams = [];
+      const b2bWhere = ['im.event_id IS NULL', 'im.event_title IS NOT NULL'];
+      const b2bParams = [];
+
+      if (parsedEventId !== null) {
+        b2aWhere.push('im.event_id = ?');
+        b2aParams.push(parsedEventId);
+        b2bWhere.push('e.id = ?');
+        b2bParams.push(parsedEventId);
+      }
+      if (startDate) {
+        b2aWhere.push('e.start_at >= ?');
+        b2aParams.push(`${startDate} 00:00:00`);
+        b2bWhere.push('e.start_at >= ?');
+        b2bParams.push(`${startDate} 00:00:00`);
+      }
+      if (endDate) {
+        b2aWhere.push('e.start_at <= ?');
+        b2aParams.push(`${endDate} 23:59:59`);
+        b2bWhere.push('e.start_at <= ?');
+        b2bParams.push(`${endDate} 23:59:59`);
+      }
+      if (rawRegStatus === '') {
+        b2aWhere.push("im.status <> 'rejected'");
+        b2bWhere.push("im.status <> 'rejected'");
+      } else if (rawRegStatus !== 'all') {
+        b2aWhere.push('im.status = ?');
+        b2aParams.push(rawRegStatus);
+        b2bWhere.push('im.status = ?');
+        b2bParams.push(rawRegStatus);
+      }
+      if (rawAttendanceStatus === 'not_arrived') {
+        b2aWhere.push('im.checked_in = 0');
+        b2bWhere.push('im.checked_in = 0');
+      } else if (rawAttendanceStatus === 'timed_out') {
+        b2aWhere.push('im.checked_in = 1 AND im.checked_out_at IS NOT NULL');
+        b2bWhere.push('im.checked_in = 1 AND im.checked_out_at IS NOT NULL');
+      } else if (rawAttendanceStatus === 'in_venue' || rawAttendanceStatus === 'not_timed_out') {
+        b2aWhere.push('im.checked_in = 1 AND im.checked_out_at IS NULL');
+        b2bWhere.push('im.checked_in = 1 AND im.checked_out_at IS NULL');
+      }
+      if (institutionVal) {
+        b2aWhere.push("COALESCE(u.sector_details, u.full_name, 'Institution Member') = ?");
+        b2aParams.push(institutionVal);
+        b2bWhere.push("COALESCE(u.sector_details, u.full_name, 'Institution Member') = ?");
+        b2bParams.push(institutionVal);
+      }
+      if (searchVal) {
+        const like = `%${searchVal}%`;
+        const searchSql = "(im.full_name LIKE ? OR COALESCE(im.email, '') LIKE ? OR COALESCE(u.sector_details, u.full_name, 'Institution Member') LIKE ? OR COALESCE(im.position, 'Participant') LIKE ? OR e.title LIKE ?)";
+        b2aWhere.push(searchSql);
+        b2aParams.push(like, like, like, like, like);
+        b2bWhere.push(searchSql);
+        b2bParams.push(like, like, like, like, like);
+      }
+
+      branches.push(`
+        SELECT
+          CONCAT('inst-', im.id) AS participant_key,
+          'Institution Roster' AS registration_source,
+          'institution' AS source_type,
+          e.id AS event_id,
+          e.title AS event_title,
+          e.status AS event_status,
+          e.start_at AS event_start_at,
+          e.end_at AS event_end_at,
+          im.full_name AS full_name,
+          im.email,
+          im.contact_number,
+          COALESCE(u.sector_details, u.full_name, 'Institution Member') AS institution_name,
+          COALESCE(im.position, 'Participant') AS position,
+          im.status AS registration_status,
+          (im.checked_in = 1) AS is_checked_in,
+          CASE WHEN im.checked_in = 1 THEN im.checked_in_at ELSE NULL END AS checked_in_at,
+          CASE WHEN im.checked_in = 1 THEN im.checked_out_at ELSE NULL END AS checked_out_at,
+          im.created_at AS registered_at
+        FROM institution_members im
+        JOIN events e ON e.id = im.event_id
+        JOIN users u ON u.id = im.institution_user_id
+        WHERE ${b2aWhere.join(' AND ')}
+      `);
+      unionParams.push(...b2aParams);
+
+      branches.push(`
+        SELECT
+          CONCAT('inst-', im.id) AS participant_key,
+          'Institution Roster' AS registration_source,
+          'institution' AS source_type,
+          e.id AS event_id,
+          e.title AS event_title,
+          e.status AS event_status,
+          e.start_at AS event_start_at,
+          e.end_at AS event_end_at,
+          im.full_name AS full_name,
+          im.email,
+          im.contact_number,
+          COALESCE(u.sector_details, u.full_name, 'Institution Member') AS institution_name,
+          COALESCE(im.position, 'Participant') AS position,
+          im.status AS registration_status,
+          (im.checked_in = 1) AS is_checked_in,
+          CASE WHEN im.checked_in = 1 THEN im.checked_in_at ELSE NULL END AS checked_in_at,
+          CASE WHEN im.checked_in = 1 THEN im.checked_out_at ELSE NULL END AS checked_out_at,
+          im.created_at AS registered_at
+        FROM institution_members im
+        JOIN events e ON e.title = im.event_title
+        JOIN users u ON u.id = im.institution_user_id
+        WHERE ${b2bWhere.join(' AND ')}
+      `);
+      unionParams.push(...b2bParams);
+    }
+
+    const unionSql = `
+      ${branches.join('\n      UNION ALL\n')}
+      ORDER BY event_start_at DESC, event_id DESC, institution_name ASC, full_name ASC
+    `;
+
+    const [[eventRows], [participantRows], institutions] = await Promise.all([
+      pool.query(`
+        SELECT id, title, start_at, end_at, status, location
+        FROM events
+        ORDER BY start_at DESC, id DESC
+      `),
+      pool.query(unionSql, unionParams),
+      fetchDistinctReportInstitutions(),
+    ]);
+
+    const events = eventRows.map((e) => {
+      const schedule = resolveSchedule(e);
+      return {
+        id: String(e.id),
+        title: e.title,
+        startAt: toIso(schedule.startAt),
+        endAt: toIso(schedule.endAt),
+        status: e.status,
+        location: e.location || '',
+      };
+    });
+
+    const now = new Date();
+    const nowMs = now.getTime();
+    const classifiedRecords = [];
+
+    for (const row of participantRows) {
+      const { startAt, endAt } = resolveSchedule({ start_at: row.event_start_at, end_at: row.event_end_at });
+      const isEventClosed = String(row.event_status || '').toLowerCase() === 'completed' || Boolean(endAt && nowMs > endAt.getTime());
+      const isCheckedIn = Boolean(row.is_checked_in);
+      const checkedInAt = isCheckedIn ? toIso(row.checked_in_at) : null;
+      const checkedOutAt = isCheckedIn ? toIso(row.checked_out_at) : null;
+      const inMs = checkedInAt ? Date.parse(checkedInAt) : null;
+      const outMs = checkedOutAt ? Date.parse(checkedOutAt) : null;
+      const lateThresholdMs = startAt ? startAt.getTime() + LATE_GRACE_MIN * 60000 : null;
+      const isLate = Boolean(isCheckedIn && inMs !== null && lateThresholdMs !== null && inMs > lateThresholdMs);
+
+      let attendanceStatus;
+      let attendanceStatusLabel;
+      let leftEarly = false;
+      let durationMinutes = null;
+      let timeOutPlaceholder = null;
+
+      if (!isCheckedIn) {
+        attendanceStatus = 'not_arrived';
+        attendanceStatusLabel = 'Not in Venue';
+        timeOutPlaceholder = '—';
+      } else if (outMs !== null) {
+        attendanceStatus = 'timed_out';
+        attendanceStatusLabel = 'Timed Out';
+        leftEarly = Boolean(endAt && outMs < endAt.getTime());
+        durationMinutes = inMs !== null ? Math.max(0, Math.round((outMs - inMs) / 60000)) : null;
+        timeOutPlaceholder = null;
+      } else if (isEventClosed) {
+        attendanceStatus = 'not_timed_out';
+        attendanceStatusLabel = 'Not Timed Out';
+        timeOutPlaceholder = 'Not Timed Out';
+      } else {
+        attendanceStatus = 'in_venue';
+        attendanceStatusLabel = 'In Venue';
+        const liveEndMs = endAt ? Math.min(nowMs, endAt.getTime()) : nowMs;
+        durationMinutes = inMs !== null ? Math.max(0, Math.round((liveEndMs - inMs) / 60000)) : null;
+        timeOutPlaceholder = '—';
+      }
+
+      if (rawAttendanceStatus && rawAttendanceStatus !== 'all' && attendanceStatus !== rawAttendanceStatus) {
+        continue;
+      }
+
+      classifiedRecords.push({
+        participantKey: row.participant_key,
+        registrationSource: row.registration_source,
+        sourceType: row.source_type,
+        eventId: String(row.event_id),
+        eventTitle: row.event_title,
+        eventStatus: row.event_status,
+        eventStartAt: toIso(startAt),
+        eventEndAt: toIso(endAt),
+        fullName: row.full_name,
+        email: row.email || '',
+        contactNumber: row.contact_number || '',
+        institutionName: row.institution_name,
+        position: row.position,
+        registrationStatus: row.registration_status,
+        isCheckedIn,
+        checkedInAt,
+        checkedOutAt,
+        timeOutPlaceholder,
+        attendanceStatus,
+        attendanceStatusLabel,
+        isLate,
+        leftEarly,
+        durationMinutes,
+        registeredAt: toIso(row.registered_at),
+      });
+    }
+
+    let checkedInCount = 0;
+    let timedOutCount = 0;
+    let inVenueCount = 0;
+    let notTimedOutCount = 0;
+    let notArrivedCount = 0;
+    let lateCount = 0;
+    let leftEarlyCount = 0;
+
+    for (const rec of classifiedRecords) {
+      if (rec.isCheckedIn) checkedInCount += 1;
+      if (rec.attendanceStatus === 'timed_out') timedOutCount += 1;
+      else if (rec.attendanceStatus === 'in_venue') inVenueCount += 1;
+      else if (rec.attendanceStatus === 'not_timed_out') notTimedOutCount += 1;
+      else if (rec.attendanceStatus === 'not_arrived') notArrivedCount += 1;
+      if (rec.isLate) lateCount += 1;
+      if (rec.leftEarly) leftEarlyCount += 1;
+    }
+
+    return res.json({
+      success: true,
+      summary: {
+        totalRecords: classifiedRecords.length,
+        checkedInCount,
+        timedOutCount,
+        inVenueCount,
+        notTimedOutCount,
+        notArrivedCount,
+        lateCount,
+        leftEarlyCount,
+      },
+      events,
+      institutions,
+      records: classifiedRecords,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
 module.exports = {
   getDashboardReport,
   getElectionReport,
   getPartnerContributionsReport,
   getAllMembersReport,
-  getEventParticipationReport
+  getEventParticipationReport,
+  getEventWinnersReport,
+  getAttendanceReport,
 };

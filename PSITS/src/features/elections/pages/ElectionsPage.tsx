@@ -7,7 +7,7 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import api from '@/shared/services/api';
 import { getPositionRank } from '@/shared/utils/helpers';
-import { Plus, Users, Trophy, Lock, Eye, Trash2, Info, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Users, Trophy, Lock, Eye, Trash2, Info, ArrowUp, ArrowDown, Check, CheckCircle, Clock, RotateCcw } from 'lucide-react';
 
 type ElectionStatus = 'draft' | 'open' | 'closed' | 'archived';
 
@@ -496,7 +496,7 @@ export const ElectionsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Officer Elections</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">Officer Elections</h1>
             <p className="mt-1 text-slate-600 dark:text-slate-300 text-sm">Election periods, candidate management, and voting results.</p>
           </div>
           {canManage && (
@@ -801,7 +801,7 @@ export const ElectionsPage = () => {
                         </span>
                       </div>
                       {c.platform && (
-                        <p className="text-gray-500 italic mt-0.5 truncate text-[11px]">
+                        <p className="text-gray-500 mt-0.5 truncate text-[11px]">
                           "{c.platform}"
                         </p>
                       )}
@@ -886,7 +886,10 @@ export const ElectionsPage = () => {
                   <div className="rounded-xl border p-5 text-center space-y-3 bg-blue-50/50 border-blue-200">
                     {hasVoted ? (
                       <div className="space-y-1">
-                        <p className="text-green-800 font-bold text-lg">✓ Vote Submitted Successfully</p>
+                        <p className="text-green-800 font-bold text-lg inline-flex items-center justify-center gap-1.5">
+                          <CheckCircle size={18} className="shrink-0" />
+                          <span>Vote Submitted Successfully</span>
+                        </p>
                         <p className="text-green-600 text-sm font-medium">You have already cast your ballot in this election. Thank you for participating.</p>
                       </div>
                     ) : (
@@ -993,7 +996,7 @@ export const ElectionsPage = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500 mt-0.5 italic truncate">"{c.platform || 'No platform bio provided.'}"</p>
+                              <p className="text-xs text-gray-500 mt-0.5 truncate">"{c.platform || 'No platform bio provided.'}"</p>
 
                               {/* Progress bar visual for results */}
                               {(canManage || isClosed || details.election.status === 'closed' || details.election.status === 'archived') && details.election.status !== 'draft' && (
@@ -1096,15 +1099,10 @@ export const ElectionsPage = () => {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 animate-bounce">
               <Trophy size={48} />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Vote Submitted Successfully!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 text-balance">Vote Submitted Successfully!</h2>
             <p className="text-gray-600 max-w-md mx-auto font-medium">
               Your secure ballot has been successfully received by the PSITS election system. Thank you for participating.
             </p>
-            <div className="flex justify-center gap-1.5 pt-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse delay-100"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse delay-200"></span>
-            </div>
             <div className="pt-6">
               <Button variant="primary" onClick={() => { setShowVotingModal(false); setShowSuccessScreen(false); void load(); }}>Close</Button>
             </div>
@@ -1114,11 +1112,34 @@ export const ElectionsPage = () => {
             <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
               <h3 className="font-bold text-blue-900 text-lg">{details.election.title}</h3>
               <p className="text-blue-700 text-sm mt-1">{details.election.description || 'No description provided.'}</p>
-              <div className="mt-3 flex items-center justify-between text-xs text-blue-800 font-semibold bg-blue-100/50 rounded p-2">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-blue-800 font-semibold bg-blue-100/50 rounded p-2">
                 <span>
                   VOTING ENDS: {details.election.endDate}{details.election.endTime ? ` at ${details.election.endTime}` : ''}
                 </span>
-                {timeLeft && <span className="animate-pulse text-red-600">⌛ {timeLeft}</span>}
+                {timeLeft && (
+                  <span className="text-red-600 inline-flex items-center gap-1">
+                    <Clock size={13} className="shrink-0" />
+                    <span>{timeLeft}</span>
+                  </span>
+                )}
+              </div>
+              <div className="mt-2.5 flex items-center justify-between text-xs text-blue-900">
+                <span>
+                  Ballot progress:{' '}
+                  <strong>
+                    {Object.keys(candidatesByPosition).filter((pos) => (selectedVotes[pos] || []).length > 0).length}
+                  </strong>{' '}
+                  of <strong>{Object.keys(candidatesByPosition).length}</strong> positions selected
+                </span>
+                {Object.values(selectedVotes).some((arr) => arr && arr.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVotes({})}
+                    className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 font-semibold"
+                  >
+                    <RotateCcw size={12} /> Clear All Selections
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1168,9 +1189,18 @@ export const ElectionsPage = () => {
                   });
                 };
 
+                const clearPositionSelection = () => {
+                  setSelectedVotes((prev) => {
+                    if (!prev[position]) return prev;
+                    const copy = { ...prev };
+                    delete copy[position];
+                    return copy;
+                  });
+                };
+
                 return (
                   <div key={position} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm space-y-4">
-                    <h4 className="text-md font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center justify-between">
+                    <h4 className="text-md font-bold text-gray-900 border-b border-gray-100 pb-2 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span>{position}</span>
                         {maxWinners > 1 && (
@@ -1179,11 +1209,22 @@ export const ElectionsPage = () => {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-normal text-gray-500">
-                        {maxWinners === 1
-                          ? 'Select 1 candidate (click again to deselect)'
-                          : `${currentSelections.length} of ${maxWinners} selected (click again to deselect)`}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-normal text-gray-500">
+                          {maxWinners === 1
+                            ? 'Select 1 candidate (click again to deselect)'
+                            : `${currentSelections.length} of ${maxWinners} selected (click again to deselect)`}
+                        </span>
+                        {currentSelections.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearPositionSelection}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-red-600 bg-gray-100 hover:bg-red-50 px-2 py-1 rounded-md transition-colors"
+                          >
+                            <RotateCcw size={12} /> Clear Selection
+                          </button>
+                        )}
+                      </div>
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {positionCandidates.map((c: any) => {
@@ -1205,7 +1246,7 @@ export const ElectionsPage = () => {
                               <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-gray-900 truncate">{c.memberName || c.memberEmail}</p>
                                 <p className="text-xs text-gray-500 font-medium">BS Information Technology</p>
-                                <p className="text-xs text-gray-600 mt-2 line-clamp-2 italic">
+                                <p className="text-xs text-gray-600 mt-2 line-clamp-2">
                                   "{c.platform || 'No platform bio provided.'}"
                                 </p>
                                 <button
@@ -1220,11 +1261,18 @@ export const ElectionsPage = () => {
                                 </button>
                               </div>
                             </div>
-                            {isSelected && (
-                              <span className="absolute top-3 right-3 text-blue-600">
-                                <Trophy size={18} className="fill-blue-600" />
-                              </span>
-                            )}
+                            <span
+                              aria-hidden="true"
+                              className={`absolute top-3 right-3 flex h-5 w-5 items-center justify-center border transition-colors ${
+                                maxWinners === 1 ? 'rounded-full' : 'rounded'
+                              } ${
+                                isSelected
+                                  ? 'border-blue-600 bg-blue-600 text-white'
+                                  : 'border-gray-300 bg-white text-transparent'
+                              }`}
+                            >
+                              <Check size={13} strokeWidth={3} />
+                            </span>
                           </div>
                         );
                       })}
@@ -1568,7 +1616,7 @@ export const ElectionsPage = () => {
                 {viewingCandidate.platform ? (
                   viewingCandidate.platform
                 ) : (
-                  <span className="italic text-gray-400">No platform or bio statement submitted by this candidate.</span>
+                  <span className="text-gray-400">No platform or bio statement submitted by this candidate.</span>
                 )}
               </div>
             </div>

@@ -81,45 +81,43 @@ rectangle "PSITS Region XII Web System — Officer Operations Portal" as Officer
 }
 
 ' ========================================================
-' ASSOCIATIONS (OFFICER)
+' ASSOCIATIONS (OFFICER - solid lines without arrowheads)
 ' ========================================================
-Officer --> UC_ReviewQueue
-Officer --> UC_InspectProof
-Officer --> UC_VerifyPay
-Officer --> UC_RejectPay
-Officer --> UC_RecordCash
-Officer --> UC_StatusLogs
+Officer -- UC_ReviewQueue
+Officer -- UC_InspectProof
+Officer -- UC_VerifyPay
+Officer -- UC_RecordCash
+Officer -- UC_StatusLogs
 
-Officer --> UC_CreateEvent
-Officer --> UC_UploadGuidelines
-Officer --> UC_EsportsBrackets
-Officer --> UC_ViewRoster
-Officer --> UC_Attendance
-Officer --> UC_ExportRosterCSV
+Officer -- UC_CreateEvent
+Officer -- UC_EsportsBrackets
+Officer -- UC_ViewRoster
+Officer -- UC_Attendance
+Officer -- UC_ExportRosterCSV
 
-Officer --> UC_ScreenCandidates
-Officer --> UC_UploadPlatform
-Officer --> UC_MonitorTurnout
+Officer -- UC_ScreenCandidates
+Officer -- UC_UploadPlatform
+Officer -- UC_MonitorTurnout
 
-Officer --> UC_PostAnnounce
-Officer --> UC_ModForum
-Officer --> UC_LiveStudio
-Officer --> UC_UploadRecordings
+Officer -- UC_PostAnnounce
+Officer -- UC_ModForum
+Officer -- UC_LiveStudio
+Officer -- UC_UploadRecordings
 
-Officer --> UC_TableReports
-Officer --> UC_ExportExcel
-Officer --> UC_PrintReport
+Officer -- UC_TableReports
+Officer -- UC_ExportExcel
+Officer -- UC_PrintReport
 
-' System Secondary Actor
-UC_DispatchAlert <-- SystemNotifier
+' Secondary Actor Association (solid line without arrowhead)
+UC_DispatchAlert -- SystemNotifier
 
 ' ========================================================
 ' INCLUDE & EXTEND RELATIONSHIPS
 ' ========================================================
 UC_VerifyPay ..> UC_InspectProof : <<include>>
 UC_VerifyPay ..> UC_DispatchAlert : <<include>>
-UC_VerifyPay <.. UC_RejectPay : <<extend>>
+UC_RejectPay ..> UC_VerifyPay : <<extend>>
 UC_Attendance ..> UC_ViewRoster : <<include>>
-UC_CreateEvent ..> UC_UploadGuidelines : <<include>>
+UC_UploadGuidelines ..> UC_CreateEvent : <<extend>>
 
 @enduml

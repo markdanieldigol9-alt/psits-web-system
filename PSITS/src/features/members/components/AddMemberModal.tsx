@@ -196,7 +196,7 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-gray-200 p-6">
-          <h2 className="text-2xl font-bold text-gray-900">Add New Member</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-balance">Add New Member</h2>
           <button
             onClick={handleClose}
             aria-label="Close modal"

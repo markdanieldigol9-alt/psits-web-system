@@ -192,7 +192,10 @@ export const RegisterPage = () => {
   };
 
   return (
-    <AuthLayout title="Registration Page">
+    <AuthLayout
+      title="Create Your PSITS Account"
+      subtitle="Register as an individual student member, school institution delegation, or industry partner."
+    >
       <form
         onSubmit={handleSubmit}
         className="space-y-6 w-full max-w-6xl mx-auto border border-gray-200 rounded-xl p-6 bg-white shadow-sm auth-card auth-scope [color-scheme:light]"
@@ -203,7 +206,7 @@ export const RegisterPage = () => {
 
         <div className="space-y-6">
           <div className="rounded-lg border border-gray-200 p-4">
-            <h3 className="text-lg font-semibold text-gray-900">Member Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 text-balance">Member Information</h3>
             <p className="mt-1 text-sm text-gray-600">
               Choose your member type and fill in the details below. Fields marked with <span className="text-red-500">*</span> are required.
             </p>

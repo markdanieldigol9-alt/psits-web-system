@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { exportToCSV } from '@/shared/utils/export';
-import { printReportDocument } from '../utils/printReport';
+import { printReportDocument, usePrintExpansion } from '../utils/printReport';
 import logo from '@/assets/image/PSITS_Logo.png';
 import {
   Wallet,
@@ -15,10 +15,12 @@ import {
   TrendingUp,
   Receipt,
   FileCheck2,
+  FileText,
   DollarSign,
   CreditCard,
   Layers,
   Smartphone,
+  Building2,
   Filter,
 } from 'lucide-react';
 import {
@@ -79,7 +81,113 @@ interface FinancialReportViewProps {
   preparedBy?: string;
   userRole?: string;
   onExportCSV?: (records: PaymentRecord[]) => void;
+  onFilteredRecordsChange?: (records: PaymentRecord[]) => void;
 }
+
+export const normalizeFinancialMethod = (rawMethod?: string): string => {
+  const m = String(rawMethod || '').toLowerCase();
+  if (m.includes('gcash')) return 'GCash';
+  if (m.includes('bank') || m.includes('card')) return 'Bank Transfer';
+  if (m.includes('officer') || m.includes('cash')) return 'Through Officer (OR)';
+  if (m.includes('cheque')) return 'Cheque';
+  if (m.includes('paymaya')) return 'PayMaya';
+  if (m.includes('paypal')) return 'PayPal';
+  return rawMethod ? rawMethod.toUpperCase() : 'Other';
+};
+
+export const getFinancialPurposeLabel = (p: PaymentRecord): string => {
+  if (p.event || p.eventTitle) {
+    return p.event || p.eventTitle || 'Event Registration';
+  }
+  const kind = String(p.paymentKind || '').toLowerCase();
+  if (kind.includes('renewal')) return 'Membership Renewal';
+  if (kind.includes('batch')) return 'Institution Batch Registration';
+  if (kind.includes('partial')) return 'Institution Partial Payment';
+  if (kind.includes('member')) return 'Membership Registration';
+  if (kind.includes('sponsor')) return 'Partner Sponsorship';
+  return 'General Fee';
+};
+
+export const getFinancialStatusCategory = (p: PaymentRecord): 'verified' | 'pending' | 'partial' | 'rejected' => {
+  const st = String(p.status || p.verificationStatus || p.paymentStatus || '').toLowerCase();
+  if (st === 'rejected') return 'rejected';
+  if (p.isPartial || st === 'partial' || (p.remainingBalance !== null && p.remainingBalance !== undefined && p.remainingBalance > 0)) {
+    if (st === 'verified' || st === 'approved' || st === 'paid') return 'partial';
+  }
+  if (st === 'verified' || st === 'approved' || st === 'paid') return 'verified';
+  if (st === 'pending' || p.paymentStatus === 'pending') return 'pending';
+  return 'pending';
+};
+
+export const filterPaymentsByScope = (
+  records: PaymentRecord[],
+  dateRangeFilter: 'all' | 'this_month' | 'last_30_days' | 'this_quarter' | 'this_year' | 'custom' = 'all',
+  startDateFilter = '',
+  endDateFilter = '',
+  methodFilter = 'all'
+): PaymentRecord[] => {
+  return records.filter((record) => {
+    if (dateRangeFilter !== 'all') {
+      const recordDateStr = record.createdAt || record.date;
+      if (recordDateStr) {
+        const d = new Date(recordDateStr);
+        const now = new Date();
+
+        if (dateRangeFilter === 'this_month') {
+          if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+        } else if (dateRangeFilter === 'last_30_days') {
+          const diffDays = (now.getTime() - d.getTime()) / (1000 * 3600 * 24);
+          if (diffDays < 0 || diffDays > 30) return false;
+        } else if (dateRangeFilter === 'this_quarter') {
+          const currentQuarter = Math.floor(now.getMonth() / 3);
+          const recordQuarter = Math.floor(d.getMonth() / 3);
+          if (d.getFullYear() !== now.getFullYear() || currentQuarter !== recordQuarter) return false;
+        } else if (dateRangeFilter === 'this_year') {
+          if (d.getFullYear() !== now.getFullYear()) return false;
+        } else if (dateRangeFilter === 'custom') {
+          if (startDateFilter && d < new Date(startDateFilter)) return false;
+          if (endDateFilter) {
+            const end = new Date(endDateFilter);
+            end.setHours(23, 59, 59, 999);
+            if (d > end) return false;
+          }
+        }
+      }
+    }
+
+    if (methodFilter && methodFilter !== 'all') {
+      const methodLabel = normalizeFinancialMethod(record.method || record.paymentMethod);
+      if (methodLabel !== methodFilter && !methodLabel.toLowerCase().includes(methodFilter.toLowerCase())) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+};
+
+export const exportFinancialLedgerToCSV = (
+  records: PaymentRecord[],
+  reportTitle = 'Financial Summary'
+) => {
+  const exportData = records.map((p) => ({
+    'Transaction ID': p.id,
+    'Date & Time': p.createdAt || p.date || '—',
+    'Payor Full Name': p.memberName || p.fullName || p.userFullName || '—',
+    'Payor Email': p.memberEmail || p.email || p.userEmail || '—',
+    'Payment Particulars / Purpose': getFinancialPurposeLabel(p),
+    'Payment Channel / Method': normalizeFinancialMethod(p.method || p.paymentMethod),
+    'Reference / OR Number': p.referenceNumber || p.referenceNo || '—',
+    'Gross Amount (PHP)': Number(p.amount || 0).toFixed(2),
+    'Is Partial Payment': p.isPartial ? 'YES' : 'NO',
+    'Remaining Balance (PHP)': p.remainingBalance ? Number(p.remainingBalance).toFixed(2) : '0.00',
+    'Audit Status': getFinancialStatusCategory(p).toUpperCase(),
+    'Proof Document Uploaded': p.proofUrl ? 'YES' : 'NO',
+    'Verified By': p.verifiedBy || '—',
+    'Verified Date': p.verifiedAt || '—',
+  }));
+  exportToCSV(`${reportTitle.replace(/\s+/g, '_')}_Audit_Report`, exportData);
+};
 
 export const FinancialReportView = ({
   payments = [],
@@ -91,6 +199,7 @@ export const FinancialReportView = ({
   preparedBy = 'Finance Officer',
   userRole = 'Officer',
   onExportCSV,
+  onFilteredRecordsChange,
 }: FinancialReportViewProps) => {
   // In-document Interactive Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +209,7 @@ export const FinancialReportView = ({
   const [selectedPurpose, setSelectedPurpose] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(15);
+  const isPrinting = usePrintExpansion();
 
   if (initialMethodFilter !== prevInitialMethod) {
     setPrevInitialMethod(initialMethodFilter);
@@ -114,40 +224,9 @@ export const FinancialReportView = ({
     return `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const normalizeMethod = (rawMethod?: string): string => {
-    const m = String(rawMethod || '').toLowerCase();
-    if (m.includes('gcash')) return 'GCash';
-    if (m.includes('bank') || m.includes('card')) return 'Bank Transfer';
-    if (m.includes('officer') || m.includes('cash')) return 'Through Officer (OR)';
-    if (m.includes('cheque')) return 'Cheque';
-    if (m.includes('paymaya')) return 'PayMaya';
-    if (m.includes('paypal')) return 'PayPal';
-    return rawMethod ? rawMethod.toUpperCase() : 'Other';
-  };
-
-  const getPurposeLabel = (p: PaymentRecord): string => {
-    if (p.event || p.eventTitle) {
-      return p.event || p.eventTitle || 'Event Registration';
-    }
-    const kind = String(p.paymentKind || '').toLowerCase();
-    if (kind.includes('renewal')) return 'Membership Renewal';
-    if (kind.includes('batch')) return 'Institution Batch Registration';
-    if (kind.includes('partial')) return 'Institution Partial Payment';
-    if (kind.includes('member')) return 'Membership Registration';
-    if (kind.includes('sponsor')) return 'Partner Sponsorship';
-    return 'General Fee';
-  };
-
-  const getStatusCategory = (p: PaymentRecord): 'verified' | 'pending' | 'partial' | 'rejected' => {
-    const st = String(p.status || p.verificationStatus || p.paymentStatus || '').toLowerCase();
-    if (st === 'rejected') return 'rejected';
-    if (p.isPartial || st === 'partial' || (p.remainingBalance !== null && p.remainingBalance !== undefined && p.remainingBalance > 0)) {
-      if (st === 'verified' || st === 'approved' || st === 'paid') return 'partial';
-    }
-    if (st === 'verified' || st === 'approved' || st === 'paid') return 'verified';
-    if (st === 'pending' || p.paymentStatus === 'pending') return 'pending';
-    return 'pending';
-  };
+  const normalizeMethod = normalizeFinancialMethod;
+  const getPurposeLabel = getFinancialPurposeLabel;
+  const getStatusCategory = getFinancialStatusCategory;
 
   // 1. Filter by Date Range (from Step 1)
   const dateFilteredPayments = useMemo(() => {
@@ -240,13 +319,14 @@ export const FinancialReportView = ({
 
   // 3. Detailed Breakdown by Payment Method
   const methodBreakdown = useMemo(() => {
-    const channelConfigs: Record<string, { instrument: string; icon: string }> = {
-      'GCash': { instrument: 'GCash E-Wallet (Ref # & App Receipt)', icon: '📱' },
-      'Bank Transfer': { instrument: 'Bank Deposit Slip / Fund Transfer Conf.', icon: '🏛️' },
-      'Through Officer (OR)': { instrument: 'Official Receipt (OR Booklet)', icon: '🏢' },
-      'Cheque': { instrument: 'Commercial / Corporate Cheque Draft', icon: '🧾' },
-      'PayMaya': { instrument: 'Maya Mobile E-Wallet (Ref # & Receipt)', icon: '💳' },
-      'Other': { instrument: 'Other Financial Remittance Instrument', icon: '💰' },
+    type IconComponent = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+    const channelConfigs: Record<string, { instrument: string; icon: IconComponent }> = {
+      'GCash': { instrument: 'GCash E-Wallet (Ref # & App Receipt)', icon: Smartphone },
+      'Bank Transfer': { instrument: 'Bank Deposit Slip / Fund Transfer Conf.', icon: Building2 },
+      'Through Officer (OR)': { instrument: 'Official Receipt (OR Booklet)', icon: FileText },
+      'Cheque': { instrument: 'Commercial / Corporate Cheque Draft', icon: Receipt },
+      'PayMaya': { instrument: 'Maya Mobile E-Wallet (Ref # & Receipt)', icon: CreditCard },
+      'Other': { instrument: 'Other Financial Remittance Instrument', icon: Wallet },
     };
 
     const map = new Map<string, {
@@ -259,7 +339,7 @@ export const FinancialReportView = ({
       pendingTotal: number;
       rejectedTotal: number;
       instrument: string;
-      icon: string;
+      icon: IconComponent;
     }>();
 
     Object.keys(channelConfigs).forEach((c) => {
@@ -289,7 +369,7 @@ export const FinancialReportView = ({
         pendingTotal: 0,
         rejectedTotal: 0,
         instrument: 'Remittance Record',
-        icon: '💳',
+        icon: CreditCard,
       };
       const amt = Number(p.amount || 0);
 
@@ -519,10 +599,14 @@ export const FinancialReportView = ({
   // Pagination
   const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredLedger.length / pageSize);
   const paginatedLedger = useMemo(() => {
-    if (pageSize === 'all') return filteredLedger;
+    if (isPrinting || pageSize === 'all') return filteredLedger;
     const start = (currentPage - 1) * pageSize;
     return filteredLedger.slice(start, start + pageSize);
-  }, [filteredLedger, currentPage, pageSize]);
+  }, [filteredLedger, currentPage, pageSize, isPrinting]);
+
+  useEffect(() => {
+    onFilteredRecordsChange?.(filteredLedger);
+  }, [filteredLedger, onFilteredRecordsChange]);
 
   // Trigger Excel Export for the current audit dataset
   const handleExportSpreadsheet = () => {
@@ -530,23 +614,7 @@ export const FinancialReportView = ({
       onExportCSV(filteredLedger);
       return;
     }
-    const exportData = filteredLedger.map((p) => ({
-      'Transaction ID': p.id,
-      'Date & Time': p.createdAt || p.date || '—',
-      'Payor Full Name': p.memberName || p.fullName || p.userFullName || '—',
-      'Payor Email': p.memberEmail || p.email || p.userEmail || '—',
-      'Payment Particulars / Purpose': getPurposeLabel(p),
-      'Payment Channel / Method': normalizeMethod(p.method || p.paymentMethod),
-      'Reference / OR Number': p.referenceNumber || p.referenceNo || '—',
-      'Gross Amount (PHP)': Number(p.amount || 0).toFixed(2),
-      'Is Partial Payment': p.isPartial ? 'YES' : 'NO',
-      'Remaining Balance (PHP)': p.remainingBalance ? Number(p.remainingBalance).toFixed(2) : '0.00',
-      'Audit Status': getStatusCategory(p).toUpperCase(),
-      'Proof Document Uploaded': p.proofUrl ? 'YES' : 'NO',
-      'Verified By': p.verifiedBy || '—',
-      'Verified Date': p.verifiedAt || '—',
-    }));
-    exportToCSV(`${reportTitle.replace(/\s+/g, '_')}_Audit_Report`, exportData);
+    exportFinancialLedgerToCSV(filteredLedger, reportTitle);
   };
 
   // Date range label for letterhead
@@ -590,7 +658,7 @@ export const FinancialReportView = ({
                   REF: {isRevenueByMethodReport ? `PSITS-REV-METHOD-${new Date().getFullYear()}-${String(payments.length).padStart(4, '0')}` : `PSITS-FIN-${new Date().getFullYear()}-${String(payments.length).padStart(4, '0')}`}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5">
+              <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 {isRevenueByMethodReport ? 'REVENUE BY PAYMENT METHOD STATEMENT' : 'PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS'}
               </h1>
               <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
@@ -862,7 +930,7 @@ export const FinancialReportView = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold">
@@ -878,12 +946,14 @@ export const FinancialReportView = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {methodBreakdown.map((m, idx) => (
+              {methodBreakdown.map((m, idx) => {
+                const ChannelIcon = m.icon;
+                return (
                 <tr key={m.channel} className="hover:bg-blue-50/40 transition-colors">
                   {/* Channel & Instrument */}
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">{m.icon}</span>
+                      <ChannelIcon size={16} strokeWidth={1.75} className="text-primary shrink-0" />
                       <div>
                         <span className="font-bold text-gray-900 block leading-tight">{m.channel}</span>
                         <span className="text-[10px] text-gray-500 block">{m.instrument}</span>
@@ -966,7 +1036,8 @@ export const FinancialReportView = ({
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
             {/* Total Row */}
             <tfoot className="bg-gray-100 border-t-2 border-gray-300 font-bold text-gray-900">
@@ -1007,7 +1078,7 @@ export const FinancialReportView = ({
       {/* ============================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Payment Channel Comparison Chart */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3 print:break-inside-avoid">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp size={18} className="text-primary" />
@@ -1032,7 +1103,7 @@ export const FinancialReportView = ({
         </div>
 
         {/* Revenue Stream by Purpose Table */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3 print:break-inside-avoid">
           <div className="flex items-center justify-between border-b pb-2">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
               <Layers size={15} className="text-primary" /> Revenue Stream by Purpose
@@ -1072,7 +1143,7 @@ export const FinancialReportView = ({
       {/* ============================================================== */}
       {/* 5. ITEMIZED TRANSACTION AUDIT LEDGER                          */}
       {/* ============================================================== */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden space-y-0">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden print:overflow-visible space-y-0">
         {/* Ledger Control & In-Document Filtering Header */}
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1085,7 +1156,7 @@ export const FinancialReportView = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto no-print">
               {/* In-Document Search Bar */}
               <div className="relative flex-1 sm:w-64">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1105,7 +1176,7 @@ export const FinancialReportView = ({
               <button
                 type="button"
                 onClick={() => {
-                  printReportDocument(reportTitle || 'Financial Summary', () => setPageSize('all'));
+                  printReportDocument(reportTitle || 'Financial Summary');
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-black text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
               >
@@ -1142,7 +1213,9 @@ export const FinancialReportView = ({
             >
               All Channels ({dateFilteredPayments.length})
             </button>
-            {methodBreakdown.map((m) => (
+            {methodBreakdown.map((m) => {
+              const ChannelIcon = m.icon;
+              return (
               <button
                 key={m.channel}
                 type="button"
@@ -1150,17 +1223,18 @@ export const FinancialReportView = ({
                   setSelectedMethod(m.channel);
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
                   selectedMethod === m.channel
                     ? 'bg-primary text-white shadow-xs font-bold'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                 }`}
               >
-                <span>{m.icon}</span>
+                <ChannelIcon size={13} strokeWidth={1.75} className="shrink-0" />
                 <span>{m.channel}</span>
                 <span className="text-[10px] opacity-75">({m.count})</span>
               </button>
-            ))}
+              );
+            })}
           </div>
 
           {/* Quick Filter Status Tabs */}
@@ -1211,7 +1285,7 @@ export const FinancialReportView = ({
         {/* Ledger Table */}
         <div className="overflow-x-auto max-h-[460px] overflow-y-auto print:overflow-visible print:max-h-none">
           <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 shadow-2xs">
+            <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 shadow-2xs print:static">
               <tr>
                 <th className="px-3 py-2.5">Ref / OR No.</th>
                 <th className="px-3 py-2.5">Date & Time</th>
@@ -1226,7 +1300,7 @@ export const FinancialReportView = ({
             <tbody className="divide-y divide-gray-200">
               {paginatedLedger.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500 italic">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     No transactions match the selected filter parameters.
                   </td>
                 </tr>
@@ -1302,7 +1376,7 @@ export const FinancialReportView = ({
                         {formatPHP(p.amount)}
                         {p.isPartial && p.remainingBalance && p.remainingBalance > 0 ? (
                           <div className="text-[10px] font-normal text-purple-700">
-                            Bal: {formatPHP(p.remainingBalance)}
+                            {formatPHP(p.remainingBalance)} due
                           </div>
                         ) : null}
                       </td>
@@ -1348,7 +1422,7 @@ export const FinancialReportView = ({
             </tbody>
 
             {/* Total Row Summary */}
-            <tfoot className="bg-gray-100 font-bold border-t-2 border-gray-300 text-gray-900 sticky bottom-0">
+            <tfoot className="bg-gray-100 font-bold border-t-2 border-gray-300 text-gray-900 sticky bottom-0 print:static">
               <tr>
                 <td colSpan={5} className="px-3 py-2.5 text-right uppercase tracking-wider text-[11px]">
                   Total for Visible Records ({visibleLedgerTotals.count} entries):
@@ -1366,7 +1440,7 @@ export const FinancialReportView = ({
         </div>
 
         {/* Ledger Pagination Bar */}
-        <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600">
+        <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600 no-print">
           <div className="flex items-center gap-2">
             <span>Show:</span>
             {[15, 30, 50, 'all'].map((sz) => (
@@ -1421,8 +1495,8 @@ export const FinancialReportView = ({
       {/* 6. OFFICIAL AUDIT CERTIFICATION & TRIPLE SIGN-OFF             */}
       {/* ============================================================== */}
       <div className="border border-gray-300 rounded-xl p-5 bg-gray-50/50 space-y-4 certification-block">
-        <div className="text-xs text-gray-700 italic border-l-4 border-primary pl-3">
-          <p className="font-semibold text-gray-900 not-italic uppercase tracking-wide text-[11px] mb-0.5">
+        <div className="text-xs text-gray-700 border-l-4 border-primary pl-3">
+          <p className="font-semibold text-gray-900 uppercase tracking-wide text-[11px] mb-0.5">
             Official Certification Statement
           </p>
           "I hereby certify under official oath that this Revenue by Payment Method Statement, channel reconciliation matrix, and itemized transaction ledger represent a true, faithful, and accurate record of all monetary collections, verified bank remittances, official receipts (OR), and electronic payment channels recorded in the PSITS Regional Information System for the specified accounting period."

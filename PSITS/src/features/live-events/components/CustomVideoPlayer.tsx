@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader2,
   Film,
+  Check,
 } from 'lucide-react';
 import { formatTime } from '../utils/formatTime';
 import { parseVideoSource } from '../utils/videoSource';
@@ -501,7 +502,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
                               }`}
                             >
                               <span>{q}</span>
-                              {selectedQuality === q && <span className="text-cyan-400">✓</span>}
+                              {selectedQuality === q && <Check size={14} className="text-cyan-400" />}
                             </button>
                           ))}
                         </div>
@@ -528,7 +529,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
                               }`}
                             >
                               <span>{s === 1 ? 'Normal (1x)' : `${s}x`}</span>
-                              {playbackSpeed === s && <span className="text-cyan-400">✓</span>}
+                              {playbackSpeed === s && <Check size={14} className="text-cyan-400" />}
                             </button>
                           ))}
                         </div>

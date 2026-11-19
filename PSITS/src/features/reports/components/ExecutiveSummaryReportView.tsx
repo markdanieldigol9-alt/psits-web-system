@@ -213,12 +213,9 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           <img src={logo} alt="PSITS Logo" className="h-14 w-14 object-contain shrink-0" />
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-black text-primary tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-primary tracking-tight text-balance">
                 PSITS REGIONAL ORGANIZATION
               </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 uppercase tracking-wide border border-blue-200">
-                Official
-              </span>
             </div>
             <p className="text-xs text-gray-600 font-bold uppercase tracking-wider mt-0.5">
               Official Executive & Operations Master Report
@@ -261,8 +258,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
       {/* 4 CORE EXECUTIVE PILLARS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Pillar 1: Membership Strength */}
-        <div className="bg-white border-2 border-blue-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-primary/40 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/60 rounded-bl-full pointer-events-none -z-0" />
+        <div className="bg-white border-2 border-blue-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-primary/40 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -300,15 +296,11 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Pillar 2: Financial Treasury */}
-        <div className="bg-white border-2 border-emerald-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-emerald-400 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/60 rounded-bl-full pointer-events-none -z-0" />
+        <div className="bg-white border-2 border-emerald-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-emerald-400 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Wallet size={14} className="text-emerald-700" /> Verified Revenue
-              </span>
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                Audited
               </span>
             </div>
             <div className="flex items-baseline gap-1">
@@ -334,15 +326,11 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Pillar 3: Events & Summits */}
-        <div className="bg-white border-2 border-purple-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-400 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50/60 rounded-bl-full pointer-events-none -z-0" />
+        <div className="bg-white border-2 border-purple-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-400 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                 <CalendarCheck2 size={14} className="text-purple-700" /> Regional Events
-              </span>
-              <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-                Active
               </span>
             </div>
             <div className="flex items-baseline gap-2">
@@ -367,15 +355,11 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Pillar 4: Corporate Alliances */}
-        <div className="bg-white border-2 border-amber-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-400 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/60 rounded-bl-full pointer-events-none -z-0" />
+        <div className="bg-white border-2 border-amber-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-400 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Briefcase size={14} className="text-amber-700" /> Industry Alliances
-              </span>
-              <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                Ecosystem
               </span>
             </div>
             <div className="flex items-baseline gap-1">
@@ -402,7 +386,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
       </div>
 
       {/* EXECUTIVE PERFORMANCE SCORECARD TABLE */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden shadow-xs bg-white">
+      <div className="border border-gray-200 rounded-xl overflow-hidden print:overflow-visible shadow-xs bg-white">
         <div className="bg-gray-100/90 px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-primary" />
@@ -413,13 +397,13 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           <button
             type="button"
             onClick={handleExportDefault}
-            className="text-xs text-primary hover:text-blue-800 font-bold flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1 rounded-md border border-gray-200 hover:border-primary/40 shadow-2xs"
+            className="no-print text-xs text-primary hover:text-blue-800 font-bold flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1 rounded-md border border-gray-200 hover:border-primary/40 shadow-2xs"
           >
             <FileSpreadsheet size={13} className="text-emerald-600" /> Export Scorecard CSV
           </button>
         </div>
 
-        <div className="overflow-x-auto text-xs">
+        <div className="overflow-x-auto print:overflow-visible text-xs">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold">
               <tr>
@@ -524,7 +508,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
       {/* DEMOGRAPHICS & BREAKDOWN PANELS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Membership Demographics */}
-        <div className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+        <div className="border border-gray-200 rounded-xl p-4 bg-white space-y-3 print:break-inside-avoid">
           <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
             <Building2 size={15} className="text-primary" /> Sector Affiliation Distribution
           </h4>
@@ -545,7 +529,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Payment Channels */}
-        <div className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+        <div className="border border-gray-200 rounded-xl p-4 bg-white space-y-3 print:break-inside-avoid">
           <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
             <Wallet size={15} className="text-emerald-700" /> Payment & Collection Channels
           </h4>
@@ -567,7 +551,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
       </div>
 
       {/* Official Signatures & Certification Section */}
-      <div className="border-t-2 border-gray-300 pt-6 mt-6 grid grid-cols-2 gap-8 text-xs text-gray-700">
+      <div className="border-t-2 border-gray-300 pt-6 mt-6 grid grid-cols-2 gap-8 text-xs text-gray-700 certification-block print:break-inside-avoid">
         <div>
           <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Prepared & Verified By:</p>
           <div className="mt-10 border-b-2 border-gray-400 w-56" />

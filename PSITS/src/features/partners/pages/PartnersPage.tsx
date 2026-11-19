@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Card, Button, Input, Select, TextArea } from '@/shared/components/Form';
 import { Badge, Modal } from '@/shared/components/Common';
-import { Plus, Trash2, ChevronDown, ChevronUp, Pencil, Calendar } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Pencil, Calendar, Building2 } from 'lucide-react';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { AddPartnerModal } from '@/features/partners/components/AddPartnerModal';
 import { VerifyActionModal } from '@/shared/components/VerifyActionModal';
@@ -258,7 +258,7 @@ export const PartnersPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Industry Partners</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight text-balance">Industry Partners</h1>
             <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">
               {canManagePartners
                 ? 'Manage partner companies, sponsorship deals, and resources'
@@ -315,7 +315,8 @@ export const PartnersPage = () => {
                       <p className="font-bold text-lg text-slate-900 dark:text-slate-100">{p.company}</p>
                       {isMyCompany && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2.5 py-0.5 border border-emerald-300">
-                          🏢 Your Company Profile
+                          <Building2 size={12} className="shrink-0" />
+                          <span>Your Company Profile</span>
                         </span>
                       )}
                       {p.userId && !isMyCompany && (
@@ -398,7 +399,7 @@ export const PartnersPage = () => {
 
                   <div className="space-y-2">
                     {!(contributionsMap[p.id]?.length) ? (
-                      <p className="text-xs text-gray-500 py-2 italic">No deals or contributions logged yet.</p>
+                      <p className="text-xs text-gray-500 py-2">No deals or contributions logged yet.</p>
                     ) : (
                       <>
                         <div className="text-xs font-semibold text-gray-700 bg-gray-100 p-2 rounded">
@@ -436,7 +437,7 @@ export const PartnersPage = () => {
                                           : 'bg-slate-100 text-slate-700 border border-slate-200'
                                       }`}>
                                         <Calendar size={11} />
-                                        {isUpcoming ? '🟢 Upcoming Event:' : '🔴 Past Event:'} {c.eventTitle}
+                                        {isUpcoming ? 'Upcoming:' : 'Past:'} {c.eventTitle}
                                       </span>
                                     )}
                                   </div>
@@ -627,14 +628,14 @@ export const PartnersPage = () => {
                     ...availableEvents.map((e) => {
                       const isOpen = isEventCurrentAndOpen(e);
                       const dateStr = e.date || 'Upcoming';
-                      const labelPrefix = isOpen ? '🟢 [Open for Registration]' : 'ℹ️ [Linked Event]';
+                      const labelPrefix = isOpen ? '[Open]' : '[Linked]';
                       return {
                         value: String(e.id),
                         label: `${labelPrefix} ${e.title} (${dateStr})`,
                       };
                     }),
                     ...(availableEvents.length === 0
-                      ? [{ value: '', label: 'ℹ️ No current events open for registration' }]
+                      ? [{ value: '', label: 'No current events open for registration' }]
                       : []),
                   ]}
                   value={newContrib.eventId}

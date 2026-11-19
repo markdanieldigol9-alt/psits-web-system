@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Sparkles,
   ArrowRight,
 } from 'lucide-react';
 import {
@@ -121,9 +120,6 @@ export const ReceiptScannerBadge: React.FC<ReceiptScannerBadgeProps> = ({
           <div>
             <span className="text-xs font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
               {label || 'AI Receipt OCR Verification'}
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
-                <Sparkles size={10} /> Smart Scan
-              </span>
             </span>
             <p className="text-[11px] text-gray-500 dark:text-slate-400">
               Scans receipt for payment amount, reference number, and date
@@ -189,14 +185,9 @@ export const ReceiptScannerBadge: React.FC<ReceiptScannerBadgeProps> = ({
           {matchEvaluation ? (
             matchEvaluation.status === 'match' ? (
               <div className="rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/40 p-3 text-xs text-emerald-900 dark:text-emerald-100 space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                    <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
-                    <span>Payment Amount Verified</span>
-                  </div>
-                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                    Confidence: {Math.round(scanResult.confidence)}%
-                  </span>
+                <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                  <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
+                  <span>Payment Amount Verified</span>
                 </div>
                 <p className="text-emerald-800 dark:text-emerald-200">
                   Detected receipt amount of{' '}
@@ -208,14 +199,9 @@ export const ReceiptScannerBadge: React.FC<ReceiptScannerBadgeProps> = ({
               </div>
             ) : matchEvaluation.status === 'mismatch' ? (
               <div className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-100 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
-                    <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
-                    <span>Amount Discrepancy Detected</span>
-                  </div>
-                  <span className="rounded-full bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                    Check Receipt
-                  </span>
+                <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                  <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
+                  <span>Amount Discrepancy Detected</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 rounded-lg bg-white/70 dark:bg-slate-900/70 p-2 border border-amber-200/80 dark:border-amber-900/60">
                   <div>
@@ -255,7 +241,7 @@ export const ReceiptScannerBadge: React.FC<ReceiptScannerBadgeProps> = ({
           ) : (
             // When no expected amount is provided (e.g. initial upload before amount is set)
             scanResult.primaryAmount !== null && (
-              <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 p-2.5 text-xs text-blue-900 dark:text-blue-100 flex items-center justify-between">
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 p-2.5 text-xs text-blue-900 dark:text-blue-100">
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-blue-600 dark:text-blue-400 block">
                     Detected Receipt Amount
@@ -264,9 +250,6 @@ export const ReceiptScannerBadge: React.FC<ReceiptScannerBadgeProps> = ({
                     ₱{scanResult.primaryAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <span className="text-[10px] text-gray-500 dark:text-slate-400">
-                  Confidence: {Math.round(scanResult.confidence)}%
-                </span>
               </div>
             )
           )}

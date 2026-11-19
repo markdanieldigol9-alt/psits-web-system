@@ -58,13 +58,10 @@ export const Modal = ({
         <div
           className={`bg-white dark:bg-slate-900 rounded-[20px] shadow-modal ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden border border-gray-100 dark:border-slate-800 animate-pop-in text-gray-900 dark:text-slate-100`}
         >
-          {/* Header with top accent line */}
+          {/* Header */}
           <div className="relative flex items-start justify-between p-5 sm:p-6 border-b border-gray-100 dark:border-slate-800 shrink-0">
-            {/* Blue top accent bar */}
-            <div className="absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 rounded-b-full" />
-
-            <div className="mt-1 flex-1 min-w-0 pr-4">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight leading-tight">
+            <div className="flex-1 min-w-0 pr-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight leading-tight text-balance max-w-xl">
                 {title}
               </h2>
               {subtitle && (
@@ -340,7 +337,7 @@ export const Badge = ({ children, variant = 'primary', className = '', dot = fal
   const dotColors: Record<string, string> = {
     primary: 'bg-blue-500',
     secondary: 'bg-slate-400',
-    success: 'bg-emerald-500 animate-pulse',
+    success: 'bg-emerald-500',
     warning: 'bg-amber-500',
     error: 'bg-rose-500',
     info: 'bg-sky-500',
@@ -375,7 +372,7 @@ const statusToneClasses: Record<StatusBadgeTone, string> = {
 };
 
 const statusToneDotClasses: Partial<Record<StatusBadgeTone, string>> = {
-  success: 'bg-emerald-500 animate-pulse',
+  success: 'bg-emerald-500',
   warning: 'bg-amber-500',
   danger: 'bg-rose-500',
   info: 'bg-sky-500',

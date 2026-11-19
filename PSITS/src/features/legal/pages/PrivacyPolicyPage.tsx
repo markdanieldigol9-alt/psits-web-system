@@ -79,13 +79,12 @@ export const PrivacyPolicyPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Banner Hero */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white p-6 sm:p-10 mb-8 sm:mb-12 shadow-xl border border-blue-500/20">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none" />
           <div className="relative z-10 max-w-3xl space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-cyan-200">
               <Lock size={13} className="text-cyan-300" />
               <span>Republic Act No. 10173 • Data Privacy Act of 2012</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-balance">
               Data Privacy Policy & Protection
             </h1>
             <p className="text-sm sm:text-base text-blue-100 leading-relaxed">
@@ -179,7 +178,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                   className="p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4 scroll-mt-28"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
-                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white text-balance">
                       {sec.title}
                     </h2>
                     {sec.badge && (

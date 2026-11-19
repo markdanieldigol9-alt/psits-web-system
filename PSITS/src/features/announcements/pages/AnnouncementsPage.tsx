@@ -437,14 +437,7 @@ export const AnnouncementsPage = () => {
         <div className="module-header-banner">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="telemetry-chip">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
-                  COMMS.DISPATCH
-                </span>
-                <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">BROADCAST_FEED</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight text-balance">
                 Official Announcements
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
@@ -471,9 +464,9 @@ export const AnnouncementsPage = () => {
         {/* Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-obsidian-card/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
           {isMember ? (
-            <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              FEED: VERIFIED_MEMBER_BROADCASTS
+            <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Verified Member Broadcasts
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-3 w-full justify-between">
@@ -509,7 +502,7 @@ export const AnnouncementsPage = () => {
             <div key={announcement.id} className="card-cyber p-6 bg-white dark:bg-obsidian-card/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300 hover:border-cyber-blue/40">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyber-blue to-cyber-cyan text-sm font-bold text-white shadow-glow-sm">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyber-blue to-cyber-cyan text-sm font-bold text-white shadow-sm">
                     {getInitials(announcement.postedBy?.name || 'PSITS')}
                   </div>
                   <div className="min-w-0">
@@ -667,14 +660,14 @@ export const AnnouncementsPage = () => {
             setLikes({ count: 0, likedByMe: false });
             setCommentText('');
           }}
-          title="Announcement"
+          title={selectedAnnouncement?.title ? 'Announcement Details' : 'Announcement'}
           size="lg"
         >
           {selectedAnnouncement ? (
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{selectedAnnouncement.title}</h2>
+                  <h2 className="text-xl font-bold text-gray-900 text-balance">{selectedAnnouncement.title}</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Posted on {selectedAnnouncement.date}
                     {selectedAnnouncement.postedBy?.name ? ` - by ${selectedAnnouncement.postedBy.name}` : ''}

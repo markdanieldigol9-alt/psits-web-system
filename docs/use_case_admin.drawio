@@ -116,17 +116,17 @@
         </mxCell>
 
         <!-- EDGES -->
-        <mxCell id="ea_pos" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_pos"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_appoint" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_appoint"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_memdir" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_memdir"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_discipline" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="act_admin" target="uc_a_discipline"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_createl" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_createl"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_certify" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="act_admin" target="uc_a_certify"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_part" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_partdir"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_dash" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;" edge="1" parent="1" source="act_admin" target="uc_a_dashboard"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_auditlog" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_auditlog"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_qr" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_qr"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ea_slow" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;" edge="1" parent="1" source="act_admin" target="uc_a_slowlog"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_pos" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_pos"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_appoint" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_appoint"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_memdir" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_memdir"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_discipline" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_discipline"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_createl" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_createl"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_certify" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_certify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_part" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_partdir"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_dash" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_dashboard"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_auditlog" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_auditlog"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_qr" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_qr"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea_slow" style="edgeStyle=straight;html=1;strokeColor=#7C3AED;endArrow=none;endFill=0;" edge="1" parent="1" source="act_admin" target="uc_a_slowlog"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- INCLUDES & EXTENDS -->
         <mxCell id="inc_perm" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#CA8A04;" edge="1" parent="1" source="uc_a_pos" target="uc_a_perm"><mxGeometry relative="1" as="geometry" /></mxCell>

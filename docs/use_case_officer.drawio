@@ -108,20 +108,20 @@
         </mxCell>
 
         <!-- EDGES -->
-        <mxCell id="eo_queue" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_queue"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_verify" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;" edge="1" parent="1" source="act_officer" target="uc_o_verify"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_reject" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_reject"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_cash" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_cash"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_event" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_eventcreate"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_guide" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_guidelines"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_roster" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_roster"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_checkin" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;" edge="1" parent="1" source="act_officer" target="uc_o_checkin"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_screen" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_screen"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_ann" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_ann"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_mod" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_mod"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_studio" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_studio"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_report" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_tabreport"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="eo_excel" style="edgeStyle=straight;html=1;strokeColor=#0D9488;" edge="1" parent="1" source="act_officer" target="uc_o_excel"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_queue" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_queue"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_verify" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_verify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_reject" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_reject"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_cash" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_cash"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_event" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_eventcreate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_guide" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_guidelines"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_roster" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_roster"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_checkin" style="edgeStyle=straight;html=1;strokeColor=#0D9488;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_checkin"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_screen" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_screen"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_ann" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_ann"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_mod" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_mod"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_studio" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_studio"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_report" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_tabreport"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eo_excel" style="edgeStyle=straight;html=1;strokeColor=#0D9488;endArrow=none;endFill=0;" edge="1" parent="1" source="act_officer" target="uc_o_excel"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- INCLUDES & EXTENDS -->
         <mxCell id="inc_inspect" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#CA8A04;" edge="1" parent="1" source="uc_o_verify" target="uc_o_inspect"><mxGeometry relative="1" as="geometry" /></mxCell>

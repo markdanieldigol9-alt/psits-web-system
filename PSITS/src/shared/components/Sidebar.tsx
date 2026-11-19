@@ -263,7 +263,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden no-print"
           onClick={onClose}
         />
       )}
@@ -272,7 +272,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
       <aside
         className={`fixed lg:static inset-y-0 left-0 transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition-transform duration-200 w-64 flex flex-col gradient-sidebar border-r border-gray-100 dark:border-slate-800/80 overflow-hidden z-30 shadow-[1px_0_0_0_rgb(0,0,0,0.04)]`}
+        } lg:translate-x-0 transition-transform duration-200 w-64 flex flex-col gradient-sidebar border-r border-gray-100 dark:border-slate-800/80 overflow-hidden z-30 shadow-[1px_0_0_0_rgb(0,0,0,0.04)] no-print`}
       >
         {/* ── Logo area ─────────────────────────── */}
         <div className="flex items-center gap-3 px-5 h-[60px] border-b border-gray-100/80 dark:border-slate-800/60 shrink-0">
@@ -331,7 +331,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
           ))}
         </nav>
 
-        {/* ── User footer with Node Telemetry ──────────────── */}
+        {/* ── User footer ────────────────────────────────── */}
         <div className="shrink-0 border-t border-gray-100 dark:border-slate-800/80 p-3 space-y-2">
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors cursor-default">
             <div className="relative shrink-0">
@@ -356,14 +356,6 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                 {roleConfig.badgeLabel}
               </span>
             </div>
-          </div>
-
-          <div className="px-2 py-1 flex items-center justify-between text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              ONLINE
-            </span>
-            <span>NODE-MNL-01</span>
           </div>
 
           <div className="px-2 pt-1.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 border-t border-gray-100/80 dark:border-slate-800/60 font-sans">

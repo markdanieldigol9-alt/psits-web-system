@@ -271,7 +271,7 @@ export interface EventAttendanceParticipant {
   registeredAt?: string | null;
 }
 
-export type AttendanceTimeAction = 'time_in' | 'time_out' | 'undo_time_out' | 'auto_time_out' | 'reset';
+export type AttendanceTimeAction = 'time_in' | 'time_out' | 'override_time_out' | 'undo_time_out' | 'auto_time_out' | 'reset';
 
 export interface EventAttendanceSchedule {
   startAt?: string | null;
@@ -305,6 +305,7 @@ export interface EventAttendanceData {
     notCheckedIn: number;
     currentlyInVenue?: number;
     totalTimedOut?: number;
+    totalNotTimedOut?: number;
     totalLate?: number;
     attendanceRate: number;
     totalInstitutions: number;

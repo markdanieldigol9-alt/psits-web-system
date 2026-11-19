@@ -800,12 +800,13 @@ class ApiService {
 
   /**
    * Schedule-based venue attendance (admin & officer only).
-   * action: time_in | time_out | undo_time_out | auto_time_out | reset
+   * action: time_in | time_out | override_time_out | undo_time_out | auto_time_out | reset
    */
   recordAttendanceTime(
     eventId: string,
     participantKeys: string[],
-    action: 'time_in' | 'time_out' | 'undo_time_out' | 'auto_time_out' | 'reset'
+    action: 'time_in' | 'time_out' | 'override_time_out' | 'undo_time_out' | 'auto_time_out' | 'reset',
+    customTimeOut?: string
   ) {
     return this.client.post<{
       success: boolean;
@@ -814,7 +815,7 @@ class ApiService {
       updatedCount: number;
       skippedCount: number;
       recordedAt?: string | null;
-    }>(`/events/${eventId}/attendance/time`, { participantKeys, action });
+    }>(`/events/${eventId}/attendance/time`, { participantKeys, action, customTimeOut });
   }
 
   toggleEventAttendance(eventId: string, participantKey: string, checkedIn?: boolean) {

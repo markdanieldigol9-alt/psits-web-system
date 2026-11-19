@@ -34,7 +34,7 @@ import type {
  * Schedule helpers
  * ──────────────────────────────────────────────────────────── */
 
-type AttendanceKey = 'not_arrived' | 'in_venue' | 'timed_out';
+type AttendanceKey = 'not_arrived' | 'in_venue' | 'timed_out' | 'not_timed_out';
 type StatusFilter = 'all' | AttendanceKey | 'late' | 'left_early';
 type SourceFilter = 'all' | 'Individual Registration' | 'Institution Roster';
 type SchedulePhase = 'unscheduled' | 'not_open' | 'gate_open' | 'in_progress' | 'ended';
@@ -102,12 +102,21 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+/** Format epoch ms to local `YYYY-MM-DDTHH:mm` for `<input type="datetime-local">` */
+const toLocalDatetimeInput = (ms: number | null) => {
+  if (ms === null) return '';
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 const computeRowState = (
   p: EventAttendanceParticipant,
   startMs: number | null,
   endMs: number | null,
   graceMin: number,
-  nowMs: number
+  nowMs: number,
+  isEventClosed: boolean
 ): RowState => {
   const timeInMs = parseMs(p.checkedInAt);
   const timeOutMs = parseMs(p.checkedOutAt);
@@ -132,7 +141,20 @@ const computeRowState = (
     };
   }
 
-  // Still inside the venue: live duration, capped at the scheduled end.
+  // If the event is closed and the participant did not time out, system marks them as "not_timed_out"
+  if (isEventClosed) {
+    return {
+      key: 'not_timed_out',
+      timeInMs,
+      timeOutMs: null,
+      isLate,
+      lateByMin,
+      leftEarly: false,
+      durationMin: null,
+    };
+  }
+
+  // Still inside the venue while event is ongoing: live duration, capped at the scheduled end.
   const liveEnd = endMs !== null ? Math.min(nowMs, endMs) : nowMs;
   return {
     key: 'in_venue',
@@ -149,6 +171,7 @@ const STATUS_LABEL: Record<AttendanceKey, string> = {
   not_arrived: 'Not in Venue',
   in_venue: 'In Venue',
   timed_out: 'Timed Out',
+  not_timed_out: 'Not Timed Out',
 };
 
 /* ────────────────────────────────────────────────────────────
@@ -189,6 +212,7 @@ export const EventAttendanceSheet = ({
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [overrideTimeInput, setOverrideTimeInput] = useState<string>('');
 
   const notify = useCallback(
     (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning') =>
@@ -237,18 +261,28 @@ export const EventAttendanceSheet = ({
   const opensMs = parseMs(schedule?.timeInOpensAt) ?? (startMs !== null ? startMs - opensBeforeMin * 60000 : null);
 
   const phase: SchedulePhase = useMemo(() => {
+    if (data?.event?.status === 'completed') return 'ended';
     if (startMs === null) return 'unscheduled';
     if (opensMs !== null && nowMs < opensMs) return 'not_open';
     if (nowMs < startMs) return 'gate_open';
     if (endMs === null || nowMs <= endMs) return 'in_progress';
     return 'ended';
-  }, [startMs, endMs, opensMs, nowMs]);
+  }, [data?.event?.status, startMs, endMs, opensMs, nowMs]);
 
-  const canTimeIn = canManage && (phase === 'gate_open' || phase === 'in_progress' || phase === 'unscheduled');
+  const isEventClosed = phase === 'ended' || data?.event?.status === 'completed';
+
+  // Default the override time picker to the event's scheduled end time (or current time)
+  useEffect(() => {
+    if (!overrideTimeInput) {
+      setOverrideTimeInput(toLocalDatetimeInput(endMs ?? Date.now()));
+    }
+  }, [endMs, overrideTimeInput]);
+
+  const canTimeIn = canManage && !isEventClosed && (phase === 'gate_open' || phase === 'in_progress' || phase === 'unscheduled');
   const timeInBlockedReason =
     phase === 'not_open'
       ? `Time-in opens ${fmtDateTime(opensMs)}`
-      : phase === 'ended'
+      : isEventClosed
       ? `Time-in closed — event ended ${fmtDateTime(endMs)}`
       : '';
 
@@ -257,9 +291,9 @@ export const EventAttendanceSheet = ({
     () =>
       (data?.participants || []).map((p) => ({
         ...p,
-        state: computeRowState(p, startMs, endMs, graceMin, nowMs),
+        state: computeRowState(p, startMs, endMs, graceMin, nowMs, isEventClosed),
       })),
-    [data?.participants, startMs, endMs, graceMin, nowMs]
+    [data?.participants, startMs, endMs, graceMin, nowMs, isEventClosed]
   );
 
   const institutions = useMemo(() => {
@@ -275,7 +309,7 @@ export const EventAttendanceSheet = ({
       if (sourceFilter !== 'all' && r.registrationSource !== sourceFilter) return false;
       if (statusFilter === 'late' && !r.state.isLate) return false;
       if (statusFilter === 'left_early' && !r.state.leftEarly) return false;
-      if (['not_arrived', 'in_venue', 'timed_out'].includes(statusFilter) && r.state.key !== statusFilter) return false;
+      if (['not_arrived', 'in_venue', 'timed_out', 'not_timed_out'].includes(statusFilter) && r.state.key !== statusFilter) return false;
       if (q) {
         const hay = `${r.fullName} ${r.institutionName} ${r.position || ''} ${r.email || ''} ${r.contactNumber || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -288,26 +322,28 @@ export const EventAttendanceSheet = ({
     const scope = institutionFilter === 'all' ? rows : rows.filter((r) => r.institutionName === institutionFilter);
     const inVenue = scope.filter((r) => r.state.key === 'in_venue').length;
     const timedOut = scope.filter((r) => r.state.key === 'timed_out').length;
-    const arrived = inVenue + timedOut;
+    const notTimedOut = scope.filter((r) => r.state.key === 'not_timed_out').length;
+    const arrived = inVenue + timedOut + notTimedOut;
     return {
       total: scope.length,
       inVenue,
       timedOut,
+      notTimedOut,
       notArrived: scope.length - arrived,
       late: scope.filter((r) => r.state.isLate).length,
       rate: scope.length > 0 ? Math.round((arrived / scope.length) * 100) : 0,
     };
   }, [rows, institutionFilter]);
 
-  const stillInVenueKeys = useMemo(
-    () => rows.filter((r) => r.state.key === 'in_venue' && r.state.timeInMs !== null).map((r) => r.participantKey),
+  const missingTimeOutKeys = useMemo(
+    () => rows.filter((r) => r.state.key === 'in_venue' || r.state.key === 'not_timed_out').map((r) => r.participantKey),
     [rows]
   );
 
   const selectedRows = useMemo(() => rows.filter((r) => selected.has(r.participantKey)), [rows, selected]);
   const selectedTimeInKeys = selectedRows.filter((r) => r.state.key === 'not_arrived').map((r) => r.participantKey);
   const selectedTimeOutKeys = selectedRows
-    .filter((r) => r.state.key === 'in_venue' && r.state.timeInMs !== null)
+    .filter((r) => r.state.key === 'in_venue' || r.state.key === 'not_timed_out')
     .map((r) => r.participantKey);
 
   const allFilteredSelected = filteredRows.length > 0 && filteredRows.every((r) => selected.has(r.participantKey));
@@ -331,14 +367,16 @@ export const EventAttendanceSheet = ({
   };
 
   /* ── Actions (admin & officer only) ─────────────────────── */
-  const runAction = async (keys: string[], action: AttendanceTimeAction, actionId: string) => {
+  const runAction = async (keys: string[], action: AttendanceTimeAction, actionId: string, customTimeOut?: string) => {
     if (!canManage || keys.length === 0) return;
     if (action === 'reset' && !window.confirm('Reset attendance? This clears both the time in and time out for the selected participant(s).')) {
       return;
     }
     setBusyId(actionId);
     try {
-      const res = await api.recordAttendanceTime(eventId, keys, action);
+      const resolvedCustomOut =
+        customTimeOut && !Number.isNaN(Date.parse(customTimeOut)) ? new Date(customTimeOut).toISOString() : undefined;
+      const res = await api.recordAttendanceTime(eventId, keys, action, resolvedCustomOut);
       if (res.data?.success) {
         const skipped = res.data.skippedCount ? ` (${res.data.skippedCount} skipped — not eligible)` : '';
         notify('Attendance Updated', `${res.data.message}${skipped}`, 'success');
@@ -374,8 +412,15 @@ export const EventAttendanceSheet = ({
       'Registration Source': r.registrationSource,
       'Time In': toExportDateTime(r.state.timeInMs),
       'Arrival Status': r.state.key === 'not_arrived' ? '' : r.state.isLate ? 'Late' : 'On Time',
-      'Time Out': toExportDateTime(r.state.timeOutMs),
-      'Departure Status': r.state.key === 'timed_out' ? (r.state.leftEarly ? 'Left Early' : 'Completed') : '',
+      'Time Out': r.state.key === 'not_timed_out' ? 'Not Timed Out' : toExportDateTime(r.state.timeOutMs),
+      'Departure Status':
+        r.state.key === 'timed_out'
+          ? r.state.leftEarly
+            ? 'Left Early'
+            : 'Completed'
+          : r.state.key === 'not_timed_out'
+          ? 'Not Timed Out'
+          : '',
       'Duration (mins)': r.state.durationMin !== null ? Math.round(r.state.durationMin) : '',
       'Attendance Status': STATUS_LABEL[r.state.key],
     }));
@@ -489,7 +534,9 @@ export const EventAttendanceSheet = ({
 
   const statCards = [
     { label: 'Registered', value: stats.total, hint: 'Individual + roster', icon: Users, tone: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400', filter: 'all' as StatusFilter },
-    { label: 'In Venue', value: stats.inVenue, hint: 'Timed in, not out', icon: UserCheck, tone: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400', filter: 'in_venue' as StatusFilter },
+    isEventClosed
+      ? { label: 'Not Timed Out', value: stats.notTimedOut, hint: 'Event closed, no time out', icon: AlertTriangle, tone: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400', filter: 'not_timed_out' as StatusFilter }
+      : { label: 'In Venue', value: stats.inVenue, hint: 'Timed in, not out', icon: UserCheck, tone: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400', filter: 'in_venue' as StatusFilter },
     { label: 'Timed Out', value: stats.timedOut, hint: 'Departed venue', icon: LogOut, tone: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400', filter: 'timed_out' as StatusFilter },
     { label: 'Not Arrived', value: stats.notArrived, hint: 'No time in yet', icon: UserX, tone: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300', filter: 'not_arrived' as StatusFilter },
     { label: 'Late Arrivals', value: stats.late, hint: `> ${graceMin} min after start`, icon: AlertTriangle, tone: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400', filter: 'late' as StatusFilter },
@@ -614,6 +661,7 @@ export const EventAttendanceSheet = ({
             <option value="not_arrived">Not in Venue</option>
             <option value="in_venue">In Venue</option>
             <option value="timed_out">Timed Out</option>
+            <option value="not_timed_out">Not Timed Out</option>
             <option value="late">Late Arrivals</option>
             <option value="left_early">Left Early</option>
           </select>
@@ -623,51 +671,85 @@ export const EventAttendanceSheet = ({
         </span>
       </div>
 
-      {/* Bulk action bar (admin & officer) */}
-      {canManage && (selected.size > 0 || (phase === 'ended' && stillInVenueKeys.length > 0)) && (
-        <div className="px-4 sm:px-5 py-3 bg-blue-50/70 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/50 flex flex-wrap items-center gap-2 no-print">
-          {selected.size > 0 && (
-            <>
-              <span className="text-xs font-bold text-blue-900 dark:text-blue-200 mr-1">{selected.size} selected</span>
+      {/* Bulk action & Time-Out Override bar (admin & officer) */}
+      {canManage && (selected.size > 0 || missingTimeOutKeys.length > 0) && (
+        <div className="px-4 sm:px-5 py-3 bg-blue-50/70 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/50 flex flex-wrap items-center justify-between gap-3 no-print">
+          <div className="flex flex-wrap items-center gap-2">
+            {selected.size > 0 ? (
+              <>
+                <span className="text-xs font-bold text-blue-900 dark:text-blue-200 mr-1">{selected.size} selected</span>
+                <Button
+                  variant="success"
+                  size="sm"
+                  disabled={!canTimeIn || selectedTimeInKeys.length === 0 || busyId !== null}
+                  isLoading={busyId === 'bulk-in'}
+                  onClick={() => void runAction(selectedTimeInKeys, 'time_in', 'bulk-in')}
+                  className="flex items-center gap-1.5 text-xs font-bold"
+                  title={!canTimeIn ? timeInBlockedReason : undefined}
+                >
+                  <LogIn size={14} /> Time In ({selectedTimeInKeys.length})
+                </Button>
+                {!isEventClosed && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={selectedTimeOutKeys.length === 0 || busyId !== null}
+                    isLoading={busyId === 'bulk-out'}
+                    onClick={() => void runAction(selectedTimeOutKeys, 'time_out', 'bulk-out')}
+                    className="flex items-center gap-1.5 text-xs font-bold"
+                  >
+                    <LogOut size={14} /> Time Out Now ({selectedTimeOutKeys.length})
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedTimeOutKeys.length === 0 || busyId !== null}
+                  isLoading={busyId === 'bulk-override-out'}
+                  onClick={() => void runAction(selectedTimeOutKeys, 'override_time_out', 'bulk-override-out', overrideTimeInput)}
+                  className="flex items-center gap-1.5 text-xs font-bold border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                  title="Override Time Out for selected participants who did not time out"
+                >
+                  <Timer size={14} /> Override Time Out ({selectedTimeOutKeys.length})
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())} className="text-xs font-semibold">
+                  Clear selection
+                </Button>
+              </>
+            ) : (
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                {isEventClosed
+                  ? `${missingTimeOutKeys.length} participant(s) marked "Not Timed Out" after event close.`
+                  : `${missingTimeOutKeys.length} participant(s) currently in venue without time-out.`}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              <span>Override Time Out At:</span>
+              <input
+                type="datetime-local"
+                value={overrideTimeInput}
+                onChange={(e) => setOverrideTimeInput(e.target.value)}
+                aria-label="Override Time Out timestamp"
+                className="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-slate-100"
+              />
+            </label>
+            {missingTimeOutKeys.length > 0 && (
               <Button
-                variant="success"
+                variant="outline"
                 size="sm"
-                disabled={!canTimeIn || selectedTimeInKeys.length === 0 || busyId !== null}
-                isLoading={busyId === 'bulk-in'}
-                onClick={() => void runAction(selectedTimeInKeys, 'time_in', 'bulk-in')}
-                className="flex items-center gap-1.5 text-xs font-bold"
-                title={!canTimeIn ? timeInBlockedReason : undefined}
+                disabled={busyId !== null}
+                isLoading={busyId === 'auto-out'}
+                onClick={() => void runAction(missingTimeOutKeys, 'override_time_out', 'auto-out', overrideTimeInput)}
+                className="flex items-center gap-1.5 text-xs font-bold border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                title="Override Time Out for all participants who did not time out"
               >
-                <LogIn size={14} /> Time In ({selectedTimeInKeys.length})
+                <Timer size={14} /> Override All Not Timed Out ({missingTimeOutKeys.length})
               </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={selectedTimeOutKeys.length === 0 || busyId !== null}
-                isLoading={busyId === 'bulk-out'}
-                onClick={() => void runAction(selectedTimeOutKeys, 'time_out', 'bulk-out')}
-                className="flex items-center gap-1.5 text-xs font-bold"
-              >
-                <LogOut size={14} /> Time Out ({selectedTimeOutKeys.length})
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())} className="text-xs font-semibold">
-                Clear selection
-              </Button>
-            </>
-          )}
-          {phase === 'ended' && stillInVenueKeys.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busyId !== null}
-              isLoading={busyId === 'auto-out'}
-              onClick={() => void runAction(stillInVenueKeys, 'auto_time_out', 'auto-out')}
-              className="ml-auto flex items-center gap-1.5 text-xs font-bold border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-              title={`Stamp ${fmtDateTime(endMs)} as time out for everyone still in venue`}
-            >
-              <Timer size={14} /> Auto Time-Out at Schedule End ({stillInVenueKeys.length})
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -805,19 +887,22 @@ export const EventAttendanceSheet = ({
                                 {s.leftEarly ? 'Left Early' : 'Completed'}
                               </span>
                             </div>
+                          ) : s.key === 'not_timed_out' ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800">
+                                <AlertTriangle size={11} /> Not Timed Out
+                              </span>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Event closed without time-out</p>
+                            </div>
                           ) : s.key === 'in_venue' ? (
-                            phase === 'ended' ? (
-                              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">Awaiting time-out</span>
-                            ) : (
-                              <span className="text-[11px] font-semibold text-slate-500">Still in venue</span>
-                            )
+                            <span className="text-[11px] font-semibold text-slate-500">Still in venue</span>
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
                         </td>
                         <td className="px-3 py-3 text-center font-semibold text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
                           {fmtDuration(s.durationMin)}
-                          {s.key === 'in_venue' && s.durationMin !== null && phase !== 'ended' && (
+                          {s.key === 'in_venue' && s.durationMin !== null && !isEventClosed && (
                             <span className="block text-[9px] font-bold uppercase text-emerald-600">live</span>
                           )}
                         </td>
@@ -825,6 +910,10 @@ export const EventAttendanceSheet = ({
                           {s.key === 'in_venue' ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 whitespace-nowrap">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> In Venue
+                            </span>
+                          ) : s.key === 'not_timed_out' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800 whitespace-nowrap">
+                              <AlertTriangle size={11} /> Not Timed Out
                             </span>
                           ) : s.key === 'timed_out' ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800 border border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 whitespace-nowrap">
@@ -852,17 +941,45 @@ export const EventAttendanceSheet = ({
                                   <LogIn size={12} /> Time In
                                 </Button>
                               )}
-                              {s.key === 'in_venue' && s.timeInMs !== null && (
+                              {s.key === 'in_venue' && (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    size="xs"
+                                    disabled={busyId !== null}
+                                    isLoading={rowBusy}
+                                    onClick={() => void runAction([r.participantKey], 'time_out', r.participantKey)}
+                                    title="Record time out now"
+                                    className="flex items-center gap-1 text-[11px] font-bold whitespace-nowrap"
+                                  >
+                                    <LogOut size={12} /> Time Out
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="xs"
+                                    disabled={busyId !== null}
+                                    isLoading={busyId === `${r.participantKey}-override`}
+                                    onClick={() =>
+                                      void runAction([r.participantKey], 'override_time_out', `${r.participantKey}-override`, overrideTimeInput)
+                                    }
+                                    title="Override Time Out using the selected override timestamp"
+                                    className="flex items-center gap-1 text-[11px] font-bold whitespace-nowrap border-amber-400 text-amber-800 dark:text-amber-300"
+                                  >
+                                    <Timer size={12} /> Override
+                                  </Button>
+                                </>
+                              )}
+                              {s.key === 'not_timed_out' && (
                                 <Button
-                                  variant="primary"
+                                  variant="outline"
                                   size="xs"
                                   disabled={busyId !== null}
                                   isLoading={rowBusy}
-                                  onClick={() => void runAction([r.participantKey], 'time_out', r.participantKey)}
-                                  title="Record time out now"
-                                  className="flex items-center gap-1 text-[11px] font-bold whitespace-nowrap"
+                                  onClick={() => void runAction([r.participantKey], 'override_time_out', r.participantKey, overrideTimeInput)}
+                                  title="Participant did not time out before event close — click to override Time Out"
+                                  className="flex items-center gap-1 text-[11px] font-bold whitespace-nowrap border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                                 >
-                                  <LogOut size={12} /> Time Out
+                                  <Timer size={12} /> Override Time Out
                                 </Button>
                               )}
                               {s.key === 'timed_out' && (

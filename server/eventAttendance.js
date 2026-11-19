@@ -134,6 +134,8 @@ async function getEventAttendance(req, res) {
     let totalCheckedIn = 0;
     let totalTimedOut = 0;
     let totalLate = 0;
+    const now = new Date();
+    const isEventClosed = event.status === 'completed' || Boolean(schedule.endAt && now > schedule.endAt);
     const lateThreshold = schedule.startAt ? schedule.startAt.getTime() + LATE_GRACE_MIN * 60000 : null;
     const instMap = new Map();
 
@@ -162,6 +164,9 @@ async function getEventAttendance(req, res) {
       .sort((a, b) => b.checkedInCount - a.checkedInCount || b.registeredCount - a.registeredCount);
 
     const totalRegistered = participants.length;
+    const withoutTimeOut = Math.max(0, totalCheckedIn - totalTimedOut);
+    const totalNotTimedOut = isEventClosed ? withoutTimeOut : 0;
+    const currentlyInVenue = isEventClosed ? 0 : withoutTimeOut;
     const attendanceRate = totalRegistered > 0 ? Number(((totalCheckedIn / totalRegistered) * 100).toFixed(1)) : 0;
 
     return json(res, 200, {
@@ -187,8 +192,9 @@ async function getEventAttendance(req, res) {
         totalRegistered,
         totalCheckedIn,
         notCheckedIn: Math.max(0, totalRegistered - totalCheckedIn),
-        currentlyInVenue: Math.max(0, totalCheckedIn - totalTimedOut),
+        currentlyInVenue,
         totalTimedOut,
+        totalNotTimedOut,
         totalLate,
         attendanceRate,
         totalInstitutions: institutionBreakdown.length,
@@ -229,8 +235,8 @@ async function recordAttendanceTime(req, res) {
       return json(res, 400, { success: false, message: 'Valid event ID is required.' });
     }
 
-    const { action } = req.body || {};
-    const allowedActions = ['time_in', 'time_out', 'undo_time_out', 'auto_time_out', 'reset'];
+    const { action, customTimeOut } = req.body || {};
+    const allowedActions = ['time_in', 'time_out', 'override_time_out', 'undo_time_out', 'auto_time_out', 'reset'];
     if (!allowedActions.includes(action)) {
       return json(res, 400, { success: false, message: `action must be one of: ${allowedActions.join(', ')}.` });
     }
@@ -279,13 +285,40 @@ async function recordAttendanceTime(req, res) {
     }
 
     // ── Build per-table SET / guard clauses ───────────────
-    // auto_time_out stamps the scheduled end (never earlier than the participant's time in).
-    const outStamp = action === 'auto_time_out' ? (endAt || now) : now;
+    // Resolve the effective time-out timestamp:
+    // - customTimeOut (if provided & valid) overrides with the admin/officer's chosen timestamp
+    // - auto_time_out or override_time_out after event close defaults to the scheduled end (endAt)
+    // - normal time_out uses current time (now)
+    let parsedCustomOut = null;
+    if (customTimeOut) {
+      const candidate = new Date(customTimeOut);
+      if (!Number.isNaN(candidate.getTime())) {
+        parsedCustomOut = candidate;
+      }
+    }
+    const isPastEnd = Boolean(endAt && now > endAt);
+    const outStamp =
+      parsedCustomOut ||
+      (action === 'auto_time_out' || (action === 'override_time_out' && isPastEnd) ? endAt || now : now);
+    const fallbackInStamp = startAt && startAt < outStamp ? startAt : outStamp;
 
     const instSql = {
       time_in: { set: 'checked_in = 1, checked_in_at = ?, checked_out_at = NULL', guard: 'checked_in = 0', params: [now] },
-      time_out: { set: 'checked_out_at = GREATEST(checked_in_at, CAST(? AS DATETIME))', guard: 'checked_in = 1 AND checked_in_at IS NOT NULL AND checked_out_at IS NULL', params: [outStamp] },
-      auto_time_out: { set: 'checked_out_at = GREATEST(checked_in_at, CAST(? AS DATETIME))', guard: 'checked_in = 1 AND checked_in_at IS NOT NULL AND checked_out_at IS NULL', params: [outStamp] },
+      time_out: {
+        set: 'checked_in_at = COALESCE(checked_in_at, CAST(? AS DATETIME)), checked_out_at = GREATEST(COALESCE(checked_in_at, CAST(? AS DATETIME)), CAST(? AS DATETIME))',
+        guard: 'checked_in = 1 AND checked_out_at IS NULL',
+        params: [fallbackInStamp, fallbackInStamp, outStamp],
+      },
+      override_time_out: {
+        set: 'checked_in_at = COALESCE(checked_in_at, CAST(? AS DATETIME)), checked_out_at = GREATEST(COALESCE(checked_in_at, CAST(? AS DATETIME)), CAST(? AS DATETIME))',
+        guard: 'checked_in = 1',
+        params: [fallbackInStamp, fallbackInStamp, outStamp],
+      },
+      auto_time_out: {
+        set: 'checked_in_at = COALESCE(checked_in_at, CAST(? AS DATETIME)), checked_out_at = GREATEST(COALESCE(checked_in_at, CAST(? AS DATETIME)), CAST(? AS DATETIME))',
+        guard: 'checked_in = 1 AND checked_out_at IS NULL',
+        params: [fallbackInStamp, fallbackInStamp, outStamp],
+      },
       undo_time_out: { set: 'checked_out_at = NULL', guard: 'checked_out_at IS NOT NULL', params: [] },
       reset: { set: 'checked_in = 0, checked_in_at = NULL, checked_out_at = NULL', guard: '1 = 1', params: [] },
     }[action];
@@ -296,8 +329,21 @@ async function recordAttendanceTime(req, res) {
         guard: '(is_checked_in = 0 AND checked_in_count = 0)',
         params: [now],
       },
-      time_out: { set: 'checked_out_at = GREATEST(checked_in_at, CAST(? AS DATETIME))', guard: '(is_checked_in = 1 OR checked_in_count > 0) AND checked_in_at IS NOT NULL AND checked_out_at IS NULL', params: [outStamp] },
-      auto_time_out: { set: 'checked_out_at = GREATEST(checked_in_at, CAST(? AS DATETIME))', guard: '(is_checked_in = 1 OR checked_in_count > 0) AND checked_in_at IS NOT NULL AND checked_out_at IS NULL', params: [outStamp] },
+      time_out: {
+        set: 'checked_in_at = COALESCE(checked_in_at, CAST(? AS DATETIME)), checked_out_at = GREATEST(COALESCE(checked_in_at, CAST(? AS DATETIME)), CAST(? AS DATETIME))',
+        guard: '(is_checked_in = 1 OR checked_in_count > 0) AND checked_out_at IS NULL',
+        params: [fallbackInStamp, fallbackInStamp, outStamp],
+      },
+      override_time_out: {
+        set: 'checked_in_at = COALESCE(checked_in_at, CAST(? AS DATETIME)), checked_out_at = GREATEST(COALESCE(checked_in_at, CAST(? AS DATETIME)), CAST(? AS DATETIME))',
+        guard: '(is_checked_in = 1 OR checked_in_count > 0)',
+        params: [fallbackInStamp, fallbackInStamp, outStamp],
+      },
+      auto_time_out: {
+        set: 'checked_in_at = COALESCE(checked_in_at, CAST(? AS DATETIME)), checked_out_at = GREATEST(COALESCE(checked_in_at, CAST(? AS DATETIME)), CAST(? AS DATETIME))',
+        guard: '(is_checked_in = 1 OR checked_in_count > 0) AND checked_out_at IS NULL',
+        params: [fallbackInStamp, fallbackInStamp, outStamp],
+      },
       undo_time_out: { set: 'checked_out_at = NULL', guard: 'checked_out_at IS NOT NULL', params: [] },
       reset: { set: 'is_checked_in = 0, checked_in_count = 0, checked_in_at = NULL, checked_out_at = NULL', guard: '1 = 1', params: [] },
     }[action];
@@ -333,6 +379,7 @@ async function recordAttendanceTime(req, res) {
     const messages = {
       time_in: `Time in recorded for ${updatedCount} participant(s).`,
       time_out: `Time out recorded for ${updatedCount} participant(s).`,
+      override_time_out: `Time out overridden for ${updatedCount} participant(s).`,
       auto_time_out: `Auto time-out at schedule end applied to ${updatedCount} participant(s).`,
       undo_time_out: `Time out cleared for ${updatedCount} participant(s).`,
       reset: `Attendance reset for ${updatedCount} participant(s).`,
@@ -343,7 +390,7 @@ async function recordAttendanceTime(req, res) {
       action,
       updatedCount,
       skippedCount: Math.max(0, instIds.length + regIds.length - updatedCount),
-      recordedAt: action === 'time_in' ? now.toISOString() : ['time_out', 'auto_time_out'].includes(action) ? outStamp.toISOString() : null,
+      recordedAt: action === 'time_in' ? now.toISOString() : ['time_out', 'override_time_out', 'auto_time_out'].includes(action) ? outStamp.toISOString() : null,
       message: messages[action],
       startAt: toIso(startAt),
       endAt: toIso(endAt),

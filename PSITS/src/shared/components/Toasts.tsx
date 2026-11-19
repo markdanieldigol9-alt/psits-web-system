@@ -37,7 +37,10 @@ export const Toasts = () => {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[70] space-y-3 w-[min(24rem,calc(100vw-2rem))] pointer-events-none">
+    <div
+      data-toast-container="true"
+      className="fixed top-4 right-4 z-[70] space-y-3 w-[min(24rem,calc(100vw-2rem))] pointer-events-none no-print"
+    >
       {toasts.map((n) => {
         const config = typeConfig[n.type] || typeConfig.info;
         return (

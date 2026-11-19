@@ -10,7 +10,12 @@ import { useAuth } from '@/shared/context/AuthContext';
 import { useNotification } from '@/shared/context/NotificationContext';
 import logo from '@/assets/image/PSITS_Logo.png';
 import { MemberDirectoryExportTable } from '../components/MemberDirectoryExportTable';
-import { FinancialReportView } from '../components/FinancialReportView';
+import {
+  FinancialReportView,
+  exportFinancialLedgerToCSV,
+  filterPaymentsByScope,
+  type PaymentRecord,
+} from '../components/FinancialReportView';
 import { EventReportView } from '../components/EventReportView';
 import { ExecutiveSummaryReportView } from '../components/ExecutiveSummaryReportView';
 import { ElectionReportView } from '../components/ElectionReportView';
@@ -26,7 +31,7 @@ import {
   TrendingUp,
   ChevronRight,
   ChevronLeft,
-  Sparkles,
+  FileBarChart2,
   Filter,
   Eye,
   ShieldCheck,
@@ -112,6 +117,7 @@ export const ReportsPage = () => {
   const [endDateFilter, setEndDateFilter] = useState('');
   const [selectedMethodFocus, setSelectedMethodFocus] = useState<string>('all');
   const [detailedRecords, setDetailedRecords] = useState<any[]>([]);
+  const [filteredFinancialRecords, setFilteredFinancialRecords] = useState<PaymentRecord[] | null>(null);
 
   const [elections, setElections] = useState<any[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState<string>('');
@@ -213,6 +219,7 @@ export const ReportsPage = () => {
   }, []);
 
   const openReportWizard = async (title: string, step: 1 | 2 = 1) => {
+    setFilteredFinancialRecords(null);
     setWizardStep(step);
     setPreviewReport(title);
     try {
@@ -541,35 +548,20 @@ export const ReportsPage = () => {
           exportToCSV(`PSITS_Events_Overview_Report_${new Date().toISOString().slice(0, 10)}`, dataToExport);
         }
       } else if (title === 'Financial Summary' || title === 'Revenue by Method') {
+        if (filteredFinancialRecords !== null) {
+          exportFinancialLedgerToCSV(filteredFinancialRecords, title);
+          return;
+        }
         const { data } = await api.getPayments();
-        const payments = data?.payments || detailedRecords || [];
-        const formatMethod = (m?: string) => {
-          const raw = String(m || '').toLowerCase();
-          if (raw.includes('gcash')) return 'GCash';
-          if (raw.includes('bank') || raw.includes('card')) return 'Bank Transfer';
-          if (raw.includes('officer') || raw.includes('cash')) return 'Through Officer (Official Receipt)';
-          if (raw.includes('cheque')) return 'Cheque';
-          if (raw.includes('paymaya')) return 'PayMaya';
-          return m || 'Other';
-        };
-        const dataToExport = payments.map((p: any) => ({
-          'Transaction ID': p.id,
-          'Date & Time': p.createdAt || p.date || '—',
-          'Payor Full Name': p.memberName || p.fullName || p.userFullName || '—',
-          'Payor Email': p.memberEmail || p.email || p.userEmail || '—',
-          'Payment Purpose': p.event || p.eventTitle || (p.paymentKind?.replace(/_/g, ' ') || 'General Fee'),
-          'Revenue Stream': p.paymentKind || 'Standard Payment',
-          'Payment Channel / Method': formatMethod(p.method || p.paymentMethod),
-          'Reference / OR Number': p.referenceNumber || p.referenceNo || '—',
-          'Gross Amount (PHP)': Number(p.amount || 0).toFixed(2),
-          'Is Partial Payment': p.isPartial ? 'YES' : 'NO',
-          'Remaining Balance (PHP)': p.remainingBalance ? Number(p.remainingBalance).toFixed(2) : '0.00',
-          'Audit Verification Status': (p.status || p.paymentStatus || 'pending').toUpperCase(),
-          'Proof Document Uploaded': p.proofUrl ? 'YES' : 'NO',
-          'Verified By Officer ID': p.verifiedBy || '—',
-          'Verified Date': p.verifiedAt || '—',
-        }));
-        exportToCSV(`${title.replace(/\s+/g, '_')}_Official_Audit_Report`, dataToExport);
+        const payments: PaymentRecord[] = data?.payments || detailedRecords || [];
+        const scopedPayments = filterPaymentsByScope(
+          payments,
+          dateRangeFilter,
+          startDateFilter,
+          endDateFilter,
+          selectedMethodFocus
+        );
+        exportFinancialLedgerToCSV(scopedPayments, title);
       } else if (title === 'Complete Event') {
         const { data } = await api.getEvents();
         const completed = (data?.events || []).filter((ev: any) => ev.status === 'completed' || ev.status === 'closed');
@@ -683,7 +675,7 @@ export const ReportsPage = () => {
             <div className="flex items-center gap-3">
               <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
               <div>
-                <h2 className="text-xl font-extrabold text-primary tracking-tight">PSITS REGIONAL ORGANIZATION</h2>
+                <h2 className="text-xl font-extrabold text-primary tracking-tight text-balance">PSITS REGIONAL ORGANIZATION</h2>
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
               </div>
             </div>
@@ -729,7 +721,7 @@ export const ReportsPage = () => {
 
           return (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-3 gap-3 text-center print:break-inside-avoid">
                 <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex flex-col justify-between">
                   <div>
                     <span className="text-xs text-gray-500 font-semibold">Total Members</span>
@@ -779,7 +771,7 @@ export const ReportsPage = () => {
                 </div>
               </div>
 
-              <div className="h-[220px]">
+              <div className="h-[220px] print:break-inside-avoid">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={memberGrowth}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -793,7 +785,7 @@ export const ReportsPage = () => {
                 </ResponsiveContainer>
               </div>
 
-              <div className="border rounded-xl overflow-hidden text-xs">
+              <div className="border rounded-xl overflow-hidden print:overflow-visible text-xs">
                 <table className="w-full">
                   <thead className="bg-gray-100 border-b">
                     <tr>
@@ -853,13 +845,16 @@ export const ReportsPage = () => {
             initialMethodFilter={selectedMethodFocus}
             preparedBy={user?.fullName || 'Financial Officer'}
             userRole={user?.role || 'Officer'}
-            onExportCSV={() => handleGenerateExcel(previewReport)}
+            onFilteredRecordsChange={setFilteredFinancialRecords}
+            onExportCSV={(records) =>
+              exportFinancialLedgerToCSV(records, previewReport || 'Financial Summary')
+            }
           />
         )}
 
         {(previewReport === 'Event Participation' || previewReport === 'Complete Event') && (
           isEventReportLoading ? (
-            <div className="flex items-center justify-center p-12">
+            <div className="flex items-center justify-center p-12 no-print">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
@@ -884,7 +879,7 @@ export const ReportsPage = () => {
 
         {previewReport === 'Partner Contributions' && (
           <div className="space-y-4">
-            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center text-center">
+            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center text-center print:break-inside-avoid">
               <div>
                 <span className="text-xs font-semibold text-gray-500">Total Sponsorship Value</span>
                 <p className="text-2xl font-extrabold text-emerald-700">₱{(partnerReportData?.totalValue || 0).toLocaleString()}</p>
@@ -895,7 +890,7 @@ export const ReportsPage = () => {
               </div>
             </div>
 
-            <div className="border rounded-xl overflow-hidden text-xs">
+            <div className="border rounded-xl overflow-x-auto print:overflow-visible text-xs">
               <table className="w-full">
                 <thead className="bg-gray-100 border-b">
                   <tr>
@@ -906,14 +901,22 @@ export const ReportsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {(partnerReportData?.contributions || []).map((pc: any) => (
-                    <tr key={pc.id}>
-                      <td className="px-3 py-2 font-bold">{pc.partner_name}</td>
-                      <td className="px-3 py-2">{pc.deal_title}</td>
-                      <td className="px-3 py-2 capitalize">{pc.contribution_type}</td>
-                      <td className="px-3 py-2 text-right font-bold text-emerald-700">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
+                  {(partnerReportData?.contributions || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-6 text-center text-gray-500">
+                        No partner contributions recorded.
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    (partnerReportData?.contributions || []).map((pc: any) => (
+                      <tr key={pc.id}>
+                        <td className="px-3 py-2 font-bold">{pc.partner_name}</td>
+                        <td className="px-3 py-2">{pc.deal_title}</td>
+                        <td className="px-3 py-2 capitalize">{pc.contribution_type}</td>
+                        <td className="px-3 py-2 text-right font-bold text-emerald-700">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -962,9 +965,21 @@ export const ReportsPage = () => {
   return (
     <MainLayout>
       <div className={`space-y-6 pb-4 ${previewReport ? 'no-print' : ''}`}>
+        <div className="module-header-banner no-print">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight text-balance">
+                Organization Reports & Audit Exports
+              </h1>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                Generate official financial statements, event participation audits, election tallies, and member rosters.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <Card
-          title="Reports"
+          title="Analytics & Official Reports Generator"
           className="no-print"
           subtitle="Select and generate organization reports, financial summaries, and event audits."
           headerAction={
@@ -1033,7 +1048,7 @@ export const ReportsPage = () => {
                     onClick={() => void openReportWizard(selectedReportTitle, 1)}
                     className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold shadow-sm"
                   >
-                    <Sparkles size={16} /> Generate
+                    <FileBarChart2 size={16} strokeWidth={1.75} /> Generate
                   </Button>
                 </div>
               </div>
@@ -1048,9 +1063,6 @@ export const ReportsPage = () => {
                       <h4 className="text-base font-bold text-gray-900 dark:text-white">
                         {selectedReportObj.title}
                       </h4>
-                      <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                        Official Report
-                      </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       {selectedReportObj.description}
@@ -1082,7 +1094,7 @@ export const ReportsPage = () => {
                         className="w-full"
                         onClick={() => void openReportWizard(report.title, 1)}
                       >
-                        <Sparkles size={14} /> Generate
+                        <FileBarChart2 size={14} strokeWidth={1.75} /> Generate
                       </Button>
                     </div>
                   </div>
@@ -1093,7 +1105,7 @@ export const ReportsPage = () => {
         </Card>
 
         {(isLoading || isEventReportLoading) && (
-          <Card>
+          <Card className="no-print">
             <div className="text-sm text-gray-600">Loading report data...</div>
           </Card>
         )}
@@ -1104,6 +1116,8 @@ export const ReportsPage = () => {
           members={allMembersData}
           institutions={institutionsList}
           isLoading={isMemberListLoading}
+          suppressPrintId={Boolean(previewReport)}
+          disablePrintableId={Boolean(previewReport)}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 no-print">
@@ -1150,45 +1164,51 @@ export const ReportsPage = () => {
       {/* STEP-BY-STEP REPORT WIZARD & PREVIEW MODAL */}
       <Modal
         isOpen={!!previewReport}
-        onClose={() => setPreviewReport(null)}
+        onClose={() => {
+          setPreviewReport(null);
+          setFilteredFinancialRecords(null);
+        }}
         title={previewReport ? `${previewReport} - Step ${wizardStep} of 3` : 'Report Wizard'}
         size="2xl"
       >
-        <div className="space-y-5">
+        <div className="space-y-5 print:space-y-0">
           {/* Wizard Step Navigation Indicator */}
           <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1.5 rounded-xl text-center text-xs font-semibold no-print">
             <button
               type="button"
               onClick={() => setWizardStep(1)}
-              className={`py-2 rounded-lg transition-all ${
+              className={`py-2 px-2 rounded-lg transition-all inline-flex items-center justify-center gap-1.5 ${
                 wizardStep === 1 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              1. ⚙️ Parameters & Filters
+              <Filter size={14} strokeWidth={1.75} className="shrink-0" />
+              <span>1. Parameters & Filters</span>
             </button>
             <button
               type="button"
               onClick={() => setWizardStep(2)}
-              className={`py-2 rounded-lg transition-all ${
+              className={`py-2 px-2 rounded-lg transition-all inline-flex items-center justify-center gap-1.5 ${
                 wizardStep === 2 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              2. 👁️ Detailed Document Preview
+              <Eye size={14} strokeWidth={1.75} className="shrink-0" />
+              <span>2. Detailed Document Preview</span>
             </button>
             <button
               type="button"
               onClick={() => setWizardStep(3)}
-              className={`py-2 rounded-lg transition-all ${
+              className={`py-2 px-2 rounded-lg transition-all inline-flex items-center justify-center gap-1.5 ${
                 wizardStep === 3 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              3. 🖨️ Export & Submit
+              <Printer size={14} strokeWidth={1.75} className="shrink-0" />
+              <span>3. Export & Submit</span>
             </button>
           </div>
 
           {/* STEP 1: CONFIGURE PARAMETERS & FILTERS */}
           {wizardStep === 1 && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-4 animate-fadeIn no-print">
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl space-y-1">
                 <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                   <Filter size={16} className="text-primary" /> Filter & Configure Report Details
@@ -1202,12 +1222,12 @@ export const ReportsPage = () => {
                 <Select
                   label="Date Range Filter"
                   options={[
-                    { value: 'all', label: '📅 All Time Records' },
-                    { value: 'this_month', label: '📅 Current Month' },
-                    { value: 'last_30_days', label: '📅 Last 30 Days' },
-                    { value: 'this_quarter', label: '📅 Current Quarter' },
-                    { value: 'this_year', label: '📅 Fiscal Year-to-Date (YTD)' },
-                    { value: 'custom', label: '📅 Custom Date Range' },
+                    { value: 'all', label: 'All Time Records' },
+                    { value: 'this_month', label: 'Current Month' },
+                    { value: 'last_30_days', label: 'Last 30 Days' },
+                    { value: 'this_quarter', label: 'Current Quarter' },
+                    { value: 'this_year', label: 'Fiscal Year-to-Date (YTD)' },
+                    { value: 'custom', label: 'Custom Date Range' },
                   ]}
                   value={dateRangeFilter}
                   onChange={(e) => setDateRangeFilter((e.target as HTMLSelectElement).value as any)}
@@ -1233,12 +1253,12 @@ export const ReportsPage = () => {
                       onChange={(e) => setSelectedMethodFocus(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
                     >
-                      <option value="all">💳 All Payment Channels (Complete Reconciliation)</option>
-                      <option value="GCash">📱 GCash E-Wallet</option>
-                      <option value="Bank Transfer">🏛️ Bank Transfer / Deposit</option>
-                      <option value="Through Officer (OR)">🏢 Through Officer (Official Receipt)</option>
-                      <option value="Cheque">🧾 Cheque / Bank Draft</option>
-                      <option value="PayMaya">💳 PayMaya</option>
+                      <option value="all">All Payment Channels (Complete Reconciliation)</option>
+                      <option value="GCash">GCash E-Wallet</option>
+                      <option value="Bank Transfer">Bank Transfer / Deposit</option>
+                      <option value="Through Officer (OR)">Through Officer (Official Receipt)</option>
+                      <option value="Cheque">Cheque / Bank Draft</option>
+                      <option value="PayMaya">PayMaya</option>
                     </select>
                   </div>
                 )}
@@ -1248,10 +1268,10 @@ export const ReportsPage = () => {
                     <Select
                       label="Member Category Filter"
                       options={[
-                        { value: 'all', label: '👥 All Categories (Individual, Institution, Industry)' },
-                        { value: 'individual', label: '👤 Individual Members' },
-                        { value: 'institution', label: '🏛️ Institution Members' },
-                        { value: 'industry', label: '💼 Industry Members' },
+                        { value: 'all', label: 'All Categories (Individual, Institution, Industry)' },
+                        { value: 'individual', label: 'Individual Members' },
+                        { value: 'institution', label: 'Institution Members' },
+                        { value: 'industry', label: 'Industry Members' },
                       ]}
                       value={memberCategoryFilter}
                       onChange={(e) => setMemberCategoryFilter((e.target as HTMLSelectElement).value as any)}
@@ -1264,7 +1284,7 @@ export const ReportsPage = () => {
                         onChange={(e) => setMemberInstitutionFilter(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
                       >
-                        <option value="all">🏛️ All Institutions ({institutionsList.length} registered)</option>
+                        <option value="all">All Institutions ({institutionsList.length} registered)</option>
                         {institutionsList.map((inst) => (
                           <option key={inst} value={inst}>
                             {inst}
@@ -1308,7 +1328,7 @@ export const ReportsPage = () => {
 
           {/* STEP 2: INTERACTIVE DETAILED DOCUMENT PREVIEW */}
           {wizardStep === 2 && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-4 animate-fadeIn print:space-y-0">
               {/* Quick Action Toolbar */}
               <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
                 <div className="flex items-center gap-2">
@@ -1364,7 +1384,7 @@ export const ReportsPage = () => {
 
           {/* STEP 3: PRINT, EXPORT & SUBMIT */}
           {wizardStep === 3 && (
-            <div className="space-y-5 animate-fadeIn">
+            <div className="space-y-5 animate-fadeIn print:space-y-0">
               <div className="no-print space-y-4">
                 <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
                   <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
@@ -1382,7 +1402,7 @@ export const ReportsPage = () => {
                     className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
                   >
                     <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold text-gray-900">🖨️ Print Report</span>
+                    <span className="text-sm font-bold text-gray-900">Print Report</span>
                     <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
                   </button>
 
@@ -1392,7 +1412,7 @@ export const ReportsPage = () => {
                     className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
                   >
                     <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold text-gray-900">📊 Export Excel</span>
+                    <span className="text-sm font-bold text-gray-900">Export Excel</span>
                     <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
                   </button>
 
@@ -1402,7 +1422,7 @@ export const ReportsPage = () => {
                     className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
                   >
                     <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold text-gray-900">📄 Save PDF</span>
+                    <span className="text-sm font-bold text-gray-900">Save PDF</span>
                     <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
                   </button>
                 </div>
@@ -1423,6 +1443,7 @@ export const ReportsPage = () => {
                         isRead: false,
                       });
                       setPreviewReport(null);
+                      setFilteredFinancialRecords(null);
                     }}
                     className="px-6"
                   >
@@ -1432,7 +1453,7 @@ export const ReportsPage = () => {
               </div>
 
               {/* Live printable document area (Always mounted in Step 3 so Print & Save PDF work seamlessly!) */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-200 print:mt-0 print:pt-0 print:border-t-0">
                 <div className="no-print mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Eye size={14} /> Document Preview (Will be printed / saved):
                 </div>

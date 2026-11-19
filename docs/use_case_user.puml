@@ -36,8 +36,8 @@ left to right direction
 actor "Individual Member\n(Student / Faculty)" as Member #38BDF8
 actor "Institution Representative\n(School Chapter Head)" as InstRep #0284C7
 
-' Generalization
-Member <|-- InstRep : <<specialization>>
+' Generalization (hollow triangle pointing to parent actor)
+InstRep --|> Member
 
 ' ========================================================
 ' SYSTEM BOUNDARY: USER / MEMBER PORTAL
@@ -84,41 +84,40 @@ rectangle "PSITS Region XII Web System — User & Member Portal" as UserPortal {
 }
 
 ' ========================================================
-' ASSOCIATIONS (INDIVIDUAL MEMBER)
+' ASSOCIATIONS (INDIVIDUAL MEMBER - solid lines without arrowheads)
 ' ========================================================
-Member --> UC_Reg
-Member --> UC_Login
-Member --> UC_Reset
-Member --> UC_Theme
-Member --> UC_Pay
-Member --> UC_Reupload
-Member --> UC_History
-Member --> UC_Expiry
-Member --> UC_BrowseEvents
-Member --> UC_Guidelines
-Member --> UC_RegEventSelf
-Member --> UC_EsportsBrackets
-Member --> UC_Leaderboard
-Member --> UC_ViewCandidates
-Member --> UC_Vote
-Member --> UC_Forum
-Member --> UC_Announcements
-Member --> UC_WatchLive
-Member --> UC_Notifs
+Member -- UC_Reg
+Member -- UC_Login
+Member -- UC_Reset
+Member -- UC_Theme
+Member -- UC_Pay
+Member -- UC_History
+Member -- UC_Expiry
+Member -- UC_BrowseEvents
+Member -- UC_Guidelines
+Member -- UC_RegEventSelf
+Member -- UC_EsportsBrackets
+Member -- UC_Leaderboard
+Member -- UC_ViewCandidates
+Member -- UC_Vote
+Member -- UC_Forum
+Member -- UC_Announcements
+Member -- UC_WatchLive
+Member -- UC_Notifs
 
 ' ========================================================
 ' ASSOCIATIONS (INSTITUTION REPRESENTATIVE SPECIALIZED)
 ' ========================================================
-InstRep --> UC_BatchRoster
-InstRep --> UC_RegEventBatch
+InstRep -- UC_BatchRoster
+InstRep -- UC_RegEventBatch
 
 ' ========================================================
 ' INCLUDE & EXTEND RELATIONSHIPS
 ' ========================================================
 UC_Pay ..> UC_UploadProof : <<include>>
-UC_Pay <.. UC_Reupload : <<extend>>
+UC_Reupload ..> UC_Pay : <<extend>>
 UC_Vote ..> UC_CheckElig : <<include>>
-UC_RegEventSelf ..> UC_BrowseEvents : <<include>>
+UC_RegEventSelf ..> UC_Login : <<include>>
 UC_RegEventBatch ..> UC_BatchRoster : <<include>>
 
 @enduml

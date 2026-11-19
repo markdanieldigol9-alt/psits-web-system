@@ -8,7 +8,9 @@ import { EventAttendanceSheet } from './EventAttendanceSheet';
 import {
   Trophy,
   Building2,
+  User,
   Users,
+  Shield,
   MapPin,
   Calendar,
   Search,
@@ -20,7 +22,6 @@ import {
   Crown,
   Plus,
   Trash2,
-  Sparkles,
   Award,
   ClipboardCheck,
   Pencil,
@@ -414,21 +415,21 @@ export const InstitutionEventLeaderboard = () => {
     if (rank === 1) {
       return (
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-yellow-950 font-black shadow-md shadow-amber-400/30 text-sm">
-          🥇
+          <Trophy size={16} />
         </div>
       );
     }
     if (rank === 2) {
       return (
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-slate-300 to-gray-200 text-slate-800 font-black shadow-md shadow-slate-300/30 text-sm">
-          🥈
+          <Medal size={16} />
         </div>
       );
     }
     if (rank === 3) {
       return (
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-amber-700 to-amber-600 text-white font-black shadow-md shadow-amber-700/30 text-sm">
-          🥉
+          <Award size={16} />
         </div>
       );
     }
@@ -481,9 +482,6 @@ export const InstitutionEventLeaderboard = () => {
       <Card className="overflow-hidden border border-blue-100/80 dark:border-slate-800 shadow-card-md">
         {/* Header with Title & Event Selector */}
         <div className="p-5 sm:p-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-t-2xl relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-10 left-1/3 w-36 h-36 bg-indigo-300/10 rounded-full blur-xl pointer-events-none" />
-
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <div className="flex items-center gap-2.5">
@@ -491,7 +489,7 @@ export const InstitutionEventLeaderboard = () => {
                   <Trophy className="w-5 h-5 text-amber-300" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2 text-balance">
                     Events Leaderboard
                   </h2>
                 </div>
@@ -545,11 +543,11 @@ export const InstitutionEventLeaderboard = () => {
             <div className="relative z-10 mt-4 pt-4 border-t border-white/15 flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-medium text-blue-100">
               <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
                 <Trophy size={13} className="text-amber-300" />
-                <span>Event: <strong className="text-white">{selectedEvent.title}</strong></span>
+                <strong className="text-white">{selectedEvent.title}</strong>
               </span>
               <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
                 <Users size={13} className="text-cyan-300" />
-                <span>Mode: <strong className="text-white">{formatEventModeLabel(selectedEvent.registrationMode)}</strong></span>
+                <strong className="text-white">{formatEventModeLabel(selectedEvent.registrationMode)}</strong>
               </span>
               <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
                 <MapPin size={13} className="text-amber-300" />
@@ -922,7 +920,7 @@ export const InstitutionEventLeaderboard = () => {
                   </h3>
                   {selectedEvent && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
-                      <Users size={12} /> Mode: {formatEventModeLabel(selectedEvent.registrationMode)}
+                      <Users size={12} /> {formatEventModeLabel(selectedEvent.registrationMode)}
                     </span>
                   )}
                 </div>
@@ -934,9 +932,9 @@ export const InstitutionEventLeaderboard = () => {
               {isOfficerOrAdmin ? (
                 <div className="flex flex-wrap items-center gap-2">
                   {[
-                    { rank: 1, label: 'Set 1st Place', icon: '🥇' },
-                    { rank: 2, label: 'Set 2nd Place', icon: '🥈' },
-                    { rank: 3, label: 'Set 3rd Place', icon: '🥉' },
+                    { rank: 1, label: 'Set 1st Place', Icon: Trophy, color: 'text-amber-500' },
+                    { rank: 2, label: 'Set 2nd Place', Icon: Medal, color: 'text-slate-500' },
+                    { rank: 3, label: 'Set 3rd Place', Icon: Award, color: 'text-amber-700' },
                   ]
                     .filter((slot) => !eventWinners.some((w) => w.rankPosition === slot.rank))
                     .map((slot) => (
@@ -947,7 +945,7 @@ export const InstitutionEventLeaderboard = () => {
                         onClick={() => handleOpenAddWinnerModal(slot.rank)}
                         className="flex items-center gap-1.5 text-xs font-bold"
                       >
-                        <span>{slot.icon}</span>
+                        <slot.Icon size={13} className={slot.color} />
                         <span>{slot.label}</span>
                       </Button>
                     ))}
@@ -987,10 +985,9 @@ export const InstitutionEventLeaderboard = () => {
                             <Pencil size={13} />
                           </button>
                         )}
-                        <Sparkles size={18} className="text-amber-500 animate-pulse" />
                       </div>
-                      <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-amber-500/30">
-                        🥇
+                      <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center font-black shadow-md shadow-amber-500/30">
+                        <Trophy size={24} />
                       </div>
                       <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-white shadow-xs">
                         {champion.awardTitle || 'Champion'}
@@ -1005,7 +1002,7 @@ export const InstitutionEventLeaderboard = () => {
                         <Trophy size={13} /> {champion.points} Championship Points
                       </div>
                       {champion.scoreOrNotes && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mt-2">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
                           &quot;{champion.scoreOrNotes}&quot;
                         </p>
                       )}
@@ -1029,8 +1026,8 @@ export const InstitutionEventLeaderboard = () => {
                           <Pencil size={13} />
                         </button>
                       )}
-                      <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-tr from-slate-300 to-gray-200 text-slate-800 flex items-center justify-center font-black text-xl shadow-xs">
-                        🥈
+                      <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-tr from-slate-300 to-gray-200 text-slate-800 flex items-center justify-center font-black shadow-xs">
+                        <Medal size={22} />
                       </div>
                       <span className="inline-block mt-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
                         {silver.awardTitle || '1st Runner Up'}
@@ -1064,8 +1061,8 @@ export const InstitutionEventLeaderboard = () => {
                           <Pencil size={13} />
                         </button>
                       )}
-                      <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-tr from-amber-700 to-amber-600 text-white flex items-center justify-center font-black text-xl shadow-xs">
-                        🥉
+                      <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-tr from-amber-700 to-amber-600 text-white flex items-center justify-center font-black shadow-xs">
+                        <Award size={22} />
                       </div>
                       <span className="inline-block mt-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-700/15 text-amber-900 dark:text-amber-300">
                         {bronze.awardTitle || '2nd Runner Up'}
@@ -1152,7 +1149,7 @@ export const InstitutionEventLeaderboard = () => {
                         <td className="px-4 py-3 text-center font-black text-amber-600 dark:text-amber-400">
                           +{winner.points} pts
                         </td>
-                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 italic text-xs">
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
                           {winner.scoreOrNotes || '—'}
                         </td>
                         {isOfficerOrAdmin && (
@@ -1215,11 +1212,10 @@ export const InstitutionEventLeaderboard = () => {
             {/* Overall Champion Banner */}
             {overallStandings.length > 0 && overallStandings[0] && (
               <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/20 rounded-full blur-2xl pointer-events-none" />
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-4 text-center md:text-left">
-                    <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center font-black text-4xl shadow-inner shrink-0">
-                      👑
+                    <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center font-black shadow-inner shrink-0">
+                      <Crown size={36} className="text-white" />
                     </div>
                     <div>
                       <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-white/30 text-white border border-white/40">
@@ -1242,7 +1238,9 @@ export const InstitutionEventLeaderboard = () => {
                     <div className="w-px h-8 bg-white/20" />
                     <div className="text-center">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Golds</p>
-                      <p className="text-2xl sm:text-3xl font-black text-yellow-300">🥇 {overallStandings[0].goldCount}</p>
+                      <p className="text-2xl sm:text-3xl font-black text-yellow-300 inline-flex items-center justify-center gap-1.5">
+                        <Trophy size={22} /> {overallStandings[0].goldCount}
+                      </p>
                     </div>
                     <div className="w-px h-8 bg-white/20" />
                     <div className="text-center">
@@ -1283,9 +1281,15 @@ export const InstitutionEventLeaderboard = () => {
                       <tr>
                         <th className="px-4 py-3 text-center w-14">Rank</th>
                         <th className="px-4 py-3">School / Institution</th>
-                        <th className="px-4 py-3 text-center font-bold text-amber-600">🥇 Gold</th>
-                        <th className="px-4 py-3 text-center font-bold text-slate-600">🥈 Silver</th>
-                        <th className="px-4 py-3 text-center font-bold text-amber-800">🥉 Bronze</th>
+                        <th className="px-4 py-3 text-center font-bold text-amber-600">
+                          <span className="inline-flex items-center gap-1"><Trophy size={13} /> Gold</span>
+                        </th>
+                        <th className="px-4 py-3 text-center font-bold text-slate-600">
+                          <span className="inline-flex items-center gap-1"><Medal size={13} /> Silver</span>
+                        </th>
+                        <th className="px-4 py-3 text-center font-bold text-amber-800">
+                          <span className="inline-flex items-center gap-1"><Award size={13} /> Bronze</span>
+                        </th>
                         <th className="px-4 py-3 text-center font-bold">Total Medals</th>
                         <th className="px-4 py-3 text-center font-extrabold text-blue-600">Championship Points</th>
                         <th className="px-4 py-3 text-center">Events Won</th>
@@ -1419,32 +1423,49 @@ export const InstitutionEventLeaderboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {activeInstitution.participants.map((p, idx) => (
-                        <tr key={p.id}>
-                          <td className="px-3 py-2.5 text-slate-400 font-bold">{idx + 1}</td>
-                          <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">{p.fullName}</td>
-                          <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{p.position || 'Participant'}</td>
-                          <td className="px-3 py-2.5 tabular-nums">
-                            {p.checkedInAt ? new Date(p.checkedInAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td className="px-3 py-2.5 tabular-nums">
-                            {p.checkedOutAt ? new Date(p.checkedOutAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <span
-                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                p.checkedOutAt
-                                  ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
-                                  : p.isCheckedIn
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                              }`}
-                            >
-                              {p.checkedOutAt ? 'Timed Out' : p.isCheckedIn ? 'In Venue' : 'Not in Venue'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {activeInstitution.participants.map((p, idx) => {
+                        const isEventClosed =
+                          selectedEvent?.status === 'completed' ||
+                          Boolean(selectedEvent?.endAt && Date.now() > Date.parse(selectedEvent.endAt));
+                        const isNotTimedOut = Boolean(p.isCheckedIn && !p.checkedOutAt && isEventClosed);
+
+                        return (
+                          <tr key={p.id}>
+                            <td className="px-3 py-2.5 text-slate-400 font-bold">{idx + 1}</td>
+                            <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">{p.fullName}</td>
+                            <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{p.position || 'Participant'}</td>
+                            <td className="px-3 py-2.5 tabular-nums">
+                              {p.checkedInAt ? new Date(p.checkedInAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) : '—'}
+                            </td>
+                            <td className="px-3 py-2.5 tabular-nums">
+                              {p.checkedOutAt ? (
+                                new Date(p.checkedOutAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+                              ) : isNotTimedOut ? (
+                                <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                                  Not Timed Out
+                                </span>
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  p.checkedOutAt
+                                    ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                                    : isNotTimedOut
+                                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                    : p.isCheckedIn
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                }`}
+                              >
+                                {p.checkedOutAt ? 'Timed Out' : isNotTimedOut ? 'Not Timed Out' : p.isCheckedIn ? 'In Venue' : 'Not in Venue'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1504,22 +1525,22 @@ export const InstitutionEventLeaderboard = () => {
                   <div className="grid grid-cols-3 gap-1.5">
                     {(
                       [
-                        { mode: 'individual', label: 'Individual', icon: '👤' },
-                        { mode: 'pair', label: 'Pair / Duo', icon: '👥' },
-                        { mode: 'team', label: 'Team / Group', icon: '🛡️' },
+                        { mode: 'individual', label: 'Individual', Icon: User },
+                        { mode: 'pair', label: 'Pair / Duo', Icon: Users },
+                        { mode: 'team', label: 'Team / Group', Icon: Shield },
                       ] as const
                     ).map((m) => (
                       <button
                         key={m.mode}
                         type="button"
                         onClick={() => setWinnerForm((prev) => ({ ...prev, eventMode: m.mode }))}
-                        className={`px-2.5 py-2 rounded-xl border text-center transition-all cursor-pointer ${
+                        className={`px-2.5 py-2 rounded-xl border text-center transition-all cursor-pointer inline-flex items-center justify-center gap-1 ${
                           winnerForm.eventMode === m.mode
                             ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-100 font-bold shadow-2xs'
                             : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold'
                         }`}
                       >
-                        <span className="text-xs mr-1">{m.icon}</span>
+                        <m.Icon size={13} className="shrink-0" />
                         <span className="text-[11px]">{m.label}</span>
                       </button>
                     ))}
@@ -1534,24 +1555,24 @@ export const InstitutionEventLeaderboard = () => {
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {[
-                  { rank: 1, label: '1st (Gold)', icon: '🥇' },
-                  { rank: 2, label: '2nd (Silver)', icon: '🥈' },
-                  { rank: 3, label: '3rd (Bronze)', icon: '🥉' },
-                  { rank: 4, label: '4th Place', icon: '🎖️' },
-                  { rank: 5, label: 'Finalist', icon: '🏅' },
+                  { rank: 1, label: '1st (Gold)', Icon: Trophy, color: 'text-amber-500' },
+                  { rank: 2, label: '2nd (Silver)', Icon: Medal, color: 'text-slate-400' },
+                  { rank: 3, label: '3rd (Bronze)', Icon: Award, color: 'text-amber-700' },
+                  { rank: 4, label: '4th Place', Icon: Award, color: 'text-blue-500' },
+                  { rank: 5, label: 'Finalist', Icon: Medal, color: 'text-emerald-500' },
                 ].map((r) => (
                   <button
                     key={r.rank}
                     type="button"
                     onClick={() => handleRankChange(r.rank)}
-                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
                       winnerForm.rankPosition === r.rank
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <div className="text-lg">{r.icon}</div>
-                    <div className="text-[11px] font-bold mt-0.5">{r.label}</div>
+                    <r.Icon size={18} className={r.color} />
+                    <div className="text-[11px] font-bold mt-1">{r.label}</div>
                   </button>
                 ))}
               </div>
@@ -1596,7 +1617,7 @@ export const InstitutionEventLeaderboard = () => {
               </div>
 
               {allRegisteredParticipants.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   No individual participant names found for this event yet — you can type the winner and school below.
                 </p>
               ) : (

@@ -4,7 +4,7 @@ import { MainLayout } from '@/shared/layouts';
 
 import { Card, Button, TextArea, Input, Select } from '@/shared/components/Form';
 import { Badge, Pagination, Modal, TableSkeleton } from '@/shared/components/Common';
-import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus, RotateCcw, Receipt, X } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Edit2, Download, Search, DollarSign, Upload, Building2, User, CheckCircle2, Plus, RotateCcw, Receipt, X, Landmark, Target, Handshake, ArrowLeftRight, FileText } from 'lucide-react';
 import { exportToCSV } from '@/shared/utils/export';
 import api from '@/shared/services/api';
 import { useAuth } from '@/shared/context/AuthContext';
@@ -243,32 +243,32 @@ export const PaymentsPage = () => {
   const categoryTabs = useMemo(() => {
     if (isAdminOrOfficer) {
       return [
-        { id: 'all', label: `All Transactions (${scopedPayments.length})` },
-        { id: 'institution', label: `🏛️ Institution Payments (${scopedPayments.filter(isInstitutionPayment).length})` },
-        { id: 'individual', label: `👤 Individual Membership (${scopedPayments.filter(isIndividualPayment).length})` },
-        { id: 'event', label: `🎯 Event Registrations (${scopedPayments.filter(isEventPayment).length})` },
-        { id: 'sponsorship', label: `🤝 Partner Sponsorships (${scopedPayments.filter(isSponsorshipPayment).length})` },
+        { id: 'all', label: `All Transactions (${scopedPayments.length})`, icon: Receipt },
+        { id: 'institution', label: `Institution Payments (${scopedPayments.filter(isInstitutionPayment).length})`, icon: Landmark },
+        { id: 'individual', label: `Individual Membership (${scopedPayments.filter(isIndividualPayment).length})`, icon: User },
+        { id: 'event', label: `Event Registrations (${scopedPayments.filter(isEventPayment).length})`, icon: Target },
+        { id: 'sponsorship', label: `Partner Sponsorships (${scopedPayments.filter(isSponsorshipPayment).length})`, icon: Handshake },
       ];
     }
     if (isInstitution) {
       return [
-        { id: 'all', label: `All Institution Transactions (${scopedPayments.length})` },
-        { id: 'institution', label: `🏛️ Batch & Partial Remittances (${scopedPayments.filter(isInstitutionPayment).length})` },
-        { id: 'event', label: `🎯 Member Event Registrations (${scopedPayments.filter(isEventPayment).length})` },
+        { id: 'all', label: `All Institution Transactions (${scopedPayments.length})`, icon: Receipt },
+        { id: 'institution', label: `Batch & Partial Remittances (${scopedPayments.filter(isInstitutionPayment).length})`, icon: Landmark },
+        { id: 'event', label: `Member Event Registrations (${scopedPayments.filter(isEventPayment).length})`, icon: Target },
       ];
     }
     if (isIndustry) {
       return [
-        { id: 'all', label: `All Contributions (${scopedPayments.length})` },
-        { id: 'sponsorship', label: `🤝 Corporate Sponsorships (${scopedPayments.filter(isSponsorshipPayment).length})` },
-        { id: 'event', label: `🎯 Event Partnerships (${scopedPayments.filter(isEventPayment).length})` },
+        { id: 'all', label: `All Contributions (${scopedPayments.length})`, icon: Receipt },
+        { id: 'sponsorship', label: `Corporate Sponsorships (${scopedPayments.filter(isSponsorshipPayment).length})`, icon: Handshake },
+        { id: 'event', label: `Event Partnerships (${scopedPayments.filter(isEventPayment).length})`, icon: Target },
       ];
     }
     // Individual Member
     return [
-      { id: 'all', label: `All My Transactions (${scopedPayments.length})` },
-      { id: 'individual', label: `👤 Membership Dues (${scopedPayments.filter(isIndividualPayment).length})` },
-      { id: 'event', label: `🎯 Event Registrations (${scopedPayments.filter(isEventPayment).length})` },
+      { id: 'all', label: `All My Transactions (${scopedPayments.length})`, icon: Receipt },
+      { id: 'individual', label: `Membership Dues (${scopedPayments.filter(isIndividualPayment).length})`, icon: User },
+      { id: 'event', label: `Event Registrations (${scopedPayments.filter(isEventPayment).length})`, icon: Target },
     ];
   }, [isAdminOrOfficer, isInstitution, isIndustry, scopedPayments]);
 
@@ -606,22 +606,7 @@ export const PaymentsPage = () => {
         <div className="module-header-banner">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="telemetry-chip">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
-                  MODULE.FINANCE
-                </span>
-                <span className="text-xs text-blue-700 dark:text-cyan-400 font-mono font-semibold">
-                  {isAdminOrOfficer
-                    ? 'CENTRAL_LEDGER_AUDIT'
-                    : isInstitution
-                    ? 'INSTITUTION_BILLING'
-                    : isIndustry
-                    ? 'CORPORATE_SPONSORSHIP'
-                    : 'MEMBER_RECEIPTS'}
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white tracking-tight text-balance">
                 {isAdminOrOfficer
                   ? 'Financial Ledger & Verification'
                   : isInstitution
@@ -684,9 +669,6 @@ export const PaymentsPage = () => {
                   ? 'Total Contributions Paid'
                   : 'My Total Paid'}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-cyan-300 font-bold">
-                {isAdminOrOfficer ? 'SYS.REV' : isInstitution ? 'INST.PAID' : isIndustry ? 'PARTNER.PAID' : 'MY.PAID'}
-              </span>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold font-display text-blue-600 dark:text-cyan-400 mt-3">
               PHP{' '}
@@ -728,9 +710,6 @@ export const PaymentsPage = () => {
                   ? 'Pending Sponsorships'
                   : 'Pending Review'}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold">
-                {isAdminOrOfficer || isInstitution ? 'INST.BILL' : 'IN_REVIEW'}
-              </span>
             </div>
             {isAdminOrOfficer || isInstitution ? (
               <>
@@ -763,9 +742,6 @@ export const PaymentsPage = () => {
               <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Pending Verification
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
-                IN_REVIEW
-              </span>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-amber-400 mt-3">
               {isAdminOrOfficer || isInstitution
@@ -789,13 +765,6 @@ export const PaymentsPage = () => {
                   : isIndustry
                   ? 'Partner Status'
                   : 'Membership Status'}
-              </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                {isAdminOrOfficer || isInstitution
-                  ? 'SETTLED'
-                  : isIndustry
-                  ? 'PARTNER.STATUS'
-                  : 'MEMBER.STATUS'}
               </span>
             </div>
             {isAdminOrOfficer || isInstitution ? (
@@ -829,23 +798,27 @@ export const PaymentsPage = () => {
 
         {/* Category Navigation Pills */}
         <div className="flex flex-wrap items-center gap-2">
-          {categoryTabs.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => {
-                setFilterCategory(cat.id as any);
-                setCurrentPage(1);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                filterCategory === cat.id
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-obsidian-card text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+          {categoryTabs.map((cat) => {
+            const TabIcon = cat.icon;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setFilterCategory(cat.id as any);
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  filterCategory === cat.id
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-obsidian-card text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+                }`}
+              >
+                <TabIcon size={14} strokeWidth={1.75} className="shrink-0" />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Filter and Search Bar */}
@@ -964,7 +937,10 @@ export const PaymentsPage = () => {
                 tabIndex={0}
               >
                 <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                  <span>👉 Swipe table horizontally to view all columns</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ArrowLeftRight size={12} strokeWidth={1.75} className="shrink-0" />
+                    Swipe horizontally to view all columns
+                  </span>
                   <span className="font-mono text-[10px]">{filteredPayments.length} records</span>
                 </div>
                 <table className="w-full min-w-[1000px]">
@@ -1003,7 +979,7 @@ export const PaymentsPage = () => {
                     if (payment.eventId && payment.event) {
                       return (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
-                          Event: {payment.event}
+                          {payment.event}
                         </span>
                       );
                     }
@@ -1037,8 +1013,9 @@ export const PaymentsPage = () => {
                     }
                     if (payment.paymentKind === 'institution_partial_payment') {
                       return (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
-                          🏛️ Institution Partial / Settlement
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          <Landmark size={12} strokeWidth={1.75} className="shrink-0" />
+                          Institution Partial / Settlement
                         </span>
                       );
                     }
@@ -1056,7 +1033,8 @@ export const PaymentsPage = () => {
                         <div className="font-semibold">{payment.memberName || 'Member'}</div>
                         {payment.institutionName && (
                           <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
-                            🏫 {payment.institutionName}
+                            <Building2 size={12} strokeWidth={1.75} className="shrink-0" />
+                            <span>{payment.institutionName}</span>
                           </div>
                         )}
                         {payment.memberEmail && (
@@ -1072,15 +1050,15 @@ export const PaymentsPage = () => {
                             ₱{Number(payment.netAmount || payment.amount || 0).toLocaleString()}
                           </div>
                           <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                            Paid: ₱{Number(payment.partialAmount || (payment.isPartial ? 0 : payment.amount) || 0).toLocaleString()}
+                            ₱{Number(payment.partialAmount || (payment.isPartial ? 0 : payment.amount) || 0).toLocaleString()} paid
                           </div>
                           {Number(payment.remainingBalance) > 0 ? (
                             <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                              Balance: ₱{Number(payment.remainingBalance).toLocaleString()}
+                              -₱{Number(payment.remainingBalance).toLocaleString()} bal
                             </div>
                           ) : (
                             <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                              ✓ Fully Settled
+                              Settled in full
                             </div>
                           )}
                           <div className="text-[10px] text-gray-400 font-normal mt-0.5">
@@ -1094,7 +1072,7 @@ export const PaymentsPage = () => {
                           </div>
                           {Number(payment.remainingBalance) > 0 && (
                             <div className="text-[11px] font-medium text-rose-600 dark:text-rose-400">
-                              Balance left: ₱{Number(payment.remainingBalance).toLocaleString()}
+                              -₱{Number(payment.remainingBalance).toLocaleString()} bal
                             </div>
                           )}
                           <div className="text-[10px] text-gray-400 font-normal">
@@ -1106,7 +1084,7 @@ export const PaymentsPage = () => {
                           <div>₱{Number(payment.amount || 0).toLocaleString()}</div>
                           {payment.isPartial && payment.remainingBalance ? (
                             <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                              Remaining: ₱{Number(payment.remainingBalance).toLocaleString()}
+                              -₱{Number(payment.remainingBalance).toLocaleString()} bal
                             </div>
                           ) : (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership' || (!payment.eventId && !payment.paymentKind)) ? (
                             <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
@@ -1119,7 +1097,7 @@ export const PaymentsPage = () => {
                     <td className="px-6 py-4 text-sm">
                       <span className="text-gray-950 font-medium">{formattedMethod}</span>
                       {payment.referenceNumber && (
-                        <div className="text-xs text-gray-500 font-mono mt-0.5">Ref: {payment.referenceNumber}</div>
+                        <div className="text-xs text-gray-500 font-mono mt-0.5">{payment.referenceNumber}</div>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -1257,8 +1235,9 @@ export const PaymentsPage = () => {
                 <span className="font-semibold">Institution / Affiliation:</span>{' '}
                 {viewing.institutionName ? (
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 text-xs">
-                      🏫 {viewing.institutionName}
+                    <span className="inline-flex items-center gap-1 font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 text-xs">
+                      <Building2 size={12} strokeWidth={1.75} className="shrink-0" />
+                      <span>{viewing.institutionName}</span>
                     </span>
                     <a
                       href={`/institution-members?search=${encodeURIComponent(viewing.institutionName)}`}
@@ -1268,7 +1247,7 @@ export const PaymentsPage = () => {
                     </a>
                   </div>
                 ) : (
-                  <span className="text-gray-500 text-xs block italic">Individual / General Member</span>
+                  <span className="text-gray-500 text-xs block">Individual / General Member</span>
                 )}
               </div>
               <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'institution_batch_registration' ? 'Institution Batch Member Registration' : viewing.paymentKind === 'institution_partial_payment' ? 'Institution Partial / Settlement' : viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
@@ -1284,7 +1263,10 @@ export const PaymentsPage = () => {
               <div className="rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 space-y-3">
                 <div className="flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-800/60 pb-2">
                   <div className="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
-                    <span>📄 Official Billing Breakdown</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <FileText size={15} strokeWidth={1.75} className="shrink-0" />
+                      Official Billing Breakdown
+                    </span>
                     {viewing.isPartial ? (
                       <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                         Partial Payment
@@ -1409,12 +1391,12 @@ export const PaymentsPage = () => {
                         </span>
                       </div>
                       <div className="text-gray-600 mt-0.5">By: {log.changedByName}</div>
-                      {log.remarks && <div className="text-red-600 italic mt-0.5">Note: {log.remarks}</div>}
+                      {log.remarks && <div className="text-red-600 mt-0.5">Note: {log.remarks}</div>}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 italic">No status changes logged yet for this payment.</p>
+                <p className="text-xs text-gray-500">No status changes logged yet for this payment.</p>
               )}
             </div>
 
@@ -1796,15 +1778,15 @@ export const PaymentsPage = () => {
               options={
                 recordForm.entityType === 'institution'
                   ? [
-                      { value: 'institution_partial_payment', label: '🏛️ Institution Partial / Settlement' },
-                      { value: 'institution_batch_registration', label: '🏫 Institution Batch Registration' },
-                      { value: 'event', label: '🎯 Event Delegation Fee' },
+                      { value: 'institution_partial_payment', label: 'Institution Partial / Settlement' },
+                      { value: 'institution_batch_registration', label: 'Institution Batch Registration' },
+                      { value: 'event', label: 'Event Delegation Fee' },
                     ]
                   : [
-                      { value: 'membership_registration', label: '👤 Membership Registration Fee' },
-                      { value: 'membership_renewal', label: '🔄 Membership Renewal' },
-                      { value: 'event', label: '🎯 Event Registration Fee' },
-                      { value: 'partner_sponsorship', label: '🤝 Partner Sponsorship' },
+                      { value: 'membership_registration', label: 'Membership Registration Fee' },
+                      { value: 'membership_renewal', label: 'Membership Renewal' },
+                      { value: 'event', label: 'Event Registration Fee' },
+                      { value: 'partner_sponsorship', label: 'Partner Sponsorship' },
                     ]
               }
               onChange={(e) => setRecordForm(prev => ({ ...prev, category: e.target.value as any }))}

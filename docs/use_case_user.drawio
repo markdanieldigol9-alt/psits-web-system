@@ -114,29 +114,29 @@
         </mxCell>
 
         <!-- GENERALIZATION -->
-        <mxCell id="e_gen" value="&amp;lt;&amp;lt;specializes&amp;gt;&amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=1.5;strokeColor=#0284C7;" edge="1" parent="1" source="act_inst" target="act_member">
+        <mxCell id="e_gen" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=1.5;strokeColor=#0284C7;" edge="1" parent="1" source="act_inst" target="act_member">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <!-- EDGES (MEMBER) -->
-        <mxCell id="em_reg" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_reg"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_login" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_login"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_theme" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_theme"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_pay" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_reup" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_reup"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_hist" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_hist"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_browse" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_browse"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_guide" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_guide"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_regself" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_regself"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_bracket" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_bracket"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_vote" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_vote"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_forum" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_forum"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_stream" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_stream"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="em_notif" style="edgeStyle=straight;html=1;strokeColor=#0284C7;" edge="1" parent="1" source="act_member" target="uc_u_notif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_reg" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_reg"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_login" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_login"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_theme" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_theme"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_pay" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_pay"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_reup" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_reup"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_hist" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_hist"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_browse" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_browse"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_guide" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_guide"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_regself" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_regself"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_bracket" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_bracket"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_vote" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_vote"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_forum" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_forum"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_stream" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_stream"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em_notif" style="edgeStyle=straight;html=1;strokeColor=#0284C7;endArrow=none;endFill=0;" edge="1" parent="1" source="act_member" target="uc_u_notif"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- EDGES (INSTITUTION REP) -->
-        <mxCell id="ei_roster" style="edgeStyle=straight;html=1;strokeColor=#0369A1;strokeWidth=1.5;" edge="1" parent="1" source="act_inst" target="uc_u_batchroster"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="ei_batchreg" style="edgeStyle=straight;html=1;strokeColor=#0369A1;strokeWidth=1.5;" edge="1" parent="1" source="act_inst" target="uc_u_batchreg"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ei_roster" style="edgeStyle=straight;html=1;strokeColor=#0369A1;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_inst" target="uc_u_batchroster"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ei_batchreg" style="edgeStyle=straight;html=1;strokeColor=#0369A1;strokeWidth=1.5;endArrow=none;endFill=0;" edge="1" parent="1" source="act_inst" target="uc_u_batchreg"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- INCLUDES & EXTENDS -->
         <mxCell id="inc_proof" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeStyle=straight;dashed=1;html=1;endArrow=open;endFill=0;strokeColor=#16A34A;" edge="1" parent="1" source="uc_u_pay" target="uc_u_proof"><mxGeometry relative="1" as="geometry" /></mxCell>
