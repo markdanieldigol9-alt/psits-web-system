@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Alert } from '@/shared/components/Common';
+import { Alert, Modal } from '@/shared/components/Common';
 import { Button, Input, Select } from '@/shared/components/Form';
 import { validateEmail, validatePhoneNumber } from '@/shared/utils/helpers';
 import type { MemberType, RegisterData } from '@/shared/types';
 import api from '@/shared/services/api';
-import { X } from 'lucide-react';
 
 interface AddMemberModalProps {
   isOpen: boolean;
@@ -190,23 +189,9 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-200 p-6">
-          <h2 className="text-2xl font-bold text-gray-900 text-balance">Add New Member</h2>
-          <button
-            onClick={handleClose}
-            aria-label="Close modal"
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add New Member" size="lg">
+      <form onSubmit={handleSubmit} className="space-y-6">
           {error && <Alert type="error" message={error} />}
 
           {formData.membershipMode !== 'renew' && (
@@ -227,16 +212,16 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
           )}
 
           {formData.membershipMode === 'renew' && isLookupPopulated && formData.memberType && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-              <span className="text-sm font-semibold text-gray-800 mr-2">Member Type:</span>
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+            <div className="rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/30 p-4">
+              <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 mr-2">Member Type:</span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
                 {formData.memberType}
               </span>
             </div>
           )}
 
           {formData.memberType === 'individual' && (
-            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900/40 p-4 md:grid-cols-2">
               <Input label="Full Name" value={formData.fullName || ''} onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))} error={errors.fullName} />
               <Input
                 label="Email Address"
@@ -274,7 +259,7 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
           )}
 
           {formData.memberType === 'institution' && (
-            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900/40 p-4 md:grid-cols-2">
               <Input label="Institution Name" value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
               <Input label="Institution Address" value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
               <Input
@@ -290,14 +275,14 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
               <Input label="Representative 1 Position" value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
               <Input label="2nd Institution Representative Name" value={formData.representativeName2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName2: e.target.value }))} error={errors.representativeName2} />
               <Input label="Representative 2 Position" value={formData.representativePosition2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativePosition2: e.target.value }))} error={errors.representativePosition2} />
-              <p className="text-xs text-gray-500 md:col-span-2">Set default password below for the representative account.</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 md:col-span-2">Set default password below for the representative account.</p>
               <Input label="Password" type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} />
               <Input label="Confirm Password" type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
             </div>
           )}
 
           {formData.memberType === 'industry' && (
-            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900/40 p-4 md:grid-cols-2">
               <Input label="Company Name" value={formData.sectorDetails || ''} onChange={(e) => setFormData((p) => ({ ...p, sectorDetails: e.target.value }))} error={errors.sectorDetails} />
               <Input label="Company Address" value={formData.address || ''} onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))} error={errors.address} />
               <Input label="Representative Name" value={formData.representativeName || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName: e.target.value, fullName: p.fullName || e.target.value }))} error={errors.representativeName} />
@@ -349,7 +334,7 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
           />
 
           {formData.membershipMode === 'renew' && (
-            <div className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900/40 p-4 md:grid-cols-3">
               {existingMembers && existingMembers.length > 0 ? (
                 <Select
                   required
@@ -434,13 +419,12 @@ export const AddMemberModal = ({ isOpen, onClose, onSubmit, isLoading = false, e
             </div>
           )}
 
-          <div className="flex gap-3 border-t border-gray-200 pt-6">
+          <div className="flex gap-3 border-t border-gray-200 dark:border-slate-800 pt-6">
             <Button type="submit" variant="primary" size="lg" disabled={isLoading} className="flex-1">
               {isLoading ? 'Adding...' : 'Add Member'}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };

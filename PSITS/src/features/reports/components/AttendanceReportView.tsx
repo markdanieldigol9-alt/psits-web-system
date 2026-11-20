@@ -394,20 +394,20 @@ export const AttendanceReportView = ({
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary/80 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                   Official Attendance & Time Log Report
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-slate-600 font-mono tabular-nums">
                   REF: PSITS-ATT-{new Date().getFullYear()}-{String(metrics.totalRecords).padStart(4, '0')}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
               </h1>
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
+              <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">
                 Office of the Secretariat • Venue Time-In & Time-Out Audit Registry
               </p>
             </div>
           </div>
 
-          <div className="text-left sm:text-right text-xs text-gray-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[210px]">
+          <div className="text-left sm:text-right text-xs text-slate-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[210px] tabular-nums">
             <p>
               <strong className="text-gray-800">Report:</strong>{' '}
               <span className="font-semibold text-primary">{reportTitle.toUpperCase()}</span>
@@ -429,7 +429,7 @@ export const AttendanceReportView = ({
               Unified venue attendance audit across individual registrations and school delegation rosters with Time-In and Time-Out timestamps.
             </span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-gray-600">
+          <div className="flex items-center gap-3 text-[11px] text-slate-600 tabular-nums">
             <span>
               Total Records: <strong>{metrics.totalRecords}</strong>
             </span>
@@ -457,7 +457,7 @@ export const AttendanceReportView = ({
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 print:break-inside-avoid">
         <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-blue-900 uppercase">Total Participants</span>
-          <p className="text-2xl font-black text-primary mt-1" data-testid="attendance-kpi-total">
+          <p className="text-2xl font-black text-primary mt-1 tabular-nums" data-testid="attendance-kpi-total">
             {metrics.totalRecords}
           </p>
           <p className="text-[11px] text-blue-700 mt-0.5">Enrolled records</p>
@@ -465,56 +465,56 @@ export const AttendanceReportView = ({
 
         <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-emerald-900 uppercase">Timed In (Present)</span>
-          <p className="text-2xl font-black text-emerald-700 mt-1" data-testid="attendance-kpi-checked-in">
+          <p className="text-2xl font-black text-emerald-700 mt-1 tabular-nums" data-testid="attendance-kpi-checked-in">
             {metrics.checkedInCount}
           </p>
-          <p className="text-[11px] text-emerald-700 mt-0.5">
+          <p className="text-[11px] text-emerald-700 mt-0.5 tabular-nums">
             {metrics.lateCount > 0 ? `${metrics.lateCount} late arrival(s)` : 'Recorded time-in'}
           </p>
         </div>
 
-        <div className="bg-indigo-50/70 border border-indigo-200/80 rounded-xl p-3.5">
-          <span className="text-[11px] font-bold text-indigo-900 uppercase">Timed Out</span>
-          <p className="text-2xl font-black text-indigo-700 mt-1" data-testid="attendance-kpi-timed-out">
+        <div className="bg-cyan-50/70 border border-cyan-200/80 rounded-xl p-3.5">
+          <span className="text-[11px] font-bold text-cyan-900 uppercase">Timed Out</span>
+          <p className="text-2xl font-black text-cyan-800 mt-1 tabular-nums" data-testid="attendance-kpi-timed-out">
             {metrics.timedOutCount}
           </p>
-          <p className="text-[11px] text-indigo-700 mt-0.5">Completed log</p>
+          <p className="text-[11px] text-cyan-800 mt-0.5">Completed log</p>
         </div>
 
         <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-amber-900 uppercase">In Venue / Pending Out</span>
-          <p className="text-2xl font-black text-amber-700 mt-1" data-testid="attendance-kpi-pending-out">
+          <p className="text-2xl font-black text-amber-700 mt-1 tabular-nums" data-testid="attendance-kpi-pending-out">
             {metrics.inVenueCount + metrics.notTimedOutCount}
           </p>
-          <p className="text-[11px] text-amber-700 mt-0.5">
+          <p className="text-[11px] text-amber-700 mt-0.5 tabular-nums">
             {metrics.inVenueCount} in venue • {metrics.notTimedOutCount} not timed out
           </p>
         </div>
 
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 col-span-2 lg:col-span-1">
           <span className="text-[11px] font-bold text-slate-700 uppercase">Not in Venue</span>
-          <p className="text-2xl font-black text-slate-700 mt-1" data-testid="attendance-kpi-not-arrived">
+          <p className="text-2xl font-black text-slate-700 mt-1 tabular-nums" data-testid="attendance-kpi-not-arrived">
             {metrics.notArrivedCount}
           </p>
-          <p className="text-[11px] text-slate-500 mt-0.5">No check-in recorded</p>
+          <p className="text-[11px] text-slate-600 mt-0.5">No check-in recorded</p>
         </div>
       </div>
 
       {/* Attendance Time-In & Time-Out Registry Table */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden print:overflow-visible">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xs overflow-hidden print:overflow-visible">
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <Clock size={16} className="text-primary" /> Official Attendance Time-In & Time-Out Log
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-600">
               Chronological participant check-in and check-out registry from stored attendance records.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto no-print">
             <div className="relative flex-1 sm:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 aria-label="Search attendance report"
@@ -651,23 +651,23 @@ export const AttendanceReportView = ({
           <table className="w-full text-left border-collapse text-xs" data-testid="attendance-report-table">
             <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 print:static">
               <tr>
-                <th className="px-2.5 py-2.5 text-center w-10">#</th>
+                <th className="px-2.5 py-2.5 text-right w-10 tabular-nums">#</th>
                 <th className="px-2.5 py-2.5">Participant ID</th>
                 <th className="px-3 py-2.5">Participant Name</th>
                 <th className="px-3 py-2.5">Event Title</th>
                 <th className="px-3 py-2.5">Institution / Affiliation</th>
                 <th className="px-2.5 py-2.5">Role / Position</th>
                 <th className="px-2.5 py-2.5 text-center">Registration Source</th>
-                <th className="px-3 py-2.5 text-center">Time In</th>
-                <th className="px-3 py-2.5 text-center">Time Out</th>
-                <th className="px-2.5 py-2.5 text-right">Duration (Mins)</th>
+                <th className="px-3 py-2.5 text-center tabular-nums">Time In</th>
+                <th className="px-3 py-2.5 text-center tabular-nums">Time Out</th>
+                <th className="px-2.5 py-2.5 text-right tabular-nums">Duration (Mins)</th>
                 <th className="px-3 py-2.5 text-center">Attendance Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {paginatedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={11} className="px-4 py-8 text-center text-slate-600">
                     No attendance records found matching the selected filters.
                   </td>
                 </tr>
@@ -692,8 +692,8 @@ export const AttendanceReportView = ({
                       data-attendance-status={rec.attendanceStatus}
                       className="hover:bg-blue-50/30 transition-colors"
                     >
-                      <td className="px-2.5 py-2.5 text-center font-mono text-gray-500">{rowIndex}</td>
-                      <td className="px-2.5 py-2.5 font-mono text-[11px] text-gray-600">
+                      <td className="px-2.5 py-2.5 text-right tabular-nums text-slate-600">{rowIndex}</td>
+                      <td className="px-2.5 py-2.5 font-mono tabular-nums text-[11px] text-slate-600">
                         {rec.participantKey || '—'}
                       </td>
                       <td className="px-3 py-2.5 font-bold text-gray-900">
@@ -704,7 +704,7 @@ export const AttendanceReportView = ({
                       </td>
                       <td className="px-3 py-2.5 text-gray-800">
                         <span className="inline-flex items-center gap-1">
-                          <Building2 size={12} className="text-gray-400 shrink-0 no-print" />
+                          <Building2 size={12} className="text-slate-500 shrink-0 no-print" />
                           <span>{rec.institutionName || 'PSITS Individual Member'}</span>
                         </span>
                       </td>
@@ -716,33 +716,33 @@ export const AttendanceReportView = ({
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             isIndividual
                               ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                              : 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : 'bg-cyan-100 text-cyan-900 border border-cyan-200'
                           }`}
                         >
                           {rec.registrationSource || 'Individual Registration'}
                         </span>
                       </td>
                       <td
-                        className="px-3 py-2.5 text-center font-mono text-[11px] font-semibold text-gray-900 whitespace-nowrap"
+                        className="px-3 py-2.5 text-center tabular-nums text-[11px] font-semibold text-gray-900 whitespace-nowrap"
                         data-testid="attendance-cell-time-in"
                         data-raw-time-in={rec.checkedInAt || ''}
                       >
                         {timeInDisplay}
                       </td>
                       <td
-                        className={`px-3 py-2.5 text-center font-mono text-[11px] whitespace-nowrap ${
+                        className={`px-3 py-2.5 text-center tabular-nums text-[11px] whitespace-nowrap ${
                           rec.checkedOutAt
                             ? 'font-semibold text-gray-900'
                             : rec.attendanceStatus === 'not_timed_out'
                             ? 'font-bold text-amber-700'
-                            : 'text-gray-500'
+                            : 'text-slate-600'
                         }`}
                         data-testid="attendance-cell-time-out"
                         data-raw-time-out={rec.checkedOutAt || ''}
                       >
                         {timeOutDisplay}
                       </td>
-                      <td className="px-2.5 py-2.5 text-right font-mono text-gray-700">
+                      <td className="px-2.5 py-2.5 text-right tabular-nums text-slate-700">
                         {durationDisplay}
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -750,7 +750,7 @@ export const AttendanceReportView = ({
                           data-testid="attendance-cell-status"
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             rec.attendanceStatus === 'timed_out'
-                              ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                              ? 'bg-cyan-100 text-cyan-900 border border-cyan-200'
                               : rec.attendanceStatus === 'in_venue'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               : rec.attendanceStatus === 'not_timed_out'
@@ -768,7 +768,7 @@ export const AttendanceReportView = ({
                             <AlertTriangle size={11} className="shrink-0 no-print" />
                           )}
                           {rec.attendanceStatus === 'not_arrived' && (
-                            <UserCheck size={11} className="shrink-0 text-gray-400 no-print" />
+                            <UserCheck size={11} className="shrink-0 text-slate-500 no-print" />
                           )}
                           <span>{statusDisplay}</span>
                         </span>
@@ -783,7 +783,7 @@ export const AttendanceReportView = ({
 
         {/* Pagination Footer (Hidden on Print) */}
         <div className="no-print px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-gray-600">
+          <div className="flex items-center gap-2 text-slate-600 tabular-nums">
             <span>Rows per page:</span>
             <select
               aria-label="Attendance rows per page"
@@ -793,14 +793,14 @@ export const AttendanceReportView = ({
                 setPageSize(val);
                 setCurrentPage(1);
               }}
-              className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-900 font-semibold"
+              className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-900 font-semibold tabular-nums"
             >
               <option value="15">15</option>
               <option value="30">30</option>
               <option value="50">50</option>
               <option value="all">All ({filteredRecords.length})</option>
             </select>
-            <span>
+            <span className="tabular-nums">
               Showing{' '}
               <strong>
                 {filteredRecords.length === 0
@@ -820,7 +820,7 @@ export const AttendanceReportView = ({
           </div>
 
           {pageSize !== 'all' && totalPages > 1 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 tabular-nums">
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -829,7 +829,7 @@ export const AttendanceReportView = ({
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="px-2 font-semibold text-gray-700">
+              <span className="px-2 font-semibold text-gray-700 tabular-nums">
                 Page {currentPage} of {totalPages}
               </span>
               <button
@@ -856,16 +856,16 @@ export const AttendanceReportView = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-xs">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Prepared & Verified By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Prepared & Verified By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">{preparedBy}</p>
-            <p className="text-[11px] text-gray-500 capitalize">{userRole} / Attendance & Secretariat</p>
+            <p className="text-[11px] text-slate-600 capitalize">{userRole} / Attendance & Secretariat</p>
           </div>
           <div className="text-left md:text-right">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Attested & Approved By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Attested & Approved By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-48 md:ml-auto"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">Regional Organization President</p>
-            <p className="text-[11px] text-gray-500">PSITS Regional Executive Council</p>
+            <p className="text-[11px] text-slate-600">PSITS Regional Executive Council</p>
           </div>
         </div>
       </div>

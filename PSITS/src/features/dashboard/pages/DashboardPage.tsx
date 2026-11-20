@@ -217,7 +217,7 @@ export const DashboardPage = () => {
                 <div className="ml-3">
                   <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200">Renewal Notice</h3>
                   <div className="mt-1 text-xs sm:text-sm text-amber-700 dark:text-amber-300">
-                    <p>
+                    <p className="tabular-nums">
                       Your membership will expire in {daysLeft} days (on {expiryDate?.toLocaleDateString()}). Please renew soon to maintain access.
                     </p>
                   </div>
@@ -230,7 +230,7 @@ export const DashboardPage = () => {
           <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${roleConfig.heroGradient} text-white shadow-xl shadow-blue-900/20 p-6 sm:p-8 animate-fade-in border border-white/10`}>
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-mono font-bold uppercase tracking-wider mb-2 border border-white/20">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-semibold uppercase tracking-wider mb-2 border border-white/20">
                   <span className={`w-1.5 h-1.5 rounded-full ${roleConfig.dotColor}`} /> {roleConfig.portalTitle}
                 </span>
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-balance">Welcome, {getUserDisplayName(user)}</h1>
@@ -291,12 +291,12 @@ export const DashboardPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-cyan-500 shadow-card transition-all">
-              <div className="p-3 bg-cyan-50 dark:bg-cyan-950/50 rounded-2xl text-cyan-600 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800">
+            <Card className="p-5 flex items-center gap-4 shadow-card transition-all">
+              <div className="p-3 bg-cyan-50 dark:bg-cyan-950/50 rounded-lg text-cyan-600 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800">
                 <Users size={22} />
               </div>
               <div>
-                <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Account Status</p>
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Account Status</p>
                 <div className="mt-1 flex items-center gap-2">
                   <Badge variant={user.status === 'active' ? 'cyber' : user.status === 'pending' ? 'warning' : 'error'} dot={true}>
                     {user.status || (user.isActive ? 'active' : 'pending')}
@@ -305,25 +305,25 @@ export const DashboardPage = () => {
               </div>
             </Card>
 
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-blue-500 shadow-card hover:shadow-card-md transition-all">
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-2xl text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+            <Card className="p-5 flex items-center gap-4 shadow-card hover:shadow-card-md transition-all">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                 <CalendarDays size={22} />
               </div>
               <div>
-                <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Service Period</p>
-                <p className="mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-mono">
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Service Period</p>
+                <p className="mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                   {user.membershipStartedAt ? formatDate(user.membershipStartedAt) : 'N/A'} - {user.membershipExpiresAt ? formatDate(user.membershipExpiresAt) : 'N/A'}
                 </p>
               </div>
             </Card>
 
-            <Card className="p-5 flex items-center gap-4 border-l-4 border-l-emerald-500 shadow-card hover:shadow-card-md transition-all">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+            <Card className="p-5 flex items-center gap-4 shadow-card hover:shadow-card-md transition-all">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-lg text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                 <Clock size={22} />
               </div>
               <div>
-                <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Days Remaining</p>
-                <p className={`mt-1 font-bold text-sm ${daysLeft !== null && daysLeft < 30 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Days Remaining</p>
+                <p className={`mt-1 font-bold text-sm tabular-nums ${daysLeft !== null && daysLeft < 30 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {daysLeft !== null ? (daysLeft >= 0 ? `${daysLeft} days` : 'Expired') : 'N/A'}
                 </p>
               </div>
@@ -336,20 +336,20 @@ export const DashboardPage = () => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card title="Upcoming Events" subtitle="Your next activities and schedules">
               <div className="space-y-3">
-                {memberLoading && <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Loading events...</p>}
+                {memberLoading && <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Loading events...</p>}
                 {!memberLoading && upcomingEvents.length === 0 && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium py-4 text-center">No upcoming events yet.</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 font-medium py-4 text-center">No upcoming events yet.</p>
                 )}
                 {upcomingEvents.map((event) => (
-                  <div key={event.id} className="border border-gray-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-cyan-500/30 transition-all bg-white dark:bg-[#0B1326]">
+                  <div key={event.id} className="border border-gray-200/80 dark:border-slate-800 rounded-lg p-4 hover:border-cyan-500/30 transition-all bg-white dark:bg-obsidian-base">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{event.title}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 flex items-center gap-1.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 flex items-center gap-1.5 tabular-nums">
                           <CalendarDays size={13} className="text-cyan-500" />
                           {formatDate(event.date)}{event.time ? ` at ${event.time}` : ''}
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate mt-0.5">{event.location || 'TBA'}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">{event.location || 'TBA'}</p>
                       </div>
                       <Badge variant={event.status === 'ongoing' ? 'cyber' : 'primary'} dot={true} className="shrink-0">
                         {event.status}
@@ -362,20 +362,20 @@ export const DashboardPage = () => {
 
             <Card title="Announcements List" subtitle="Latest system updates for members">
               <div className="space-y-3">
-                {memberLoading && <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Loading announcements...</p>}
+                {memberLoading && <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Loading announcements...</p>}
                 {!memberLoading && latestAnnouncements.length === 0 && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium py-4 text-center">No announcements available.</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 font-medium py-4 text-center">No announcements available.</p>
                 )}
                 {latestAnnouncements.map((announcement) => (
-                  <div key={announcement.id} className="border border-gray-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-blue-500/30 transition-all bg-white dark:bg-[#0B1326]">
+                  <div key={announcement.id} className="border border-gray-200/80 dark:border-slate-800 rounded-lg p-4 hover:border-blue-500/30 transition-all bg-white dark:bg-obsidian-base">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5">
+                      <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5">
                         <Megaphone size={16} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{announcement.title}</p>
-                          <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 font-medium shrink-0">{formatDate(announcement.date)}</span>
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium shrink-0 tabular-nums">{formatDate(announcement.date)}</span>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">{announcement.content}</p>
                       </div>
@@ -390,7 +390,7 @@ export const DashboardPage = () => {
             {uiKey === 'member_institutional' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <Button variant="outline" onClick={() => navigate('/institution-members')} className="justify-between">
-                  <span className="flex items-center gap-2 text-teal-700 dark:text-teal-300 font-bold"><Upload size={16} /> Batch Roster</span>
+                  <span className="flex items-center gap-2 font-bold"><Upload size={16} /> Batch Roster</span>
                   <ArrowRight size={16} />
                 </Button>
                 <Button variant="outline" onClick={() => navigate('/payments')} className="justify-between">
@@ -489,7 +489,7 @@ export const DashboardPage = () => {
         <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${roleConfig.heroGradient} text-white shadow-xl shadow-blue-900/20 p-8 sm:p-10 animate-fade-in border border-blue-700/40`}>
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-300">
+              <div className="flex items-center gap-2 font-semibold tracking-wide text-[11px] text-cyan-300">
                 <span className={`w-2 h-2 rounded-full ${roleConfig.dotColor}`} />
                 <span>{roleConfig.portalTitle}</span>
               </div>
@@ -556,12 +556,12 @@ export const DashboardPage = () => {
                     <div className="flex items-center gap-2">
                       <p className="text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider">{stat.label}</p>
                     </div>
-                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{stat.value}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight tabular-nums">{stat.value}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                       {isLoading ? 'Refreshing...' : stat.subtitle}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-2xl ${stat.iconBg} shadow-sm group-hover:scale-110 transition-transform`}>
+                  <div className={`p-3 rounded-lg ${stat.iconBg} shadow-sm group-hover:scale-110 transition-transform`}>
                     <Icon size={22} />
                   </div>
                 </div>
@@ -582,137 +582,137 @@ export const DashboardPage = () => {
             <button
               type="button"
               onClick={() => navigate('/members')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <Users size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Members Roster</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Approvals & directory</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Approvals & directory</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/institution-members')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-teal-500/40 hover:bg-teal-50/40 dark:hover:bg-teal-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <Building2 size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">School Rosters</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Batch uploads & reps</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Batch uploads & reps</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-teal-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/events')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-amber-500/40 hover:bg-amber-50/40 dark:hover:bg-amber-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <CalendarDays size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Event Rosters</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Registrations & schedules</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Registrations & schedules</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/payments')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <DollarSign size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Financial Ledger</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Remittance & OR audit</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Remittance & OR audit</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/stream-events')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-purple-500/40 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <Video size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Stream Events</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Clips & live broadcast</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Clips & live broadcast</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/elections')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-cyan-500/40 hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-cyan-50 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <Vote size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Election Hub</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Ballots & live tallies</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Ballots & live tallies</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-cyan-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/reports')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-rose-500/40 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <FileText size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Export Center</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Official PDFs & Excel</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Official PDFs & Excel</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-rose-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/announcements')}
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-indigo-500/40 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition-all text-left cursor-pointer"
+              className="group flex items-center justify-between p-3.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:border-blue-500/40 dark:hover:border-cyan-400/40 hover:bg-blue-50/40 dark:hover:bg-cyan-950/20 transition-all text-left cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
                   <Megaphone size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Announcements</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Publish news & updates</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">Publish news & updates</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+              <ArrowRight size={15} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
             </button>
           </div>
         </Card>

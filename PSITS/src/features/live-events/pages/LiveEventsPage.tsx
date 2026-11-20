@@ -336,7 +336,7 @@ export const LiveEventsPage = () => {
                       Uploaded by {e.hostLabel || 'PSITS'}
                     </div>
                     {((e as any).createdAt || e.startAt) && (
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <span className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">
                         Date: {new Date(((e as any).createdAt || e.startAt)!).toLocaleDateString()}
                       </span>
                     )}
@@ -390,7 +390,7 @@ export const LiveEventsPage = () => {
           ))}
 
           {!isLoading && sorted.length === 0 && (
-            <Card className="p-10 text-center text-slate-600 dark:text-slate-400">
+            <Card className="p-10 text-center text-slate-600 dark:text-slate-300">
               No recorded video events yet.
               {canManage ? ' Click "Upload Video Event" to get started.' : ' Please check back later.'}
             </Card>
@@ -430,34 +430,34 @@ export const LiveEventsPage = () => {
                 />
 
                 {activeSession.description && (
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 dark:bg-slate-800/60 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-1">Description</div>
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/60 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-1">Description</div>
                     <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">{activeSession.description}</p>
                   </div>
                 )}
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-xl border border-gray-200 bg-white">
-                  <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-between">
+                <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card">
+                  <div className="border-b border-gray-100 dark:border-slate-800 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-slate-100 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Film size={16} className="text-primary" />
                       Video Clip Info
                     </span>
                   </div>
-                  <div className="space-y-3 px-4 py-4 text-sm text-gray-700">
+                  <div className="space-y-3 px-4 py-4 text-sm text-gray-700 dark:text-slate-300">
                     {activeSession.recordingUrl ? (
                       <div className="space-y-3">
-                        <div className="rounded-lg bg-green-50 border border-green-200 p-3">
+                        <div className="rounded-md bg-green-50 dark:bg-emerald-950/30 border border-green-200 dark:border-emerald-800 p-3">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-green-900 text-xs uppercase tracking-wide">Video Available</span>
+                            <span className="font-semibold text-green-900 dark:text-emerald-300 text-xs uppercase tracking-wide">Video Available</span>
                             {activeSession.recordingExpiresAt && (
-                              <span className="text-xs text-amber-700 font-medium">
+                              <span className="text-xs text-amber-700 dark:text-amber-300 font-medium tabular-nums">
                                 {Math.max(0, Math.ceil((new Date(activeSession.recordingExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
                               </span>
                             )}
                           </div>
-                          <div className="mt-1 text-xs text-gray-600">
+                          <div className="mt-1 text-xs text-slate-600 dark:text-slate-300 tabular-nums">
                             Expires: {activeSession.recordingExpiresAt ? new Date(activeSession.recordingExpiresAt).toLocaleDateString() : 'Active'}
                           </div>
                         </div>
@@ -475,7 +475,7 @@ export const LiveEventsPage = () => {
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteRecording(activeSession)}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/50"
                             >
                               <Trash2 size={15} />
                               Delete
@@ -484,12 +484,12 @@ export const LiveEventsPage = () => {
                         </div>
                       </div>
                     ) : activeSession.streamUrl ? (
-                      <div className="rounded-lg bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-900 p-3 space-y-2">
+                      <div className="rounded-md bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-900 p-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-blue-900 dark:text-cyan-400 text-xs uppercase tracking-wide">
                             External Stream Link
                           </span>
-                          <span className="font-mono text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="font-semibold tracking-wider text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded uppercase">
                             {parseVideoSource(activeSession.streamUrl).type}
                           </span>
                         </div>
@@ -503,15 +503,15 @@ export const LiveEventsPage = () => {
                         </a>
                       </div>
                     ) : (
-                      <div className="text-gray-500 text-xs">No video clip or stream link configured yet.</div>
+                      <div className="text-slate-600 dark:text-slate-300 text-xs">No video clip or stream link configured yet.</div>
                     )}
 
                     {canManage && (
-                      <div className="border-t border-gray-100 pt-3">
-                        <label className="block text-xs font-semibold uppercase tracking-wide text-gray-700">
+                      <div className="border-t border-gray-100 dark:border-slate-800 pt-3">
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-slate-200">
                           {activeSession.recordingUrl ? 'Replace Video Clip' : 'Upload Video Clip'}
                         </label>
-                        <p className="text-[11px] text-gray-500 mt-0.5">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                           Only video clips (.mp4, .webm, .mov) are allowed.
                         </p>
                         <div className="mt-2">
@@ -569,28 +569,28 @@ export const LiveEventsPage = () => {
                           />
                         </div>
                         {isUploadingRecording && (
-                          <div className="mt-2 text-xs text-gray-500">Uploading… {recordingUploadPct}%</div>
+                          <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 tabular-nums">Uploading… {recordingUploadPct}%</div>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white">
-                  <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">Comments & Chat</div>
+                <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card">
+                  <div className="border-b border-gray-100 dark:border-slate-800 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-slate-100">Comments & Chat</div>
                   <div className="max-h-[380px] space-y-3 overflow-y-auto px-4 py-4 text-sm">
                     {isLoadingChat ? (
-                      <div className="text-gray-500">Loading chat…</div>
+                      <div className="text-slate-600 dark:text-slate-300">Loading chat…</div>
                     ) : chatMessages.length === 0 ? (
-                      <div className="text-gray-500">No comments yet.</div>
+                      <div className="text-slate-600 dark:text-slate-300">No comments yet.</div>
                     ) : (
                       chatMessages.map((m: any) => (
-                        <div key={m.id} className="rounded-lg bg-gray-50 px-3 py-2">
-                          <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
-                            <span className="font-semibold text-gray-700">{m.user?.name || 'User'}</span>
-                            <span>{m.createdAt ? new Date(m.createdAt).toLocaleString() : ''}</span>
+                        <div key={m.id} className="rounded-md bg-gray-50 dark:bg-slate-800/60 px-3 py-2">
+                          <div className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
+                            <span className="font-semibold text-gray-800 dark:text-slate-200">{m.user?.name || 'User'}</span>
+                            <span className="tabular-nums">{m.createdAt ? new Date(m.createdAt).toLocaleString() : ''}</span>
                           </div>
-                          <div className="mt-1 text-gray-800">{m.message}</div>
+                          <div className="mt-1 text-gray-800 dark:text-slate-200">{m.message}</div>
                         </div>
                       ))
                     )}

@@ -275,11 +275,11 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
         } lg:translate-x-0 transition-transform duration-200 w-64 flex flex-col gradient-sidebar border-r border-gray-100 dark:border-slate-800/80 overflow-hidden z-30 shadow-[1px_0_0_0_rgb(0,0,0,0.04)] no-print`}
       >
         {/* ── Logo area ─────────────────────────── */}
-        <div className="flex items-center gap-3 px-5 h-[60px] border-b border-gray-100/80 dark:border-slate-800/60 shrink-0">
+        <div className="flex items-center gap-3 px-5 h-[60px] border-b border-slate-100/80 dark:border-slate-800/60 shrink-0">
           <img src={logo} alt="PSITS" className="h-9 w-9 object-contain rounded-full shadow-xs" />
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tracking-tight">PSITS</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide">Web System</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">PSITS</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold tracking-wide">Web System</span>
           </div>
         </div>
 
@@ -288,7 +288,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
           {groupsToDisplay.map((group, gi) => (
             <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
               {/* Group label */}
-              <p className="px-3 mb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <p className="px-3 mb-1.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 {group.group}
               </p>
 
@@ -306,7 +306,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                     onClick={onClose}
                     className={`group flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition-all duration-150 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-50 to-cyan-50/50 dark:from-blue-950/60 dark:to-cyan-950/30 text-blue-700 dark:text-cyan-300 font-bold shadow-xs border-l-[3px] border-l-cyan-500 dark:border-l-cyan-400'
+                        ? 'bg-gradient-to-r from-blue-50 to-cyan-50/50 dark:from-blue-950/60 dark:to-cyan-950/30 text-primary-700 dark:text-cyan-300 font-bold shadow-xs border-l-[3px] border-l-cyan-500 dark:border-l-cyan-400'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
@@ -315,8 +315,8 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                         size={17}
                         className={`shrink-0 transition-colors ${
                           isActive
-                            ? 'text-blue-600 dark:text-cyan-400'
-                            : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                            ? 'text-primary-600 dark:text-cyan-400'
+                            : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                         }`}
                       />
                       <span className="truncate">{item.label}</span>
@@ -332,14 +332,14 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
         </nav>
 
         {/* ── User footer ────────────────────────────────── */}
-        <div className="shrink-0 border-t border-gray-100 dark:border-slate-800/80 p-3 space-y-2">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors cursor-default">
+        <div className="shrink-0 border-t border-slate-100 dark:border-slate-800/80 p-3 space-y-2">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-default">
             <div className="relative shrink-0">
               {user?.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
                   alt={getUserDisplayName(user)}
-                  className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-slate-700"
+                  className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                 />
               ) : (
                 <div className={`w-8 h-8 rounded-full bg-gradient-to-tr ${roleConfig.avatarGradient} text-white flex items-center justify-center text-xs font-bold shadow-sm`}>
@@ -349,21 +349,21 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
               <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 truncate leading-tight">
+              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight">
                 {getUserDisplayName(user)}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate leading-tight mt-0.5">
+              <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium truncate leading-tight mt-0.5">
                 {roleConfig.badgeLabel}
               </span>
             </div>
           </div>
 
-          <div className="px-2 pt-1.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 border-t border-gray-100/80 dark:border-slate-800/60 font-sans">
-            <Link to="/terms" className="hover:underline hover:text-slate-600 dark:hover:text-slate-300">
+          <div className="px-2 pt-1.5 flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-400 border-t border-slate-100/80 dark:border-slate-800/60 font-sans">
+            <Link to="/terms" className="hover:underline hover:text-primary-600 dark:hover:text-cyan-400">
               Terms & Conditions
             </Link>
             <span>•</span>
-            <Link to="/privacy" className="hover:underline hover:text-slate-600 dark:hover:text-slate-300">
+            <Link to="/privacy" className="hover:underline hover:text-primary-600 dark:hover:text-cyan-400">
               Privacy (RA 10173)
             </Link>
           </div>

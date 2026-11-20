@@ -105,9 +105,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         msg.includes('dynamically imported module');
 
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 text-center animate-fade-in">
-            <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center border shadow-sm ${
+        <div className="min-h-screen bg-surface-secondary dark:bg-obsidian-lowest flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white dark:bg-obsidian-card rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 text-center animate-fade-in">
+            <div className={`w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center border shadow-sm ${
               isChunkLoadFailed
                 ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
                 : 'bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
@@ -126,7 +126,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </p>
 
             {this.state.error && (
-              <div className="mt-4 p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left overflow-x-auto max-h-32">
+              <div className="mt-4 p-3 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left overflow-x-auto max-h-32">
                 <p className="text-[11px] font-mono text-rose-600 dark:text-rose-400 font-semibold break-words">
                   {this.state.error.toString()}
                 </p>
@@ -137,7 +137,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all cursor-pointer"
               >
                 <RefreshCw size={15} />
                 <span>{isChunkLoadFailed ? 'Update & Refresh' : 'Reload Page'}</span>

@@ -16,7 +16,7 @@ export const MainLayout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen flex bg-surface-secondary dark:bg-obsidian-lowest text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-200">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 min-w-0 flex flex-col">
         <Header
@@ -61,7 +61,7 @@ export const AuthLayout = ({ title, subtitle, children }: AuthLayoutProps) => {
           {(title || subtitle) && (
             <div className="mb-6 sm:mb-8">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight text-balance max-w-lg">{title}</h2>
-              {subtitle && <p className="text-sm sm:text-base text-gray-500 mt-1.5">{subtitle}</p>}
+              {subtitle && <p className="text-sm sm:text-base text-slate-600 mt-1.5">{subtitle}</p>}
             </div>
           )}
           {children}
@@ -74,7 +74,7 @@ export const AuthLayout = ({ title, subtitle, children }: AuthLayoutProps) => {
 
 export const BlankLayout = ({ children }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 transition-colors duration-200">
+    <div className="min-h-screen flex items-center justify-center bg-surface-secondary dark:bg-obsidian-lowest text-slate-900 dark:text-slate-100 p-4 transition-colors duration-200">
       {children}
     </div>
   );

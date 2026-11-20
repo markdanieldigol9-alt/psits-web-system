@@ -110,7 +110,7 @@ export const VerifyActionModal = ({
           />
         )}
 
-        {error && <div className="text-sm text-red-600">{error}</div>}
+        {error && <div className="text-sm text-rose-600 dark:text-rose-400 font-medium">{error}</div>}
 
         <div className="flex justify-end gap-3 pt-1">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>

@@ -8,9 +8,9 @@ export const LandingPage = () => {
   const { effectiveTheme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#070D1E] text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-500/20 selection:text-blue-700 dark:selection:bg-cyan-500/30 dark:selection:text-cyan-400 transition-colors duration-200 flex flex-col justify-between relative overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-obsidian-deep text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-500/20 selection:text-blue-700 dark:selection:bg-cyan-500/30 dark:selection:text-cyan-400 transition-colors duration-200 flex flex-col justify-between relative overflow-x-hidden">
       {/* ── Top Navigation Bar ───────────────────────────────── */}
-      <header className="w-full z-20 bg-white/80 dark:bg-[#070D1E]/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 transition-all duration-200">
+      <header className="w-full z-20 bg-white/80 dark:bg-obsidian-deep/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 transition-all duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Brand Logo */}
@@ -108,7 +108,7 @@ export const LandingPage = () => {
             {/* Vision Card */}
             <div className="relative rounded-2xl p-8 sm:p-10 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
               <div className="space-y-6">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-cyan-400">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-cyan-400">
                   <Target size={28} />
                 </div>
                 <div className="space-y-2">
@@ -122,13 +122,13 @@ export const LandingPage = () => {
               </div>
 
               <div className="pt-8 mt-6 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <BookOpen size={13} className="text-blue-500" /> IT Education Venue
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <ShieldCheck size={13} className="text-cyan-500" /> Student Solidarity
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <Award size={13} className="text-amber-500" /> Academic Excellence
                 </span>
               </div>
@@ -137,7 +137,7 @@ export const LandingPage = () => {
             {/* Mission Card */}
             <div className="relative rounded-2xl p-8 sm:p-10 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
               <div className="space-y-6">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
                   <Compass size={28} />
                 </div>
                 <div className="space-y-2">
@@ -151,13 +151,13 @@ export const LandingPage = () => {
               </div>
 
               <div className="pt-8 mt-6 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <Users size={13} className="text-emerald-500" /> Inter-School Environment
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <BookOpen size={13} className="text-teal-500" /> IT Education Venue
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <ShieldCheck size={13} className="text-blue-500" /> Student Solidarity
                 </span>
               </div>
@@ -167,7 +167,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ── Footer (Matching Mockup) ─────────────────────────── */}
-      <footer className="w-full bg-white dark:bg-[#070D1E] border-t border-slate-100 dark:border-slate-800/80 py-6 sm:py-8 z-20">
+      <footer className="w-full bg-white dark:bg-obsidian-deep border-t border-slate-100 dark:border-slate-800/80 py-6 sm:py-8 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Left: Brand Icon + Name */}
@@ -179,18 +179,18 @@ export const LandingPage = () => {
             </div>
 
             {/* Center: Legal & Governance Links */}
-            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-              <Link to="/terms" className="hover:text-blue-600 dark:hover:text-cyan-400 hover:underline transition-colors">
+            <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+              <Link to="/terms" className="hover:text-primary-600 dark:hover:text-cyan-400 hover:underline transition-colors">
                 Terms &amp; Conditions
               </Link>
               <span>•</span>
-              <Link to="/privacy" className="hover:text-blue-600 dark:hover:text-cyan-400 hover:underline transition-colors">
+              <Link to="/privacy" className="hover:text-primary-600 dark:hover:text-cyan-400 hover:underline transition-colors">
                 Privacy Policy (RA 10173)
               </Link>
             </div>
 
             {/* Right: Copyright Text */}
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-right">
+            <p className="text-xs text-slate-600 dark:text-slate-400 text-center sm:text-right tabular-nums">
               &copy; {new Date().getFullYear()} Philippine Society of Information Technology Students Region XII. All rights reserved.
             </p>
           </div>

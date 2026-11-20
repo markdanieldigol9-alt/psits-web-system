@@ -504,7 +504,7 @@ export const InstitutionEventLeaderboard = () => {
                   onChange={(e) => handleEventChange(e.target.value)}
                   disabled={isLoading || events.length === 0}
                   aria-label="Select Event"
-                  className="w-full px-5 sm:px-6 py-3.5 sm:py-4 md:py-4.5 bg-white/15 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/35 hover:border-white/55 rounded-2xl text-base sm:text-lg md:text-xl font-black tracking-tight focus:outline-none focus:ring-4 focus:ring-white/30 cursor-pointer appearance-none pr-14 sm:pr-16 shadow-lg transition-all min-h-[52px] sm:min-h-[58px] md:min-h-[64px] flex items-center"
+                  className="w-full px-5 sm:px-6 py-3.5 sm:py-4 md:py-4.5 bg-white/15 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/35 hover:border-white/55 rounded-lg text-base sm:text-lg md:text-xl font-black tracking-tight focus:outline-none focus:ring-4 focus:ring-white/30 cursor-pointer appearance-none pr-14 sm:pr-16 shadow-lg transition-all min-h-[52px] sm:min-h-[58px] md:min-h-[64px] flex items-center"
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
@@ -531,7 +531,7 @@ export const InstitutionEventLeaderboard = () => {
                 disabled={isRefreshing || isLoading}
                 title="Refresh Leaderboard Data"
                 aria-label="Refresh Leaderboard Data"
-                className="h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] md:h-[64px] md:w-[64px] flex items-center justify-center bg-white/15 hover:bg-white/25 active:scale-95 text-white border-2 border-white/35 hover:border-white/55 rounded-2xl shrink-0 transition-all shadow-lg disabled:opacity-50 cursor-pointer"
+                className="h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] md:h-[64px] md:w-[64px] flex items-center justify-center bg-white/15 hover:bg-white/25 active:scale-95 text-white border-2 border-white/35 hover:border-white/55 rounded-lg shrink-0 transition-all shadow-lg disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
@@ -541,21 +541,21 @@ export const InstitutionEventLeaderboard = () => {
           {/* Selected Event Details Pill Strip */}
           {selectedEvent && (
             <div className="relative z-10 mt-4 pt-4 border-t border-white/15 flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-medium text-blue-100">
-              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-md backdrop-blur-sm">
                 <Trophy size={13} className="text-amber-300" />
                 <strong className="text-white">{selectedEvent.title}</strong>
               </span>
-              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-md backdrop-blur-sm">
                 <Users size={13} className="text-cyan-300" />
                 <strong className="text-white">{formatEventModeLabel(selectedEvent.registrationMode)}</strong>
               </span>
-              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-md backdrop-blur-sm">
                 <MapPin size={13} className="text-amber-300" />
                 <span>Venue: <strong className="text-white">{selectedEvent.location || 'TBA'}</strong></span>
               </span>
-              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 bg-black/15 px-2.5 py-1 rounded-md backdrop-blur-sm">
                 <Calendar size={13} className="text-blue-200" />
-                <span>Schedule: <strong className="text-white">{formattedScheduleRange}</strong></span>
+                <span>Schedule: <strong className="text-white tabular-nums">{formattedScheduleRange}</strong></span>
               </span>
               <Badge
                 variant={
@@ -632,14 +632,14 @@ export const InstitutionEventLeaderboard = () => {
             onClick={() => setActiveTab('overall_championship')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'overall_championship'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50 dark:hover:bg-slate-800'
             }`}
           >
             <Crown size={16} />
             <span>Overall Event Championship</span>
             {overallStandings.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
                 Overall Winner
               </span>
             )}
@@ -653,67 +653,67 @@ export const InstitutionEventLeaderboard = () => {
             <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-900/40 border-b border-slate-200/80 dark:border-slate-800">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Registered Institutions */}
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+                <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+                  <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
                     <Building2 size={22} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                       Registered Institutions
                     </p>
-                    <p className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                    <p className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5 tabular-nums">
                       {summary.totalInstitutions}
                     </p>
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate">
                       Participating Schools / Organizations
                     </p>
                   </div>
                 </div>
 
                 {/* Total Registered Participants */}
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-                  <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+                  <div className="p-3 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
                     <Users size={22} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                       Total Participants
                     </p>
-                    <p className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                    <p className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5 tabular-nums">
                       {summary.totalRegisteredParticipants}
                     </p>
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate">
                       Total delegation registered for this event
                     </p>
                   </div>
                 </div>
 
                 {/* In-Venue Attendance Verified */}
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+                  <div className="p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
                     <UserCheck size={22} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                       In-Venue Attendance
                     </p>
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums">
                       {summary.totalCheckedInParticipants || 0}{' '}
-                      <span className="text-xs font-bold text-slate-500">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
                         / {summary.totalRegisteredParticipants}
                       </span>
                     </p>
-                    <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300 truncate">
+                    <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300 truncate tabular-nums">
                       {summary.overallAttendanceRate || 0}% present in venue
                     </p>
                   </div>
                 </div>
 
                 {/* In-Venue Turnout Progress */}
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-center">
+                <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-center">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                     <span>Venue Turnout</span>
-                    <span className="text-emerald-600 font-black">{summary.overallAttendanceRate || 0}%</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black tabular-nums">{summary.overallAttendanceRate || 0}%</span>
                   </div>
                   <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden mt-2">
                     <div
@@ -730,7 +730,7 @@ export const InstitutionEventLeaderboard = () => {
                       Open Time In / Time Out Sheet →
                     </button>
                   ) : (
-                    <p className="text-[10px] text-slate-500 mt-1.5 truncate">
+                    <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1.5 truncate">
                       Real-time participant verification
                     </p>
                   )}
@@ -752,14 +752,14 @@ export const InstitutionEventLeaderboard = () => {
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
                   >
                     <X size={14} />
                   </button>
                 )}
               </div>
 
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <div className="text-xs font-semibold text-slate-600 dark:text-slate-300 tabular-nums">
                 Showing {filteredLeaderboard.length} of {data?.leaderboard.length || 0} registered institutions
               </div>
             </div>
@@ -813,7 +813,7 @@ export const InstitutionEventLeaderboard = () => {
                     return (
                       <div
                         key={inst.institutionId}
-                        className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
+                        className={`p-4 sm:p-5 rounded-xl border transition-all duration-200 ${
                           isUserSchool
                             ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-300 dark:border-blue-900 shadow-xs'
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-card hover:shadow-card-md'
@@ -829,10 +829,10 @@ export const InstitutionEventLeaderboard = () => {
                                 <img
                                   src={inst.institutionAvatar}
                                   alt={inst.institutionName}
-                                  className="w-11 h-11 rounded-xl object-cover border border-gray-200 dark:border-slate-700"
+                                  className="w-11 h-11 rounded-lg object-cover border border-gray-200 dark:border-slate-700"
                                 />
                               ) : (
-                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
+                                <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
                                   {(inst.institutionName || 'Institution').charAt(0).toUpperCase()}
                                 </div>
                               )}
@@ -849,8 +849,8 @@ export const InstitutionEventLeaderboard = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                                <span>{totalReg} registered participants</span>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                <span className="tabular-nums">{totalReg} registered participants</span>
                                 {inst.institutionEmail && (
                                   <>
                                     <span>•</span>
@@ -858,7 +858,7 @@ export const InstitutionEventLeaderboard = () => {
                                   </>
                                 )}
                                 <span>•</span>
-                                <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                                <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
                                   <UserCheck size={13} /> {checkedIn} in venue ({rate.toFixed(0)}%)
                                 </span>
                               </div>
@@ -867,7 +867,7 @@ export const InstitutionEventLeaderboard = () => {
 
                           {/* Right: Turnout Progress + Roster Action */}
                           <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
-                            <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                            <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold tabular-nums">
                               {totalReg} Participants
                             </span>
 
@@ -880,7 +880,7 @@ export const InstitutionEventLeaderboard = () => {
                             >
                               <UserCheck size={14} className="text-blue-600 dark:text-blue-400" />
                               <span>Roster</span>
-                              <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center">
+                              <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center tabular-nums">
                                 {inst.participants.length || totalReg}
                               </span>
                               <ChevronRight size={14} className="text-slate-500 dark:text-slate-400" />
@@ -924,7 +924,7 @@ export const InstitutionEventLeaderboard = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
                   Official event winner rankings and championship points manually set by authorized administrators and officers.
                 </p>
               </div>
@@ -989,7 +989,7 @@ export const InstitutionEventLeaderboard = () => {
                       <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center font-black shadow-md shadow-amber-500/30">
                         <Trophy size={24} />
                       </div>
-                      <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-white shadow-xs">
+                      <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs">
                         {champion.awardTitle || 'Champion'}
                       </span>
                       <h4 className="text-lg font-black text-slate-900 dark:text-slate-100 mt-2 truncate">
@@ -998,11 +998,11 @@ export const InstitutionEventLeaderboard = () => {
                       <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mt-0.5 truncate">
                         {champion.institutionName}
                       </p>
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-xs font-black text-amber-900 dark:text-amber-200">
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-xs font-black text-amber-900 dark:text-amber-200 tabular-nums">
                         <Trophy size={13} /> {champion.points} Championship Points
                       </div>
                       {champion.scoreOrNotes && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-2">
                           &quot;{champion.scoreOrNotes}&quot;
                         </p>
                       )}
@@ -1035,10 +1035,10 @@ export const InstitutionEventLeaderboard = () => {
                       <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-2 truncate">
                         {silver.participantName}
                       </h4>
-                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5 truncate">
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5 truncate">
                         {silver.institutionName}
                       </p>
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 tabular-nums">
                         <Award size={12} /> {silver.points} Points
                       </div>
                     </div>
@@ -1073,7 +1073,7 @@ export const InstitutionEventLeaderboard = () => {
                       <p className="text-xs font-semibold text-amber-800 dark:text-amber-400 mt-0.5 truncate">
                         {bronze.institutionName}
                       </p>
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-xs font-bold text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-xs font-bold text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 tabular-nums">
                         <Award size={12} /> {bronze.points} Points
                       </div>
                     </div>
@@ -1089,7 +1089,7 @@ export const InstitutionEventLeaderboard = () => {
                 <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
                   No Winners Ranked Yet
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1">
                   Once this competition concludes, authorized admins and officers can manually set the winner ranking for participants or school teams here.
                 </p>
                 {isOfficerOrAdmin && (
@@ -1106,14 +1106,14 @@ export const InstitutionEventLeaderboard = () => {
             ) : (
               <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
                 <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-800">
                     <tr>
                       <th className="px-4 py-3 text-center w-14">Rank</th>
                       <th className="px-4 py-3">Award / Title</th>
                       <th className="px-4 py-3">Event &amp; Mode</th>
                       <th className="px-4 py-3">Winner (Participant / Team)</th>
                       <th className="px-4 py-3">School / Institution</th>
-                      <th className="px-4 py-3 text-center">Points</th>
+                      <th className="px-4 py-3 text-right">Points</th>
                       <th className="px-4 py-3">Score / Notes</th>
                       {isOfficerOrAdmin && <th className="px-4 py-3 text-right">Manage Ranking</th>}
                     </tr>
@@ -1142,11 +1142,11 @@ export const InstitutionEventLeaderboard = () => {
                         </td>
                         <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">
                           <div className="flex items-center gap-1.5">
-                            <Building2 size={13} className="text-slate-400 shrink-0" />
+                            <Building2 size={13} className="text-slate-500 dark:text-slate-400 shrink-0" />
                             <span>{winner.institutionName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-center font-black text-amber-600 dark:text-amber-400">
+                        <td className="px-4 py-3 text-right font-black text-amber-700 dark:text-amber-400 tabular-nums">
                           +{winner.points} pts
                         </td>
                         <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
@@ -1214,11 +1214,11 @@ export const InstitutionEventLeaderboard = () => {
               <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-xl relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-4 text-center md:text-left">
-                    <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center font-black shadow-inner shrink-0">
+                    <div className="w-20 h-20 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center font-black shadow-inner shrink-0">
                       <Crown size={36} className="text-white" />
                     </div>
                     <div>
-                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-white/30 text-white border border-white/40">
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 border border-amber-300">
                         Official Overall Tournament Champion
                       </span>
                       <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
@@ -1230,22 +1230,22 @@ export const InstitutionEventLeaderboard = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 sm:gap-6 bg-black/20 p-4 rounded-2xl backdrop-blur-md border border-white/20 shrink-0">
+                  <div className="flex items-center gap-4 sm:gap-6 bg-black/20 p-4 rounded-lg backdrop-blur-md border border-white/20 shrink-0">
                     <div className="text-center">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Total Points</p>
-                      <p className="text-2xl sm:text-3xl font-black text-white">{overallStandings[0].totalPoints}</p>
+                      <p className="text-2xl sm:text-3xl font-black text-white tabular-nums">{overallStandings[0].totalPoints}</p>
                     </div>
                     <div className="w-px h-8 bg-white/20" />
                     <div className="text-center">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Golds</p>
-                      <p className="text-2xl sm:text-3xl font-black text-yellow-300 inline-flex items-center justify-center gap-1.5">
+                      <p className="text-2xl sm:text-3xl font-black text-yellow-300 inline-flex items-center justify-center gap-1.5 tabular-nums">
                         <Trophy size={22} /> {overallStandings[0].goldCount}
                       </p>
                     </div>
                     <div className="w-px h-8 bg-white/20" />
                     <div className="text-center">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Medals</p>
-                      <p className="text-2xl sm:text-3xl font-black text-white">{overallStandings[0].totalMedals}</p>
+                      <p className="text-2xl sm:text-3xl font-black text-white tabular-nums">{overallStandings[0].totalMedals}</p>
                     </div>
                   </div>
                 </div>
@@ -1259,7 +1259,7 @@ export const InstitutionEventLeaderboard = () => {
                   <Trophy size={18} className="text-amber-500" />
                   <span>Overall Tournament Medal & Points Tally</span>
                 </h4>
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 tabular-nums">
                   {overallStandings.length} Participating Institutions Ranked
                 </span>
               </div>
@@ -1270,29 +1270,29 @@ export const InstitutionEventLeaderboard = () => {
                   <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
                     No Overall Standings Yet
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1">
                     As competition winners are ranked per event, their points and medal counts will automatically calculate and display the overall champion school here.
                   </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
                   <table className="w-full text-left text-xs sm:text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-800">
                       <tr>
                         <th className="px-4 py-3 text-center w-14">Rank</th>
                         <th className="px-4 py-3">School / Institution</th>
-                        <th className="px-4 py-3 text-center font-bold text-amber-600">
+                        <th className="px-4 py-3 text-right font-bold text-amber-700 dark:text-amber-400">
                           <span className="inline-flex items-center gap-1"><Trophy size={13} /> Gold</span>
                         </th>
-                        <th className="px-4 py-3 text-center font-bold text-slate-600">
+                        <th className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">
                           <span className="inline-flex items-center gap-1"><Medal size={13} /> Silver</span>
                         </th>
-                        <th className="px-4 py-3 text-center font-bold text-amber-800">
+                        <th className="px-4 py-3 text-right font-bold text-amber-800 dark:text-amber-400">
                           <span className="inline-flex items-center gap-1"><Award size={13} /> Bronze</span>
                         </th>
-                        <th className="px-4 py-3 text-center font-bold">Total Medals</th>
-                        <th className="px-4 py-3 text-center font-extrabold text-blue-600">Championship Points</th>
-                        <th className="px-4 py-3 text-center">Events Won</th>
+                        <th className="px-4 py-3 text-right font-bold">Total Medals</th>
+                        <th className="px-4 py-3 text-right font-extrabold text-blue-600 dark:text-blue-400">Championship Points</th>
+                        <th className="px-4 py-3 text-right">Events Won</th>
                         <th className="px-4 py-3 text-right">Standing</th>
                       </tr>
                     </thead>
@@ -1317,38 +1317,38 @@ export const InstitutionEventLeaderboard = () => {
                                   {inst.institutionName}
                                 </span>
                                 {isChamp && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-2xs">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
                                     Overall Champion
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 text-center font-black text-amber-600 dark:text-amber-400">
+                            <td className="px-4 py-3.5 text-right font-black text-amber-700 dark:text-amber-400 tabular-nums">
                               {inst.goldCount}
                             </td>
-                            <td className="px-4 py-3.5 text-center font-bold text-slate-600 dark:text-slate-300">
+                            <td className="px-4 py-3.5 text-right font-bold text-slate-700 dark:text-slate-300 tabular-nums">
                               {inst.silverCount}
                             </td>
-                            <td className="px-4 py-3.5 text-center font-bold text-amber-700 dark:text-amber-500">
+                            <td className="px-4 py-3.5 text-right font-bold text-amber-800 dark:text-amber-400 tabular-nums">
                               {inst.bronzeCount}
                             </td>
-                            <td className="px-4 py-3.5 text-center font-extrabold text-slate-900 dark:text-slate-100">
+                            <td className="px-4 py-3.5 text-right font-extrabold text-slate-900 dark:text-slate-100 tabular-nums">
                               {inst.totalMedals}
                             </td>
-                            <td className="px-4 py-3.5 text-center font-black text-blue-600 dark:text-blue-400 text-base">
+                            <td className="px-4 py-3.5 text-right font-black text-blue-600 dark:text-blue-400 text-base tabular-nums">
                               {inst.totalPoints} pts
                             </td>
-                            <td className="px-4 py-3.5 text-center font-medium text-slate-600 dark:text-slate-300">
+                            <td className="px-4 py-3.5 text-right font-medium text-slate-700 dark:text-slate-300 tabular-nums">
                               {inst.eventsWonCount}
                             </td>
                             <td className="px-4 py-3.5 text-right">
                               <span
                                 className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${
                                   isChamp
-                                    ? 'bg-amber-500 text-white'
+                                    ? 'bg-amber-400 text-slate-950'
                                     : inst.rank <= 3
                                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
-                                    : 'bg-gray-100 dark:bg-slate-800/60 text-gray-600 dark:text-gray-400'
+                                    : 'bg-gray-100 dark:bg-slate-800/60 text-gray-700 dark:text-slate-300'
                                 }`}
                               >
                                 {isChamp ? 'Grand Champion' : inst.rank <= 3 ? 'Podium Finisher' : 'Top Contender'}
@@ -1386,16 +1386,16 @@ export const InstitutionEventLeaderboard = () => {
             />
           ) : (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/60 border border-blue-100 dark:border-slate-700 flex items-center justify-between gap-3">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/60 border border-blue-100 dark:border-slate-700 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
                     Institution Delegation
                   </p>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xl font-black text-gray-900 dark:text-slate-100">
+                    <span className="text-xl font-black text-gray-900 dark:text-slate-100 tabular-nums">
                       {activeInstitution.registeredCount} Registered
                     </span>
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full tabular-nums">
                       {activeInstitution.checkedInCount || 0} In Venue ({activeInstitution.attendanceRate || 0}%)
                     </span>
                   </div>
@@ -1403,16 +1403,16 @@ export const InstitutionEventLeaderboard = () => {
               </div>
 
               {activeInstitution.participants.length === 0 ? (
-                <div className="p-8 text-center bg-gray-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                  <Users size={28} className="mx-auto mb-2 text-slate-400" />
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <div className="p-8 text-center bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-200 dark:border-slate-700">
+                  <Users size={28} className="mx-auto mb-2 text-slate-500 dark:text-slate-400" />
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                     Bulk Registration ({activeInstitution.registeredCount} seats)
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
                   <table className="w-full text-left text-xs sm:text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
                       <tr>
                         <th className="px-3 py-2.5">#</th>
                         <th className="px-3 py-2.5">Participant</th>
@@ -1431,7 +1431,7 @@ export const InstitutionEventLeaderboard = () => {
 
                         return (
                           <tr key={p.id}>
-                            <td className="px-3 py-2.5 text-slate-400 font-bold">{idx + 1}</td>
+                            <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 font-bold tabular-nums">{idx + 1}</td>
                             <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">{p.fullName}</td>
                             <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{p.position || 'Participant'}</td>
                             <td className="px-3 py-2.5 tabular-nums">
@@ -1486,7 +1486,7 @@ export const InstitutionEventLeaderboard = () => {
         >
           <div className="space-y-4">
             {/* Event Name & Mode of the Event */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+            <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
@@ -1508,7 +1508,7 @@ export const InstitutionEventLeaderboard = () => {
                     }}
                     disabled={Boolean(winnerForm.id)}
                     aria-label="Event Name"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-slate-100 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer disabled:opacity-60"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-slate-100 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer disabled:opacity-60"
                   >
                     {events.map((evt) => (
                       <option key={evt.id} value={evt.id}>
@@ -1534,7 +1534,7 @@ export const InstitutionEventLeaderboard = () => {
                         key={m.mode}
                         type="button"
                         onClick={() => setWinnerForm((prev) => ({ ...prev, eventMode: m.mode }))}
-                        className={`px-2.5 py-2 rounded-xl border text-center transition-all cursor-pointer inline-flex items-center justify-center gap-1 ${
+                        className={`px-2.5 py-2 rounded-md border text-center transition-all cursor-pointer inline-flex items-center justify-center gap-1 ${
                           winnerForm.eventMode === m.mode
                             ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-100 font-bold shadow-2xs'
                             : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold'
@@ -1556,7 +1556,7 @@ export const InstitutionEventLeaderboard = () => {
               <div className="grid grid-cols-5 gap-2">
                 {[
                   { rank: 1, label: '1st (Gold)', Icon: Trophy, color: 'text-amber-500' },
-                  { rank: 2, label: '2nd (Silver)', Icon: Medal, color: 'text-slate-400' },
+                  { rank: 2, label: '2nd (Silver)', Icon: Medal, color: 'text-slate-500' },
                   { rank: 3, label: '3rd (Bronze)', Icon: Award, color: 'text-amber-700' },
                   { rank: 4, label: '4th Place', Icon: Award, color: 'text-blue-500' },
                   { rank: 5, label: 'Finalist', Icon: Medal, color: 'text-emerald-500' },
@@ -1565,7 +1565,7 @@ export const InstitutionEventLeaderboard = () => {
                     key={r.rank}
                     type="button"
                     onClick={() => handleRankChange(r.rank)}
-                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
                       winnerForm.rankPosition === r.rank
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -1600,43 +1600,43 @@ export const InstitutionEventLeaderboard = () => {
             </div>
 
             {/* Fast Selection of Registered Participant in the Event */}
-            <div className="p-3.5 rounded-2xl bg-blue-50/50 dark:bg-slate-800/50 border border-blue-200/80 dark:border-slate-700 space-y-2.5">
+            <div className="p-3.5 rounded-lg bg-blue-50/50 dark:bg-slate-800/50 border border-blue-200/80 dark:border-slate-700 space-y-2.5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
                     Select Registered Participant in Event (Fast Fill)
                   </label>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300">
                     Choose a registered participant to auto-fill Winner &amp; School/Institution
                     {(winnerForm.eventMode === 'pair' || winnerForm.eventMode === 'team') && ' (use "+ Add" to combine teammates)'}.
                   </p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 shrink-0 self-start sm:self-center">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 shrink-0 self-start sm:self-center tabular-nums">
                   {allRegisteredParticipants.length} Registered
                 </span>
               </div>
 
               {allRegisteredParticipants.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   No individual participant names found for this event yet — you can type the winner and school below.
                 </p>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Search className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         value={winnerParticipantSearch}
                         onChange={(e) => setWinnerParticipantSearch(e.target.value)}
                         placeholder="Search registered participant or school..."
-                        className="w-full pl-8 pr-7 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full pl-8 pr-7 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       />
                       {winnerParticipantSearch && (
                         <button
                           type="button"
                           onClick={() => setWinnerParticipantSearch('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
                         >
                           <X size={13} />
                         </button>
@@ -1651,7 +1651,7 @@ export const InstitutionEventLeaderboard = () => {
                         if (found) handleSelectRegisteredWinner(found, false);
                       }}
                       aria-label="Quick select registered participant"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                     >
                       <option value="">
                         — Quick Select from {filteredWinnerParticipantOptions.length} Participant(s) —
@@ -1676,7 +1676,7 @@ export const InstitutionEventLeaderboard = () => {
                       return (
                         <div
                           key={p.participantKey}
-                          className={`inline-flex items-center rounded-xl border text-xs transition-all overflow-hidden ${
+                          className={`inline-flex items-center rounded-md border text-xs transition-all overflow-hidden ${
                             isSelected
                               ? 'border-blue-500 bg-blue-600 text-white font-bold shadow-2xs'
                               : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:border-blue-400'
@@ -1693,7 +1693,7 @@ export const InstitutionEventLeaderboard = () => {
                               className={`text-[10px] px-1.5 py-0.2 rounded-full truncate max-w-[120px] ${
                                 isSelected
                                   ? 'bg-white/20 text-white'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                               }`}
                             >
                               {p.institutionName}

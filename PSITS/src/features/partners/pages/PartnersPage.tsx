@@ -325,7 +325,7 @@ export const PartnersPage = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{p.type} Partner</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{p.type} Partner</p>
                   </div>
                   <div className="flex gap-2 items-center">
                     <Button
@@ -339,7 +339,7 @@ export const PartnersPage = () => {
                     </Button>
                     {canEdit && (
                       <button
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
                         aria-label="Edit partner"
                         title={isMyCompany ? "Edit Your Company Profile" : "Edit Partner Profile"}
                         onClick={() => {
@@ -352,7 +352,7 @@ export const PartnersPage = () => {
                     )}
                     {canDelete && (
                       <button
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
                         aria-label="Delete partner"
                         title={isMyCompany ? "Delete Company Partner Entry" : "Delete Partner"}
                         onClick={() => setConfirmDelete({ id: p.id, company: p.company })}
@@ -362,13 +362,13 @@ export const PartnersPage = () => {
                     )}
                   </div>
                 </div>
-                <div className="mt-3 text-sm text-gray-700 space-y-1">
-                  <p><span className="font-medium text-gray-900">Contact:</span> {p.contactPerson} &middot; {p.phone}</p>
-                  <p><span className="font-medium text-gray-900">Email:</span> {p.email}</p>
-                  <p><span className="font-medium text-gray-900">Location:</span> {p.location}</p>
+                <div className="mt-3 text-sm text-slate-700 dark:text-slate-300 space-y-1">
+                  <p><span className="font-medium text-slate-900 dark:text-slate-100">Contact:</span> {p.contactPerson} &middot; {p.phone}</p>
+                  <p><span className="font-medium text-slate-900 dark:text-slate-100">Email:</span> {p.email}</p>
+                  <p><span className="font-medium text-slate-900 dark:text-slate-100">Location:</span> {p.location}</p>
                   {p.website && (
                     <p>
-                      <a href={p.website} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
+                      <a href={p.website} className="text-blue-600 dark:text-cyan-400 hover:underline" target="_blank" rel="noreferrer">
                         {p.website}
                       </a>
                     </p>
@@ -377,9 +377,9 @@ export const PartnersPage = () => {
               </div>
 
               {expandedPartnerId === p.id && (
-                <div className="border-t border-gray-150 pt-4 mt-4 space-y-3">
+                <div className="border-t border-gray-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-gray-950">Deals & Contributions</p>
+                    <p className="text-sm font-bold text-gray-950 dark:text-slate-100">Deals & Contributions</p>
                     {canLogDeal && (
                       <Button
                         variant="primary"
@@ -399,10 +399,10 @@ export const PartnersPage = () => {
 
                   <div className="space-y-2">
                     {!(contributionsMap[p.id]?.length) ? (
-                      <p className="text-xs text-gray-500 py-2">No deals or contributions logged yet.</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 py-2">No deals or contributions logged yet.</p>
                     ) : (
                       <>
-                        <div className="text-xs font-semibold text-gray-700 bg-gray-100 p-2 rounded">
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-gray-100 dark:bg-slate-800/70 p-2 rounded-md tabular-nums">
                           Total Value Logged: ₱{calculateTotalContributions(contributionsMap[p.id]).toLocaleString()}
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -415,26 +415,26 @@ export const PartnersPage = () => {
                             const isUpcoming = c.eventId ? isEventUpcoming(linkedEvent) : false;
 
                             return (
-                              <div key={c.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-start justify-between gap-3">
+                              <div key={c.id} className="bg-gray-50 dark:bg-slate-800/60 rounded-lg p-3 border border-gray-200 dark:border-slate-700 flex items-start justify-between gap-3">
                                 <div className="space-y-1.5 min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-semibold text-sm text-gray-900 truncate">{c.dealTitle}</span>
+                                    <span className="font-semibold text-sm text-gray-900 dark:text-slate-100 truncate">{c.dealTitle}</span>
                                     <Badge variant={getContribBadgeVariant(c.contributionType)}>
                                       {c.contributionType.toUpperCase()}
                                     </Badge>
                                   </div>
-                                  {c.description && <p className="text-xs text-gray-700 whitespace-pre-wrap">{c.description}</p>}
-                                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600 mt-1">
+                                  {c.description && <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{c.description}</p>}
+                                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300 mt-1">
                                     {c.valueAmount !== null && (
-                                      <span className="font-bold text-primary bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                      <span className="font-bold text-primary dark:text-cyan-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800 tabular-nums">
                                         ₱{Number(c.valueAmount).toLocaleString()}
                                       </span>
                                     )}
                                     {c.eventTitle && (
                                       <span className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded text-[10px] ${
                                         isUpcoming
-                                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                                       }`}>
                                         <Calendar size={11} />
                                         {isUpcoming ? 'Upcoming:' : 'Past:'} {c.eventTitle}
@@ -641,7 +641,7 @@ export const PartnersPage = () => {
                   value={newContrib.eventId}
                   onChange={(e) => setNewContrib((prev) => ({ ...prev, eventId: e.target.value }))}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   Select a current event open for registration to link this sponsorship.
                 </p>
               </div>

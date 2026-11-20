@@ -424,20 +424,20 @@ export const EventWinnersReportView = ({
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary/80 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                   Official Competition & Winners Report
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-slate-600 font-mono tabular-nums">
                   REF: PSITS-WIN-{new Date().getFullYear()}-{String(metrics.totalEvents).padStart(3, '0')}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
               </h1>
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
+              <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">
                 Committee on Academic, Technical & Esports Competitions
               </p>
             </div>
           </div>
 
-          <div className="text-left sm:text-right text-xs text-gray-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[210px]">
+          <div className="text-left sm:text-right text-xs text-slate-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[210px] tabular-nums">
             <p>
               <strong className="text-gray-800">Report:</strong>{' '}
               <span className="font-semibold text-primary">{reportTitle.toUpperCase()}</span>
@@ -459,7 +459,7 @@ export const EventWinnersReportView = ({
               Official extraction of competition winners per event, including rank placements, points, and events pending winner proclamation.
             </span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-gray-600">
+          <div className="flex items-center gap-3 text-[11px] text-slate-600 tabular-nums">
             <span>
               Total Events: <strong>{metrics.totalEvents}</strong>
             </span>
@@ -483,7 +483,7 @@ export const EventWinnersReportView = ({
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 print:break-inside-avoid">
         <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-blue-900 uppercase">Total Events</span>
-          <p className="text-2xl font-black text-primary mt-1" data-testid="winners-kpi-total-events">
+          <p className="text-2xl font-black text-primary mt-1 tabular-nums" data-testid="winners-kpi-total-events">
             {metrics.totalEvents}
           </p>
           <p className="text-[11px] text-blue-700 mt-0.5">Events in scope</p>
@@ -491,7 +491,7 @@ export const EventWinnersReportView = ({
 
         <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-amber-900 uppercase">Events With Winners</span>
-          <p className="text-2xl font-black text-amber-700 mt-1" data-testid="winners-kpi-with-winners">
+          <p className="text-2xl font-black text-amber-700 mt-1 tabular-nums" data-testid="winners-kpi-with-winners">
             {metrics.eventsWithWinners}
           </p>
           <p className="text-[11px] text-amber-700 mt-0.5">Proclaimed results</p>
@@ -499,44 +499,44 @@ export const EventWinnersReportView = ({
 
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-slate-700 uppercase">No Winners Yet</span>
-          <p className="text-2xl font-black text-slate-700 mt-1" data-testid="winners-kpi-without-winners">
+          <p className="text-2xl font-black text-slate-700 mt-1 tabular-nums" data-testid="winners-kpi-without-winners">
             {metrics.eventsWithoutWinners}
           </p>
-          <p className="text-[11px] text-slate-500 mt-0.5">Unrecorded / non-competitive</p>
+          <p className="text-[11px] text-slate-600 mt-0.5">Unrecorded / non-competitive</p>
         </div>
 
         <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-emerald-900 uppercase">Total Winner Entries</span>
-          <p className="text-2xl font-black text-emerald-700 mt-1" data-testid="winners-kpi-total-entries">
+          <p className="text-2xl font-black text-emerald-700 mt-1 tabular-nums" data-testid="winners-kpi-total-entries">
             {metrics.totalWinnerEntries}
           </p>
           <p className="text-[11px] text-emerald-700 mt-0.5">Medals & placements</p>
         </div>
 
-        <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 col-span-2 lg:col-span-1">
-          <span className="text-[11px] font-bold text-purple-900 uppercase">Points Awarded</span>
-          <p className="text-2xl font-black text-purple-800 mt-1" data-testid="winners-kpi-total-points">
+        <div className="bg-cyan-50/70 border border-cyan-200/80 rounded-xl p-3.5 col-span-2 lg:col-span-1">
+          <span className="text-[11px] font-bold text-cyan-900 uppercase">Points Awarded</span>
+          <p className="text-2xl font-black text-cyan-800 mt-1 tabular-nums" data-testid="winners-kpi-total-points">
             {metrics.totalPointsAwarded.toLocaleString()}
           </p>
-          <p className="text-[11px] text-purple-700 mt-0.5">Aggregate tally</p>
+          <p className="text-[11px] text-cyan-800 mt-0.5">Aggregate tally</p>
         </div>
       </div>
 
       {/* Winners per Event Registry Table */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden print:overflow-visible">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xs overflow-hidden print:overflow-visible">
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <Trophy size={16} className="text-amber-600" /> Official Winners per Event Extraction Table
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-600">
               Complete per-event breakdown of proclaimed winners, rankings, institutions, and unrecorded events.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto no-print">
             <div className="relative flex-1 sm:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 aria-label="Search winners report"
@@ -686,24 +686,24 @@ export const EventWinnersReportView = ({
           <table className="w-full text-left border-collapse text-xs" data-testid="event-winners-table">
             <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 print:static">
               <tr>
-                <th className="px-2.5 py-2.5 text-center w-10">#</th>
+                <th className="px-2.5 py-2.5 text-right w-10 tabular-nums">#</th>
                 <th className="px-3 py-2.5">Event Title</th>
                 <th className="px-2.5 py-2.5">Category</th>
                 <th className="px-2.5 py-2.5">Mode</th>
                 <th className="px-2.5 py-2.5 text-center">Event Status</th>
-                <th className="px-2.5 py-2.5 text-center">Rank</th>
+                <th className="px-2.5 py-2.5 text-right tabular-nums">Rank</th>
                 <th className="px-3 py-2.5">Award Title</th>
                 <th className="px-3 py-2.5">Winner (Participant / Team)</th>
                 <th className="px-3 py-2.5">Institution / School</th>
-                <th className="px-2.5 py-2.5 text-right">Points</th>
+                <th className="px-2.5 py-2.5 text-right tabular-nums">Points</th>
                 <th className="px-3 py-2.5">Score / Notes</th>
-                <th className="px-2.5 py-2.5 text-right">Event Date</th>
+                <th className="px-2.5 py-2.5 text-right tabular-nums">Event Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {paginatedRows.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={12} className="px-4 py-8 text-center text-slate-600">
                     No event winner records found matching the selected filters.
                   </td>
                 </tr>
@@ -725,14 +725,14 @@ export const EventWinnersReportView = ({
                       data-event-id={row.eventId}
                       data-has-winners={row.hasWinners ? 'true' : 'false'}
                       className={`transition-colors ${
-                        row.hasWinners ? 'hover:bg-amber-50/30' : 'bg-gray-50/40 hover:bg-gray-100/50 text-gray-600'
+                        row.hasWinners ? 'hover:bg-amber-50/30' : 'bg-gray-50/40 hover:bg-gray-100/50 text-slate-600'
                       }`}
                     >
-                      <td className="px-2.5 py-2.5 text-center font-mono text-gray-500">{rowIndex}</td>
+                      <td className="px-2.5 py-2.5 text-right tabular-nums text-slate-600">{rowIndex}</td>
                       <td className="px-3 py-2.5 font-bold text-gray-900">
                         <div>{row.eventTitle || '—'}</div>
                         {row.isEsports && row.esportsGame && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-purple-700 font-medium mt-0.5 no-print">
+                          <span className="inline-flex items-center gap-1 text-[10px] text-blue-700 font-medium mt-0.5 no-print">
                             <Gamepad2 size={11} />
                             <span>{row.esportsGame}</span>
                           </span>
@@ -757,9 +757,9 @@ export const EventWinnersReportView = ({
                           {(row.eventStatus || 'upcoming').toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-2.5 py-2.5 text-center font-bold">
+                      <td className="px-2.5 py-2.5 text-right tabular-nums font-bold">
                         <span
-                          className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                          className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-extrabold tabular-nums ${
                             isChampion
                               ? 'bg-amber-100 text-amber-900 border border-amber-300'
                               : isSecond
@@ -768,7 +768,7 @@ export const EventWinnersReportView = ({
                               ? 'bg-orange-100 text-orange-900 border border-orange-300'
                               : row.rankPosition !== null
                               ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                              : 'text-gray-400'
+                              : 'text-slate-600'
                           }`}
                         >
                           {rankDisplay}
@@ -779,7 +779,7 @@ export const EventWinnersReportView = ({
                           className={
                             row.hasWinners
                               ? 'inline-flex items-center gap-1 text-gray-900'
-                              : 'italic text-gray-500'
+                              : 'text-slate-600 font-normal'
                           }
                         >
                           {isChampion && <Trophy size={12} className="text-amber-600 shrink-0 no-print" />}
@@ -794,20 +794,20 @@ export const EventWinnersReportView = ({
                       <td className="px-3 py-2.5 text-gray-800">
                         <span className="inline-flex items-center gap-1">
                           {row.hasWinners && (
-                            <Building2 size={12} className="text-gray-400 shrink-0 no-print" />
+                            <Building2 size={12} className="text-slate-500 shrink-0 no-print" />
                           )}
                           <span>{row.institutionName || '—'}</span>
                         </span>
                       </td>
-                      <td className="px-2.5 py-2.5 text-right font-mono font-bold text-primary">
+                      <td className="px-2.5 py-2.5 text-right tabular-nums font-bold text-primary">
                         {Number(row.points || 0)}
                       </td>
-                      <td className="px-3 py-2.5 text-gray-600">
+                      <td className="px-3 py-2.5 text-slate-600">
                         {row.scoreOrNotes || '—'}
                       </td>
-                      <td className="px-2.5 py-2.5 text-right font-mono text-gray-600 whitespace-nowrap">
+                      <td className="px-2.5 py-2.5 text-right tabular-nums text-slate-600 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 justify-end">
-                          <Calendar size={11} className="text-gray-400 shrink-0 no-print" />
+                          <Calendar size={11} className="text-slate-500 shrink-0 no-print" />
                           <span>{dateDisplay}</span>
                         </span>
                       </td>
@@ -821,7 +821,7 @@ export const EventWinnersReportView = ({
 
         {/* Pagination Footer (Hidden on Print) */}
         <div className="no-print px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-gray-600">
+          <div className="flex items-center gap-2 text-slate-600 tabular-nums">
             <span>Rows per page:</span>
             <select
               aria-label="Winners rows per page"
@@ -831,14 +831,14 @@ export const EventWinnersReportView = ({
                 setPageSize(val);
                 setCurrentPage(1);
               }}
-              className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-900 font-semibold"
+              className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-900 font-semibold tabular-nums"
             >
               <option value="15">15</option>
               <option value="30">30</option>
               <option value="50">50</option>
               <option value="all">All ({filteredRows.length})</option>
             </select>
-            <span>
+            <span className="tabular-nums">
               Showing{' '}
               <strong>
                 {filteredRows.length === 0
@@ -858,7 +858,7 @@ export const EventWinnersReportView = ({
           </div>
 
           {pageSize !== 'all' && totalPages > 1 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 tabular-nums">
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -867,7 +867,7 @@ export const EventWinnersReportView = ({
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="px-2 font-semibold text-gray-700">
+              <span className="px-2 font-semibold text-gray-700 tabular-nums">
                 Page {currentPage} of {totalPages}
               </span>
               <button
@@ -894,16 +894,16 @@ export const EventWinnersReportView = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-xs">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Prepared & Verified By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Prepared & Verified By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">{preparedBy}</p>
-            <p className="text-[11px] text-gray-500 capitalize">{userRole} / Competitions & Events</p>
+            <p className="text-[11px] text-slate-600 capitalize">{userRole} / Competitions & Events</p>
           </div>
           <div className="text-left md:text-right">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Attested & Approved By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Attested & Approved By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-48 md:ml-auto"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">Regional Organization President</p>
-            <p className="text-[11px] text-gray-500">PSITS Regional Executive Council</p>
+            <p className="text-[11px] text-slate-600">PSITS Regional Executive Council</p>
           </div>
         </div>
       </div>

@@ -35,8 +35,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   width: 100%;
   min-height: 100dvh;
-  background-color: #f8fafc;
-  color: #0f172a;
+  @apply bg-surface-secondary text-slate-900;
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
@@ -44,8 +43,7 @@ body {
 }
 
 html.dark body {
-  background-color: #060e20;
-  color: #f1f5f9;
+  @apply bg-obsidian-lowest text-slate-100;
 }
 
 #root {
@@ -132,33 +130,33 @@ button {
     @apply bg-white/90 dark:bg-slate-900/85 backdrop-blur-md border border-gray-100/90 dark:border-slate-800/90 shadow-card transition-all duration-200;
   }
   .glass-dark {
-    @apply bg-[#0B1326]/85 backdrop-blur-lg border border-blue-900/30 shadow-2xl text-white;
+    @apply bg-obsidian-surface/85 backdrop-blur-lg border border-blue-900/30 shadow-2xl text-white;
   }
   .glass-cyber {
-    @apply bg-white/85 dark:bg-[#0B1326]/85 backdrop-blur-lg border border-blue-500/20 dark:border-cyan-500/20 shadow-card transition-all duration-200;
+    @apply bg-white/85 dark:bg-obsidian-surface/85 backdrop-blur-lg border border-primary-500/20 dark:border-cyber-cyan/20 shadow-card transition-all duration-200;
   }
   .glass-nav {
-    @apply bg-white/90 dark:bg-[#060E20]/90 backdrop-blur-md border-b border-gray-200/70 dark:border-slate-800/70;
+    @apply bg-white/90 dark:bg-obsidian-lowest/90 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/70;
   }
 
   /* Gradients */
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-cyber-cyan to-indigo-600;
   }
   .gradient-text-cyan {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-primary-500 to-indigo-400;
   }
   .gradient-text-gold {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600;
   }
   .gradient-primary {
-    @apply bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white;
+    @apply bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 text-white;
   }
   .gradient-cyber {
-    @apply bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white;
+    @apply bg-gradient-to-r from-primary-600 via-indigo-600 to-cyber-cyan text-white;
   }
   .gradient-gold {
-    @apply bg-gradient-to-r from-amber-500 to-yellow-500 text-white;
+    @apply bg-gradient-to-r from-gold to-yellow-500 text-white;
   }
   .gradient-subtle {
     @apply bg-gradient-to-br from-blue-50/70 via-cyan-50/30 to-slate-50;
@@ -178,13 +176,13 @@ button {
     @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-md active:translate-y-0 active:shadow-card cursor-pointer;
   }
   .card-elevated {
-    @apply bg-white dark:bg-[#131B2E] rounded-2xl shadow-card-lg border border-gray-100/80 dark:border-slate-800/80;
+    @apply bg-white dark:bg-obsidian-card rounded-2xl shadow-card-lg border border-slate-200/80 dark:border-slate-800/80;
   }
   .card-bordered {
-    @apply bg-white dark:bg-[#131B2E] rounded-2xl border-2 border-gray-200 dark:border-slate-700;
+    @apply bg-white dark:bg-obsidian-card rounded-2xl border-2 border-slate-200 dark:border-slate-700;
   }
   .card-cyber {
-    @apply bg-white dark:bg-[#131B2E] rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200;
+    @apply bg-white dark:bg-obsidian-card rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-card hover:border-cyber-cyan/40 dark:hover:border-cyber-cyan/40 transition-all duration-200;
   }
 
   /* Nav items */
@@ -196,19 +194,19 @@ button {
     box-shadow: inset 3px 0 0 #06b6d4;
   }
   .nav-item-hover {
-    @apply text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800/60 hover:text-gray-900 dark:hover:text-slate-100;
+    @apply text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100;
   }
 
   /* Input / Form */
   .input-base {
-    @apply w-full px-3.5 py-2.5 bg-white dark:bg-[#0B1326] border border-gray-200 dark:border-slate-700 rounded-[10px] text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-150;
+    @apply w-full px-3.5 py-2.5 bg-white dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 transition-all duration-150;
   }
   .input-focus {
     @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 dark:focus:border-cyan-400;
     box-shadow: 0 0 0 3px rgb(6 182 212 / 0.12);
   }
   .input-error {
-    @apply border-red-400 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus:ring-red-500/20 focus:border-red-500;
+    @apply border-rose-500 dark:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20 focus:ring-rose-500/20 focus:border-rose-500;
   }
 
   /* Shimmer loading */
@@ -259,16 +257,7 @@ button {
     @apply bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-cyan-50/70 border-blue-200/80 shadow-xs;
   }
   html.dark .module-header-banner {
-    @apply bg-gradient-to-r from-[#0B1326] via-[#131B2E] to-[#0B1326] border-slate-800;
-  }
-
-  /* Telemetry tags with accessible WCAG AA contrast in both themes */
-  .telemetry-chip {
-    @apply font-mono text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1.5;
-    @apply bg-blue-100/90 text-blue-800 border-blue-200/90;
-  }
-  html.dark .telemetry-chip {
-    @apply bg-cyan-950/60 text-cyan-300 border-cyan-800/60;
+    @apply bg-gradient-to-r from-obsidian-surface via-obsidian-card to-obsidian-surface border-slate-800;
   }
 
   /* Page content container */
@@ -457,7 +446,7 @@ button {
 .auth-scope textarea::placeholder,
 [data-theme-scope="light"] input::placeholder,
 [data-theme-scope="light"] textarea::placeholder {
-  color: #9ca3af !important;
+  color: #64748b !important;
 }
 
 /* ─── Official Printable Reports Styles ─────────────────── */

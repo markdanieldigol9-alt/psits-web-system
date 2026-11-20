@@ -126,7 +126,7 @@ export const NotificationsPage = () => {
             }`}
           >
             All Notifications
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-white/20">{notifications.length}</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 tabular-nums">{notifications.length}</span>
           </button>
 
           <button
@@ -140,7 +140,7 @@ export const NotificationsPage = () => {
           >
             Unread
             {unreadCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-500 text-white font-extrabold">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-600 text-white font-extrabold tabular-nums">
                 {unreadCount}
               </span>
             )}
@@ -152,13 +152,13 @@ export const NotificationsPage = () => {
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'appeals'
                 ? 'bg-amber-600 text-white shadow-xs'
-                : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                : 'text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30'
             }`}
           >
             <ShieldAlert size={14} />
             Reactivation Appeals
             {appealsCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500 text-white">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-700 text-white tabular-nums">
                 {appealsCount}
               </span>
             )}
@@ -168,10 +168,10 @@ export const NotificationsPage = () => {
         {/* Notifications List */}
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
-            <Card className="p-12 text-center text-gray-500 dark:text-slate-400 space-y-2">
-              <Bell className="mx-auto h-10 w-10 text-gray-300 dark:text-slate-600 mb-2" />
-              <p className="text-base font-semibold text-gray-700 dark:text-slate-300">No notifications found</p>
-              <p className="text-xs text-gray-500 dark:text-slate-500">
+            <Card className="p-12 text-center text-slate-600 dark:text-slate-300 space-y-2">
+              <Bell className="mx-auto h-10 w-10 text-slate-400 dark:text-slate-500 mb-2" />
+              <p className="text-base font-semibold text-gray-800 dark:text-slate-200">No notifications found</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
                 {activeTab === 'unread'
                   ? 'You are all caught up! No unread messages.'
                   : activeTab === 'appeals'
@@ -225,7 +225,7 @@ export const NotificationsPage = () => {
                               New
                             </span>
                           )}
-                          <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-1 tabular-nums">
                             <Calendar size={12} />
                             {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
@@ -267,7 +267,7 @@ export const NotificationsPage = () => {
                         <button
                           type="button"
                           onClick={() => removeNotification(n.id)}
-                          className="ml-auto text-xs text-gray-400 hover:text-red-600 p-1 rounded-md transition-colors flex items-center gap-1"
+                          className="ml-auto text-xs text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 p-1 rounded-md transition-colors flex items-center gap-1"
                           title="Remove notification"
                         >
                           <Trash2 size={14} />
@@ -294,7 +294,7 @@ export const NotificationsPage = () => {
               {/* Notification Header Badge & Timestamp */}
               <div className="flex items-start justify-between gap-3 pb-3 border-b border-gray-200 dark:border-slate-800">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2.5 rounded-xl bg-gray-100 dark:bg-slate-800">
+                  <div className="p-2.5 rounded-lg bg-gray-100 dark:bg-slate-800">
                     {typeConfig[selectedNotification.type as keyof typeof typeConfig]?.icon || typeConfig.info.icon}
                   </div>
                   <div>
@@ -312,38 +312,38 @@ export const NotificationsPage = () => {
                   </div>
                 </div>
 
-                <div className="text-right text-xs text-gray-400 shrink-0">
+                <div className="text-right text-xs text-slate-600 dark:text-slate-300 shrink-0 tabular-nums">
                   <p>{new Date(selectedNotification.createdAt).toLocaleDateString()}</p>
-                  <p className="font-semibold text-gray-600 dark:text-slate-300">
+                  <p className="font-semibold text-gray-700 dark:text-slate-200">
                     {new Date(selectedNotification.createdAt).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
 
               {/* Message Box */}
-              <div className="bg-gray-50/70 dark:bg-slate-900/60 p-4 rounded-xl border border-gray-200 dark:border-slate-800 text-sm text-gray-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+              <div className="bg-gray-50/70 dark:bg-slate-900/60 p-4 rounded-lg border border-gray-200 dark:border-slate-800 text-sm text-gray-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
                 {selectedNotification.message}
               </div>
 
               {/* Reactivation Request Extended Metadata Breakdown */}
               {selectedNotification.meta?.kind === 'reactivation_request' && (
-                <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 p-4 rounded-xl space-y-3">
+                <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 p-4 rounded-lg space-y-3">
                   <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-xs uppercase tracking-wide">
                     <ShieldAlert size={16} />
                     <span>Member Account Appeal Details</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40">
-                      <span className="text-gray-500 dark:text-slate-400 block font-medium">Applicant Name</span>
+                    <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40">
+                      <span className="text-slate-600 dark:text-slate-300 block font-medium">Applicant Name</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
                         <User size={13} className="text-amber-600" />
                         {selectedNotification.meta?.memberName || 'N/A'}
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40">
-                      <span className="text-gray-500 dark:text-slate-400 block font-medium">Email Address</span>
+                    <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40">
+                      <span className="text-slate-600 dark:text-slate-300 block font-medium">Email Address</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
                         <Mail size={13} className="text-amber-600" />
                         {selectedNotification.meta?.memberEmail || 'N/A'}
@@ -352,8 +352,8 @@ export const NotificationsPage = () => {
                   </div>
 
                   {selectedNotification.meta?.suspendedReason && (
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 text-xs">
-                      <span className="text-gray-500 dark:text-slate-400 block font-medium">Suspension Reason Given</span>
+                    <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 block font-medium">Suspension Reason Given</span>
                       <p className="font-semibold text-red-600 dark:text-red-400 mt-0.5">
                         {selectedNotification.meta.suspendedReason}
                       </p>
@@ -361,8 +361,8 @@ export const NotificationsPage = () => {
                   )}
 
                   {selectedNotification.meta?.appealMessage && (
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 text-xs">
-                      <span className="text-gray-500 dark:text-slate-400 block font-medium">Member's Appeal Message</span>
+                    <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 block font-medium">Member's Appeal Message</span>
                       <p className="font-medium text-gray-800 dark:text-slate-200 mt-1">
                         "{selectedNotification.meta.appealMessage}"
                       </p>
@@ -371,8 +371,8 @@ export const NotificationsPage = () => {
 
                   <div className="pt-2">
                     <Button
-                      variant="primary"
-                      className="w-full flex items-center justify-center gap-2 !bg-amber-600 hover:!bg-amber-700 text-white font-bold text-xs py-2.5 cursor-pointer"
+                      variant="gold"
+                      className="w-full flex items-center justify-center gap-2 font-bold text-xs py-2.5 cursor-pointer"
                       onClick={() => {
                         setSelectedNotification(null);
                         navigate('/members');
@@ -388,23 +388,23 @@ export const NotificationsPage = () => {
 
               {/* Membership Renewal Request Breakdown */}
               {selectedNotification.meta?.kind === 'renewal_request' && (
-                <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/60 p-4 rounded-xl space-y-3">
+                <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/60 p-4 rounded-lg space-y-3">
                   <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-bold text-xs uppercase tracking-wide">
                     <RefreshCw size={16} />
                     <span>Membership Renewal Request Details</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
-                      <span className="text-gray-500 dark:text-slate-400 block font-medium">Member Name</span>
+                    <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
+                      <span className="text-slate-600 dark:text-slate-300 block font-medium">Member Name</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
                         <User size={13} className="text-blue-600" />
                         {selectedNotification.meta?.memberName || 'N/A'}
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
-                      <span className="text-gray-500 dark:text-slate-400 block font-medium">Email Address</span>
+                    <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
+                      <span className="text-slate-600 dark:text-slate-300 block font-medium">Email Address</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
                         <Mail size={13} className="text-blue-600" />
                         {selectedNotification.meta?.memberEmail || 'N/A'}
@@ -412,17 +412,17 @@ export const NotificationsPage = () => {
                     </div>
 
                     {selectedNotification.meta?.amount !== undefined && (
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
-                        <span className="text-gray-500 dark:text-slate-400 block font-medium">Renewal Amount</span>
-                        <span className="font-bold text-blue-600 dark:text-blue-400 mt-0.5 block">
+                      <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
+                        <span className="text-slate-600 dark:text-slate-300 block font-medium">Renewal Amount</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400 mt-0.5 block tabular-nums">
                           ₱{Number(selectedNotification.meta.amount).toLocaleString()}
                         </span>
                       </div>
                     )}
 
                     {selectedNotification.meta?.referenceNumber && (
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
-                        <span className="text-gray-500 dark:text-slate-400 block font-medium">Payment Reference</span>
+                      <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40">
+                        <span className="text-slate-600 dark:text-slate-300 block font-medium">Payment Reference</span>
                         <span className="font-mono font-bold text-gray-900 dark:text-slate-100 mt-0.5 block truncate">
                           {selectedNotification.meta.referenceNumber}
                         </span>

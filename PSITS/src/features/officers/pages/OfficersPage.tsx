@@ -142,7 +142,7 @@ export const OfficersPage = () => {
               setFilterStatus(e.target.value as any);
               setCurrentPage(1);
             }}
-            className="px-4 py-2.5 bg-white dark:bg-[#0B1326] border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            className="px-4 py-2.5 bg-white dark:bg-obsidian-base border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
           >
             <option value="active">Active Officers</option>
             <option value="all">All Officers</option>
@@ -154,31 +154,31 @@ export const OfficersPage = () => {
         <Card>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px]">
-              <thead className="bg-slate-50 dark:bg-[#171F33] border-b border-gray-200 dark:border-slate-800">
+              <thead className="bg-slate-50 dark:bg-obsidian-container border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Position <span className="text-[10px] font-normal lowercase tracking-normal text-slate-400">(Executive Order)</span>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Position <span className="text-[10px] font-normal lowercase tracking-normal text-slate-600 dark:text-slate-400">(Executive Order)</span>
                   </th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sector</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Service Period</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Sector</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Service Period</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Status</th>
                   {canManageOfficers && (
-                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Actions</th>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {paginatedOfficers.map((officer) => (
-                  <tr key={officer.id} className="hover:bg-slate-50/80 dark:hover:bg-[#171F33]/60 transition-colors">
+                  <tr key={officer.id} className="hover:bg-slate-50/80 dark:hover:bg-obsidian-container/60 transition-colors">
                     <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{officer.fullName || officer.name}</td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-medium">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-cyan-300 border border-blue-200/60 dark:border-blue-800/60 text-xs font-semibold">
                         {officer.position}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">{officer.sectorDetails || officer.sector}</td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm font-mono">
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm">{officer.sectorDetails || officer.sector}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm tabular-nums">
                       {formatYear(officer.termStart)}{officer.termEnd ? ` - ${formatYear(officer.termEnd)}` : ''}
                     </td>
                     <td className="px-6 py-4">
@@ -259,7 +259,7 @@ export const OfficersPage = () => {
           </div>
 
           {paginatedOfficers.length === 0 && (
-            <div className="p-8 text-center text-gray-500">{isLoading ? 'Loading...' : 'No officers found.'}</div>
+            <div className="p-8 text-center text-slate-600 dark:text-slate-300">{isLoading ? 'Loading...' : 'No officers found.'}</div>
           )}
 
           {totalPages > 1 && (
@@ -603,20 +603,20 @@ export const OfficersPage = () => {
               const targetOfficer = officers.find((o) => String(o.id) === String(directSwapTargetId));
               if (directSwapSource && targetOfficer) {
                 return (
-                  <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 text-xs space-y-2">
+                  <div className="p-4 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 text-xs space-y-2">
                     <p className="font-bold text-blue-950 dark:text-blue-100 flex items-center gap-1.5">
-                      <ArrowLeftRight size={14} className="text-blue-600" />
+                      <ArrowLeftRight size={14} className="text-blue-600 dark:text-blue-400" />
                       Position Exchange Summary
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800">
-                        <p className="text-[11px] text-slate-500">New {targetOfficer.position}:</p>
+                      <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300">New {targetOfficer.position}:</p>
                         <p className="font-bold text-slate-900 dark:text-slate-100 text-sm mt-0.5 truncate">
                           {directSwapSource.fullName || directSwapSource.name}
                         </p>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800">
-                        <p className="text-[11px] text-slate-500">New {directSwapSource.position}:</p>
+                      <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300">New {directSwapSource.position}:</p>
                         <p className="font-bold text-slate-900 dark:text-slate-100 text-sm mt-0.5 truncate">
                           {targetOfficer.fullName || targetOfficer.name}
                         </p>

@@ -64,7 +64,7 @@ export const Toasts = () => {
               </div>
               <button
                 type="button"
-                className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="shrink-0 p-1 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label="Dismiss notification"
                 onClick={() => dismissToast(n.id)}
               >

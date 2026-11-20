@@ -639,10 +639,10 @@ export const PaymentsPage = () => {
               )}
               {canVerify && (
                 <Button
-                  variant="primary"
+                  variant="success"
                   size="lg"
                   onClick={() => setShowRecordModal(true)}
-                  className="w-full sm:w-auto shrink-0 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  className="w-full sm:w-auto shrink-0 font-semibold"
                 >
                   <Plus size={18} />
                   Record Payment
@@ -658,9 +658,9 @@ export const PaymentsPage = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-cyber-blue/30 shadow-sm relative overflow-hidden group">
+          <div className="card-cyber p-5 relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                 {isAdminOrOfficer
                   ? 'Total Verified Revenue'
                   : isInstitution
@@ -670,7 +670,7 @@ export const PaymentsPage = () => {
                   : 'My Total Paid'}
               </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold font-display text-blue-600 dark:text-cyan-400 mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-blue-600 dark:text-cyan-400 mt-3 tabular-nums">
               PHP{' '}
               {(isAdminOrOfficer
                 ? totalVerifiedRevenue
@@ -681,7 +681,7 @@ export const PaymentsPage = () => {
                 : myTotalPaid
               ).toLocaleString()}
             </p>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
+            <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 flex flex-col gap-0.5 tabular-nums">
               <span>
                 {isAdminOrOfficer
                   ? 'Audited platform & institution collections'
@@ -692,16 +692,16 @@ export const PaymentsPage = () => {
                   : `${myVerifiedCount} verified payment${myVerifiedCount === 1 ? '' : 's'} recorded`}
               </span>
               {isAdminOrOfficer && institutionTotalBilled > 0 && (
-                <span className="text-blue-600 dark:text-blue-400 font-medium">
+                <span className="text-blue-600 dark:text-blue-400 font-medium tabular-nums">
                   Includes ₱{institutionTotalPaid.toLocaleString()} paid • ₱{totalFinancialVolume.toLocaleString()} total volume
                 </span>
               )}
             </div>
           </div>
 
-          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-indigo-500/30 shadow-sm relative overflow-hidden group">
+          <div className="card-cyber p-5 relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                 {isAdminOrOfficer
                   ? 'Institution Members Total'
                   : isInstitution
@@ -713,53 +713,53 @@ export const PaymentsPage = () => {
             </div>
             {isAdminOrOfficer || isInstitution ? (
               <>
-                <p className="text-2xl sm:text-3xl font-extrabold font-display text-indigo-600 dark:text-indigo-400 mt-3">
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-blue-600 dark:text-blue-400 mt-3 tabular-nums">
                   ₱{institutionTotalBilled.toLocaleString()}
                 </p>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-0.5">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 flex flex-col gap-0.5 tabular-nums">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
                     ₱{institutionTotalPaid.toLocaleString()} Paid & Verified
                   </span>
-                  <span className="text-rose-600 dark:text-rose-400 font-medium">
+                  <span className="text-rose-600 dark:text-rose-400 font-medium tabular-nums">
                     ₱{institutionRemainingBalance.toLocaleString()} Outstanding Balance
                   </span>
                 </div>
               </>
             ) : (
               <>
-                <p className="text-2xl sm:text-3xl font-extrabold font-display text-indigo-600 dark:text-indigo-400 mt-3">
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-blue-600 dark:text-blue-400 mt-3 tabular-nums">
                   {isIndustry ? industryPendingCount : myPendingCount}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   {isIndustry ? 'Awaiting officer verification & OR receipt' : 'Awaiting officer review & confirmation'}
                 </p>
               </>
             )}
           </div>
 
-          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-amber-500/30 shadow-sm relative overflow-hidden group">
+          <div className="card-cyber p-5 relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                 Pending Verification
               </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-amber-400 mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-display text-amber-600 dark:text-amber-400 mt-3 tabular-nums">
               {isAdminOrOfficer || isInstitution
                 ? scopedPayments.filter((p) => getVerificationStatus(p) === 'pending').length
                 : isIndustry
                 ? industryPendingCount
                 : myPendingCount}
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
               {isAdminOrOfficer || isInstitution
                 ? 'Awaiting officer confirmation'
                 : 'Awaiting officer review & receipt verification'}
             </p>
           </div>
 
-          <div className="card-cyber p-5 bg-white dark:bg-obsidian-card/90 rounded-xl border border-slate-200 dark:border-emerald-500/30 shadow-sm relative overflow-hidden group">
+          <div className="card-cyber p-5 relative overflow-hidden group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                 {isAdminOrOfficer || isInstitution
                   ? 'Verified Transactions'
                   : isIndustry
@@ -769,17 +769,17 @@ export const PaymentsPage = () => {
             </div>
             {isAdminOrOfficer || isInstitution ? (
               <>
-                <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
+                <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3 tabular-nums">
                   {scopedPayments.filter((p) => getVerificationStatus(p) === 'verified').length}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Confirmed with reference IDs</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Confirmed with reference IDs</p>
               </>
             ) : isIndustry ? (
               <>
                 <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
                   {hasActiveSponsorship ? 'Active Partner' : 'Registered Partner'}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   {hasActiveSponsorship ? 'Corporate partnership verified' : 'Pending initial contribution'}
                 </p>
               </>
@@ -788,7 +788,7 @@ export const PaymentsPage = () => {
                 <p className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600 dark:text-emerald-400 mt-3">
                   {isVerifiedMember ? 'Active Member' : 'Pending Verification'}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   {isVerifiedMember ? 'Good standing membership' : 'Dues settlement needed'}
                 </p>
               </>
@@ -808,9 +808,9 @@ export const PaymentsPage = () => {
                   setFilterCategory(cat.id as any);
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer tabular-nums ${
                   filterCategory === cat.id
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-primary-600 dark:bg-cyan-600 text-white shadow-xs'
                     : 'bg-white dark:bg-obsidian-card text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
                 }`}
               >
@@ -822,9 +822,9 @@ export const PaymentsPage = () => {
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-obsidian-card/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-obsidian-card/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" size={18} />
             <input
               type="text"
               placeholder="Search by member, institution, ref #, event, or method..."
@@ -838,7 +838,7 @@ export const PaymentsPage = () => {
                   setSearchParams({});
                 }
               }}
-              className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-900 dark:text-white placeholder-slate-400"
+              className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
             />
             {searchTerm && (
               <button
@@ -848,7 +848,7 @@ export const PaymentsPage = () => {
                   setSearchParams({});
                   setCurrentPage(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1"
                 aria-label="Clear search"
               >
                 <X size={15} />
@@ -863,7 +863,7 @@ export const PaymentsPage = () => {
                 setFilterStatus(e.target.value as any);
                 setCurrentPage(1);
               }}
-              className="px-3.5 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-xs sm:text-sm text-slate-800 dark:text-slate-200 cursor-pointer font-medium"
+              className="px-3.5 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyber-cyan text-xs sm:text-sm text-slate-800 dark:text-slate-200 cursor-pointer font-medium"
             >
               <option value="all">All Verification Statuses</option>
               <option value="pending">Pending Verification</option>
@@ -872,7 +872,7 @@ export const PaymentsPage = () => {
             </select>
 
             {/* Rows Per Page Selector */}
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-slate-300">
               <span className="font-medium whitespace-nowrap">Show:</span>
               <select
                 value={itemsPerPage}
@@ -881,7 +881,7 @@ export const PaymentsPage = () => {
                   setItemsPerPage(val);
                   setCurrentPage(1);
                 }}
-                className="bg-transparent font-bold text-blue-600 dark:text-blue-400 focus:outline-none cursor-pointer"
+                className="bg-transparent font-bold text-blue-600 dark:text-blue-400 focus:outline-none cursor-pointer tabular-nums"
               >
                 <option value={10}>10 rows</option>
                 <option value={25}>25 rows</option>
@@ -907,7 +907,7 @@ export const PaymentsPage = () => {
         </div>
 
         {/* Visibility & Result Summary Indicator */}
-        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1 font-medium">
+        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 px-1 font-medium tabular-nums">
           <div>
             Showing <strong className="text-slate-900 dark:text-slate-200">{paginatedPayments.length}</strong> of{' '}
             <strong className="text-slate-900 dark:text-slate-200">{filteredPayments.length}</strong> matching transactions
@@ -918,7 +918,7 @@ export const PaymentsPage = () => {
             )}
           </div>
           {totalPages > 1 && itemsPerPage !== 'all' && (
-            <div className="text-[11px] font-mono">
+            <div className="text-xs font-medium tabular-nums">
               Page {currentPage} of {totalPages}
             </div>
           )}
@@ -936,12 +936,12 @@ export const PaymentsPage = () => {
                 aria-label="Payments Ledger Table"
                 tabIndex={0}
               >
-                <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5">
                     <ArrowLeftRight size={12} strokeWidth={1.75} className="shrink-0" />
                     Swipe horizontally to view all columns
                   </span>
-                  <span className="font-mono text-[10px]">{filteredPayments.length} records</span>
+                  <span className="text-[11px] font-semibold tabular-nums">{filteredPayments.length} records</span>
                 </div>
                 <table className="w-full min-w-[1000px]">
               <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800">
@@ -954,8 +954,8 @@ export const PaymentsPage = () => {
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Payment Type / Event
                   </th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Amount
+                  <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Amount (PHP)
                   </th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Method
@@ -985,7 +985,7 @@ export const PaymentsPage = () => {
                     }
                     if (payment.paymentKind === 'membership_renewal') {
                       return (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800">
                           Membership Renewal
                         </span>
                       );
@@ -1006,7 +1006,7 @@ export const PaymentsPage = () => {
                     }
                     if (payment.paymentKind === 'institution_batch_registration') {
                       return (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800 tabular-nums">
                           Batch Registration ({payment.totalHeads ? `${payment.totalHeads} Heads` : 'Institution'})
                         </span>
                       );
@@ -1038,15 +1038,15 @@ export const PaymentsPage = () => {
                           </div>
                         )}
                         {payment.memberEmail && (
-                          <div className="text-xs text-gray-500 font-normal mt-0.5">{payment.memberEmail}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300 font-normal mt-0.5">{payment.memberEmail}</div>
                         )}
                       </td>
                     )}
                     <td className="px-6 py-4 text-sm">{renderPaymentKindBadge()}</td>
-                    <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">
+                    <td className="px-6 py-4 text-right tabular-nums font-bold text-blue-600 dark:text-blue-400">
                       {payment.paymentKind === 'institution_batch_registration' ? (
                         <div>
-                          <div className="text-sm font-black text-gray-900 dark:text-white">
+                          <div className="text-sm font-black text-slate-900 dark:text-white">
                             ₱{Number(payment.netAmount || payment.amount || 0).toLocaleString()}
                           </div>
                           <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -1061,7 +1061,7 @@ export const PaymentsPage = () => {
                               Settled in full
                             </div>
                           )}
-                          <div className="text-[10px] text-gray-400 font-normal mt-0.5">
+                          <div className="text-[10px] text-slate-600 dark:text-slate-300 font-normal mt-0.5">
                             ₱250/head • {payment.totalHeads || 'Batch'} heads
                           </div>
                         </div>
@@ -1075,7 +1075,7 @@ export const PaymentsPage = () => {
                               -₱{Number(payment.remainingBalance).toLocaleString()} bal
                             </div>
                           )}
-                          <div className="text-[10px] text-gray-400 font-normal">
+                          <div className="text-[10px] text-slate-600 dark:text-slate-300 font-normal">
                             Partial Remittance
                           </div>
                         </div>
@@ -1087,7 +1087,7 @@ export const PaymentsPage = () => {
                               -₱{Number(payment.remainingBalance).toLocaleString()} bal
                             </div>
                           ) : (payment.paymentKind === 'membership_registration' || payment.paymentKind === 'membership' || (!payment.eventId && !payment.paymentKind)) ? (
-                            <div className="text-[11px] font-normal text-gray-500 dark:text-slate-400">
+                            <div className="text-[11px] font-normal text-slate-600 dark:text-slate-300">
                               ₱250 / person
                             </div>
                           ) : null}
@@ -1095,9 +1095,9 @@ export const PaymentsPage = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="text-gray-950 font-medium">{formattedMethod}</span>
+                      <span className="text-slate-900 dark:text-slate-100 font-medium">{formattedMethod}</span>
                       {payment.referenceNumber && (
-                        <div className="text-xs text-gray-500 font-mono mt-0.5">{payment.referenceNumber}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-300 font-mono tabular-nums mt-0.5">{payment.referenceNumber}</div>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -1108,23 +1108,23 @@ export const PaymentsPage = () => {
                         </Badge>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{payment.date}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm whitespace-nowrap tabular-nums">{payment.date}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button
-                          className="p-2 hover:bg-gray-100 rounded transition-colors"
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                           aria-label="View payment"
                           onClick={() => setViewing(payment)}
                         >
-                          <Eye size={16} className="text-gray-600" />
+                          <Eye size={16} className="text-slate-600 dark:text-slate-300" />
                         </button>
                         {canVerify && status === 'pending' && (
                           <button
-                            className="p-2 hover:bg-gray-100 rounded transition-colors"
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                             aria-label="Verify payment"
                             onClick={() => setConfirmAction({ payment, status: 'verified' })}
                           >
-                            <Edit2 size={16} className="text-blue-600" />
+                            <Edit2 size={16} className="text-blue-600 dark:text-cyan-400" />
                           </button>
                         )}
                       </div>
@@ -1138,7 +1138,7 @@ export const PaymentsPage = () => {
 
           {paginatedPayments.length === 0 && (
             <div className="p-12 text-center space-y-4">
-              <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
+              <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                 <Receipt size={36} />
               </div>
               <div className="max-w-md mx-auto space-y-1">
@@ -1155,7 +1155,7 @@ export const PaymentsPage = () => {
                     ? 'No corporate sponsorships recorded yet.'
                     : 'No payment transactions found.'}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   {isLoading
                     ? 'Please wait while we retrieve payment ledger data.'
                     : hasActiveFilters
@@ -1188,10 +1188,9 @@ export const PaymentsPage = () => {
                       )}
                       {isAdminOrOfficer && (
                         <Button
-                          variant="primary"
+                          variant="success"
                           size="sm"
                           onClick={() => setShowRecordModal(true)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                           <Plus size={15} />
                           Record Offline Payment
@@ -1228,7 +1227,7 @@ export const PaymentsPage = () => {
               {(isAdminOrOfficer || isInstitution) && (
                 <div>
                   <span className="font-semibold">{isInstitution ? 'Member / Delegate:' : 'Member:'}</span> {viewing.memberName || 'N/A'}
-                  {viewing.memberEmail && <span className="text-gray-500 text-xs block">{viewing.memberEmail}</span>}
+                  {viewing.memberEmail && <span className="text-slate-600 dark:text-slate-300 text-xs block">{viewing.memberEmail}</span>}
                 </div>
               )}
               <div>
@@ -1247,22 +1246,22 @@ export const PaymentsPage = () => {
                     </a>
                   </div>
                 ) : (
-                  <span className="text-gray-500 text-xs block">Individual / General Member</span>
+                  <span className="text-slate-600 dark:text-slate-300 text-xs block">Individual / General Member</span>
                 )}
               </div>
               <div><span className="font-semibold">Payment Type:</span> {viewing.event || (viewing.paymentKind === 'institution_batch_registration' ? 'Institution Batch Member Registration' : viewing.paymentKind === 'institution_partial_payment' ? 'Institution Partial / Settlement' : viewing.paymentKind === 'membership_renewal' ? 'Membership Renewal' : viewing.paymentKind === 'membership_registration' ? 'Membership Registration' : 'Membership Fee')}</div>
-              <div><span className="font-semibold">Amount Paid:</span> <strong className="text-blue-600 dark:text-blue-400">₱{Number(viewing.amount || 0).toLocaleString()}</strong></div>
+              <div><span className="font-semibold">Amount Paid:</span> <strong className="text-blue-600 dark:text-blue-400 tabular-nums">₱{Number(viewing.amount || 0).toLocaleString()}</strong></div>
               <div><span className="font-semibold">Method:</span> {formatPaymentMethod(viewing.method || viewing.paymentMethod)}</div>
-              <div><span className="font-semibold">Reference Number:</span> <span className="font-mono">{viewing.referenceNumber || 'N/A'}</span></div>
+              <div><span className="font-semibold">Reference Number:</span> <span className="font-mono tabular-nums">{viewing.referenceNumber || 'N/A'}</span></div>
               <div><span className="font-semibold">Status:</span> {getVerificationStatus(viewing)}</div>
-              <div><span className="font-semibold">Date Submitted:</span> {viewing.date}</div>
+              <div><span className="font-semibold">Date Submitted:</span> <span className="tabular-nums">{viewing.date}</span></div>
             </div>
 
             {/* Batch Registration Official Billing Breakdown */}
             {(viewing.totalHeads || viewing.paymentKind === 'institution_batch_registration' || viewing.billingBreakdown) && (
-              <div className="rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-800/60 pb-2">
-                  <div className="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+              <div className="rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/30 p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-blue-200/60 dark:border-blue-800/60 pb-2">
+                  <div className="text-sm font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2">
                     <span className="inline-flex items-center gap-1.5">
                       <FileText size={15} strokeWidth={1.75} className="shrink-0" />
                       Official Billing Breakdown
@@ -1277,42 +1276,42 @@ export const PaymentsPage = () => {
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                  <span className="text-xs text-blue-700 dark:text-blue-300 font-medium tabular-nums">
                     Rate: ₱250.00 / head
                   </span>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-gray-700 dark:text-slate-300">
+                <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
                   <div className="flex justify-between items-center">
                     <span>Total Members Uploaded:</span>
-                    <span className="font-semibold">{viewing.totalHeads || (viewing.billingBreakdown?.totalHeads) || 'N/A'} Persons</span>
+                    <span className="font-semibold tabular-nums">{viewing.totalHeads || (viewing.billingBreakdown?.totalHeads) || 'N/A'} Persons</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Total Amount Per Head ({viewing.totalHeads || viewing.billingBreakdown?.totalHeads || 0} × ₱250.00):</span>
-                    <span className="font-medium">
+                    <span className="tabular-nums">Total Amount Per Head ({viewing.totalHeads || viewing.billingBreakdown?.totalHeads || 0} × ₱250.00):</span>
+                    <span className="font-medium tabular-nums">
                       ₱{(viewing.grossAmount ?? ((viewing.totalHeads || 0) * 250)).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-medium">
-                    <span>Complimentary Discount ({viewing.freeSlots ?? 2} Free Slots):</span>
-                    <span>-₱{(viewing.discountAmount ?? ((viewing.freeSlots ?? 2) * 250)).toLocaleString()}</span>
+                    <span className="tabular-nums">Complimentary Discount ({viewing.freeSlots ?? 2} Free Slots):</span>
+                    <span className="tabular-nums">-₱{(viewing.discountAmount ?? ((viewing.freeSlots ?? 2) * 250)).toLocaleString()}</span>
                   </div>
-                  <div className="border-t border-indigo-200/60 dark:border-indigo-800/60 pt-1.5 flex justify-between items-center text-sm font-bold text-gray-900 dark:text-slate-100">
+                  <div className="border-t border-blue-200/60 dark:border-blue-800/60 pt-1.5 flex justify-between items-center text-sm font-bold text-slate-900 dark:text-slate-100">
                     <span>Total Bill (Net Payable):</span>
-                    <span className="text-indigo-600 dark:text-indigo-400">
+                    <span className="text-blue-600 dark:text-blue-400 tabular-nums">
                       ₱{(viewing.netAmount ?? Math.max(0, ((viewing.totalHeads || 0) * 250) - ((viewing.freeSlots ?? 2) * 250))).toLocaleString()}
                     </span>
                   </div>
 
                   {viewing.isPartial && (
-                    <div className="pt-2 border-t border-dashed border-indigo-200 dark:border-indigo-800 space-y-1">
+                    <div className="pt-2 border-t border-dashed border-blue-200 dark:border-blue-800 space-y-1">
                       <div className="flex justify-between items-center text-blue-700 dark:text-blue-300 font-semibold">
                         <span>Partial Amount Paid:</span>
-                        <span>₱{Number(viewing.partialAmount ?? viewing.amount ?? 0).toLocaleString()}</span>
+                        <span className="tabular-nums">₱{Number(viewing.partialAmount ?? viewing.amount ?? 0).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center text-amber-700 dark:text-amber-300 font-semibold">
                         <span>Remaining Balance:</span>
-                        <span>₱{Number(viewing.remainingBalance ?? 0).toLocaleString()}</span>
+                        <span className="tabular-nums">₱{Number(viewing.remainingBalance ?? 0).toLocaleString()}</span>
                       </div>
                     </div>
                   )}
@@ -1321,9 +1320,9 @@ export const PaymentsPage = () => {
             )}
 
             {viewing.proofUrl ? (
-              <div className="rounded-lg border border-gray-200 p-3 space-y-2">
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {['through_officer', 'cash_officer'].includes(String(viewing.method || viewing.paymentMethod).toLowerCase())
                       ? 'Official Receipt (OR) Proof'
                       : 'Transaction Proof / Receipt'}
@@ -1332,7 +1331,7 @@ export const PaymentsPage = () => {
                     href={viewing.proofUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline font-semibold"
+                    className="text-xs text-blue-600 dark:text-cyan-400 hover:underline font-semibold"
                   >
                     Open Full Size ↗
                   </a>
@@ -1340,7 +1339,7 @@ export const PaymentsPage = () => {
                 <img
                   src={viewing.proofUrl}
                   alt="Transaction proof"
-                  className="w-full max-h-96 object-contain rounded border bg-gray-50 dark:bg-slate-900"
+                  className="w-full max-h-96 object-contain rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
                 />
 
                 {/* AI / OCR Receipt Scanner for Verification */}
@@ -1353,13 +1352,13 @@ export const PaymentsPage = () => {
                 />
               </div>
             ) : (
-              <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded border">No transaction proof uploaded.</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">No transaction proof uploaded.</div>
             )}
 
             {/* Payment Audit Logs & Status History */}
-            <div className="rounded-lg border border-gray-200 p-4 space-y-3 bg-gray-50">
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3 bg-slate-50 dark:bg-slate-800/60">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-gray-900">Payment Audit & Status Logs</h4>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Payment Audit & Status Logs</h4>
                 {viewing.memberName && (
                   <button
                     type="button"
@@ -1369,7 +1368,7 @@ export const PaymentsPage = () => {
                       setSearchTerm(name);
                       setSearchParams({ search: name });
                     }}
-                    className="text-xs text-primary hover:underline font-semibold"
+                    className="text-xs text-primary dark:text-cyan-400 hover:underline font-semibold"
                   >
                     Filter All Payments for {viewing.memberName}
                   </button>
@@ -1377,31 +1376,31 @@ export const PaymentsPage = () => {
               </div>
 
               {isLoadingLogs ? (
-                <p className="text-xs text-gray-500">Loading logs...</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">Loading logs...</p>
               ) : paymentLogs.length > 0 ? (
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {paymentLogs.map((log) => (
-                    <div key={log.id} className="text-xs border-l-2 border-primary pl-3 py-1 bg-white rounded shadow-sm">
+                    <div key={log.id} className="text-xs border-l-2 border-primary pl-3 py-1.5 bg-white dark:bg-slate-900 rounded-md shadow-sm">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
                           {log.oldStatus ? `${log.oldStatus.toUpperCase()} → ${log.newStatus.toUpperCase()}` : log.newStatus.toUpperCase()}
                         </span>
-                        <span className="text-gray-400 text-[11px]">
+                        <span className="text-slate-600 dark:text-slate-300 text-[11px] tabular-nums">
                           {log.createdAt ? new Date(log.createdAt).toLocaleString() : ''}
                         </span>
                       </div>
-                      <div className="text-gray-600 mt-0.5">By: {log.changedByName}</div>
-                      {log.remarks && <div className="text-red-600 mt-0.5">Note: {log.remarks}</div>}
+                      <div className="text-slate-600 dark:text-slate-300 mt-0.5">By: {log.changedByName}</div>
+                      {log.remarks && <div className="text-red-600 dark:text-red-400 mt-0.5">Note: {log.remarks}</div>}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">No status changes logged yet for this payment.</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">No status changes logged yet for this payment.</p>
               )}
             </div>
 
             {canVerify && getVerificationStatus(viewing) === 'pending' && (
-              <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+              <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
                 <Button
                   type="button"
                   variant="danger"
@@ -1429,7 +1428,7 @@ export const PaymentsPage = () => {
       >
         {rejecting && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-700">Add a reason for rejection (shown to the member).</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">Add a reason for rejection (shown to the member).</p>
             <TextArea
               label="Rejection Reason"
               rows={4}
@@ -1624,7 +1623,7 @@ export const PaymentsPage = () => {
                 ? 'Upload Cheque Receipt / Copy *'
                 : 'Upload GCash Receipt *'}
             </label>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
               {feeForm.method === 'through_officer'
                 ? 'Please upload a clear scan or photo of your PSITS Officer-issued Official Receipt (OR).'
                 : feeForm.method === 'bank_transfer'
@@ -1649,7 +1648,7 @@ export const PaymentsPage = () => {
             />
             {feeForm.previewUrl && (
               <div className="mt-3 space-y-3">
-                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Receipt Preview:</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mb-1">Receipt Preview:</p>
                 <img
                   src={feeForm.previewUrl}
                   alt="Receipt preview"
@@ -1699,12 +1698,12 @@ export const PaymentsPage = () => {
         size="lg"
       >
         <form onSubmit={handleRecordOfflinePayment} className="space-y-4">
-          <p className="text-xs text-gray-500 dark:text-slate-400">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
             Log official receipts, cheques, institution partial remittances, batch registrations, or direct member dues into the central Financial Ledger.
           </p>
 
           {recordError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+            <div className="rounded-lg bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900">
               {recordError}
             </div>
           )}
@@ -1724,10 +1723,10 @@ export const PaymentsPage = () => {
                       category: 'institution_partial_payment',
                     }));
                   }}
-                  className={`py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 px-3 text-xs font-bold rounded-lg border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     recordForm.entityType === 'institution'
                       ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/50 dark:border-blue-400 dark:text-blue-200'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-800'
+                      : 'border-gray-200 text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Building2 size={15} /> Institution
@@ -1741,10 +1740,10 @@ export const PaymentsPage = () => {
                       category: 'membership_registration',
                     }));
                   }}
-                  className={`py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 px-3 text-xs font-bold rounded-lg border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     recordForm.entityType === 'member'
                       ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/50 dark:border-blue-400 dark:text-blue-200'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-800'
+                      : 'border-gray-200 text-slate-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
                   }`}
                 >
                   <User size={15} /> Member
@@ -1805,11 +1804,11 @@ export const PaymentsPage = () => {
           </div>
 
           {/* Partial payment toggle */}
-          <div className="p-3 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 space-y-2">
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-gray-800 dark:text-slate-200 block">Is Partial Payment / Downpayment?</span>
-                <span className="text-[11px] text-gray-500">Record an installment with outstanding balance.</span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Is Partial Payment / Downpayment?</span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-300">Record an installment with outstanding balance.</span>
               </div>
               <input
                 type="checkbox"
@@ -1842,7 +1841,7 @@ export const PaymentsPage = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+          <div className="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
             <input
               type="checkbox"
               id="markVerified"
@@ -1867,7 +1866,7 @@ export const PaymentsPage = () => {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" isLoading={isSubmittingRecord} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+            <Button type="submit" variant="success" isLoading={isSubmittingRecord} className="font-bold">
               <CheckCircle2 size={16} />
               Save to Ledger
             </Button>

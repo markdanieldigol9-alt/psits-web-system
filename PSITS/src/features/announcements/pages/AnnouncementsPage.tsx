@@ -502,15 +502,15 @@ export const AnnouncementsPage = () => {
             <div key={announcement.id} className="card-cyber p-6 bg-white dark:bg-obsidian-card/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300 hover:border-cyber-blue/40">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyber-blue to-cyber-cyan text-sm font-bold text-white shadow-sm">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyber-blue to-cyber-cyan text-sm font-bold text-white shadow-sm">
                     {getInitials(announcement.postedBy?.name || 'PSITS')}
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold font-display text-slate-900 dark:text-white">{announcement.title}</h3>
-                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
                       {announcement.postedBy?.name || 'PSITS Officer'}
                     </p>
-                    <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 tabular-nums mt-0.5">
                       Posted on {announcement.date}
                     </p>
                   </div>
@@ -520,10 +520,10 @@ export const AnnouncementsPage = () => {
                 </Badge>
               </div>
 
-              <p className="mb-4 whitespace-pre-wrap text-gray-700">{announcement.content}</p>
+              <p className="mb-4 whitespace-pre-wrap text-gray-700 dark:text-slate-200">{announcement.content}</p>
 
               {announcement.imageUrl && (
-                <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <div className="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">
                   <img
                     src={announcement.imageUrl}
                     alt={announcement.title}
@@ -532,7 +532,7 @@ export const AnnouncementsPage = () => {
                 </div>
               )}
 
-              <div className="mb-3 flex items-center justify-between border-y border-gray-100 py-3 text-sm text-gray-500">
+              <div className="mb-3 flex items-center justify-between border-y border-gray-100 dark:border-slate-800 py-3 text-sm text-slate-600 dark:text-slate-300 tabular-nums">
                 <span>{Number(announcement.likeCount || 0)} like(s)</span>
                 <span>{Number(announcement.commentCount || 0)} comment(s)</span>
               </div>
@@ -543,11 +543,11 @@ export const AnnouncementsPage = () => {
                   onClick={() => void onToggleLike(String(announcement.id))}
                   className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
                     announcement.likedByMe
-                      ? 'border-red-200 bg-red-50 text-red-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
+                      : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Heart size={16} className={announcement.likedByMe ? 'fill-red-600 text-red-600' : 'text-gray-600'} />
+                  <Heart size={16} className={announcement.likedByMe ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'} />
                   Like
                 </button>
 
@@ -560,15 +560,15 @@ export const AnnouncementsPage = () => {
                     setCommentText('');
                     setShowViewModal(true);
                   }}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-slate-200 transition-colors hover:bg-gray-50 dark:hover:bg-slate-800"
                 >
-                  <MessageCircle size={16} className="text-gray-600" />
+                  <MessageCircle size={16} className="text-slate-600 dark:text-slate-300" />
                   Comment
                 </button>
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-slate-600 dark:text-slate-300">
                   {isMember ? `System announcement` : `Audience: ${announcement.audience.join(', ')}`}
                 </span>
                 <div className="flex gap-2">
@@ -645,7 +645,7 @@ export const AnnouncementsPage = () => {
         </div>
 
         {filteredAnnouncements.length === 0 && (
-          <Card className="p-8 text-center text-gray-500">
+          <Card className="p-8 text-center text-slate-600 dark:text-slate-300">
             {isLoading ? 'Loading...' : 'No announcements found.'}
           </Card>
         )}
@@ -667,8 +667,8 @@ export const AnnouncementsPage = () => {
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 text-balance">{selectedAnnouncement.title}</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 text-balance">{selectedAnnouncement.title}</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 tabular-nums">
                     Posted on {selectedAnnouncement.date}
                     {selectedAnnouncement.postedBy?.name ? ` - by ${selectedAnnouncement.postedBy.name}` : ''}
                   </p>
@@ -679,15 +679,15 @@ export const AnnouncementsPage = () => {
                 </Badge>
               </div>
 
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-slate-600 dark:text-slate-300">
                 Audience:{' '}
                 {Array.isArray(selectedAnnouncement.audience) ? selectedAnnouncement.audience.join(', ') : ''}
               </div>
 
-              <div className="whitespace-pre-wrap text-gray-800">{selectedAnnouncement.content}</div>
+              <div className="whitespace-pre-wrap text-gray-800 dark:text-slate-200">{selectedAnnouncement.content}</div>
 
               {selectedAnnouncement.imageUrl && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">
                   <img
                     src={selectedAnnouncement.imageUrl}
                     alt={selectedAnnouncement.title}
@@ -696,50 +696,50 @@ export const AnnouncementsPage = () => {
                 </div>
               )}
 
-              <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+              <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => void onToggleLike(String(selectedAnnouncement.id))}
-                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                      likes.likedByMe ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors tabular-nums ${
+                      likes.likedByMe ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700'
                     }`}
                     disabled={isInteractionLoading}
                     aria-label="Like announcement"
                   >
-                    <Heart size={16} className={likes.likedByMe ? 'fill-red-600 text-red-600' : 'text-gray-600'} />
+                    <Heart size={16} className={likes.likedByMe ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'} />
                     Like ({Number(likes.count || 0)})
                   </button>
 
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">
                     {isInteractionLoading ? 'Loading interactions...' : `${comments.length} comment(s)`}
                   </div>
                 </div>
 
                 <div className="max-h-64 overflow-auto space-y-3">
                   {comments.length === 0 && !isInteractionLoading && (
-                    <div className="text-sm text-gray-500">No comments yet. Be the first to comment.</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-300">No comments yet. Be the first to comment.</div>
                   )}
                   {comments.map((c) => {
                     const canDelete = isAdmin || String(c?.user?.id || '') === String(user?.id || '');
                     return (
-                      <div key={String(c.id)} className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                      <div key={String(c.id)} className="rounded-md bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold text-gray-900 truncate">{c?.user?.name || 'User'}</div>
-                            <div className="text-xs text-gray-500">{formatTimestamp(c?.createdAt)}</div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{c?.user?.name || 'User'}</div>
+                            <div className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">{formatTimestamp(c?.createdAt)}</div>
                           </div>
                           {canDelete && (
                             <button
                               type="button"
-                              className="text-xs font-semibold text-red-700 hover:underline"
+                              className="text-xs font-semibold text-red-700 dark:text-red-400 hover:underline"
                               onClick={() => void onDeleteComment(String(c.id))}
                             >
                               Delete
                             </button>
                           )}
                         </div>
-                        <div className="mt-2 whitespace-pre-wrap text-sm text-gray-800">{String(c.content || '')}</div>
+                        <div className="mt-2 whitespace-pre-wrap text-sm text-gray-800 dark:text-slate-200">{String(c.content || '')}</div>
                       </div>
                     );
                   })}
@@ -805,11 +805,11 @@ export const AnnouncementsPage = () => {
               onChange={(e) => setFormData((p) => ({ ...p, content: (e.target as HTMLTextAreaElement).value }))}
             />
 
-            <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+            <div className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-800 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Announcement Image</p>
-                  <p className="text-xs text-gray-500">Optional. PNG, JPG, or WebP up to 8MB.</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Announcement Image</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">Optional. PNG, JPG, or WebP up to 8MB.</p>
                 </div>
                 {(createImagePreview || formData.imageUrl) && (
                   <button
@@ -841,7 +841,7 @@ export const AnnouncementsPage = () => {
               </label>
 
               {(createImagePreview || formData.imageUrl) && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <div className="overflow-hidden rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">
                   <img
                     src={createImagePreview || formData.imageUrl}
                     alt="Announcement preview"
@@ -902,11 +902,11 @@ export const AnnouncementsPage = () => {
               onChange={(e) => setEditFormData((p) => ({ ...p, content: (e.target as HTMLTextAreaElement).value }))}
             />
 
-            <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+            <div className="space-y-3 rounded-lg border border-gray-200 dark:border-slate-800 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Announcement Image</p>
-                  <p className="text-xs text-gray-500">Optional. Upload a new image or keep the current one.</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Announcement Image</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">Optional. Upload a new image or keep the current one.</p>
                 </div>
                 {(editImagePreview || editFormData.imageUrl) && (
                   <button
@@ -938,7 +938,7 @@ export const AnnouncementsPage = () => {
               </label>
 
               {(editImagePreview || editFormData.imageUrl) && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <div className="overflow-hidden rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">
                   <img
                     src={editImagePreview || editFormData.imageUrl}
                     alt="Announcement preview"

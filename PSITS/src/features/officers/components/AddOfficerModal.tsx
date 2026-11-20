@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Input, Button, Select } from '@/shared/components/Form';
-import { Alert } from '@/shared/components/Common';
+import { Alert, Modal } from '@/shared/components/Common';
 import api from '@/shared/services/api';
 import { getPositionRank } from '@/shared/utils/helpers';
-import { X, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 
 interface AddOfficerModalProps {
   isOpen: boolean;
@@ -222,22 +222,14 @@ export const AddOfficerModal = ({
   };
 
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 text-balance">{title || (initialMember ? 'Edit Officer Details' : 'Assign Officer Position')}</h2>
-          <button
-            onClick={onClose}
-            aria-label="Close modal"
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title || (initialMember ? 'Edit Officer Details' : 'Assign Officer Position')}
+      size="sm"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {error && <Alert type="error" message={error} />}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="w-full md:col-span-2 relative">
@@ -275,19 +267,19 @@ export const AddOfficerModal = ({
               )}
 
               {!selectedMember && (isSearching || memberResults.length > 0) && (
-                <div className="absolute z-10 mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-56 overflow-auto">
+                <div className="absolute z-10 mt-2 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-56 overflow-auto">
                   {isSearching && (
-                    <div className="px-4 py-3 text-sm text-gray-500">Searching...</div>
+                    <div className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">Searching...</div>
                   )}
                   {!isSearching && memberResults.length === 0 && (
-                    <div className="px-4 py-3 text-sm text-gray-500">No active members found.</div>
+                    <div className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">No active members found.</div>
                   )}
                   {!isSearching &&
                     memberResults.map((m) => (
                       <button
                         key={m.id}
                         type="button"
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50"
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-800/70 transition-colors"
                         onClick={() => {
                           setSelectedMember(m);
                           setMemberQuery('');
@@ -295,8 +287,8 @@ export const AddOfficerModal = ({
                           setErrors((prev) => ({ ...prev, member: '' }));
                         }}
                       >
-                        <div className="text-sm font-medium text-gray-900">{m.fullName}</div>
-                        <div className="text-xs text-gray-600">{m.email}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{m.fullName}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-300">{m.email}</div>
                       </button>
                     ))}
                 </div>
@@ -309,7 +301,7 @@ export const AddOfficerModal = ({
                   label="Position"
                   value={formData.position}
                   readOnly
-                  className="bg-gray-50 font-semibold text-gray-900 cursor-not-allowed"
+                  className="bg-gray-50 dark:bg-slate-800 font-semibold text-gray-900 dark:text-slate-100 cursor-not-allowed"
                 />
               ) : (
                 <>
@@ -393,7 +385,7 @@ export const AddOfficerModal = ({
             />
 
             {!initialMember && takenPositions.size > 0 && (
-              <p className="text-xs text-gray-500 md:col-span-2">Positions marked as assigned are unavailable until cleared.</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 md:col-span-2">Positions marked as assigned are unavailable until cleared.</p>
             )}
 
             <Input
@@ -418,7 +410,7 @@ export const AddOfficerModal = ({
                 placeholder="Select a member first"
                 value={selectedMember?.email || ''}
                 readOnly
-                className="bg-gray-50"
+                className="bg-gray-50 dark:bg-slate-800"
               />
             </div>
           </div>
@@ -431,7 +423,6 @@ export const AddOfficerModal = ({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };

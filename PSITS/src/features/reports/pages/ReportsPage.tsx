@@ -815,10 +815,10 @@ export const ReportsPage = () => {
               <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
               <div>
                 <h2 className="text-xl font-extrabold text-primary tracking-tight text-balance">PSITS REGIONAL ORGANIZATION</h2>
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
+                <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">Official Executive & Operations Report</p>
               </div>
             </div>
-            <div className="text-right text-xs text-gray-500 space-y-0.5">
+            <div className="text-right text-xs text-slate-600 space-y-0.5 tabular-nums">
               <p><strong>Report:</strong> {previewReport}</p>
               <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
               <p><strong>Prepared By:</strong> {user?.fullName || 'Administrator'}</p>
@@ -861,12 +861,12 @@ export const ReportsPage = () => {
           return (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3 text-center print:break-inside-avoid">
-                <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex flex-col justify-between">
+                <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg flex flex-col justify-between">
                   <div>
-                    <span className="text-xs text-gray-500 font-semibold">Total Members</span>
-                    <p className="text-2xl font-bold text-primary mt-1">{totalCount}</p>
+                    <span className="text-xs text-slate-600 font-semibold">Total Members</span>
+                    <p className="text-2xl font-bold text-primary mt-1 tabular-nums">{totalCount}</p>
                   </div>
-                  <div className="mt-2 pt-1.5 border-t border-blue-200/60 flex items-center justify-center gap-1.5 text-[11px] text-blue-700 font-medium flex-wrap">
+                  <div className="mt-2 pt-1.5 border-t border-blue-200/60 flex items-center justify-center gap-1.5 text-[11px] text-blue-700 font-medium flex-wrap tabular-nums">
                     <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-blue-100">
                       {psitsCount} PSITS
                     </span>
@@ -877,12 +877,12 @@ export const ReportsPage = () => {
                   </div>
                 </div>
 
-                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col justify-between">
+                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between">
                   <div>
-                    <span className="text-xs text-gray-500 font-semibold">Approved Members</span>
-                    <p className="text-2xl font-bold text-emerald-700 mt-1">{activeTotal}</p>
+                    <span className="text-xs text-slate-600 font-semibold">Approved Members</span>
+                    <p className="text-2xl font-bold text-emerald-700 mt-1 tabular-nums">{activeTotal}</p>
                   </div>
-                  <div className="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-medium flex-wrap">
+                  <div className="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-medium flex-wrap tabular-nums">
                     <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
                       {activePsits} PSITS
                     </span>
@@ -893,12 +893,12 @@ export const ReportsPage = () => {
                   </div>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex flex-col justify-between">
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex flex-col justify-between">
                   <div>
-                    <span className="text-xs text-gray-500 font-semibold">Pending Approvals</span>
-                    <p className="text-2xl font-bold text-amber-700 mt-1">{pendingTotal}</p>
+                    <span className="text-xs text-slate-600 font-semibold">Pending Approvals</span>
+                    <p className="text-2xl font-bold text-amber-700 mt-1 tabular-nums">{pendingTotal}</p>
                   </div>
-                  <div className="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-center gap-1.5 text-[11px] text-amber-700 font-medium flex-wrap">
+                  <div className="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-center gap-1.5 text-[11px] text-amber-700 font-medium flex-wrap tabular-nums">
                     <span className="bg-white/80 px-1.5 py-0.5 rounded shadow-2xs border border-amber-100">
                       {pendingPsits} PSITS
                     </span>
@@ -918,27 +918,27 @@ export const ReportsPage = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="Signups" />
+                    <Line type="monotone" dataKey="members" stroke="#2563EB" strokeWidth={3} name="Signups" />
                     <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className="border rounded-xl overflow-hidden print:overflow-visible text-xs">
+              <div className="border rounded-lg overflow-hidden print:overflow-visible text-xs">
                 <table className="w-full">
                   <thead className="bg-gray-100 border-b">
                     <tr>
                       <th className="px-3 py-2 text-left font-bold">Month</th>
-                      <th className="px-3 py-2 text-right font-bold">New Registrations</th>
-                      <th className="px-3 py-2 text-right font-bold">Approved</th>
+                      <th className="px-3 py-2 text-right font-bold tabular-nums">New Registrations</th>
+                      <th className="px-3 py-2 text-right font-bold tabular-nums">Approved</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {memberGrowth.map((row: any) => (
                       <tr key={row.month}>
                         <td className="px-3 py-2 font-medium">{row.month}</td>
-                        <td className="px-3 py-2 text-right">{row.members}</td>
-                        <td className="px-3 py-2 text-right text-emerald-700 font-bold">{row.active}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{row.members}</td>
+                        <td className="px-3 py-2 text-right text-emerald-700 font-bold tabular-nums">{row.active}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1069,31 +1069,31 @@ export const ReportsPage = () => {
 
         {previewReport === 'Partner Contributions' && (
           <div className="space-y-4">
-            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center text-center print:break-inside-avoid">
+            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex justify-between items-center text-center print:break-inside-avoid">
               <div>
-                <span className="text-xs font-semibold text-gray-500">Total Sponsorship Value</span>
-                <p className="text-2xl font-extrabold text-emerald-700">₱{(partnerReportData?.totalValue || 0).toLocaleString()}</p>
+                <span className="text-xs font-semibold text-slate-600">Total Sponsorship Value</span>
+                <p className="text-2xl font-extrabold text-emerald-700 tabular-nums">₱{(partnerReportData?.totalValue || 0).toLocaleString()}</p>
               </div>
               <div>
-                <span className="text-xs font-semibold text-gray-500">Total Deals</span>
-                <p className="text-2xl font-extrabold text-primary">{partnerReportData?.contributions?.length || 0}</p>
+                <span className="text-xs font-semibold text-slate-600">Total Deals</span>
+                <p className="text-2xl font-extrabold text-primary tabular-nums">{partnerReportData?.contributions?.length || 0}</p>
               </div>
             </div>
 
-            <div className="border rounded-xl overflow-x-auto print:overflow-visible text-xs">
+            <div className="border rounded-lg overflow-x-auto print:overflow-visible text-xs">
               <table className="w-full">
                 <thead className="bg-gray-100 border-b">
                   <tr>
                     <th className="px-3 py-2 text-left font-bold">Partner</th>
                     <th className="px-3 py-2 text-left font-bold">Deal Title</th>
                     <th className="px-3 py-2 text-left font-bold">Type</th>
-                    <th className="px-3 py-2 text-right font-bold">Value (₱)</th>
+                    <th className="px-3 py-2 text-right font-bold tabular-nums">Value (₱)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {(partnerReportData?.contributions || []).length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-6 text-center text-gray-500">
+                      <td colSpan={4} className="px-3 py-6 text-center text-slate-600">
                         No partner contributions recorded.
                       </td>
                     </tr>
@@ -1103,7 +1103,7 @@ export const ReportsPage = () => {
                         <td className="px-3 py-2 font-bold">{pc.partner_name}</td>
                         <td className="px-3 py-2">{pc.deal_title}</td>
                         <td className="px-3 py-2 capitalize">{pc.contribution_type}</td>
-                        <td className="px-3 py-2 text-right font-bold text-emerald-700">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right font-bold text-emerald-700 tabular-nums">₱{Number(pc.value_amount || 0).toLocaleString()}</td>
                       </tr>
                     ))
                   )}
@@ -1117,26 +1117,26 @@ export const ReportsPage = () => {
           previewReport !== 'Membership Growth' &&
           previewReport !== 'Member Directory & Roster' &&
           previewReport !== 'Partner Contributions' && (
-          <div className="border rounded-xl p-4 text-xs space-y-2">
+          <div className="border rounded-lg p-4 text-xs space-y-2">
             <h4 className="font-bold text-gray-900">{previewReport} Data Summary</h4>
-            <p className="text-gray-600">Total records compiled: {detailedRecords.length} entries.</p>
+            <p className="text-slate-600 tabular-nums">Total records compiled: {detailedRecords.length} entries.</p>
           </div>
         )}
 
         {/* Signatures & Certification Section (for general reports) */}
         {!isSpecialReport && (
-          <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-gray-600 certification-block">
+          <div className="border-t border-gray-200 pt-6 grid grid-cols-2 gap-8 text-xs text-slate-600 certification-block">
             <div>
               <p className="font-semibold text-gray-800">Prepared & Verified By:</p>
               <div className="mt-8 border-b border-gray-400 w-48"></div>
               <p className="mt-1 font-bold text-gray-900">{user?.fullName || 'Authorized Administrator'}</p>
-              <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'Officer'} / Reporter</p>
+              <p className="text-[11px] text-slate-600 capitalize">{user?.role || 'Officer'} / Reporter</p>
             </div>
             <div className="text-right">
               <p className="font-semibold text-gray-800">Approved By Organization:</p>
               <div className="mt-8 border-b border-gray-400 w-48 ml-auto"></div>
               <p className="mt-1 font-bold text-gray-900">PSITS Regional Secretariat</p>
-              <p className="text-[11px] text-gray-500">Official Stamp & Date</p>
+              <p className="text-[11px] text-slate-600">Official Stamp & Date</p>
             </div>
           </div>
         )}
@@ -1180,7 +1180,7 @@ export const ReportsPage = () => {
                 className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
                   reportsViewMode === 'dropdown'
                     ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                 }`}
                 title="Dropdown Selector View"
               >
@@ -1192,7 +1192,7 @@ export const ReportsPage = () => {
                 className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
                   reportsViewMode === 'grid'
                     ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                 }`}
                 title="Grid Cards View"
               >
@@ -1203,16 +1203,16 @@ export const ReportsPage = () => {
         >
           {reportsViewMode === 'dropdown' ? (
             <div className="space-y-4">
-              <div className="flex flex-col md:flex-row items-stretch md:items-end justify-between gap-4 p-4 md:p-5 bg-gradient-to-r from-blue-50/60 via-slate-50 to-indigo-50/40 dark:from-slate-900/60 dark:via-slate-800/50 dark:to-indigo-950/20 rounded-xl border border-gray-200 dark:border-slate-700">
+              <div className="flex flex-col md:flex-row items-stretch md:items-end justify-between gap-4 p-4 md:p-5 bg-gradient-to-r from-blue-50/60 via-slate-50 to-cyan-50/40 dark:from-slate-900/60 dark:via-slate-800/50 dark:to-cyan-950/20 rounded-lg border border-gray-200 dark:border-slate-700">
                 <div className="flex-1 space-y-1.5">
-                  <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Select Report
                   </label>
                   <div className="relative">
                     <select
                       value={selectedReportTitle}
                       onChange={(e) => setSelectedReportTitle(e.target.value)}
-                      className="w-full text-base font-semibold py-2.5 pl-3.5 pr-10 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                      className="w-full text-base font-semibold py-2.5 pl-3.5 pr-10 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
                     >
                       {reportCards.map((r) => (
                         <option key={r.title} value={r.title}>
@@ -1244,8 +1244,8 @@ export const ReportsPage = () => {
               </div>
 
               {selectedReportObj && (
-                <div className="flex items-start gap-4 p-4 bg-white dark:bg-slate-800/80 rounded-xl border border-gray-200/80 dark:border-slate-700 shadow-sm transition-all">
-                  <div className="p-3 bg-blue-100 dark:bg-blue-950/60 text-primary dark:text-cyan-400 rounded-xl shrink-0">
+                <div className="flex items-start gap-4 p-4 bg-white dark:bg-slate-800/80 rounded-lg border border-gray-200/80 dark:border-slate-700 shadow-sm transition-all">
+                  <div className="p-3 bg-blue-100 dark:bg-blue-950/60 text-primary dark:text-cyan-400 rounded-md shrink-0">
                     <SelectedReportIcon className="w-6 h-6" />
                   </div>
                   <div className="space-y-1 flex-1">
@@ -1254,7 +1254,7 @@ export const ReportsPage = () => {
                         {selectedReportObj.title}
                       </h4>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
                       {selectedReportObj.description}
                     </p>
                   </div>
@@ -1266,13 +1266,13 @@ export const ReportsPage = () => {
               {reportCards.map((report) => {
                 const Icon = report.icon;
                 return (
-                  <div key={report.title} className="rounded-lg border border-gray-200 p-4 transition-colors hover:border-primary/40 hover:bg-blue-50/40">
+                  <div key={report.title} className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 transition-colors hover:border-primary/40 dark:hover:border-cyan-500/40 hover:bg-blue-50/40 dark:hover:bg-slate-800/80">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
-                        <h3 className="text-base font-semibold text-gray-900">{report.title}</h3>
-                        <p className="text-sm text-gray-600">{report.description}</p>
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">{report.title}</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">{report.description}</p>
                       </div>
-                      <Icon className="h-5 w-5 text-primary" />
+                      <Icon className="h-5 w-5 text-primary dark:text-cyan-400 shrink-0" />
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <Button size="sm" variant="secondary" className="w-full" onClick={() => void openReportWizard(report.title, 2)}>
@@ -1296,7 +1296,7 @@ export const ReportsPage = () => {
 
         {(isLoading || isEventReportLoading || isWinnersReportLoading || isAttendanceReportLoading) && (
           <Card className="no-print">
-            <div className="text-sm text-gray-600">Loading report data...</div>
+            <div className="text-sm text-slate-600 dark:text-slate-300">Loading report data...</div>
           </Card>
         )}
 
@@ -1318,7 +1318,7 @@ export const ReportsPage = () => {
                 ? `${report.summary.totalMembers} total members (${report.summary.psitsMembers ?? 12} PSITS + ${report.summary.institutionMembers ?? 37} Inst.) • Last 6 months`
                 : 'Last 6 months'
             }
-            className="h-[350px]"
+            className="h-[350px] tabular-nums"
           >
             <div className="h-[255px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -1328,7 +1328,7 @@ export const ReportsPage = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="members" stroke="#003D82" strokeWidth={3} name="New Registrations" />
+                  <Line type="monotone" dataKey="members" stroke="#2563EB" strokeWidth={3} name="New Registrations" />
                   <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} name="Approved" />
                 </LineChart>
               </ResponsiveContainer>
@@ -1365,12 +1365,12 @@ export const ReportsPage = () => {
       >
         <div className="space-y-5 print:space-y-0">
           {/* Wizard Step Navigation Indicator */}
-          <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1.5 rounded-xl text-center text-xs font-semibold no-print">
+          <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl text-center text-xs font-semibold no-print">
             <button
               type="button"
               onClick={() => setWizardStep(1)}
-              className={`py-2 px-2 rounded-lg transition-all inline-flex items-center justify-center gap-1.5 ${
-                wizardStep === 1 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
+              className={`py-2 px-2 rounded-md transition-all inline-flex items-center justify-center gap-1.5 ${
+                wizardStep === 1 ? 'bg-white dark:bg-slate-900 text-primary dark:text-cyan-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Filter size={14} strokeWidth={1.75} className="shrink-0" />
@@ -1379,8 +1379,8 @@ export const ReportsPage = () => {
             <button
               type="button"
               onClick={() => setWizardStep(2)}
-              className={`py-2 px-2 rounded-lg transition-all inline-flex items-center justify-center gap-1.5 ${
-                wizardStep === 2 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
+              className={`py-2 px-2 rounded-md transition-all inline-flex items-center justify-center gap-1.5 ${
+                wizardStep === 2 ? 'bg-white dark:bg-slate-900 text-primary dark:text-cyan-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Eye size={14} strokeWidth={1.75} className="shrink-0" />
@@ -1389,8 +1389,8 @@ export const ReportsPage = () => {
             <button
               type="button"
               onClick={() => setWizardStep(3)}
-              className={`py-2 px-2 rounded-lg transition-all inline-flex items-center justify-center gap-1.5 ${
-                wizardStep === 3 ? 'bg-white text-primary shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'
+              className={`py-2 px-2 rounded-md transition-all inline-flex items-center justify-center gap-1.5 ${
+                wizardStep === 3 ? 'bg-white dark:bg-slate-900 text-primary dark:text-cyan-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Printer size={14} strokeWidth={1.75} className="shrink-0" />
@@ -1401,11 +1401,11 @@ export const ReportsPage = () => {
           {/* STEP 1: CONFIGURE PARAMETERS & FILTERS */}
           {wizardStep === 1 && (
             <div className="space-y-4 animate-fadeIn no-print">
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl space-y-1">
-                <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <Filter size={16} className="text-primary" /> Filter & Configure Report Details
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 p-4 rounded-lg space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Filter size={16} className="text-primary dark:text-cyan-400" /> Filter & Configure Report Details
                 </h4>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   Select date range and parameters before generating the official detailed preview document.
                 </p>
               </div>
@@ -1426,12 +1426,12 @@ export const ReportsPage = () => {
                 />
 
                 {(previewReport === 'Financial Summary' || previewReport === 'Revenue by Method') && (
-                  <div className="bg-emerald-50/70 border border-emerald-200 p-3 rounded-xl text-xs space-y-1">
-                    <p className="font-bold text-emerald-900 flex items-center gap-1.5">
-                      <Wallet size={15} className="text-emerald-700" />
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 p-3 rounded-lg text-xs space-y-1">
+                    <p className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                      <Wallet size={15} className="text-emerald-700 dark:text-emerald-400" />
                       Official Accounting & Audit Configuration
                     </p>
-                    <p className="text-emerald-800 leading-relaxed">
+                    <p className="text-emerald-800 dark:text-emerald-300 leading-relaxed">
                       Compiling statement for verified collections, payment channels (GCash, Bank Transfer, Through Officer, Cheque), and partial balance receivables.
                     </p>
                   </div>
@@ -1439,11 +1439,11 @@ export const ReportsPage = () => {
 
                 {previewReport === 'Revenue by Method' && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Primary Payment Channel Focus</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Primary Payment Channel Focus</label>
                     <select
                       value={selectedMethodFocus}
                       onChange={(e) => setSelectedMethodFocus(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                     >
                       <option value="all">All Payment Channels (Complete Reconciliation)</option>
                       <option value="GCash">GCash E-Wallet</option>
@@ -1470,11 +1470,11 @@ export const ReportsPage = () => {
                     />
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Institution Name</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Filter by Institution Name</label>
                       <select
                         value={memberInstitutionFilter}
                         onChange={(e) => setMemberInstitutionFilter(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 tabular-nums"
                       >
                         <option value="all">All Institutions ({institutionsList.length} registered)</option>
                         {institutionsList.map((inst) => (
@@ -1489,11 +1489,11 @@ export const ReportsPage = () => {
 
                 {previewReport === 'Election Tally' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Election *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Select Election *</label>
                     <select
                       value={selectedElectionId}
                       onChange={(e) => setSelectedElectionId(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 px-3 py-2 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       {elections.map((el) => (
                         <option key={el.id} value={el.id}>{el.title} ({el.status})</option>
@@ -1505,11 +1505,11 @@ export const ReportsPage = () => {
                 {previewReport === 'Event Winners' && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Event</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Filter by Event</label>
                       <select
                         value={winnersEventFilter}
                         onChange={(e) => setWinnersEventFilter(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 tabular-nums"
                       >
                         <option value="all">All Events ({winnersReportData?.events?.length || 0})</option>
                         {(winnersReportData?.events || []).map((ev) => (
@@ -1521,11 +1521,11 @@ export const ReportsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Winner Recording Status</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Winner Recording Status</label>
                       <select
                         value={winnersHasWinnersFilter}
                         onChange={(e) => setWinnersHasWinnersFilter(e.target.value as any)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                       >
                         <option value="all">All Events (With & Without Winners)</option>
                         <option value="with_winners">Events With Proclaimed Winners</option>
@@ -1538,11 +1538,11 @@ export const ReportsPage = () => {
                 {previewReport === 'Attendance Time-In & Time-Out' && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Event</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Filter by Event</label>
                       <select
                         value={attendanceEventFilter}
                         onChange={(e) => setAttendanceEventFilter(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 tabular-nums"
                       >
                         <option value="all">All Events ({attendanceReportData?.events?.length || 0})</option>
                         {(attendanceReportData?.events || []).map((ev) => (
@@ -1554,11 +1554,11 @@ export const ReportsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Filter by Institution</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Filter by Institution</label>
                       <select
                         value={attendanceInstitutionFilter}
                         onChange={(e) => setAttendanceInstitutionFilter(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                       >
                         <option value="all">All Institutions</option>
                         {(attendanceReportData?.institutions || institutionsList).map((inst) => (
@@ -1570,11 +1570,11 @@ export const ReportsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Registration Source</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Registration Source</label>
                       <select
                         value={attendanceSourceFilter}
                         onChange={(e) => setAttendanceSourceFilter(e.target.value as any)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                       >
                         <option value="all">All Sources (Individual & Institution)</option>
                         <option value="individual">Individual Registration</option>
@@ -1583,11 +1583,11 @@ export const ReportsPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Venue Attendance Status</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Venue Attendance Status</label>
                       <select
                         value={attendanceStatusFilter}
                         onChange={(e) => setAttendanceStatusFilter(e.target.value as any)}
-                        className="w-full px-3.5 py-2.5 rounded-[10px] border border-gray-300 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 text-sm focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                       >
                         <option value="all">All Statuses</option>
                         <option value="timed_out">Timed Out (Completed)</option>
@@ -1601,13 +1601,13 @@ export const ReportsPage = () => {
               </div>
 
               {dateRangeFilter === 'custom' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                   <Input label="Start Date" type="date" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} />
                   <Input label="End Date" type="date" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} />
                 </div>
               )}
 
-              <div className="border-t border-gray-200 pt-4 flex justify-end no-print">
+              <div className="border-t border-gray-200 dark:border-slate-800 pt-4 flex justify-end no-print">
                 <Button variant="primary" size="lg" onClick={() => setWizardStep(2)} className="px-6">
                   Preview Detailed Report <ChevronRight size={18} />
                 </Button>
@@ -1620,19 +1620,19 @@ export const ReportsPage = () => {
             <div className="space-y-4 animate-fadeIn print:space-y-0">
               {/* STEP 2 Quick Action Toolbar */}
               {wizardStep === 2 && (
-                <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
+                <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
                       <ChevronLeft size={16} /> Parameters
                     </Button>
-                    <span className="text-xs font-bold text-gray-700">Detailed Report Document</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Detailed Report Document</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="secondary"
                       size="sm"
                       onClick={() => printReportDocument(previewReport || selectedReportTitle)}
-                      className="flex items-center gap-1.5 font-semibold text-gray-800 cursor-pointer"
+                      className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
                     >
                       <Printer size={15} /> Print / Save PDF
                     </Button>
@@ -1640,7 +1640,7 @@ export const ReportsPage = () => {
                       variant="secondary"
                       size="sm"
                       onClick={() => handleGenerateExcel(previewReport || '')}
-                      className="flex items-center gap-1.5 font-semibold text-emerald-700 cursor-pointer"
+                      className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400 cursor-pointer"
                     >
                       <FileSpreadsheet size={15} /> Export CSV
                     </Button>
@@ -1659,11 +1659,11 @@ export const ReportsPage = () => {
               {/* STEP 3 Action Panel */}
               {wizardStep === 3 && (
                 <div className="no-print space-y-4">
-                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-                    <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
-                      <CheckCircle2 size={18} className="text-emerald-600" /> Report Ready for Action
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 p-4 rounded-lg">
+                    <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                      <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" /> Report Ready for Action
                     </h4>
-                    <p className="text-xs text-emerald-700 mt-1">
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
                       You can now print this official document directly, save as PDF, export to CSV spreadsheet, or submit into system archives.
                     </p>
                   </div>
@@ -1672,35 +1672,35 @@ export const ReportsPage = () => {
                     <button
                       type="button"
                       onClick={() => printReportDocument(previewReport || selectedReportTitle)}
-                      className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 hover:border-primary rounded-xl bg-white hover:bg-primary/5 transition-all text-center group cursor-pointer"
+                      className="flex flex-col items-center justify-center p-5 border-2 border-gray-200 dark:border-slate-700 hover:border-primary dark:hover:border-cyan-400 rounded-lg bg-white dark:bg-slate-900 hover:bg-primary/5 dark:hover:bg-slate-800 transition-all text-center group cursor-pointer"
                     >
-                      <Printer size={28} className="text-primary mb-2 group-hover:scale-110 transition-transform" />
-                      <span className="text-sm font-bold text-gray-900">Print Report</span>
-                      <span className="text-xs text-gray-500 mt-0.5">Triggers print window</span>
+                      <Printer size={28} className="text-primary dark:text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Print Report</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">Triggers print window</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleGenerateExcel(previewReport || '')}
-                      className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 hover:border-emerald-500 rounded-xl bg-white hover:bg-emerald-50/50 transition-all text-center group cursor-pointer"
+                      className="flex flex-col items-center justify-center p-5 border-2 border-emerald-200 dark:border-emerald-800/70 hover:border-emerald-500 rounded-lg bg-white dark:bg-slate-900 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-all text-center group cursor-pointer"
                     >
-                      <FileSpreadsheet size={28} className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" />
-                      <span className="text-sm font-bold text-gray-900">Export Excel</span>
-                      <span className="text-xs text-gray-500 mt-0.5">Download CSV spreadsheet</span>
+                      <FileSpreadsheet size={28} className="text-emerald-600 dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Export Excel</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">Download CSV spreadsheet</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => printReportDocument(previewReport || selectedReportTitle)}
-                      className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 hover:border-blue-500 rounded-xl bg-white hover:bg-blue-50/50 transition-all text-center group cursor-pointer"
+                      className="flex flex-col items-center justify-center p-5 border-2 border-blue-200 dark:border-blue-800/70 hover:border-blue-500 rounded-lg bg-white dark:bg-slate-900 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all text-center group cursor-pointer"
                     >
-                      <FileDown size={28} className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
-                      <span className="text-sm font-bold text-gray-900">Save PDF</span>
-                      <span className="text-xs text-gray-500 mt-0.5">Print-to-PDF format</span>
+                      <FileDown size={28} className="text-blue-600 dark:text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Save PDF</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">Print-to-PDF format</span>
                     </button>
                   </div>
 
-                  <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                  <div className="border-t border-gray-200 dark:border-slate-800 pt-4 flex justify-between items-center">
                     <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
                       <ChevronLeft size={16} /> Back to Preview
                     </Button>
@@ -1726,20 +1726,20 @@ export const ReportsPage = () => {
                     </Button>
                   </div>
 
-                  <div className="pt-2 border-t border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="pt-2 border-t border-gray-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Eye size={14} /> Document Preview (Will be printed / saved):
                   </div>
                 </div>
               )}
 
               {/* Shared Printable Report Document Container (Stays mounted across Step 2 & Step 3 to preserve in-view filters!) */}
-              <div id="printable-report-area" className="printable-report-area bg-white border border-gray-300 rounded-xl p-6 shadow-xs text-gray-900 space-y-6">
+              <div id="printable-report-area" className="printable-report-area bg-white border border-gray-300 rounded-lg p-6 shadow-xs text-gray-900 space-y-6">
                 {renderReportDocument()}
               </div>
 
               {/* STEP 2 Navigation Footer */}
               {wizardStep === 2 && (
-                <div className="border-t border-gray-200 pt-4 flex items-center justify-between no-print">
+                <div className="border-t border-gray-200 dark:border-slate-800 pt-4 flex items-center justify-between no-print">
                   <Button variant="outline" size="sm" onClick={() => setWizardStep(1)}>
                     <ChevronLeft size={16} /> Edit Parameters
                   </Button>

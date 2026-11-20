@@ -70,7 +70,7 @@ export function getUserRoleConfig(user: User | null | undefined): UserRoleConfig
         pillClasses:
           'bg-purple-50/90 dark:bg-purple-950/50 border border-purple-200/90 dark:border-purple-800/70 text-purple-700 dark:text-purple-300',
         dotColor: 'bg-purple-500',
-        heroGradient: 'from-purple-900 via-indigo-900 to-[#060E20]',
+        heroGradient: 'from-purple-900 via-indigo-900 to-obsidian-lowest',
         avatarGradient: 'from-purple-600 via-indigo-600 to-blue-500',
       };
 
@@ -84,7 +84,7 @@ export function getUserRoleConfig(user: User | null | undefined): UserRoleConfig
         pillClasses:
           'bg-blue-50/90 dark:bg-blue-950/50 border border-blue-200/90 dark:border-blue-800/70 text-blue-700 dark:text-cyan-300',
         dotColor: 'bg-blue-500',
-        heroGradient: 'from-blue-700 via-indigo-900 to-[#060E20]',
+        heroGradient: 'from-blue-700 via-indigo-900 to-obsidian-lowest',
         avatarGradient: 'from-blue-600 via-indigo-600 to-cyan-500',
       };
 
@@ -115,7 +115,7 @@ export function getUserRoleConfig(user: User | null | undefined): UserRoleConfig
         pillClasses:
           'bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-200/90 dark:border-emerald-800/70 text-emerald-800 dark:text-emerald-300',
         dotColor: 'bg-emerald-500',
-        heroGradient: 'from-emerald-700 via-teal-900 to-[#060E20]',
+        heroGradient: 'from-emerald-700 via-teal-900 to-obsidian-lowest',
         avatarGradient: 'from-emerald-600 via-teal-600 to-cyan-500',
       };
     }
@@ -130,7 +130,7 @@ export function getUserRoleConfig(user: User | null | undefined): UserRoleConfig
         pillClasses:
           'bg-violet-50/90 dark:bg-violet-950/50 border border-violet-200/90 dark:border-violet-800/70 text-violet-800 dark:text-violet-300',
         dotColor: 'bg-violet-500',
-        heroGradient: 'from-violet-800 via-indigo-900 to-[#060E20]',
+        heroGradient: 'from-violet-800 via-indigo-900 to-obsidian-lowest',
         avatarGradient: 'from-violet-600 via-indigo-600 to-cyan-500',
       };
 

@@ -318,20 +318,20 @@ export const EventReportView = ({
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary/80 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                   Official Operations Report
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-slate-600 font-mono tabular-nums">
                   REF: PSITS-EVT-{new Date().getFullYear()}-{String(events.length).padStart(3, '0')}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
               </h1>
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
+              <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">
                 Committee on Events, Competitions & Student Activities
               </p>
             </div>
           </div>
 
-          <div className="text-left sm:text-right text-xs text-gray-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[200px]">
+          <div className="text-left sm:text-right text-xs text-slate-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[200px] tabular-nums">
             <p><strong className="text-gray-800">Report:</strong> <span className="font-semibold text-primary">{reportTitle.toUpperCase()}</span></p>
             <p><strong className="text-gray-800">Generated:</strong> {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
             <p><strong className="text-gray-800">Reporter:</strong> {preparedBy} ({userRole})</p>
@@ -343,7 +343,7 @@ export const EventReportView = ({
             <FileCheck2 size={15} />
             <span>{isCompletedReport ? 'Comprehensive summary of completed events and outcomes.' : 'View official participation counts and turnout analysis.'}</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-gray-500">
+          <div className="flex items-center gap-3 text-[11px] text-slate-600 tabular-nums">
             <span>Total Events: <strong>{metrics.totalEvents}</strong></span>
             <span>•</span>
             <span>Total Attendees: <strong>{metrics.totalRegs.toLocaleString()}</strong></span>
@@ -355,42 +355,42 @@ export const EventReportView = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-blue-900 uppercase">Total Events</span>
-          <p className="text-2xl font-black text-primary mt-1">{metrics.totalEvents}</p>
+          <p className="text-2xl font-black text-primary mt-1 tabular-nums">{metrics.totalEvents}</p>
           <p className="text-[11px] text-blue-700 mt-0.5">Program inventory</p>
         </div>
 
         <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-emerald-900 uppercase">Total Participants</span>
-          <p className="text-2xl font-black text-emerald-700 mt-1">{metrics.totalRegs.toLocaleString()}</p>
+          <p className="text-2xl font-black text-emerald-700 mt-1 tabular-nums">{metrics.totalRegs.toLocaleString()}</p>
           <p className="text-[11px] text-emerald-700 mt-0.5">Across all events</p>
         </div>
 
-        <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5">
-          <span className="text-[11px] font-bold text-purple-900 uppercase">Capacity Utilization</span>
-          <p className="text-2xl font-black text-purple-800 mt-1">{metrics.averageTurnout.toFixed(1)}%</p>
-          <p className="text-[11px] text-purple-700 mt-0.5">Seats filled</p>
+        <div className="bg-cyan-50/70 border border-cyan-200/80 rounded-xl p-3.5">
+          <span className="text-[11px] font-bold text-cyan-900 uppercase">Capacity Utilization</span>
+          <p className="text-2xl font-black text-cyan-800 mt-1 tabular-nums">{metrics.averageTurnout.toFixed(1)}%</p>
+          <p className="text-[11px] text-cyan-800 mt-0.5">Seats filled</p>
         </div>
 
         <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5">
           <span className="text-[11px] font-bold text-amber-900 uppercase">Completed Programs</span>
-          <p className="text-2xl font-black text-amber-700 mt-1">{metrics.completedCount}</p>
+          <p className="text-2xl font-black text-amber-700 mt-1 tabular-nums">{metrics.completedCount}</p>
           <p className="text-[11px] text-amber-700 mt-0.5">Finished & closed</p>
         </div>
       </div>
 
       {/* Events Registry Table */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden print:overflow-visible">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xs overflow-hidden print:overflow-visible">
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <CalendarCheck2 size={16} className="text-primary" /> Event Roster & Participation Registry
             </h3>
-            <p className="text-xs text-gray-500">Official log of events, venues, registration rates, and statuses.</p>
+            <p className="text-xs text-slate-600">Official log of events, venues, registration rates, and statuses.</p>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto no-print">
             <div className="relative flex-1 sm:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search event, type, venue..."
@@ -418,7 +418,7 @@ export const EventReportView = ({
 
         {/* Quick Status Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 px-4 py-2.5 bg-gray-50/50 border-b border-gray-200 text-xs no-print">
-          <span className="text-[11px] font-semibold text-gray-500 mr-1">Status:</span>
+          <span className="text-[11px] font-semibold text-slate-600 mr-1">Status:</span>
           {[
             { id: 'all', label: `All (${baseEvents.length})` },
             { id: 'upcoming', label: `Upcoming (${metrics.upcomingCount})` },
@@ -429,7 +429,7 @@ export const EventReportView = ({
               key={tab.id}
               type="button"
               onClick={() => setStatusFilter(tab.id as any)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer tabular-nums ${
                 statusFilter === tab.id
                   ? 'bg-primary text-white shadow-2xs'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -449,16 +449,16 @@ export const EventReportView = ({
                 <th className="px-3 py-2.5">Type / Category</th>
                 <th className="px-3 py-2.5">Venue / Location</th>
                 <th className="px-3 py-2.5 text-center">Status</th>
-                <th className="px-3 py-2.5 text-right">Capacity</th>
-                <th className="px-3 py-2.5 text-right">Registered</th>
-                <th className="px-3 py-2.5 text-right">Fee (₱)</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Capacity</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Registered</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Fee (₱)</th>
                 <th className="px-3 py-2.5 text-center no-print">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-600">
                     No event records found matching your filters.
                   </td>
                 </tr>
@@ -478,14 +478,14 @@ export const EventReportView = ({
                         </button>
                         <span className="hidden print:inline font-bold text-gray-900">{e.title}</span>
                         {e.isEsports && e.esportsGame && (
-                          <span className="flex items-center gap-1 text-[10px] text-purple-700 font-medium mt-0.5">
+                          <span className="flex items-center gap-1 text-[10px] text-blue-700 font-medium mt-0.5">
                             <Gamepad2 size={11} strokeWidth={1.75} className="shrink-0" />
                             <span>{e.esportsGame}</span>
                           </span>
                         )}
                       </td>
                       <td className="px-3 py-2.5 capitalize">{e.eventType || e.category || 'General'}</td>
-                      <td className="px-3 py-2.5 text-gray-600 text-[11px]">{e.location || 'Online / Venue'}</td>
+                      <td className="px-3 py-2.5 text-slate-600 text-[11px]">{e.location || 'Online / Venue'}</td>
                       <td className="px-3 py-2.5 text-center">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                           e.status === 'completed' || e.status === 'closed'
@@ -497,20 +497,20 @@ export const EventReportView = ({
                           {e.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right font-medium">{e.capacity || 'Unlimited'}</td>
-                      <td className="px-3 py-2.5 text-right">
+                      <td className="px-3 py-2.5 text-right font-medium tabular-nums">{e.capacity || 'Unlimited'}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">
                         <button
                           type="button"
                           onClick={() => handleOpenParticipants(e)}
-                          className="no-print inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-xs bg-blue-50 hover:bg-blue-100 text-primary border border-blue-200 transition-colors cursor-pointer"
+                          className="no-print inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-xs bg-blue-50 hover:bg-blue-100 text-primary border border-blue-200 transition-colors cursor-pointer tabular-nums"
                           title="Click to view participant roster"
                         >
                           <Users size={12} />
                           <span>{registeredCount.toLocaleString()}</span>
                         </button>
-                        <span className="hidden print:inline font-bold text-gray-900">{registeredCount.toLocaleString()}</span>
+                        <span className="hidden print:inline font-bold text-gray-900 tabular-nums">{registeredCount.toLocaleString()}</span>
                       </td>
-                      <td className="px-3 py-2.5 text-right font-medium">
+                      <td className="px-3 py-2.5 text-right font-medium tabular-nums">
                         {Number(e.fee ?? e.registration_fee ?? 0) > 0 ? `₱${Number(e.fee ?? e.registration_fee).toLocaleString()}` : 'Free'}
                       </td>
                       <td className="px-3 py-2.5 text-center whitespace-nowrap no-print">
@@ -544,16 +544,16 @@ export const EventReportView = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-xs">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Prepared By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Prepared By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">{preparedBy}</p>
-            <p className="text-[11px] text-gray-500 capitalize">{userRole} / Operations</p>
+            <p className="text-[11px] text-slate-600 capitalize">{userRole} / Operations</p>
           </div>
           <div className="text-left md:text-right">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Approved By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Approved By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-48 md:ml-auto"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">Regional Organization President</p>
-            <p className="text-[11px] text-gray-500">PSITS Regional Executive Council</p>
+            <p className="text-[11px] text-slate-600">PSITS Regional Executive Council</p>
           </div>
         </div>
       </div>
@@ -578,64 +578,64 @@ export const EventReportView = ({
         <div className="space-y-4">
           {/* Roster KPI Summary Banner */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 text-blue-900 font-bold text-[11px] uppercase tracking-wide">
-                <Users size={13} className="text-blue-700" />
+            <div className="bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 text-blue-900 dark:text-blue-200 font-bold text-[11px] uppercase tracking-wide">
+                <Users size={13} className="text-blue-700 dark:text-blue-400" />
                 <span>Total Registered</span>
               </div>
-              <p className="text-2xl font-black text-primary mt-1">{rosterMetrics.total}</p>
-              <p className="text-[10px] text-blue-600 mt-0.5">Enrolled participants</p>
+              <p className="text-2xl font-black text-primary dark:text-cyan-400 mt-1 tabular-nums">{rosterMetrics.total}</p>
+              <p className="text-[10px] text-blue-700 dark:text-blue-300 mt-0.5">Enrolled participants</p>
             </div>
 
-            <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 text-emerald-900 font-bold text-[11px] uppercase tracking-wide">
-                <UserCheck size={13} className="text-emerald-700" />
+            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 text-emerald-900 dark:text-emerald-200 font-bold text-[11px] uppercase tracking-wide">
+                <UserCheck size={13} className="text-emerald-700 dark:text-emerald-400" />
                 <span>In-Venue Attendance</span>
               </div>
-              <p className="text-2xl font-black text-emerald-700 mt-1">
+              <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">
                 {rosterMetrics.checkedInCount}{' '}
-                <span className="text-xs font-semibold text-emerald-600">
+                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">
                   ({rosterMetrics.checkInRate.toFixed(1)}%)
                 </span>
               </p>
-              <p className="text-[10px] text-emerald-600 mt-0.5">Checked-in attendees</p>
+              <p className="text-[10px] text-emerald-700 dark:text-emerald-300 mt-0.5">Checked-in attendees</p>
             </div>
 
-            <div className="bg-sky-50/80 border border-sky-200 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 text-sky-900 font-bold text-[11px] uppercase tracking-wide">
-                <Users size={13} className="text-sky-700" />
+            <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/60 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 text-sky-900 dark:text-sky-200 font-bold text-[11px] uppercase tracking-wide">
+                <Users size={13} className="text-sky-700 dark:text-sky-400" />
                 <span>Individual Signups</span>
               </div>
-              <p className="text-2xl font-black text-sky-700 mt-1">{rosterMetrics.individualCount}</p>
-              <p className="text-[10px] text-sky-600 mt-0.5">Direct member entries</p>
+              <p className="text-2xl font-black text-sky-700 dark:text-sky-400 mt-1 tabular-nums">{rosterMetrics.individualCount}</p>
+              <p className="text-[10px] text-sky-700 dark:text-sky-300 mt-0.5">Direct member entries</p>
             </div>
 
-            <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 text-purple-900 font-bold text-[11px] uppercase tracking-wide">
-                <Building2 size={13} className="text-purple-700" />
+            <div className="bg-cyan-50/80 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/60 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 text-cyan-900 dark:text-cyan-200 font-bold text-[11px] uppercase tracking-wide">
+                <Building2 size={13} className="text-cyan-700 dark:text-cyan-400" />
                 <span>Institution Roster</span>
               </div>
-              <p className="text-2xl font-black text-purple-700 mt-1">{rosterMetrics.institutionCount}</p>
-              <p className="text-[10px] text-purple-600 mt-0.5">School batch delegations</p>
+              <p className="text-2xl font-black text-cyan-800 dark:text-cyan-300 mt-1 tabular-nums">{rosterMetrics.institutionCount}</p>
+              <p className="text-[10px] text-cyan-800 dark:text-cyan-300 mt-0.5">School batch delegations</p>
             </div>
           </div>
 
           {/* Search & Filter Toolbar */}
-          <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-gray-50/80 p-3 rounded-xl border border-gray-200">
+          <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
             <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
               <input
                 type="text"
                 placeholder="Search participant name, email, school, role..."
                 value={rosterSearch}
                 onChange={(e) => setRosterSearch(e.target.value)}
-                className="w-full pl-8 pr-8 py-1.5 text-xs rounded-lg border border-gray-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white text-gray-900"
+                className="w-full pl-8 pr-8 py-1.5 text-xs rounded-md border border-gray-300 dark:border-slate-700 focus:border-primary dark:focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
               />
               {rosterSearch && (
                 <button
                   type="button"
                   onClick={() => setRosterSearch('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                 >
                   <X size={13} />
                 </button>
@@ -644,8 +644,8 @@ export const EventReportView = ({
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Registration Source Filter */}
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-0.5 text-xs">
-                <span className="text-[10px] text-gray-400 px-1 font-semibold flex items-center gap-0.5">
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-md p-0.5 text-xs">
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 px-1 font-semibold flex items-center gap-0.5">
                   <Filter size={10} /> Source:
                 </span>
                 {[
@@ -660,7 +660,7 @@ export const EventReportView = ({
                     className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                       rosterSourceFilter === s.id
                         ? 'bg-primary text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     {s.label}
@@ -669,8 +669,8 @@ export const EventReportView = ({
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-0.5 text-xs">
-                <span className="text-[10px] text-gray-400 px-1 font-semibold">Status:</span>
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-md p-0.5 text-xs">
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 px-1 font-semibold">Status:</span>
                 {[
                   { id: 'all', label: 'All' },
                   { id: 'checked_in', label: 'Checked In' },
@@ -684,7 +684,7 @@ export const EventReportView = ({
                     className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                       rosterStatusFilter === st.id
                         ? 'bg-primary text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     {st.label}
@@ -696,7 +696,7 @@ export const EventReportView = ({
               <button
                 type="button"
                 onClick={handleExportRosterCSV}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
                 title="Export this event's participant roster as CSV"
               >
                 <FileSpreadsheet size={13} /> Export CSV
@@ -705,35 +705,35 @@ export const EventReportView = ({
           </div>
 
           {/* Table Container */}
-          <div className="border border-gray-200 rounded-xl overflow-hidden print:overflow-visible bg-white shadow-2xs">
+          <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden print:overflow-visible bg-white dark:bg-slate-900 shadow-2xs">
             <div className="overflow-x-auto max-h-[380px] overflow-y-auto print:overflow-visible print:max-h-none">
               <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10">
+                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
                   <tr>
-                    <th className="px-3 py-2 text-center w-10">#</th>
+                    <th className="px-3 py-2 text-right w-10 tabular-nums">#</th>
                     <th className="px-3 py-2">Participant Name</th>
                     <th className="px-3 py-2">Affiliation / School</th>
                     <th className="px-3 py-2">Contact Details</th>
                     <th className="px-3 py-2 text-center">Source</th>
                     <th className="px-3 py-2 text-center">Status</th>
                     <th className="px-3 py-2 text-center">Attendance</th>
-                    <th className="px-3 py-2 text-center">Time In / Out</th>
-                    <th className="px-3 py-2 text-right">Registered</th>
+                    <th className="px-3 py-2 text-center tabular-nums">Time In / Out</th>
+                    <th className="px-3 py-2 text-right tabular-nums">Registered</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {isLoadingRoster ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                      <td colSpan={9} className="px-4 py-12 text-center text-slate-600 dark:text-slate-300">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                          <span className="text-xs font-medium text-gray-600">Loading participant roster...</span>
+                          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Loading participant roster...</span>
                         </div>
                       </td>
                     </tr>
                   ) : filteredRoster.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                      <td colSpan={9} className="px-4 py-12 text-center text-slate-600 dark:text-slate-300">
                         {rosterParticipants.length === 0
                           ? 'No participants registered for this event yet.'
                           : 'No participants match the selected filter.'}
@@ -747,37 +747,37 @@ export const EventReportView = ({
                       const rawTimeOut = isCheckedIn ? (p.checkedOutAt || p.checked_out_at || null) : null;
 
                       return (
-                        <tr key={p.participant_key || `${p.full_name}-${idx}`} className="hover:bg-blue-50/30 transition-colors">
-                          <td className="px-3 py-2 text-center text-gray-400 font-mono text-[11px]">
+                        <tr key={p.participant_key || `${p.full_name}-${idx}`} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300 tabular-nums text-[11px]">
                             {idx + 1}
                           </td>
                           <td className="px-3 py-2">
-                            <div className="font-bold text-gray-900">{p.full_name}</div>
+                            <div className="font-bold text-slate-900 dark:text-slate-100">{p.full_name}</div>
                             {p.position && (
-                              <div className="text-[11px] text-gray-500 font-medium">{p.position}</div>
+                              <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{p.position}</div>
                             )}
                           </td>
                           <td className="px-3 py-2">
-                            <div className="flex items-center gap-1.5 text-gray-800 font-medium">
-                              <Building2 size={12} className="text-gray-400 shrink-0" />
+                            <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-medium">
+                              <Building2 size={12} className="text-slate-500 dark:text-slate-400 shrink-0" />
                               <span className="truncate max-w-[200px]" title={p.institution_name || 'Individual Member'}>
                                 {p.institution_name || 'PSITS Individual Member'}
                               </span>
                             </div>
                           </td>
                           <td className="px-3 py-2">
-                            {p.email && <div className="text-gray-700 font-mono text-[11px]">{p.email}</div>}
+                            {p.email && <div className="text-slate-700 dark:text-slate-300 text-[11px]">{p.email}</div>}
                             {p.contact_number && (
-                              <div className="text-gray-500 text-[10px]">{p.contact_number}</div>
+                              <div className="text-slate-600 dark:text-slate-300 text-[10px] tabular-nums">{p.contact_number}</div>
                             )}
-                            {!p.email && !p.contact_number && <span className="text-gray-400">—</span>}
+                            {!p.email && !p.contact_number && <span className="text-slate-600 dark:text-slate-300">—</span>}
                           </td>
                           <td className="px-3 py-2 text-center">
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 isIndividual
                                   ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                  : 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  : 'bg-cyan-100 text-cyan-800 border border-cyan-200'
                               }`}
                             >
                               {isIndividual ? 'Individual' : 'Institution'}
@@ -803,17 +803,17 @@ export const EventReportView = ({
                                 Checked In
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                                <Clock size={11} className="text-gray-400" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-slate-600 border border-gray-200">
+                                <Clock size={11} className="text-slate-500" />
                                 Not in Venue
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-2 text-center text-[10px] font-mono text-gray-600 whitespace-nowrap">
+                          <td className="px-3 py-2 text-center text-[10px] tabular-nums text-slate-600 dark:text-slate-300 whitespace-nowrap">
                             <div>In: {rawTimeIn ? new Date(rawTimeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
                             <div>Out: {rawTimeOut ? new Date(rawTimeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
                           </td>
-                          <td className="px-3 py-2 text-right text-gray-500 text-[11px] whitespace-nowrap font-mono">
+                          <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300 text-[11px] whitespace-nowrap tabular-nums">
                             {p.registered_at ? new Date(p.registered_at).toLocaleDateString() : '—'}
                           </td>
                         </tr>
@@ -825,16 +825,16 @@ export const EventReportView = ({
             </div>
 
             {/* Table Footer */}
-            <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 gap-2">
+            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 gap-2 tabular-nums">
               <div>
-                Showing <strong className="text-gray-800">{filteredRoster.length}</strong> of{' '}
-                <strong className="text-gray-800">{rosterParticipants.length}</strong> registered participants
+                Showing <strong className="text-slate-800 dark:text-slate-100">{filteredRoster.length}</strong> of{' '}
+                <strong className="text-slate-800 dark:text-slate-100">{rosterParticipants.length}</strong> registered participants
               </div>
               <div className="flex items-center gap-2 no-print">
                 <button
                   type="button"
                   onClick={() => setIsParticipantsModalOpen(false)}
-                  className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                  className="px-3 py-1 bg-white dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-gray-300 dark:border-slate-700 rounded-md text-xs font-semibold cursor-pointer transition-colors"
                 >
                   Close
                 </button>

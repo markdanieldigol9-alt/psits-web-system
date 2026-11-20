@@ -90,10 +90,10 @@ export function LiveSessionModal({
     >
       <div className="space-y-6">
         {/* Basic Information */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+        <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card p-5 space-y-4">
           <div>
-            <h4 className="text-base font-semibold text-gray-900">Video Information</h4>
-            <p className="mt-1 text-sm text-gray-600">Provide details for this recorded event video or clip.</p>
+            <h4 className="text-base font-semibold text-gray-900 dark:text-slate-100">Video Information</h4>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Provide details for this recorded event video or clip.</p>
           </div>
 
           <Input
@@ -137,14 +137,14 @@ export function LiveSessionModal({
         </div>
 
         {/* Video Source Selection (Upload Clip vs Stream Link) */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+        <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <h4 className="text-base font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
                 <Film size={18} className="text-primary" />
                 Video Source
               </h4>
-              <p className="mt-0.5 text-xs text-gray-600">
+              <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
                 Provide a recorded video clip or an external stream link (YouTube, Vimeo, direct MP4).
               </p>
             </div>
@@ -187,7 +187,7 @@ export function LiveSessionModal({
                     <CheckCircle2 size={18} className="text-blue-600 shrink-0" />
                     <div>
                       <div className="text-sm font-semibold text-blue-900">Current Video Available</div>
-                      <div className="text-xs text-blue-700">
+                      <div className="text-xs text-blue-700 tabular-nums">
                         {editing.recordingExpiresAt
                           ? `Expires: ${new Date(editing.recordingExpiresAt).toLocaleDateString()}`
                           : 'Active recording ready for members'}
@@ -212,7 +212,7 @@ export function LiveSessionModal({
                       <div className="text-sm font-medium text-green-900 truncate max-w-[280px] sm:max-w-md">
                         {videoFile.name}
                       </div>
-                      <div className="text-xs text-green-700">
+                      <div className="text-xs text-green-700 tabular-nums">
                         {formatBytes(videoFile.size)} • Ready to upload
                       </div>
                     </div>
@@ -231,15 +231,15 @@ export function LiveSessionModal({
               ) : (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className={`rounded-2xl border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary hover:bg-gray-50/50 cursor-pointer transition ${
+                  className={`rounded-md border-2 border-dashed border-gray-300 dark:border-slate-700 p-6 text-center hover:border-primary hover:bg-gray-50/50 dark:hover:bg-slate-800/40 cursor-pointer transition ${
                     formErrors.videoFile ? 'border-red-400 bg-red-50/30' : ''
                   }`}
                 >
-                  <Upload size={32} className="mx-auto text-gray-400" />
-                  <div className="mt-2 text-sm font-semibold text-gray-700">
+                  <Upload size={32} className="mx-auto text-slate-500 dark:text-slate-400" />
+                  <div className="mt-2 text-sm font-semibold text-gray-700 dark:text-slate-200">
                     Click to browse or drop your video clip here
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
                     MP4, WebM, MOV video files only
                   </p>
                 </div>
@@ -277,7 +277,7 @@ export function LiveSessionModal({
                     onChange={(e) => onChange({ streamUrl: e.target.value })}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   Paste a YouTube video/livestream, Vimeo link, or direct MP4/WebM URL.
                 </p>
               </div>
@@ -287,14 +287,14 @@ export function LiveSessionModal({
                 const parsed = parseVideoSource(formData.streamUrl);
                 if (parsed.isValid) {
                   return (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 flex items-center justify-between text-xs">
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 text-emerald-800">
                         <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
                         <span>
                           Valid <strong>{parsed.type === 'youtube' ? 'YouTube' : parsed.type === 'vimeo' ? 'Vimeo' : 'Direct Video'}</strong> stream link detected.
                         </span>
                       </div>
-                      <span className="font-mono text-[10px] uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
+                      <span className="font-semibold tracking-wider text-[10px] uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
                         {parsed.type}
                       </span>
                     </div>
@@ -316,18 +316,18 @@ export function LiveSessionModal({
         </div>
 
         {/* Access Control */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+        <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card p-5 space-y-4">
           <div>
-            <h4 className="text-base font-semibold text-gray-900">Access & Comments</h4>
-            <p className="mt-1 text-sm text-gray-600">Control who can view this video event and allow discussions.</p>
+            <h4 className="text-base font-semibold text-gray-900 dark:text-slate-100">Access & Comments</h4>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Control who can view this video event and allow discussions.</p>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Visibility</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">Visibility</label>
             <select
               value={formData.privacy}
               onChange={(e) => onChange({ privacy: e.target.value as LiveSessionFormState['privacy'] })}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-obsidian-base text-slate-900 dark:text-slate-100 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             >
               <option value="public">Public (All Users)</option>
               <option value="private">Private (Admins & Officers Only)</option>
@@ -344,10 +344,10 @@ export function LiveSessionModal({
 
         {/* Upload Progress */}
         {isUploading && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-2">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-blue-900">
               <span>Uploading video clip...</span>
-              <span>{uploadProgress}%</span>
+              <span className="tabular-nums">{uploadProgress}%</span>
             </div>
             <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
               <div

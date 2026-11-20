@@ -205,10 +205,10 @@ export const RegisterPage = () => {
         {!submitSuccess && (submitError || error) && <Alert type="error" message={submitError || error || 'Registration failed.'} />}
 
         <div className="space-y-6">
-          <div className="rounded-lg border border-gray-200 p-4">
-            <h3 className="text-lg font-semibold text-gray-900 text-balance">Member Information</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Choose your member type and fill in the details below. Fields marked with <span className="text-red-500">*</span> are required.
+          <div className="rounded-lg border border-slate-200 p-4">
+            <h3 className="text-lg font-semibold text-slate-900 text-balance">Member Information</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Choose your member type and fill in the details below. Fields marked with <span className="text-rose-600">*</span> are required.
             </p>
           </div>
 
@@ -269,7 +269,7 @@ export const RegisterPage = () => {
               <Input label="Representative 1 Position" required value={formData.position || ''} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} error={errors.position} />
               <Input label="2nd Institution Representative Name" required value={formData.representativeName2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativeName2: e.target.value }))} error={errors.representativeName2} />
               <Input label="Representative 2 Position" required value={formData.representativePosition2 || ''} onChange={(e) => setFormData((p) => ({ ...p, representativePosition2: e.target.value }))} error={errors.representativePosition2} />
-              <p className="text-xs text-gray-500 md:col-span-2">Set default password below for the representative account.</p>
+              <p className="text-xs text-slate-600 md:col-span-2">Set default password below for the representative account.</p>
               <Input label="Password" required type="password" value={formData.password || ''} onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))} error={errors.password} helperText="At least 10 characters, 1 uppercase, 1 lowercase, 1 number, 1 special." />
               <Input label="Confirm Password" required type="password" value={formData.confirmPassword || ''} onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))} error={errors.confirmPassword} />
             </div>
@@ -304,13 +304,13 @@ export const RegisterPage = () => {
 
           {formData.memberType && (
             <div className="space-y-4 pt-2">
-              <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/60 text-xs text-gray-700 space-y-2">
+              <div className="p-3.5 rounded-lg border border-blue-100 bg-blue-50/60 text-xs text-slate-700 space-y-2">
                 <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={Boolean(formData.termsAccepted)}
                     onChange={(e) => setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked }))}
-                    className="mt-0.5 rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 shrink-0"
+                    className="mt-0.5 rounded border-slate-300 text-primary focus:ring-primary h-4 w-4 shrink-0"
                   />
                   <span className="leading-relaxed">
                     I have read, understood, and agree to the{' '}
@@ -339,7 +339,7 @@ export const RegisterPage = () => {
                   </span>
                 </label>
 
-                <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-blue-200/50">
+                <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 border-t border-blue-200/50">
                   <span className="flex items-center gap-1 text-emerald-700 font-medium">
                     <ShieldCheck size={13} className="text-emerald-600" />
                     Protected by RA 10173 & RA 10175
@@ -366,7 +366,7 @@ export const RegisterPage = () => {
                 </div>
               </div>
 
-              {errors.termsAccepted && <p className="text-sm text-red-600">{errors.termsAccepted}</p>}
+              {errors.termsAccepted && <p className="text-sm text-rose-600 font-medium">{errors.termsAccepted}</p>}
 
               <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
                 Create Account

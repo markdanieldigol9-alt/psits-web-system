@@ -68,7 +68,7 @@ export const PaymentInstructionsCard = ({
 
   if (isLoading) {
     return (
-      <div className={`p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 text-center animate-pulse text-xs text-gray-500 dark:text-slate-400 ${className}`}>
+      <div className={`p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-center animate-pulse text-xs text-slate-600 dark:text-slate-300 ${className}`}>
         Loading payment details & QR code...
       </div>
     );
@@ -85,20 +85,20 @@ export const PaymentInstructionsCard = ({
             <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <span>Scan & Pay via GCash</span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
+          <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md">
             Scan the official GCash QR code below using your GCash app. After completing the payment, you <strong className="text-blue-700 dark:text-blue-300">must upload the receipt screenshot</strong> and <strong className="text-blue-700 dark:text-blue-300">enter the Reference Number</strong>.
           </p>
 
           {settings?.gcash_qr_code ? (
-            <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
+            <div className="p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs">
               <img
                 src={resolveImageUrl(settings.gcash_qr_code)}
                 alt="GCash QR Code"
-                className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
+                className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-md"
               />
             </div>
           ) : (
-            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center gap-2 max-w-md">
+            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg flex items-center gap-2 max-w-md">
               <ShieldAlert className="h-4 w-4 shrink-0" />
               <span>No GCash QR Code uploaded yet by Admin. You may still proceed by entering your payment reference number and uploading your receipt screenshot.</span>
             </div>
@@ -121,23 +121,23 @@ export const PaymentInstructionsCard = ({
               <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               <span>Bank Transfer Payment</span>
             </div>
-            <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
+            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md">
               Transfer your payment using the bank details or QR code below. After transferring, <strong className="text-indigo-700 dark:text-indigo-300">upload the bank transfer receipt or deposit slip</strong> as proof.
             </p>
 
             {settings?.bank_transfer_qr_code && (
-              <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs">
                 <img
                   src={resolveImageUrl(settings.bank_transfer_qr_code)}
                   alt="Bank Transfer QR Code"
-                  className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
+                  className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-md"
                 />
               </div>
             )}
 
-            <div className="p-4 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 rounded-xl max-w-md text-left text-xs text-gray-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs font-mono">
+            <div className="p-4 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 rounded-lg max-w-md text-left text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs font-sans">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-gray-900 dark:text-slate-100 font-sans text-sm flex items-center gap-1.5">
+                <span className="font-bold text-slate-900 dark:text-slate-100 font-sans text-sm flex items-center gap-1.5">
                   <Building2 size={16} className="text-indigo-600 dark:text-indigo-400" />
                   Bank Account Details:
                 </span>
@@ -150,7 +150,7 @@ export const PaymentInstructionsCard = ({
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 mb-2.5 text-slate-800 dark:text-slate-200 leading-relaxed font-mono">
+              <div className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 mb-2.5 text-slate-800 dark:text-slate-200 leading-relaxed font-sans">
                 {effectiveBankDetails}
               </div>
 
@@ -163,10 +163,18 @@ export const PaymentInstructionsCard = ({
                   setCopiedBank(true);
                   setTimeout(() => setCopiedBank(false), 2000);
                 }}
-                className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/80 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/80 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
               >
                 {copiedBank ? <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={14} />}
-                <span>{copiedBank ? 'Account Number Copied!' : 'Copy Account Number (0142-8823-91)'}</span>
+                <span>
+                  {copiedBank ? (
+                    'Account Number Copied!'
+                  ) : (
+                    <>
+                      Copy Account Number (<span className="font-mono tabular-nums">0142-8823-91</span>)
+                    </>
+                  )}
+                </span>
               </button>
             </div>
           </div>
@@ -180,19 +188,19 @@ export const PaymentInstructionsCard = ({
             <FileText className="h-5 w-5 text-teal-600 dark:text-teal-400" />
             <span>Cheque Payment</span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
+          <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md">
             Issue a cheque payable to the designated PSITS account or authorized representative. Once issued or deposited, <strong className="text-teal-700 dark:text-teal-300">upload the cheque receipt or deposit slip</strong> as proof.
           </p>
 
           {(settings?.cheque_details || settings?.cheque_instructions) ? (
-            <div className="p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl max-w-md text-left text-xs text-gray-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs font-mono">
-              <span className="font-bold text-gray-900 dark:text-slate-100 block mb-1 font-sans text-sm">
+            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg max-w-md text-left text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs font-sans leading-relaxed">
+              <span className="font-bold text-slate-900 dark:text-slate-100 block mb-1 font-sans text-sm">
                 Cheque Payment Guidelines:
               </span>
               {settings.cheque_details || settings.cheque_instructions}
             </div>
           ) : (
-            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center gap-2 max-w-md">
+            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg flex items-center gap-2 max-w-md">
               <ShieldAlert className="h-4 w-4 shrink-0" />
               <span>Ensure the cheque is crossed and issued in the name of Philippine Society of Information Technology Students. Attach a photo of the cheque/receipt.</span>
             </div>
@@ -207,13 +215,13 @@ export const PaymentInstructionsCard = ({
             <Banknote className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             <span>Payment Through Officer</span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
+          <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md">
             Pay directly in cash or in-person to an authorized PSITS officer. Obtain your official receipt, and <strong className="text-amber-700 dark:text-amber-300">upload the Official Receipt (OR)</strong> as proof.
           </p>
 
           {(settings?.officer_instructions || settings?.cash_instructions) && (
-            <div className="p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl max-w-md text-left text-xs text-gray-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs">
-              <span className="font-bold text-gray-900 dark:text-slate-100 block mb-1">
+            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg max-w-md text-left text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line w-full shadow-2xs">
+              <span className="font-bold text-slate-900 dark:text-slate-100 block mb-1">
                 Officer Payment Guidelines:
               </span>
               {settings.officer_instructions || settings.cash_instructions}
@@ -229,20 +237,20 @@ export const PaymentInstructionsCard = ({
             <QrCode className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             <span>Scan & Pay via PayMaya / Maya</span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-300 max-w-md">
+          <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md">
             Scan the official PayMaya / Maya QR code below using your Maya app. After paying, save your receipt screenshot and record the Reference Number.
           </p>
 
           {settings?.paymaya_qr_code ? (
-            <div className="p-3 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xs">
+            <div className="p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xs">
               <img
                 src={resolveImageUrl(settings.paymaya_qr_code)}
                 alt="PayMaya / Maya QR Code"
-                className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-lg"
+                className="h-56 w-56 sm:h-64 sm:w-64 object-contain rounded-md"
               />
             </div>
           ) : (
-            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center gap-2 max-w-md">
+            <div className="p-3.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg flex items-center gap-2 max-w-md">
               <ShieldAlert className="h-4 w-4 shrink-0" />
               <span>No PayMaya QR Code uploaded yet by Admin. You may still proceed by uploading your transaction proof.</span>
             </div>

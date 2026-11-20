@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Input, Button, Select } from '@/shared/components/Form';
-import { Alert } from '@/shared/components/Common';
+import { Alert, Modal } from '@/shared/components/Common';
 import { validateEmail } from '@/shared/utils/helpers';
-import { X } from 'lucide-react';
 
 interface AddPartnerModalProps {
   isOpen: boolean;
@@ -73,22 +72,14 @@ export const AddPartnerModal = ({ isOpen, onClose, onSubmit, isLoading = false, 
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 text-balance">{isEdit ? 'Edit Industry Partner' : 'Add New Partner'}</h2>
-          <button
-            onClick={onClose}
-            aria-label="Close modal"
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Edit Industry Partner' : 'Add New Partner'}
+      size="sm"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {error && <Alert type="error" message={error} />}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -168,7 +159,6 @@ export const AddPartnerModal = ({ isOpen, onClose, onSubmit, isLoading = false, 
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };

@@ -125,27 +125,27 @@ export const LoginPage = () => {
         />
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-gray-700">Password</label>
+          <label className="block text-xs font-semibold text-slate-700">Password</label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="Enter your password"
               value={formData.password}
               onChange={handlePasswordChange}
-              className={`w-full px-3.5 py-2.5 pr-10 rounded-[10px] text-sm text-gray-900 placeholder-gray-400 bg-white border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 ${
-                errors.password ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+              className={`w-full px-3.5 py-2.5 pr-10 rounded-lg text-sm text-slate-900 placeholder:text-slate-500 bg-white border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 hover:border-slate-300 ${
+                errors.password ? 'border-rose-500 bg-rose-50/30' : 'border-slate-200'
               }`}
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
-          {errors.password && <p className="text-red-500 text-xs font-medium">{errors.password}</p>}
+          {errors.password && <p className="text-rose-600 text-xs font-medium">{errors.password}</p>}
         </div>
 
         <div className="flex items-center justify-between">
@@ -154,9 +154,9 @@ export const LoginPage = () => {
               type="checkbox"
               checked={formData.rememberMe}
               onChange={handleRememberMeChange}
-              className="rounded border-gray-300"
+              className="rounded border-slate-300"
             />
-            <span className="text-sm text-gray-600">Remember me</span>
+            <span className="text-sm text-slate-600">Remember me</span>
           </label>
 
           <Link to="/forgot-password" className="text-sm text-primary hover:underline font-medium">
@@ -174,7 +174,7 @@ export const LoginPage = () => {
           Login
         </Button>
 
-        <div className="text-center text-gray-600 text-sm border-t border-gray-100 pt-4 space-y-2">
+        <div className="text-center text-slate-600 text-sm border-t border-slate-100 pt-4 space-y-2">
           <p>
             Don&apos;t have an account?{' '}
             <Link to="/register" className="text-primary hover:underline font-medium">
@@ -182,7 +182,7 @@ export const LoginPage = () => {
             </Link>
           </p>
 
-          <div className="flex items-center justify-center gap-3 text-xs text-gray-400 pt-1">
+          <div className="flex items-center justify-center gap-3 text-xs text-slate-600 pt-1">
             <Link to="/terms" className="hover:text-primary hover:underline">
               Terms & Conditions
             </Link>

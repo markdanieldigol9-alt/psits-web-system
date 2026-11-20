@@ -223,7 +223,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           </div>
         </div>
 
-        <div className="text-left sm:text-right text-xs text-gray-600 space-y-1 bg-gray-50 p-2.5 rounded-lg border border-gray-200 shrink-0 w-full sm:w-auto">
+        <div className="text-left sm:text-right text-xs text-slate-600 space-y-1 bg-gray-50 p-2.5 rounded-lg border border-gray-200 shrink-0 w-full sm:w-auto tabular-nums">
           <p>
             <strong className="text-gray-900">Document:</strong> Executive Summary
           </p>
@@ -240,7 +240,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
       </div>
 
       {/* Executive Scope Narrative Banner */}
-      <div className="bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-slate-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3">
+      <div className="bg-gradient-to-r from-blue-50/80 via-cyan-50/40 to-slate-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3">
         <div className="p-2 bg-blue-600 text-white rounded-lg shadow-xs shrink-0 mt-0.5">
           <ShieldCheck size={20} />
         </div>
@@ -248,7 +248,7 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           <h4 className="text-sm font-bold text-gray-900">
             Consolidated Organizational Standing & Governance Overview
           </h4>
-          <p className="text-gray-600 leading-relaxed">
+          <p className="text-slate-600 leading-relaxed">
             This executive report presents certified operational intelligence for PSITS Regional Organization. It
             synthesizes real-time metrics across individual and institutional membership registries, verified treasury collections, regional summits and competitions turnout, and corporate sponsorship portfolios.
           </p>
@@ -261,18 +261,18 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         <div className="bg-white border-2 border-blue-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-primary/40 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Users size={14} className="text-primary" /> Total Membership
               </span>
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 tabular-nums">
                 {membershipMetrics.approvalRate}% Approved
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-primary">{membershipMetrics.totalCount}</span>
-              <span className="text-xs text-gray-500 font-medium">registered</span>
+              <span className="text-3xl font-extrabold text-primary tabular-nums">{membershipMetrics.totalCount}</span>
+              <span className="text-xs text-slate-600 font-medium">registered</span>
             </div>
-            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-gray-600">
+            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-slate-600 tabular-nums">
               <div className="flex justify-between">
                 <span>Individual PSITS:</span>
                 <strong className="text-gray-900">{membershipMetrics.individualCount}</strong>
@@ -299,16 +299,16 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         <div className="bg-white border-2 border-emerald-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-emerald-400 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Wallet size={14} className="text-emerald-700" /> Verified Revenue
               </span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700">
+              <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tabular-nums">
                 ₱{financialMetrics.verifiedRevenue.toLocaleString()}
               </span>
             </div>
-            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-gray-600">
+            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-slate-600 tabular-nums">
               <div className="flex justify-between">
                 <span>Gross Collections:</span>
                 <strong className="text-gray-900">₱{financialMetrics.grossCollections.toLocaleString()}</strong>
@@ -326,25 +326,25 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Pillar 3: Events & Summits */}
-        <div className="bg-white border-2 border-purple-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-400 transition-all print:break-inside-avoid">
+        <div className="bg-white border-2 border-cyan-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-cyan-400 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                <CalendarCheck2 size={14} className="text-purple-700" /> Regional Events
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                <CalendarCheck2 size={14} className="text-cyan-700" /> Regional Events
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-purple-900">{eventMetrics.totalEvents}</span>
-              <span className="text-xs text-gray-500 font-medium">events hosted</span>
+              <span className="text-3xl font-extrabold text-cyan-800 tabular-nums">{eventMetrics.totalEvents}</span>
+              <span className="text-xs text-slate-600 font-medium">events hosted</span>
             </div>
-            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-gray-600">
+            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-slate-600 tabular-nums">
               <div className="flex justify-between">
                 <span>Registered Attendees:</span>
                 <strong className="text-gray-900">{eventMetrics.totalParticipants}</strong>
               </div>
               <div className="flex justify-between">
                 <span>In-Venue Attendance:</span>
-                <strong className="text-purple-700">{eventMetrics.checkedInCount} ({eventMetrics.checkInRate}%)</strong>
+                <strong className="text-cyan-800">{eventMetrics.checkedInCount} ({eventMetrics.checkInRate}%)</strong>
               </div>
               <div className="flex justify-between">
                 <span>Affiliated Institutions:</span>
@@ -358,16 +358,16 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
         <div className="bg-white border-2 border-amber-100 rounded-xl p-4 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-400 transition-all print:break-inside-avoid">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Briefcase size={14} className="text-amber-700" /> Industry Alliances
               </span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl sm:text-3xl font-extrabold text-amber-700">
+              <span className="text-2xl sm:text-3xl font-extrabold text-amber-700 tabular-nums">
                 ₱{partnerMetrics.totalValue.toLocaleString()}
               </span>
             </div>
-            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-gray-600">
+            <div className="pt-2 border-t border-gray-100 text-[11px] space-y-1 text-slate-600 tabular-nums">
               <div className="flex justify-between">
                 <span>Active Industry Partners:</span>
                 <strong className="text-gray-900">{partnerMetrics.uniquePartners || membershipMetrics.industryCount}</strong>
@@ -407,19 +407,19 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold">
               <tr>
-                <th className="px-3.5 py-2.5 w-12 text-center">#</th>
+                <th className="px-3.5 py-2.5 w-12 text-right tabular-nums">#</th>
                 <th className="px-3.5 py-2.5">Domain / Sector</th>
                 <th className="px-3.5 py-2.5">Key Performance Indicator</th>
-                <th className="px-3.5 py-2.5 text-right">Recorded Figures</th>
+                <th className="px-3.5 py-2.5 text-right tabular-nums">Recorded Figures</th>
                 <th className="px-3.5 py-2.5 text-center">Operational Standing</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">01</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">01</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Membership Recruitment</td>
                 <td className="px-3.5 py-2 text-gray-700">Combined Regional Roster (Individual + Institution + Industry)</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-primary font-mono">{membershipMetrics.totalCount} members</td>
+                <td className="px-3.5 py-2 text-right font-extrabold text-primary tabular-nums">{membershipMetrics.totalCount} members</td>
                 <td className="px-3.5 py-2 text-center">
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
                     Active Registry
@@ -427,34 +427,34 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
                 </td>
               </tr>
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">02</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">02</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Membership Quality</td>
                 <td className="px-3.5 py-2 text-gray-700">Approved vs. Pending Clearance Ratio</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-emerald-700 font-mono">
+                <td className="px-3.5 py-2 text-right font-extrabold text-emerald-700 tabular-nums">
                   {membershipMetrics.approvedCount} approved ({membershipMetrics.approvalRate}%)
                 </td>
                 <td className="px-3.5 py-2 text-center">
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${membershipMetrics.pendingCount === 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border tabular-nums ${membershipMetrics.pendingCount === 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
                     {membershipMetrics.pendingCount} in queue
                   </span>
                 </td>
               </tr>
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">03</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">03</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Institutional Alliances</td>
                 <td className="px-3.5 py-2 text-gray-700">Active Higher Education & Tech Institutions Represented</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-gray-900 font-mono">{membershipMetrics.institutionsRepresented} colleges & univ.</td>
+                <td className="px-3.5 py-2 text-right font-extrabold text-gray-900 tabular-nums">{membershipMetrics.institutionsRepresented} colleges & univ.</td>
                 <td className="px-3.5 py-2 text-center">
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
                     Regional Network
                   </span>
                 </td>
               </tr>
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">04</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">04</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Treasury Realization</td>
                 <td className="px-3.5 py-2 text-gray-700">Total Verified Collections into Organization Accounts</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-emerald-700 font-mono">
+                <td className="px-3.5 py-2 text-right font-extrabold text-emerald-700 tabular-nums">
                   ₱{financialMetrics.verifiedRevenue.toLocaleString()}
                 </td>
                 <td className="px-3.5 py-2 text-center">
@@ -464,10 +464,10 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
                 </td>
               </tr>
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">05</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">05</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Fiscal Receivables</td>
                 <td className="px-3.5 py-2 text-gray-700">Pending Approvals & Institutional Partial Balances</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-blue-700 font-mono">
+                <td className="px-3.5 py-2 text-right font-extrabold text-blue-700 tabular-nums">
                   ₱{financialMetrics.receivables.toLocaleString()}
                 </td>
                 <td className="px-3.5 py-2 text-center">
@@ -477,25 +477,25 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
                 </td>
               </tr>
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">06</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">06</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Summit & Event Program</td>
                 <td className="px-3.5 py-2 text-gray-700">Total Registered Participants Across All Hosted Activities</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-purple-900 font-mono">{eventMetrics.totalParticipants} participants</td>
+                <td className="px-3.5 py-2 text-right font-extrabold text-cyan-800 tabular-nums">{eventMetrics.totalParticipants} participants</td>
                 <td className="px-3.5 py-2 text-center">
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 tabular-nums">
                     {eventMetrics.checkInRate}% turnout
                   </span>
                 </td>
               </tr>
               <tr className="hover:bg-blue-50/30">
-                <td className="px-3.5 py-2 text-center font-mono text-gray-500">07</td>
+                <td className="px-3.5 py-2 text-right tabular-nums text-slate-600">07</td>
                 <td className="px-3.5 py-2 font-bold text-gray-900">Corporate Sponsorship</td>
                 <td className="px-3.5 py-2 text-gray-700">Total Direct Industry Contributions & Strategic Grants</td>
-                <td className="px-3.5 py-2 text-right font-extrabold text-amber-700 font-mono">
+                <td className="px-3.5 py-2 text-right font-extrabold text-amber-700 tabular-nums">
                   ₱{partnerMetrics.totalValue.toLocaleString()}
                 </td>
                 <td className="px-3.5 py-2 text-center">
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 tabular-nums">
                     {partnerMetrics.dealsCount} deals
                   </span>
                 </td>
@@ -513,17 +513,17 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
             <Building2 size={15} className="text-primary" /> Sector Affiliation Distribution
           </h4>
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+            <div className="flex items-center justify-between p-2 rounded-md bg-gray-50 border border-gray-100">
               <span className="font-semibold text-gray-700">Individual Members (Students & Faculty)</span>
-              <span className="font-mono font-bold text-primary">{membershipMetrics.individualCount} ({membershipMetrics.totalCount > 0 ? Math.round((membershipMetrics.individualCount / membershipMetrics.totalCount) * 100) : 0}%)</span>
+              <span className="font-bold text-primary tabular-nums">{membershipMetrics.individualCount} ({membershipMetrics.totalCount > 0 ? Math.round((membershipMetrics.individualCount / membershipMetrics.totalCount) * 100) : 0}%)</span>
             </div>
-            <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+            <div className="flex items-center justify-between p-2 rounded-md bg-gray-50 border border-gray-100">
               <span className="font-semibold text-gray-700">Institutional Group Rosters</span>
-              <span className="font-mono font-bold text-emerald-700">{membershipMetrics.institutionCount} ({membershipMetrics.totalCount > 0 ? Math.round((membershipMetrics.institutionCount / membershipMetrics.totalCount) * 100) : 0}%)</span>
+              <span className="font-bold text-emerald-700 tabular-nums">{membershipMetrics.institutionCount} ({membershipMetrics.totalCount > 0 ? Math.round((membershipMetrics.institutionCount / membershipMetrics.totalCount) * 100) : 0}%)</span>
             </div>
-            <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+            <div className="flex items-center justify-between p-2 rounded-md bg-gray-50 border border-gray-100">
               <span className="font-semibold text-gray-700">Industry & Corporate Members</span>
-              <span className="font-mono font-bold text-amber-700">{membershipMetrics.industryCount} ({membershipMetrics.totalCount > 0 ? Math.round((membershipMetrics.industryCount / membershipMetrics.totalCount) * 100) : 0}%)</span>
+              <span className="font-bold text-amber-700 tabular-nums">{membershipMetrics.industryCount} ({membershipMetrics.totalCount > 0 ? Math.round((membershipMetrics.industryCount / membershipMetrics.totalCount) * 100) : 0}%)</span>
             </div>
           </div>
         </div>
@@ -536,13 +536,13 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           <div className="space-y-2 text-xs">
             {revenueByMethod.length > 0 ? (
               revenueByMethod.map((m) => (
-                <div key={m.name} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+                <div key={m.name} className="flex items-center justify-between p-2 rounded-md bg-gray-50 border border-gray-100">
                   <span className="font-semibold text-gray-700">{m.name}</span>
-                  <span className="font-mono font-bold text-emerald-700">₱{Number(m.value || 0).toLocaleString()}</span>
+                  <span className="font-bold text-emerald-700 tabular-nums">₱{Number(m.value || 0).toLocaleString()}</span>
                 </div>
               ))
             ) : (
-              <div className="p-3 text-center text-gray-500 text-xs">
+              <div className="p-3 text-center text-slate-600 text-xs">
                 GCash, Bank Transfer, and Official Receipts active.
               </div>
             )}
@@ -556,16 +556,16 @@ export const ExecutiveSummaryReportView: React.FC<ExecutiveSummaryProps> = ({
           <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Prepared & Verified By:</p>
           <div className="mt-10 border-b-2 border-gray-400 w-56" />
           <p className="mt-1.5 font-bold text-gray-900 text-sm">{preparedBy}</p>
-          <p className="text-[11px] text-gray-500 capitalize">{userRole} / Executive Reporter</p>
-          <p className="text-[10px] text-gray-400 font-mono mt-0.5">Signed on {new Date().toLocaleDateString()}</p>
+          <p className="text-[11px] text-slate-600 capitalize">{userRole} / Executive Reporter</p>
+          <p className="text-[10px] text-slate-600 tabular-nums mt-0.5">Signed on {new Date().toLocaleDateString()}</p>
         </div>
 
         <div className="text-right">
           <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Approved By Organization:</p>
           <div className="mt-10 border-b-2 border-gray-400 w-56 ml-auto" />
           <p className="mt-1.5 font-bold text-gray-900 text-sm">PSITS Regional Secretariat</p>
-          <p className="text-[11px] text-gray-500">Executive Council & Board of Officers</p>
-          <p className="text-[10px] text-gray-400 font-mono mt-0.5">Official Stamp & Date</p>
+          <p className="text-[11px] text-slate-600">Executive Council & Board of Officers</p>
+          <p className="text-[10px] text-slate-600 mt-0.5">Official Stamp & Date</p>
         </div>
       </div>
     </div>

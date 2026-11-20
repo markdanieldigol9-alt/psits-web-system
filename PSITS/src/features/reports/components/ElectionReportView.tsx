@@ -283,26 +283,26 @@ export const ElectionReportView = ({
             <img src={logo} alt="PSITS Logo" className="h-14 w-14 object-contain shadow-xs rounded-full p-1 border border-primary/20 bg-white" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-purple-900 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded flex items-center gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-900 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded flex items-center gap-1">
                   <Vote size={11} /> Official COMELEC Canvass Document
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-slate-600 font-mono tabular-nums">
                   REF: PSITS-ELEC-{election?.id || '01'}-{new Date().getFullYear()}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS
               </h1>
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
+              <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">
                 Regional Commission on Elections (COMELEC) • Official Election Tally & Canvass of Ballots
               </p>
             </div>
           </div>
 
-          <div className="text-left sm:text-right text-xs text-gray-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[200px]">
+          <div className="text-left sm:text-right text-xs text-slate-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[200px] tabular-nums">
             <p>
               <strong className="text-gray-800">Election:</strong>{' '}
-              <span className="font-semibold text-purple-900">{election?.title || 'General Elections'}</span>
+              <span className="font-semibold text-blue-900">{election?.title || 'General Elections'}</span>
             </p>
             <p>
               <strong className="text-gray-800">Canvass Date:</strong>{' '}
@@ -313,7 +313,7 @@ export const ElectionReportView = ({
             </p>
             <p>
               <strong className="text-gray-800">Election Status:</strong>{' '}
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${election?.status === 'closed' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${election?.status === 'closed' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
                 {election?.status || 'CLOSED'}
               </span>
             </p>
@@ -321,9 +321,9 @@ export const ElectionReportView = ({
         </div>
 
         {/* Subtitle & Quick Actions Bar */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-xs bg-purple-50/70 border border-purple-200/80 px-3 py-2 rounded-lg">
-          <div className="flex items-center gap-2 text-purple-950 font-medium">
-            <FileCheck2 size={16} className="text-purple-700" />
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-xs bg-blue-50/70 border border-blue-200/80 px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2 text-blue-950 font-medium">
+            <FileCheck2 size={16} className="text-blue-700" />
             <span>
               Official Certification of Elected Officers, Defeated Candidates Slate, and Voter Participation Registry.
             </span>
@@ -355,16 +355,16 @@ export const ElectionReportView = ({
       {/* ============================================================== */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {/* Ballots Cast */}
-        <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+        <div className="bg-cyan-50/70 border border-cyan-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wide">Total Ballots Cast</span>
-            <Vote size={16} className="text-purple-600" />
+            <span className="text-[11px] font-bold text-cyan-900 uppercase tracking-wide">Total Ballots Cast</span>
+            <Vote size={16} className="text-cyan-700" />
           </div>
           <div className="mt-2">
-            <p className="text-2xl font-black text-purple-900 tracking-tight">{totalBallots}</p>
-            <p className="text-[11px] text-purple-700 mt-0.5">Audited ballots canvassed</p>
+            <p className="text-2xl font-black text-cyan-900 tracking-tight tabular-nums">{totalBallots}</p>
+            <p className="text-[11px] text-cyan-800 mt-0.5">Audited ballots canvassed</p>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-purple-200/60 text-[10px] text-purple-800 font-medium flex justify-between">
+          <div className="mt-2 pt-1.5 border-t border-cyan-200/60 text-[10px] text-cyan-900 font-medium flex justify-between tabular-nums">
             <span>Turnout</span>
             <strong>{turnoutRate.toFixed(1)}% of voters</strong>
           </div>
@@ -377,7 +377,7 @@ export const ElectionReportView = ({
             <Trophy size={16} className="text-emerald-600" />
           </div>
           <div className="mt-2">
-            <p className="text-2xl font-black text-emerald-700 tracking-tight">{winnersList.length}</p>
+            <p className="text-2xl font-black text-emerald-700 tracking-tight tabular-nums">{winnersList.length}</p>
             <p className="text-[11px] text-emerald-700 mt-0.5">Offices officially proclaimed</p>
           </div>
           <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium">
@@ -392,7 +392,7 @@ export const ElectionReportView = ({
             <XCircle size={16} className="text-amber-600" />
           </div>
           <div className="mt-2">
-            <p className="text-2xl font-black text-amber-800 tracking-tight">{defeatedList.length}</p>
+            <p className="text-2xl font-black text-amber-800 tracking-tight tabular-nums">{defeatedList.length}</p>
             <p className="text-[11px] text-amber-700 mt-0.5">Non-winning runners-up</p>
           </div>
           <div className="mt-2 pt-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 font-medium">
@@ -407,7 +407,7 @@ export const ElectionReportView = ({
             <Layers size={16} className="text-primary" />
           </div>
           <div className="mt-2">
-            <p className="text-2xl font-black text-primary tracking-tight">{positionsList.length}</p>
+            <p className="text-2xl font-black text-primary tracking-tight tabular-nums">{positionsList.length}</p>
             <p className="text-[11px] text-blue-700 mt-0.5">Executive & board positions</p>
           </div>
           <div className="mt-2 pt-1.5 border-t border-blue-200/60 text-[10px] text-blue-800 font-medium">
@@ -422,10 +422,10 @@ export const ElectionReportView = ({
             <Users size={16} className="text-slate-600" />
           </div>
           <div className="mt-2">
-            <p className="text-2xl font-black text-slate-900 tracking-tight">{rawCandidates.length}</p>
+            <p className="text-2xl font-black text-slate-900 tracking-tight tabular-nums">{rawCandidates.length}</p>
             <p className="text-[11px] text-slate-600 mt-0.5">Candidates in official roster</p>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-slate-200 text-[10px] text-slate-700 font-medium">
+          <div className="mt-2 pt-1.5 border-t border-slate-200 text-[10px] text-slate-700 font-medium tabular-nums">
             {rawVoters.length} registered voters
           </div>
         </div>
@@ -434,10 +434,10 @@ export const ElectionReportView = ({
       {/* ============================================================== */}
       {/* 3. SECTION 1: PROCLAIMED CURRENT OFFICERS (THE WINNERS)       */}
       {/* ============================================================== */}
-      <div className="bg-white border-2 border-emerald-300 rounded-xl p-5 shadow-xs space-y-4">
+      <div className="bg-white border-2 border-emerald-300 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-100 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800">
+            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800">
               <Trophy size={20} />
             </div>
             <div>
@@ -452,13 +452,13 @@ export const ElectionReportView = ({
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold text-emerald-900 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+          <span className="text-xs font-bold text-emerald-900 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg tabular-nums">
             {winnersList.length} Proclaimed Position{winnersList.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         {winnersList.length === 0 ? (
-          <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl border">
+          <div className="p-6 text-center text-xs text-slate-600 bg-gray-50 rounded-lg border">
             No winning candidates have been marked or tallied yet for this election.
           </div>
         ) : (
@@ -466,7 +466,7 @@ export const ElectionReportView = ({
             {winnersList.map((w) => (
               <div
                 key={w.id}
-                className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 border border-emerald-300 rounded-xl p-4 shadow-2xs space-y-2 relative overflow-hidden print:break-inside-avoid"
+                className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 border border-emerald-300 rounded-lg p-4 shadow-2xs space-y-2 relative overflow-hidden print:break-inside-avoid"
               >
                 <div className="absolute top-2 right-2">
                   <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
@@ -479,26 +479,26 @@ export const ElectionReportView = ({
                     {w.position}
                   </span>
                   <h4 className="text-base font-black text-gray-900 mt-0.5 leading-snug">{w.name}</h4>
-                  <p className="text-[11px] text-gray-500 font-mono truncate">{w.email || w.sector_details || 'Verified Candidate'}</p>
+                  <p className="text-[11px] text-slate-600 truncate">{w.email || w.sector_details || 'Verified Candidate'}</p>
                 </div>
 
                 <div className="pt-2 border-t border-emerald-200 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-[10px] text-gray-500 block">Total Mandate</span>
-                    <strong className="text-sm font-extrabold text-emerald-800">
+                    <span className="text-[10px] text-slate-600 block">Total Mandate</span>
+                    <strong className="text-sm font-extrabold text-emerald-800 tabular-nums">
                       {w.votes_count} vote{Number(w.votes_count) !== 1 ? 's' : ''}
                     </strong>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] text-gray-500 block">Position Share</span>
-                    <strong className="text-sm font-black text-emerald-700">
+                    <span className="text-[10px] text-slate-600 block">Position Share</span>
+                    <strong className="text-sm font-black text-emerald-700 tabular-nums">
                       {(w.voteShare || 0).toFixed(1)}%
                     </strong>
                   </div>
                 </div>
 
                 {w.platform && (
-                  <div className="pt-1 text-[11px] text-gray-600 bg-white/60 p-2 rounded border border-emerald-100">
+                  <div className="pt-1 text-[11px] text-slate-600 bg-white/60 p-2 rounded-md border border-emerald-100">
                     <span className="font-semibold text-gray-700 block text-[10px] uppercase">Platform:</span>
                     "{w.platform}"
                   </div>
@@ -512,10 +512,10 @@ export const ElectionReportView = ({
       {/* ============================================================== */}
       {/* 4. SECTION 2: DEFEATED CANDIDATES (THE LOSERS LIST)            */}
       {/* ============================================================== */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs space-y-4">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-100 text-amber-800">
+            <div className="p-2 rounded-lg bg-amber-100 text-amber-800">
               <XCircle size={20} />
             </div>
             <div>
@@ -525,18 +525,18 @@ export const ElectionReportView = ({
                   Canvassed Runners-Up
                 </span>
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-600">
                 Official audit of candidates who contested positions but did not secure the winning plurality.
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 px-3 py-1 rounded-lg">
+          <span className="text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 px-3 py-1 rounded-lg tabular-nums">
             {defeatedList.length} Defeated Candidate{defeatedList.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         {defeatedList.length === 0 ? (
-          <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl border">
+          <div className="p-6 text-center text-xs text-slate-600 bg-gray-50 rounded-lg border">
             No defeated candidates or uncontested elections recorded.
           </div>
         ) : (
@@ -547,9 +547,9 @@ export const ElectionReportView = ({
                   <th className="px-3 py-2.5">Candidate Name</th>
                   <th className="px-3 py-2.5">Contested Position</th>
                   <th className="px-3 py-2.5">Affiliation / School</th>
-                  <th className="px-3 py-2.5 text-right">Votes</th>
-                  <th className="px-3 py-2.5 text-right">Vote Share</th>
-                  <th className="px-3 py-2.5 text-center">Margin Behind Winner</th>
+                  <th className="px-3 py-2.5 text-right tabular-nums">Votes</th>
+                  <th className="px-3 py-2.5 text-right tabular-nums">Vote Share</th>
+                  <th className="px-3 py-2.5 text-right tabular-nums">Margin Behind Winner</th>
                   <th className="px-3 py-2.5 text-center">Outcome Status</th>
                 </tr>
               </thead>
@@ -558,15 +558,15 @@ export const ElectionReportView = ({
                   <tr key={d.id} className="hover:bg-amber-50/30 transition-colors">
                     <td className="px-3 py-2.5 font-bold text-gray-900">
                       <div>{d.name}</div>
-                      {d.platform && <div className="text-[10px] text-gray-500 font-normal">"{d.platform}"</div>}
+                      {d.platform && <div className="text-[10px] text-slate-600 font-normal">"{d.platform}"</div>}
                     </td>
                     <td className="px-3 py-2.5 text-gray-700 font-semibold">{d.position}</td>
-                    <td className="px-3 py-2.5 text-gray-600">{d.sector_details || d.sector || 'Individual Member'}</td>
-                    <td className="px-3 py-2.5 text-right font-black text-gray-900">{d.votes_count}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-amber-800">
+                    <td className="px-3 py-2.5 text-slate-600">{d.sector_details || d.sector || 'Individual Member'}</td>
+                    <td className="px-3 py-2.5 text-right font-black text-gray-900 tabular-nums">{d.votes_count}</td>
+                    <td className="px-3 py-2.5 text-right font-bold text-amber-800 tabular-nums">
                       {(d.voteShare || 0).toFixed(1)}%
                     </td>
-                    <td className="px-3 py-2.5 text-center text-[11px] font-mono text-rose-700 font-bold">
+                    <td className="px-3 py-2.5 text-right text-[11px] tabular-nums text-rose-700 font-bold">
                       {d.deficit && d.deficit > 0 ? `-${d.deficit} vote${d.deficit !== 1 ? 's' : ''}` : '0 (Tied)'}
                     </td>
                     <td className="px-3 py-2.5 text-center whitespace-nowrap">
@@ -585,21 +585,21 @@ export const ElectionReportView = ({
       {/* ============================================================== */}
       {/* 5. SECTION 3: ALL PARTICIPANTS & COMPLETE CANVASS ROSTER      */}
       {/* ============================================================== */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden print:overflow-visible space-y-0">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-xs overflow-hidden print:overflow-visible space-y-0">
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
                 <Users size={18} className="text-primary" /> Complete Election Participants Registry
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-600">
                 Full roster of participating candidates across all positions alongside voting participant records.
               </p>
             </div>
 
             {/* In-Document Search Bar */}
             <div className="relative w-full sm:w-64 no-print">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search candidates, voters, offices..."
@@ -622,7 +622,7 @@ export const ElectionReportView = ({
                   setActiveTab('all');
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer tabular-nums ${
                   activeTab === 'all'
                     ? 'bg-primary text-white shadow-2xs'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -637,7 +637,7 @@ export const ElectionReportView = ({
                   setActiveTab('winners');
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 tabular-nums ${
                   activeTab === 'winners'
                     ? 'bg-emerald-700 text-white shadow-2xs'
                     : 'bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200'
@@ -652,7 +652,7 @@ export const ElectionReportView = ({
                   setActiveTab('losers');
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 tabular-nums ${
                   activeTab === 'losers'
                     ? 'bg-amber-700 text-white shadow-2xs'
                     : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200'
@@ -667,10 +667,10 @@ export const ElectionReportView = ({
                   setActiveTab('voters');
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 tabular-nums ${
                   activeTab === 'voters'
-                    ? 'bg-purple-800 text-white shadow-2xs'
-                    : 'bg-white text-purple-800 hover:bg-purple-50 border border-purple-200'
+                    ? 'bg-cyan-700 text-white shadow-2xs'
+                    : 'bg-white text-cyan-800 hover:bg-cyan-50 border border-cyan-200'
                 }`}
               >
                 <UserCheck size={13} /> Voter Participants ({rawVoters.length})
@@ -680,14 +680,14 @@ export const ElectionReportView = ({
             {/* Position Filter Dropdown (for candidate tabs) */}
             {activeTab !== 'voters' && uniquePositions.length > 0 && (
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-gray-500 font-semibold text-[11px]">Filter Office:</span>
+                <span className="text-slate-600 font-semibold text-[11px]">Filter Office:</span>
                 <select
                   value={selectedPositionFilter}
                   onChange={(e) => {
                     setSelectedPositionFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-2 py-1 rounded border border-gray-300 text-xs bg-white text-gray-800 focus:outline-none focus:border-primary"
+                  className="px-2 py-1 rounded border border-gray-300 text-xs bg-white text-gray-800 focus:outline-none focus:border-primary tabular-nums"
                 >
                   <option value="all">All Positions ({uniquePositions.length})</option>
                   {uniquePositions.map((pos) => (
@@ -707,12 +707,12 @@ export const ElectionReportView = ({
             <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-2.5">#</th>
+                  <th className="px-3 py-2.5 text-right w-10 tabular-nums">#</th>
                   <th className="px-3 py-2.5">Candidate Name</th>
                   <th className="px-3 py-2.5">Contested Position</th>
                   <th className="px-3 py-2.5">Affiliation / School</th>
                   <th className="px-3 py-2.5 text-center">Electoral Outcome</th>
-                  <th className="px-3 py-2.5 text-right">Votes Garnered</th>
+                  <th className="px-3 py-2.5 text-right tabular-nums">Votes Garnered</th>
                   <th className="px-3 py-2.5 text-center min-w-[120px]">Position Vote Share</th>
                   <th className="px-3 py-2.5">Platform Manifesto</th>
                 </tr>
@@ -720,7 +720,7 @@ export const ElectionReportView = ({
               <tbody className="divide-y divide-gray-200">
                 {paginatedCandidates.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-slate-600">
                       No candidates match your current filter criteria.
                     </td>
                   </tr>
@@ -732,15 +732,15 @@ export const ElectionReportView = ({
                         c.isWinner ? 'bg-emerald-50/30 hover:bg-emerald-50/60' : 'hover:bg-blue-50/30'
                       }`}
                     >
-                      <td className="px-3 py-2.5 font-mono text-[11px] text-gray-500">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-[11px] text-slate-600">
                         {(isPrinting || pageSize === 'all') ? idx + 1 : (currentPage - 1) * pageSize + idx + 1}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="font-extrabold text-gray-900">{c.name}</div>
-                        <div className="text-[10px] text-gray-500 font-mono">{c.email || '—'}</div>
+                        <div className="text-[10px] text-slate-600">{c.email || '—'}</div>
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-gray-800">{c.position}</td>
-                      <td className="px-3 py-2.5 text-gray-600">{c.sector_details || c.sector || 'Individual Member'}</td>
+                      <td className="px-3 py-2.5 text-slate-600">{c.sector_details || c.sector || 'Individual Member'}</td>
                       <td className="px-3 py-2.5 text-center whitespace-nowrap">
                         {c.isWinner ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-2xs">
@@ -752,14 +752,14 @@ export const ElectionReportView = ({
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-right font-black text-sm text-gray-900">
+                      <td className="px-3 py-2.5 text-right font-black text-sm text-gray-900 tabular-nums">
                         {c.votes_count}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-semibold">
+                          <div className="flex justify-between text-[10px] font-semibold tabular-nums">
                             <span>{(c.voteShare || 0).toFixed(1)}%</span>
-                            <span className="text-gray-400">of {c.positionTotalVotes || 0} votes</span>
+                            <span className="text-slate-600">of {c.positionTotalVotes || 0} votes</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                             <div
@@ -771,7 +771,7 @@ export const ElectionReportView = ({
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-[11px] text-gray-600 max-w-[200px] truncate" title={c.platform || ''}>
+                      <td className="px-3 py-2.5 text-[11px] text-slate-600 max-w-[200px] truncate" title={c.platform || ''}>
                         {c.platform ? `"${c.platform}"` : '—'}
                       </td>
                     </tr>
@@ -786,33 +786,33 @@ export const ElectionReportView = ({
         {activeTab === 'voters' && (
           <div className="overflow-x-auto print:overflow-visible">
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-purple-50 text-purple-900 font-bold border-b border-purple-200">
+              <thead className="bg-cyan-50 text-cyan-900 font-bold border-b border-cyan-200">
                 <tr>
-                  <th className="px-3 py-2.5">#</th>
+                  <th className="px-3 py-2.5 text-right w-10 tabular-nums">#</th>
                   <th className="px-3 py-2.5">Voter Full Name</th>
                   <th className="px-3 py-2.5">Email Address</th>
                   <th className="px-3 py-2.5">Affiliation / School</th>
                   <th className="px-3 py-2.5">Membership Category</th>
-                  <th className="px-3 py-2.5 text-center">Timestamp Voted</th>
+                  <th className="px-3 py-2.5 text-center tabular-nums">Timestamp Voted</th>
                   <th className="px-3 py-2.5 text-center">Ballot Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredVoters.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-600">
                       No voter logs recorded yet for this election.
                     </td>
                   </tr>
                 ) : (
                   filteredVoters.map((v, idx) => (
-                    <tr key={String(v.user_id) + idx} className="hover:bg-purple-50/30 transition-colors">
-                      <td className="px-3 py-2.5 font-mono text-gray-500">{idx + 1}</td>
+                    <tr key={String(v.user_id) + idx} className="hover:bg-cyan-50/30 transition-colors">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-600">{idx + 1}</td>
                       <td className="px-3 py-2.5 font-bold text-gray-900">{v.voter_name}</td>
-                      <td className="px-3 py-2.5 text-gray-600 font-mono text-[11px]">{v.voter_email || '—'}</td>
+                      <td className="px-3 py-2.5 text-slate-600 text-[11px]">{v.voter_email || '—'}</td>
                       <td className="px-3 py-2.5 text-gray-700">{v.sector_details || v.sector || 'Individual Member'}</td>
                       <td className="px-3 py-2.5 capitalize font-medium">{v.member_type || 'student'}</td>
-                      <td className="px-3 py-2.5 text-center text-[11px] text-gray-600">
+                      <td className="px-3 py-2.5 text-center text-[11px] text-slate-600 tabular-nums">
                         {v.voted_at ? new Date(v.voted_at).toLocaleString() : 'Audited In Ballot'}
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -830,8 +830,8 @@ export const ElectionReportView = ({
 
         {/* Pagination Bar for Candidates */}
         {activeTab !== 'voters' && (
-          <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600 no-print">
-            <div className="flex items-center gap-2">
+          <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 no-print">
+            <div className="flex items-center gap-2 tabular-nums">
               <span>Show:</span>
               {[15, 30, 50, 'all'].map((sz) => (
                 <button
@@ -841,22 +841,22 @@ export const ElectionReportView = ({
                     setPageSize(sz as any);
                     setCurrentPage(1);
                   }}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium cursor-pointer tabular-nums ${
                     pageSize === sz ? 'bg-primary text-white' : 'bg-white border text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   {sz === 'all' ? 'All' : sz}
                 </button>
               ))}
-              <span className="text-gray-400">|</span>
-              <span>
+              <span className="text-slate-500">|</span>
+              <span className="tabular-nums">
                 Showing {filteredCandidates.length > 0 ? (currentPage - 1) * (pageSize === 'all' ? filteredCandidates.length : pageSize) + 1 : 0} to{' '}
                 {pageSize === 'all' ? filteredCandidates.length : Math.min(currentPage * (pageSize as number), filteredCandidates.length)} of {filteredCandidates.length} filtered candidate records
               </span>
             </div>
 
             {pageSize !== 'all' && totalPages > 1 && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 tabular-nums">
                 <button
                   type="button"
                   disabled={currentPage === 1}
@@ -865,7 +865,7 @@ export const ElectionReportView = ({
                 >
                   <ChevronLeft size={14} />
                 </button>
-                <span className="text-[11px] font-semibold px-2">
+                <span className="text-[11px] font-semibold px-2 tabular-nums">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
@@ -886,8 +886,8 @@ export const ElectionReportView = ({
       {/* 6. OFFICIAL COMELEC CANVASS CERTIFICATION & TRIPLE SIGN-OFF     */}
       {/* ============================================================== */}
       <div className="border border-gray-300 rounded-xl p-5 bg-gray-50/50 space-y-4 certification-block">
-        <div className="text-xs text-gray-700 border-l-4 border-purple-700 pl-3">
-          <p className="font-semibold text-purple-900 uppercase tracking-wide text-[11px] mb-0.5">
+        <div className="text-xs text-gray-700 border-l-4 border-primary pl-3">
+          <p className="font-semibold text-blue-900 uppercase tracking-wide text-[11px] mb-0.5">
             COMELEC Canvassing Board Certification Resolution
           </p>
           "We, the members of the PSITS Regional Commission on Elections (COMELEC) and Board of Canvassers, hereby certify under official oath that the ballot tallies, elected winner proclamations, runner-up tallies, and voter registries set forth in this official document represent an audited, true, and definitive canvass of the election results in accordance with the PSITS Regional Election Code."
@@ -896,29 +896,29 @@ export const ElectionReportView = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 text-xs">
           {/* Canvassed By */}
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Prepared & Canvassed By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Prepared & Canvassed By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-full sm:w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">{preparedBy}</p>
-            <p className="text-[11px] text-gray-500 capitalize">{userRole} / Chief Scrutineer</p>
-            <p className="text-[10px] text-gray-400">Date: {new Date().toLocaleDateString()}</p>
+            <p className="text-[11px] text-slate-600 capitalize">{userRole} / Chief Scrutineer</p>
+            <p className="text-[10px] text-slate-600 tabular-nums">Date: {new Date().toLocaleDateString()}</p>
           </div>
 
           {/* Certified by COMELEC Chair */}
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Audited & Certified By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Audited & Certified By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-full sm:w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">COMELEC Commission Chairman</p>
-            <p className="text-[11px] text-gray-500">Board of Canvassers & Scrutineers</p>
-            <p className="text-[10px] text-gray-400">Official Seal & Signature</p>
+            <p className="text-[11px] text-slate-600">Board of Canvassers & Scrutineers</p>
+            <p className="text-[10px] text-slate-600">Official Seal & Signature</p>
           </div>
 
           {/* Approved & Ratified by President */}
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Noted & Ratified By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Noted & Ratified By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-full sm:w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">PSITS Regional Secretariat</p>
-            <p className="text-[11px] text-gray-500">Regional Executive Council</p>
-            <p className="text-[10px] text-gray-400">Official Ratification Stamp</p>
+            <p className="text-[11px] text-slate-600">Regional Executive Council</p>
+            <p className="text-[10px] text-slate-600">Official Ratification Stamp</p>
           </div>
         </div>
       </div>

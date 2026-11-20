@@ -137,22 +137,22 @@ export const ResetPasswordPage = () => {
       {isVerifyingToken ? (
         <div className="py-12 flex flex-col items-center justify-center space-y-3">
           <LoadingSpinner size="md" />
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-slate-600">
             Verifying your reset link...
           </p>
         </div>
       ) : tokenError ? (
         <div className="space-y-5 animate-fade-in text-center">
-          <div className="p-5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-3">
-            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <div className="p-5 rounded-xl bg-amber-50/80 border border-amber-200 space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
               <AlertTriangle size={26} />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white text-balance">
+              <h3 className="text-base font-bold text-slate-900 text-balance">
                 Reset Link Expired or Invalid
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 {tokenError}
               </p>
             </div>
@@ -161,7 +161,7 @@ export const ResetPasswordPage = () => {
           <div className="space-y-2.5">
             <Link
               to="/forgot-password"
-              className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all shadow-sm"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm transition-all shadow-sm"
             >
               <span>Request a New Reset Link</span>
               <ArrowRight size={16} />
@@ -169,7 +169,7 @@ export const ResetPasswordPage = () => {
 
             <Link
               to="/login"
-              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-medium text-xs transition-colors"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors"
             >
               <span>Return to Login</span>
             </Link>
@@ -177,21 +177,21 @@ export const ResetPasswordPage = () => {
         </div>
       ) : isSuccess ? (
         <div className="space-y-5 animate-fade-in text-center">
-          <div className="p-5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-3">
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className="p-5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
               <CheckCircle2 size={30} />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white text-balance">
+              <h3 className="text-base font-bold text-slate-900 text-balance">
                 Password Successfully Reset!
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Your account password has been updated. You can now log into your PSITS account with your new password.
               </p>
             </div>
 
-            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+            <p className="text-xs text-emerald-700 font-medium tabular-nums">
               Redirecting to login in {countdown}s...
             </p>
           </div>
@@ -209,9 +209,9 @@ export const ResetPasswordPage = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
           <div className="space-y-1">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
               Set a new secure password for{' '}
-              <strong className="text-gray-900 dark:text-white">
+              <strong className="text-slate-900">
                 {userEmail || userName || 'your account'}
               </strong>
               .
@@ -227,63 +227,65 @@ export const ResetPasswordPage = () => {
           )}
 
           {/* New Password */}
-          <div className="relative">
-            <Input
-              label="New Password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter new password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (submitError) setSubmitError('');
-              }}
-              required
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-10 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+          <Input
+            label="New Password"
+            variant="light"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Enter new password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (submitError) setSubmitError('');
+            }}
+            required
+            autoFocus
+            suffixAction={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="text-slate-500 hover:text-slate-800 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
+          />
 
           {/* Confirm Password */}
-          <div className="relative">
-            <Input
-              label="Confirm New Password"
-              type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (submitError) setSubmitError('');
-              }}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((v) => !v)}
-              className="absolute right-3 top-10 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-            >
-              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+          <Input
+            label="Confirm New Password"
+            variant="light"
+            type={showConfirmPassword ? 'text' : 'password'}
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (submitError) setSubmitError('');
+            }}
+            required
+            suffixAction={
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="text-slate-500 hover:text-slate-800 transition-colors"
+                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
+          />
 
           {/* Password Requirements Checklist */}
-          <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-slate-300">
-              <ShieldCheck size={14} className="text-blue-500" />
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+              <ShieldCheck size={14} className="text-primary-600" />
               <span>Password Security Requirements:</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
               <div
                 className={`flex items-center gap-1.5 transition-colors ${
-                  ruleMinLength ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                  ruleMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-600'
                 }`}
               >
                 {ruleMinLength ? <Check size={12} className="stroke-[3]" /> : <X size={12} />}
@@ -292,7 +294,7 @@ export const ResetPasswordPage = () => {
 
               <div
                 className={`flex items-center gap-1.5 transition-colors ${
-                  ruleUpper ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                  ruleUpper ? 'text-emerald-700 font-semibold' : 'text-slate-600'
                 }`}
               >
                 {ruleUpper ? <Check size={12} className="stroke-[3]" /> : <X size={12} />}
@@ -301,7 +303,7 @@ export const ResetPasswordPage = () => {
 
               <div
                 className={`flex items-center gap-1.5 transition-colors ${
-                  ruleLower ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                  ruleLower ? 'text-emerald-700 font-semibold' : 'text-slate-600'
                 }`}
               >
                 {ruleLower ? <Check size={12} className="stroke-[3]" /> : <X size={12} />}
@@ -310,7 +312,7 @@ export const ResetPasswordPage = () => {
 
               <div
                 className={`flex items-center gap-1.5 transition-colors ${
-                  ruleNumber ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                  ruleNumber ? 'text-emerald-700 font-semibold' : 'text-slate-600'
                 }`}
               >
                 {ruleNumber ? <Check size={12} className="stroke-[3]" /> : <X size={12} />}
@@ -319,7 +321,7 @@ export const ResetPasswordPage = () => {
 
               <div
                 className={`flex items-center gap-1.5 transition-colors ${
-                  ruleSpecial ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                  ruleSpecial ? 'text-emerald-700 font-semibold' : 'text-slate-600'
                 }`}
               >
                 {ruleSpecial ? <Check size={12} className="stroke-[3]" /> : <X size={12} />}
@@ -328,7 +330,7 @@ export const ResetPasswordPage = () => {
 
               <div
                 className={`flex items-center gap-1.5 transition-colors ${
-                  ruleMatch ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                  ruleMatch ? 'text-emerald-700 font-semibold' : 'text-slate-600'
                 }`}
               >
                 {ruleMatch ? <Check size={12} className="stroke-[3]" /> : <X size={12} />}
@@ -351,7 +353,7 @@ export const ResetPasswordPage = () => {
           <div className="pt-2 text-center">
             <Link
               to="/login"
-              className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
+              className="text-xs sm:text-sm font-semibold text-slate-600 hover:text-primary transition-colors"
             >
               Cancel and return to Login
             </Link>

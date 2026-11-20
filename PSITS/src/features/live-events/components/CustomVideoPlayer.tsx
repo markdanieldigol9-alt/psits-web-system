@@ -263,9 +263,9 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
   if (!rawVideoUrl) {
     return (
       <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-obsidian-card p-8 text-center">
-        <Film className="h-12 w-12 text-slate-400 dark:text-slate-600 mb-3" />
+        <Film className="h-12 w-12 text-slate-500 dark:text-slate-400 mb-3" />
         <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">No Stream Video or Clip Available</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-sm">
           Organizers can upload a video clip (.mp4, .webm) or link a stream URL (YouTube, Vimeo) in the session settings.
         </p>
       </div>
@@ -320,7 +320,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 p-6 text-center z-20">
           <AlertCircle className="h-10 w-10 text-rose-500 mb-2" />
           <p className="text-sm font-semibold text-white">Playback Error</p>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs">
+          <p className="text-xs text-slate-300 mt-1 max-w-xs">
             Unable to stream this video clip. The file may be converting or unreadable.
           </p>
           <button
@@ -382,7 +382,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
             {/* Hover Tooltip */}
             {hoverPosition !== null && (
               <div
-                className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded bg-black/90 text-white text-[10px] font-mono shadow-md pointer-events-none"
+                className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded bg-black/90 text-white text-[10px] font-mono tabular-nums shadow-md pointer-events-none"
                 style={{ left: `${(hoverPosition / duration) * 100}%` }}
               >
                 {formatTime(hoverPosition)}
@@ -425,8 +425,8 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
               </div>
 
               {/* Time Display */}
-              <span className="text-[11px] sm:text-xs font-mono text-slate-300">
-                {formatTime(currentTime)} <span className="text-slate-500">/</span> {formatTime(duration)}
+              <span className="text-[11px] sm:text-xs font-mono tabular-nums text-slate-300">
+                {formatTime(currentTime)} <span className="text-slate-400">/</span> {formatTime(duration)}
               </span>
             </div>
 
@@ -469,7 +469,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
                           className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800 transition cursor-pointer"
                         >
                           <span className="text-slate-300">Quality</span>
-                          <span className="font-mono text-cyan-400 font-bold">{selectedQuality} ›</span>
+                          <span className="font-mono tabular-nums text-cyan-400 font-bold">{selectedQuality} ›</span>
                         </button>
                         <button
                           type="button"
@@ -477,7 +477,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
                           className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800 transition cursor-pointer"
                         >
                           <span className="text-slate-300">Speed</span>
-                          <span className="font-mono text-cyan-400 font-bold">{playbackSpeed}x ›</span>
+                          <span className="font-mono tabular-nums text-cyan-400 font-bold">{playbackSpeed}x ›</span>
                         </button>
                       </div>
                     )}
@@ -487,7 +487,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
                         <button
                           type="button"
                           onClick={() => setSettingsTab('main')}
-                          className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-white transition flex items-center gap-1 cursor-pointer"
+                          className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition flex items-center gap-1 cursor-pointer"
                         >
                           ‹ Back to Settings
                         </button>
@@ -514,7 +514,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
                         <button
                           type="button"
                           onClick={() => setSettingsTab('main')}
-                          className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-white transition flex items-center gap-1 cursor-pointer"
+                          className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition flex items-center gap-1 cursor-pointer"
                         >
                           ‹ Back to Settings
                         </button>

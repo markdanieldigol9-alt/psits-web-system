@@ -611,13 +611,13 @@ export const EventAttendanceSheet = ({
                   : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
-              <div className={`p-2.5 rounded-xl shrink-0 ${c.tone}`}>
+              <div className={`p-2.5 rounded-lg shrink-0 ${c.tone}`}>
                 <Icon size={18} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 truncate">{c.label}</p>
-                <p className="text-xl font-black text-slate-900 dark:text-slate-100 leading-tight">{c.value}</p>
-                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">{c.hint}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 truncate">{c.label}</p>
+                <p className="text-xl font-black text-slate-900 dark:text-slate-100 leading-tight tabular-nums">{c.value}</p>
+                <p className="text-[10px] font-medium text-slate-600 dark:text-slate-300 truncate">{c.hint}</p>
               </div>
             </button>
           );
@@ -637,7 +637,7 @@ export const EventAttendanceSheet = ({
             className="w-full pl-9 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
           {search && (
-            <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer">
+            <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer">
               <X size={14} />
             </button>
           )}
@@ -666,7 +666,7 @@ export const EventAttendanceSheet = ({
             <option value="left_early">Left Early</option>
           </select>
         </div>
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">
+        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0 tabular-nums">
           Showing {filteredRows.length} of {rows.length}
         </span>
       </div>
@@ -763,16 +763,16 @@ export const EventAttendanceSheet = ({
           </div>
         ) : rows.length === 0 ? (
           <div className="py-12 text-center bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-            <Users size={32} className="mx-auto text-slate-400 mb-2" />
+            <Users size={32} className="mx-auto text-slate-500 dark:text-slate-400 mb-2" />
             <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">No participants registered yet</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1">
               Individual registrations and institution rosters for this event will appear here for time in / time out recording.
             </p>
           </div>
         ) : (
           <div className="overflow-auto max-h-[620px] border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
             <table className="w-full min-w-[1080px] text-left text-xs sm:text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200 dark:border-slate-700">
+              <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   {canManage && (
                     <th className="px-3 py-3 w-10">
@@ -791,7 +791,7 @@ export const EventAttendanceSheet = ({
                   <th className="px-3 py-3">Source</th>
                   <th className="px-3 py-3">Time In</th>
                   <th className="px-3 py-3">Time Out</th>
-                  <th className="px-3 py-3 text-center">Duration</th>
+                  <th className="px-3 py-3 text-right">Duration</th>
                   <th className="px-3 py-3">Status</th>
                   {canManage && <th className="px-3 py-3 text-right">Actions</th>}
                 </tr>
@@ -799,7 +799,7 @@ export const EventAttendanceSheet = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={canManage ? 10 : 8} className="px-4 py-10 text-center text-xs font-medium text-slate-500">
+                    <td colSpan={canManage ? 10 : 8} className="px-4 py-10 text-center text-xs font-medium text-slate-600 dark:text-slate-300">
                       No participants match the current filters.
                     </td>
                   </tr>
@@ -830,10 +830,10 @@ export const EventAttendanceSheet = ({
                             />
                           </td>
                         )}
-                        <td className="px-3 py-3 text-center text-xs font-bold text-slate-400">{idx + 1}</td>
+                        <td className="px-3 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 tabular-nums">{idx + 1}</td>
                         <td className="px-3 py-3">
                           <p className="font-bold text-slate-900 dark:text-slate-100">{r.fullName}</p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px]">
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate max-w-[220px]">
                             {r.position || 'Participant'}
                             {r.contactNumber ? ` • ${r.contactNumber}` : ''}
                             {r.email ? ` • ${r.email}` : ''}
@@ -854,9 +854,9 @@ export const EventAttendanceSheet = ({
                         {/* Time In */}
                         <td className="px-3 py-3 whitespace-nowrap">
                           {s.key === 'not_arrived' ? (
-                            <span className="text-slate-400">—</span>
+                            <span className="text-slate-500 dark:text-slate-400">—</span>
                           ) : s.timeInMs === null ? (
-                            <span className="text-[11px] font-semibold text-slate-500">Checked in (time not recorded)</span>
+                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Checked in (time not recorded)</span>
                           ) : (
                             <div>
                               <p className="font-bold text-slate-900 dark:text-slate-100 tabular-nums">{fmtTime(s.timeInMs)}</p>
@@ -892,15 +892,15 @@ export const EventAttendanceSheet = ({
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800">
                                 <AlertTriangle size={11} /> Not Timed Out
                               </span>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Event closed without time-out</p>
+                              <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-0.5">Event closed without time-out</p>
                             </div>
                           ) : s.key === 'in_venue' ? (
-                            <span className="text-[11px] font-semibold text-slate-500">Still in venue</span>
+                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Still in venue</span>
                           ) : (
-                            <span className="text-slate-400">—</span>
+                            <span className="text-slate-500 dark:text-slate-400">—</span>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-center font-semibold text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
+                        <td className="px-3 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
                           {fmtDuration(s.durationMin)}
                           {s.key === 'in_venue' && s.durationMin !== null && !isEventClosed && (
                             <span className="block text-[9px] font-bold uppercase text-emerald-600">live</span>
@@ -1018,7 +1018,7 @@ export const EventAttendanceSheet = ({
           </div>
         )}
 
-        <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-[11px] text-slate-600 dark:text-slate-300">
           Time-in opens {opensBeforeMin / 60}h before the scheduled start and closes at the scheduled end. Arrivals more than {graceMin} minutes after
           the start are marked <strong>Late</strong>; departures before the scheduled end are marked <strong>Left Early</strong>.
           {!canManage && ' Only admins and officers can record time in / time out.'}

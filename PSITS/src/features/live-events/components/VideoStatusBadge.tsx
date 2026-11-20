@@ -18,7 +18,7 @@ export const VideoStatusBadge: React.FC<VideoStatusBadgeProps> = ({
   if (status === 'live') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse ${className}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold tracking-wider bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 animate-pulse ${className}`}
       >
         <span className="w-2 h-2 rounded-full bg-rose-500" />
         <Radio size={12} />
@@ -62,7 +62,7 @@ export const VideoStatusBadge: React.FC<VideoStatusBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/25 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/25 ${className}`}
     >
       SESSION ENDED
     </span>

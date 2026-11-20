@@ -205,10 +205,10 @@ export const MemberDirectoryExportTable = ({
             <img src={logo} alt="PSITS Logo" className="h-12 w-12 object-contain" />
             <div>
               <h2 className="text-xl font-extrabold text-primary tracking-tight text-balance">PSITS REGIONAL ORGANIZATION</h2>
-              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Official Membership Directory & Registry</p>
+              <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">Official Membership Directory & Registry</p>
             </div>
           </div>
-          <div className="text-right text-xs text-gray-500 space-y-0.5">
+          <div className="text-right text-xs text-slate-600 space-y-0.5 tabular-nums">
             <p><strong>Report:</strong> {title}</p>
             <p><strong>Generated Date:</strong> {new Date().toLocaleString()}</p>
             <p><strong>Total Listed Members:</strong> {filteredMembers.length} records</p>
@@ -224,7 +224,7 @@ export const MemberDirectoryExportTable = ({
               <Users className="text-primary h-5 w-5" />
               {title}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+            <p className="text-xs text-slate-600 mt-0.5">{subtitle}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export const MemberDirectoryExportTable = ({
               type="button"
               onClick={handleExportCSV}
               disabled={filteredMembers.length === 0}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed tabular-nums"
             >
               <FileSpreadsheet size={15} />
               Export to Excel ({filteredMembers.length})
@@ -242,7 +242,7 @@ export const MemberDirectoryExportTable = ({
               onClick={() => {
                 printReportDocument(title || 'Member Directory & Roster');
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-all cursor-pointer"
             >
               <Printer size={14} />
               Print
@@ -252,11 +252,11 @@ export const MemberDirectoryExportTable = ({
       )}
 
       {/* Filter Controls Bar */}
-      <div className="space-y-3 bg-gray-50/80 border border-gray-200 rounded-xl p-3.5 no-print">
+      <div className="space-y-3 bg-gray-50/80 border border-gray-200 rounded-lg p-3.5 no-print">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4" />
             <input
               type="text"
               value={searchQuery}
@@ -265,7 +265,7 @@ export const MemberDirectoryExportTable = ({
                 setCurrentPage(1);
               }}
               placeholder="Search by name, email, role..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             />
           </div>
 
@@ -277,7 +277,7 @@ export const MemberDirectoryExportTable = ({
                 setSelectedCategory(e.target.value as any);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              className="w-full px-3 py-2 text-xs rounded-md border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary tabular-nums"
             >
               <option value="all">All Categories ({categoryCounts.total})</option>
               <option value="individual">Individual Members ({categoryCounts.individual})</option>
@@ -294,7 +294,7 @@ export const MemberDirectoryExportTable = ({
                 setSelectedInstitution(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-800"
+              className="w-full px-3 py-2 text-xs rounded-md border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-800 tabular-nums"
             >
               <option value="all">All Institutions ({availableInstitutions.length} available)</option>
               {availableInstitutions.map((inst) => {
@@ -318,7 +318,7 @@ export const MemberDirectoryExportTable = ({
                 setSelectedStatus(e.target.value as any);
                 setCurrentPage(1);
               }}
-              className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              className="flex-1 px-3 py-2 text-xs rounded-md border border-gray-300 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             >
               <option value="all">All Statuses</option>
               <option value="active">Active / Approved</option>
@@ -330,7 +330,7 @@ export const MemberDirectoryExportTable = ({
                 type="button"
                 onClick={handleResetFilters}
                 title="Reset all filters"
-                className="px-2.5 py-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:text-red-600 hover:border-red-300 transition-colors cursor-pointer text-xs flex items-center gap-1"
+                className="px-2.5 py-2 rounded-md border border-gray-300 bg-white text-slate-600 hover:text-red-600 hover:border-red-300 transition-colors cursor-pointer text-xs flex items-center gap-1"
               >
                 <RotateCcw size={13} />
                 <span className="hidden sm:inline">Reset</span>
@@ -340,15 +340,15 @@ export const MemberDirectoryExportTable = ({
         </div>
 
         {/* Quick Filter Status Badges */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-600">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-gray-700">Showing:</span>
-            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold tabular-nums">
               {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'}
             </span>
 
             {selectedCategory !== 'all' && (
-              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium">
+              <span className="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200 font-medium">
                 Category: <strong className="capitalize">{selectedCategory}</strong>
               </span>
             )}
@@ -379,7 +379,7 @@ export const MemberDirectoryExportTable = ({
               type="button"
               onClick={handleExportCSV}
               disabled={filteredMembers.length === 0}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50"
             >
               <FileSpreadsheet size={13} />
               Export Table (.CSV)
@@ -389,7 +389,7 @@ export const MemberDirectoryExportTable = ({
       </div>
 
       {/* Main Table */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden print:overflow-visible bg-white">
+      <div className="border border-gray-200 rounded-lg overflow-hidden print:overflow-visible bg-white">
         <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold uppercase tracking-wider">
@@ -400,13 +400,13 @@ export const MemberDirectoryExportTable = ({
                 <th className="px-3.5 py-2.5">Institution / Affiliation</th>
                 <th className="px-3.5 py-2.5">Position / Role</th>
                 <th className="px-3.5 py-2.5 text-center">Status</th>
-                <th className="px-3.5 py-2.5 text-right">Registered</th>
+                <th className="px-3.5 py-2.5 text-right tabular-nums">Registered</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-600">
                     <div className="flex items-center justify-center gap-2">
                       <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       Loading member roster...
@@ -415,10 +415,10 @@ export const MemberDirectoryExportTable = ({
                 </tr>
               ) : paginatedMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    <Filter className="h-6 w-6 text-gray-400 mx-auto mb-1 opacity-60" />
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-600">
+                    <Filter className="h-6 w-6 text-slate-500 mx-auto mb-1 opacity-60" />
                     <p className="font-semibold text-gray-700">No members match the selected filters.</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Try clearing or adjusting your search keyword, category, or institution filter.</p>
+                    <p className="text-[11px] text-slate-600 mt-0.5">Try clearing or adjusting your search keyword, category, or institution filter.</p>
                     {isFilteringActive && (
                       <button
                         type="button"
@@ -443,7 +443,7 @@ export const MemberDirectoryExportTable = ({
                         <div className="flex items-center gap-2">
                           <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
                             cat === 'institution'
-                              ? 'bg-purple-100 text-purple-700'
+                              ? 'bg-cyan-100 text-cyan-800'
                               : cat === 'industry'
                               ? 'bg-amber-100 text-amber-700'
                               : 'bg-blue-100 text-blue-700'
@@ -455,17 +455,17 @@ export const MemberDirectoryExportTable = ({
                       </td>
 
                       {/* Email & Contact */}
-                      <td className="px-3.5 py-2 text-gray-600 whitespace-nowrap">
+                      <td className="px-3.5 py-2 text-slate-600 whitespace-nowrap">
                         <div>{m.email || '—'}</div>
                         {m.contact_number && (
-                          <div className="text-[10px] text-gray-400">{m.contact_number}</div>
+                          <div className="text-[10px] text-slate-600 tabular-nums">{m.contact_number}</div>
                         )}
                       </td>
 
                       {/* Category Badge */}
                       <td className="px-3.5 py-2 whitespace-nowrap">
                         {cat === 'institution' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">
                             <Building2 size={10} />
                             Institution
                           </span>
@@ -486,16 +486,16 @@ export const MemberDirectoryExportTable = ({
                       <td className="px-3.5 py-2 text-gray-700 whitespace-nowrap">
                         {instName !== '—' ? (
                           <span className="inline-flex items-center gap-1 font-semibold text-gray-800">
-                            <Building2 size={12} className="text-gray-400" />
+                            <Building2 size={12} className="text-slate-500" />
                             {instName}
                           </span>
                         ) : (
-                          <span className="text-gray-400">Individual (None)</span>
+                          <span className="text-slate-600">Individual (None)</span>
                         )}
                       </td>
 
                       {/* Position / Role */}
-                      <td className="px-3.5 py-2 text-gray-600 whitespace-nowrap capitalize">
+                      <td className="px-3.5 py-2 text-slate-600 whitespace-nowrap capitalize">
                         {m.position || m.occupation || 'Member'}
                       </td>
 
@@ -512,7 +512,7 @@ export const MemberDirectoryExportTable = ({
                       </td>
 
                       {/* Date Registered */}
-                      <td className="px-3.5 py-2 text-right text-gray-500 whitespace-nowrap text-[11px]">
+                      <td className="px-3.5 py-2 text-right text-slate-600 whitespace-nowrap text-[11px] tabular-nums">
                         {m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}
                       </td>
                     </tr>
@@ -525,8 +525,8 @@ export const MemberDirectoryExportTable = ({
 
         {/* Table Footer & Pagination */}
         {filteredMembers.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-xs text-gray-600 no-print">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-xs text-slate-600 no-print">
+            <div className="flex items-center gap-2 tabular-nums">
               <span>Rows per page:</span>
               <select
                 value={pageSize}
@@ -535,7 +535,7 @@ export const MemberDirectoryExportTable = ({
                   setPageSize(val as any);
                   setCurrentPage(1);
                 }}
-                className="px-2 py-1 rounded border border-gray-300 bg-white font-medium"
+                className="px-2 py-1 rounded border border-gray-300 bg-white font-medium tabular-nums"
               >
                 <option value={10}>10</option>
                 <option value={15}>15</option>
@@ -543,8 +543,8 @@ export const MemberDirectoryExportTable = ({
                 <option value={50}>50</option>
                 <option value="all">All ({filteredMembers.length})</option>
               </select>
-              <span className="text-gray-400">|</span>
-              <span>
+              <span className="text-slate-500">|</span>
+              <span className="tabular-nums">
                 Showing {pageSize === 'all' ? 1 : (currentPage - 1) * pageSize + 1}–
                 {pageSize === 'all'
                   ? filteredMembers.length
@@ -554,7 +554,7 @@ export const MemberDirectoryExportTable = ({
             </div>
 
             {pageSize !== 'all' && totalPages > 1 && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 tabular-nums">
                 <button
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
@@ -563,7 +563,7 @@ export const MemberDirectoryExportTable = ({
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <span className="px-2 font-medium">
+                <span className="px-2 font-medium tabular-nums">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
@@ -587,15 +587,15 @@ export const MemberDirectoryExportTable = ({
             <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Prepared & Certified By:</p>
             <div className="mt-10 border-b-2 border-gray-400 w-56"></div>
             <p className="mt-1.5 font-bold text-gray-900 text-sm">Membership Committee Chairperson</p>
-            <p className="text-[11px] text-gray-500">PSITS Regional Secretariat</p>
-            <p className="text-[10px] text-gray-400 font-mono mt-0.5">Signed on {new Date().toLocaleDateString()}</p>
+            <p className="text-[11px] text-slate-600">PSITS Regional Secretariat</p>
+            <p className="text-[10px] text-slate-600 tabular-nums mt-0.5">Signed on {new Date().toLocaleDateString()}</p>
           </div>
           <div className="text-right">
             <p className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Approved & Attested By:</p>
             <div className="mt-10 border-b-2 border-gray-400 w-56 ml-auto"></div>
             <p className="mt-1.5 font-bold text-gray-900 text-sm">PSITS Regional President</p>
-            <p className="text-[11px] text-gray-500">Executive Council & Board of Officers</p>
-            <p className="text-[10px] text-gray-400 font-mono mt-0.5">Official Stamp & Date</p>
+            <p className="text-[11px] text-slate-600">Executive Council & Board of Officers</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">Official Stamp & Date</p>
           </div>
         </div>
       )}

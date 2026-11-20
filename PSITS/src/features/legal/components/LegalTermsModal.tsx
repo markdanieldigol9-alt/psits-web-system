@@ -71,13 +71,13 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
                   ? 'Data Privacy Policy & Protection'
                   : 'Terms & Conditions of Service'}
               </h2>
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                 <span className="flex items-center gap-1">
                   <Lock size={12} className="text-emerald-500" />
                   Philippine RA 10173 Protected
                 </span>
                 <span>•</span>
-                <span>Updated: {lastUpdated}</span>
+                <span className="tabular-nums">Updated: {lastUpdated}</span>
               </div>
             </div>
           </div>
@@ -86,7 +86,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
             <button
               onClick={handlePrint}
               type="button"
-              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
+              className="p-2 text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
               title="Print document"
             >
               <Printer size={16} />
@@ -95,7 +95,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
             <button
               onClick={onClose}
               type="button"
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors"
               aria-label="Close modal"
             >
               <X size={20} />
@@ -135,20 +135,20 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
           <div className="relative w-full sm:w-64">
             <Search
               size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400"
             />
             <input
               type="text"
               placeholder="Search clauses or topics..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
               >
                 Clear
               </button>
@@ -159,7 +159,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
         {/* ── Scrollable Body ── */}
         <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 sm:px-8">
           {/* Quick Notice Banner */}
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200">
             <Lock className="h-5 w-5 shrink-0 text-blue-600 dark:text-cyan-400 mt-0.5" />
             <div className="space-y-1">
               <span className="font-bold">Official Governance Standard</span>
@@ -173,7 +173,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
           </div>
 
           {filteredSections.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="py-12 text-center text-slate-600 dark:text-slate-400 text-sm">
               No clauses matched &quot;{searchQuery}&quot;. Please try a different search keyword.
             </div>
           ) : (
@@ -181,7 +181,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
               <div
                 key={section.id}
                 id={section.id}
-                className="p-5 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950/40 shadow-xs space-y-3"
+                className="p-5 rounded-lg border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950/40 shadow-xs space-y-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
@@ -221,7 +221,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
                 )}
 
                 {section.warningNote && (
-                  <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="flex items-start gap-2.5 p-3 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200">
                     <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                     <span>{section.warningNote}</span>
                   </div>
@@ -233,7 +233,7 @@ export const LegalTermsModal: React.FC<LegalTermsModalProps> = ({
 
         {/* ── Modal Footer ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 shrink-0">
-          <div className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+          <div className="text-xs text-slate-600 dark:text-slate-400 text-center sm:text-left">
             <span>Official Legal Governance • PSITS Region XII</span>
           </div>
 

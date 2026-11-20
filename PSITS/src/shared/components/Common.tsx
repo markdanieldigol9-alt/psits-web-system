@@ -45,7 +45,7 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-gray-900/55 dark:bg-black/70 backdrop-blur-[2px] overflow-y-auto"
+      className="fixed inset-0 z-50 bg-slate-900/55 dark:bg-black/70 backdrop-blur-[2px] overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -56,12 +56,12 @@ export const Modal = ({
     >
       <div className="min-h-[100dvh] flex items-start sm:items-center justify-center p-4 sm:p-6">
         <div
-          className={`bg-white dark:bg-slate-900 rounded-[20px] shadow-modal ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden border border-gray-100 dark:border-slate-800 animate-pop-in text-gray-900 dark:text-slate-100`}
+          className={`bg-white dark:bg-obsidian-card rounded-2xl shadow-modal ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden border border-slate-200/80 dark:border-slate-800 animate-pop-in text-slate-900 dark:text-slate-100`}
         >
           {/* Header */}
-          <div className="relative flex items-start justify-between p-5 sm:p-6 border-b border-gray-100 dark:border-slate-800 shrink-0">
+          <div className="relative flex items-start justify-between p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <div className="flex-1 min-w-0 pr-4">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight leading-tight text-balance max-w-xl">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight text-balance max-w-xl">
                 {title}
               </h2>
               {subtitle && (
@@ -73,7 +73,7 @@ export const Modal = ({
               <button
                 onClick={onClose}
                 aria-label="Close modal"
-                className="shrink-0 p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors mt-0.5"
+                className="shrink-0 p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors mt-0.5"
               >
                 <X size={18} />
               </button>
@@ -101,26 +101,26 @@ export const Alert = ({ type, message, onClose, className = '', truncate = false
   const typeConfig = {
     success: {
       bg: 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200',
-      icon: <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />,
+      icon: <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-[3px]" />,
     },
     error: {
       bg: 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200',
-      icon: <AlertCircle size={16} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />,
+      icon: <AlertCircle size={16} className="text-rose-600 dark:text-rose-400 shrink-0 mt-[3px]" />,
     },
     warning: {
       bg: 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200',
-      icon: <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />,
+      icon: <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-[3px]" />,
     },
     info: {
       bg: 'bg-sky-50/90 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60 text-sky-900 dark:text-sky-200',
-      icon: <Info size={16} className="text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />,
+      icon: <Info size={16} className="text-sky-600 dark:text-sky-400 shrink-0 mt-[3px]" />,
     },
   };
 
   const config = typeConfig[type] || typeConfig.info;
 
   return (
-    <div className={`border rounded-xl p-3.5 flex items-start justify-between gap-3 text-sm animate-fade-in shadow-xs ${config.bg} ${className}`}>
+    <div className={`border rounded-lg p-3.5 flex items-start justify-between gap-3 text-sm animate-fade-in shadow-xs ${config.bg} ${className}`}>
       <div className="flex items-start gap-2.5 min-w-0 flex-1">
         {config.icon}
         <p className={`flex-1 break-words leading-relaxed font-medium ${truncate ? 'truncate' : ''}`}>{message}</p>
@@ -155,7 +155,7 @@ export const LoadingSpinner = ({ size = 'md', fullPage = false, label }: Loading
   const spinner = (
     <div className="flex flex-col items-center justify-center gap-3">
       <div
-        className={`animate-spin border-blue-600 dark:border-blue-400 border-t-transparent rounded-full ${sizeClasses[size]}`}
+        className={`animate-spin border-primary-600 dark:border-cyber-cyan border-t-transparent rounded-full ${sizeClasses[size]}`}
       />
       {label && <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{label}</p>}
     </div>
@@ -256,11 +256,11 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
   }
 
   return (
-    <div className="flex items-center justify-center gap-1 mt-6 pt-4 border-t border-gray-100 dark:border-slate-800">
+    <div className="flex items-center justify-center gap-1 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 tabular-nums">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-white dark:bg-obsidian-card border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         ← Prev
       </button>
@@ -269,11 +269,11 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
         <>
           <button
             onClick={() => onPageChange(1)}
-            className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-white dark:bg-obsidian-card border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             1
           </button>
-          {startPage > 2 && <span className="px-1 text-gray-400 dark:text-slate-600 text-xs">···</span>}
+          {startPage > 2 && <span className="px-1 text-slate-500 dark:text-slate-400 text-xs">···</span>}
         </>
       )}
 
@@ -283,8 +283,8 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
           onClick={() => onPageChange(page)}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
             page === currentPage
-              ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-              : 'text-gray-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800'
+              ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30'
+              : 'text-slate-600 dark:text-slate-400 bg-white dark:bg-obsidian-card border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
           }`}
         >
           {page}
@@ -293,10 +293,10 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
 
       {endPage < totalPages && (
         <>
-          {endPage < totalPages - 1 && <span className="px-1 text-gray-400 dark:text-slate-600 text-xs">···</span>}
+          {endPage < totalPages - 1 && <span className="px-1 text-slate-500 dark:text-slate-400 text-xs">···</span>}
           <button
             onClick={() => onPageChange(totalPages)}
-            className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-white dark:bg-obsidian-card border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             {totalPages}
           </button>
@@ -306,7 +306,7 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-white dark:bg-obsidian-card border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         Next →
       </button>
@@ -317,7 +317,7 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
 // ─── Badge (Common) ───────────────────────────────────────────
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'cyber' | 'gold';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'cyber' | 'gold' | 'code';
   className?: string;
   dot?: boolean;
 }
@@ -330,24 +330,26 @@ export const Badge = ({ children, variant = 'primary', className = '', dot = fal
     warning: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/70',
     error: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/70',
     info: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70',
-    cyber: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-800/70 font-mono tracking-wide',
+    cyber: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/70',
     gold: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-700/60 font-medium',
+    code: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-mono text-[11px] tracking-tight',
   };
 
   const dotColors: Record<string, string> = {
     primary: 'bg-blue-500',
-    secondary: 'bg-slate-400',
+    secondary: 'bg-slate-500',
     success: 'bg-emerald-500',
     warning: 'bg-amber-500',
     error: 'bg-rose-500',
     info: 'bg-sky-500',
     cyber: 'bg-cyan-400 animate-pulse',
     gold: 'bg-amber-400',
+    code: 'bg-slate-500',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold leading-none ${
         variantClasses[variant] || variantClasses.primary
       } ${className}`}
     >
@@ -361,13 +363,13 @@ export const Badge = ({ children, variant = 'primary', className = '', dot = fal
 type StatusBadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand' | 'cyber' | 'gold';
 
 const statusToneClasses: Record<StatusBadgeTone, string> = {
-  neutral: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-slate-700',
+  neutral: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
   success: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70',
   warning: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/70',
   danger: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/70',
   info: 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70',
   brand: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/70',
-  cyber: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-800/70 font-mono tracking-wide',
+  cyber: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/70',
   gold: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-700/60 font-medium',
 };
 
@@ -424,9 +426,9 @@ export const StatusBadge = ({ status, label, className = '', dot = true }: Statu
   return (
     <span
       className={[
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide select-none',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold leading-none tracking-wide select-none',
         statusToneClasses[tone],
-        isBanned ? 'bg-gray-900 text-gray-100 border-gray-800 dark:bg-gray-950 dark:text-gray-200' : '',
+        isBanned ? 'bg-slate-900 text-slate-100 border-slate-800 dark:bg-slate-950 dark:text-slate-200' : '',
         className,
       ]
         .filter(Boolean)
@@ -448,9 +450,9 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ title, description, action, icon }: EmptyStateProps) => {
   return (
-    <div className="rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 p-10 sm:p-14 text-center">
+    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-obsidian-card/60 p-10 sm:p-14 text-center">
       {icon && (
-        <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500 shadow-xs">
+        <div className="mx-auto mb-4 w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-xs">
           {icon}
         </div>
       )}

@@ -518,12 +518,12 @@ export const ElectionsPage = () => {
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {filtered.map((e) => (
-              <Card key={e.id} className="p-4 border border-slate-200 dark:border-slate-800">
+              <Card key={e.id} className="p-4 rounded-lg border border-slate-200 dark:border-slate-800">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{e.title}</p>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 truncate">{e.description || '—'}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 tabular-nums">
                       {e.startDate}{e.startTime ? ` ${e.startTime}` : ''} → {e.endDate}{e.endTime ? ` ${e.endTime}` : ''}
                     </p>
                   </div>
@@ -668,7 +668,7 @@ export const ElectionsPage = () => {
                 return (
                   <div
                     key={posCfg.name}
-                    className="flex items-center justify-between gap-3 p-2.5 bg-white rounded-lg border border-gray-250 shadow-xs"
+                    className="flex items-center justify-between gap-3 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 shadow-xs"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       {/* Repositioning arrows */}
@@ -693,14 +693,14 @@ export const ElectionsPage = () => {
                         </button>
                       </div>
 
-                      <span className="text-xs font-mono font-semibold text-gray-400 w-5">#{idx + 1}</span>
-                      <span className="font-semibold text-sm text-gray-900 truncate">{posCfg.name}</span>
+                      <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300 w-5">#{idx + 1}</span>
+                      <span className="font-semibold text-sm text-gray-900 dark:text-slate-100 truncate">{posCfg.name}</span>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
                       {/* Max Winners / Max to vote selector */}
-                      <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-250 rounded-lg px-2 py-1">
-                        <label className="text-[11px] font-medium text-gray-600 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-md px-2 py-1">
+                        <label className="text-[11px] font-medium text-gray-600 dark:text-slate-300 whitespace-nowrap">
                           Winners:
                         </label>
                         <input
@@ -709,7 +709,7 @@ export const ElectionsPage = () => {
                           max={20}
                           value={posCfg.maxWinners}
                           onChange={(e) => updateMaxWinners(Number(e.target.value) || 1)}
-                          className="w-12 text-center text-xs font-bold text-blue-700 bg-white border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-12 text-center text-xs font-bold text-blue-700 dark:text-cyan-400 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 tabular-nums"
                           title="Maximum winners elected / allowed to vote for this position"
                         />
                       </div>
@@ -718,7 +718,7 @@ export const ElectionsPage = () => {
                         type="button"
                         onClick={removePosition}
                         title="Remove position from election"
-                        className="text-gray-400 hover:text-red-600 p-1 rounded"
+                        className="text-slate-500 dark:text-slate-400 hover:text-red-600 p-1 rounded"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -753,7 +753,7 @@ export const ElectionsPage = () => {
                             allowedPositions: [...prev.allowedPositions, { name: pos, maxWinners: 1 }],
                           }))
                         }
-                        className="text-xs bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-250 hover:border-blue-300 rounded-lg px-2.5 py-1 transition-colors flex items-center gap-1"
+                        className="text-xs bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 hover:text-blue-700 border border-gray-200 dark:border-slate-700 hover:border-blue-300 rounded-lg px-2.5 py-1 transition-colors flex items-center gap-1"
                       >
                         <Plus size={12} /> {pos}
                       </button>
@@ -765,7 +765,7 @@ export const ElectionsPage = () => {
           </div>
 
           {/* Inline Candidates Lineup Setup */}
-          <div className="space-y-2 pt-2 border-t border-gray-150">
+          <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-800">
@@ -840,7 +840,7 @@ export const ElectionsPage = () => {
               onChange={(e) => setForm((p) => ({ ...p, status: (e.target as HTMLSelectElement).value as ElectionStatus }))}
             />
           )}
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-150">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-800">
             <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
             <Button variant="primary" onClick={() => setConfirmSave(true)} isLoading={isLoading}>Save Election & Candidates</Button>
           </div>
@@ -865,12 +865,12 @@ export const ElectionsPage = () => {
           <div className="text-sm text-gray-500">Loading...</div>
         ) : (
           <div className="space-y-4 font-sans">
-            <div className="rounded-lg border border-gray-250 p-4">
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">{details.election.title}</p>
-                  <p className="text-sm text-gray-600 mt-1">{details.election.description || '—'}</p>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="font-semibold text-gray-900 dark:text-slate-100">{details.election.title}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{details.election.description || '—'}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 tabular-nums">
                     {details.election.startDate}{details.election.startTime ? ` ${details.election.startTime}` : ''} → {details.election.endDate}{details.election.endTime ? ` ${details.election.endTime}` : ''}
                   </p>
                 </div>
@@ -930,8 +930,8 @@ export const ElectionsPage = () => {
               return null;
             })()}
 
-            <div className="flex items-center justify-between border-b border-gray-150 pb-2">
-              <p className="text-sm font-semibold text-gray-900">Candidates & Results</p>
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 pb-2">
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Candidates & Results</p>
               {canManage && !isElectionClosed(details.election) && (details.election.status === 'draft' || details.election.status === 'open') && (
                 <Button
                   variant="primary"
@@ -958,8 +958,8 @@ export const ElectionsPage = () => {
                 const maxWinners = typeof posConfig === 'object' && posConfig?.maxWinners ? posConfig.maxWinners : 1;
 
                 return (
-                  <div key={position} className="border border-gray-250 rounded-xl p-4 bg-gray-50/40 space-y-3 shadow-sm">
-                    <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 text-sm flex items-center justify-between">
+                  <div key={position} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-gray-50/40 dark:bg-slate-800/30 space-y-3 shadow-sm">
+                    <h4 className="font-bold text-gray-900 dark:text-slate-100 border-b border-gray-200 dark:border-slate-700 pb-2 text-sm flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span>{position}</span>
                         {maxWinners > 1 && (
@@ -968,7 +968,7 @@ export const ElectionsPage = () => {
                           </span>
                         )}
                       </div>
-                      {(canManage || isClosed || details.election.status === 'closed' || details.election.status === 'archived') && <span className="text-xs text-gray-500 font-normal">Total Votes: {totalPosVotes}</span>}
+                      {(canManage || isClosed || details.election.status === 'closed' || details.election.status === 'archived') && <span className="text-xs text-slate-600 dark:text-slate-300 font-normal tabular-nums">Total Votes: {totalPosVotes}</span>}
                     </h4>
                     <div className="space-y-3">
                       {positionCandidates.map((c: any) => {
@@ -979,35 +979,35 @@ export const ElectionsPage = () => {
                         return (
                           <div
                             key={c.id}
-                            className={`flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-lg border bg-white ${
+                            className={`flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-md border bg-white dark:bg-slate-900 ${
                               isWinner
                                 ? 'border-green-300 ring-1 ring-green-300 bg-green-50/10'
                                 : isLeading && details.election.status !== 'draft'
-                                ? 'border-yellow-300 ring-1 ring-yellow-300 bg-yellow-50/10'
-                                : 'border-gray-200 hover:border-blue-300'
+                                ? 'border-amber-400 ring-1 ring-amber-400/30 bg-amber-50/40 dark:bg-amber-950/20'
+                                : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
                             }`}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900 text-sm">{c.memberName || c.memberEmail}</span>
+                                <span className="font-semibold text-gray-900 dark:text-slate-100 text-sm">{c.memberName || c.memberEmail}</span>
                                 {isWinner && (
                                   <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
                                     Winner
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500 mt-0.5 truncate">"{c.platform || 'No platform bio provided.'}"</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 truncate">"{c.platform || 'No platform bio provided.'}"</p>
 
                               {/* Progress bar visual for results */}
                               {(canManage || isClosed || details.election.status === 'closed' || details.election.status === 'archived') && details.election.status !== 'draft' && (
                                 <div className="mt-2 flex items-center gap-2">
-                                  <div className="flex-1 bg-gray-150 rounded-full h-2">
+                                  <div className="flex-1 bg-gray-100 dark:bg-slate-800 rounded-full h-2">
                                     <div
-                                      className={`h-2 rounded-full ${isWinner ? 'bg-green-600' : isLeading ? 'bg-yellow-500' : 'bg-blue-600'}`}
+                                      className={`h-2 rounded-full ${isWinner ? 'bg-green-600' : isLeading ? 'bg-amber-500' : 'bg-blue-600'}`}
                                       style={{ width: `${pct}%` }}
                                     ></div>
                                   </div>
-                                  <span className="text-xs font-bold text-gray-700 min-w-[32px] text-right">{pct}%</span>
+                                  <span className="text-xs font-bold text-gray-700 dark:text-slate-200 min-w-[32px] text-right tabular-nums">{pct}%</span>
                                 </div>
                               )}
                             </div>
@@ -1024,7 +1024,7 @@ export const ElectionsPage = () => {
                               </Button>
 
                               {(canManage || isClosed || details.election.status === 'closed' || details.election.status === 'archived') && (
-                                <span className="text-xs font-semibold text-gray-600 bg-gray-150 px-2.5 py-1 rounded-lg">
+                                <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 bg-gray-100 dark:bg-slate-800 px-2.5 py-1 rounded-md tabular-nums">
                                   {c.votesCount || 0} Votes
                                 </span>
                               )}
@@ -1113,17 +1113,17 @@ export const ElectionsPage = () => {
               <h3 className="font-bold text-blue-900 text-lg">{details.election.title}</h3>
               <p className="text-blue-700 text-sm mt-1">{details.election.description || 'No description provided.'}</p>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-blue-800 font-semibold bg-blue-100/50 rounded p-2">
-                <span>
+                <span className="tabular-nums">
                   VOTING ENDS: {details.election.endDate}{details.election.endTime ? ` at ${details.election.endTime}` : ''}
                 </span>
                 {timeLeft && (
-                  <span className="text-red-600 inline-flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold tabular-nums inline-flex items-center gap-1">
                     <Clock size={13} className="shrink-0" />
                     <span>{timeLeft}</span>
                   </span>
                 )}
               </div>
-              <div className="mt-2.5 flex items-center justify-between text-xs text-blue-900">
+              <div className="mt-2.5 flex items-center justify-between text-xs text-blue-900 tabular-nums">
                 <span>
                   Ballot progress:{' '}
                   <strong>
@@ -1199,8 +1199,8 @@ export const ElectionsPage = () => {
                 };
 
                 return (
-                  <div key={position} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm space-y-4">
-                    <h4 className="text-md font-bold text-gray-900 border-b border-gray-100 pb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div key={position} className="border border-gray-200 dark:border-slate-700 rounded-lg p-5 bg-white dark:bg-obsidian-card shadow-sm space-y-4">
+                    <h4 className="text-md font-bold text-gray-900 dark:text-slate-100 border-b border-gray-100 dark:border-slate-800 pb-2 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span>{position}</span>
                         {maxWinners > 1 && (
@@ -1233,10 +1233,10 @@ export const ElectionsPage = () => {
                           <div
                             key={c.id}
                             onClick={() => toggleCandidate(String(c.id))}
-                            className={`relative border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md select-none ${
+                            className={`relative border rounded-md p-4 cursor-pointer transition-all duration-200 hover:shadow-md select-none ${
                               isSelected
                                 ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-600'
-                                : 'border-gray-200 hover:border-blue-300'
+                                : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -1282,7 +1282,7 @@ export const ElectionsPage = () => {
               })}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-150">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
               <Button variant="outline" onClick={() => setShowVotingModal(false)}>Cancel</Button>
               <Button
                 variant="primary"
@@ -1412,7 +1412,7 @@ export const ElectionsPage = () => {
                 </div>
 
                 {/* Scrollable list of members with search */}
-                <div className="border border-gray-250 rounded-xl max-h-60 overflow-y-auto divide-y divide-gray-100 bg-white">
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-obsidian-card">
                   {(() => {
                     const runningMemberMap = new Map<string, string>();
                     if (candidateModalSource === 'create_modal') {
@@ -1485,7 +1485,7 @@ export const ElectionsPage = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-150">
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-800">
                 <Button variant="outline" onClick={() => setShowAddCandidate(false)}>
                   Cancel
                 </Button>
@@ -1517,7 +1517,7 @@ export const ElectionsPage = () => {
                   const isFilled = Boolean(platformVal.trim());
 
                   return (
-                    <div key={id} className="p-3.5 bg-gray-50 border border-gray-250 rounded-xl space-y-2">
+                    <div key={id} className="p-3.5 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg space-y-2">
                       <div className="flex items-center gap-2.5">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs shrink-0">
                           {name ? name.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : 'C'}
@@ -1560,7 +1560,7 @@ export const ElectionsPage = () => {
                 })}
               </div>
 
-              <div className="flex justify-between items-center pt-2 border-t border-gray-150">
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-slate-800">
                 <Button variant="outline" onClick={() => setCandidateModalStep(1)}>
                   ← Back to Members
                 </Button>
@@ -1616,7 +1616,7 @@ export const ElectionsPage = () => {
                 {viewingCandidate.platform ? (
                   viewingCandidate.platform
                 ) : (
-                  <span className="text-gray-400">No platform or bio statement submitted by this candidate.</span>
+                  <span className="text-slate-600 dark:text-slate-300">No platform or bio statement submitted by this candidate.</span>
                 )}
               </div>
             </div>

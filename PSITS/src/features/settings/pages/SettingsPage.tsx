@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { MainLayout } from '@/shared/layouts';
 import { Input, Button, Select, Card } from '@/shared/components/Form';
-import { Modal } from '@/shared/components/Common';
+import { Alert, Modal } from '@/shared/components/Common';
 import { useNotification } from '@/shared/context/NotificationContext';
 import { useAuth } from '@/shared/context/AuthContext';
 import { useTheme } from '@/shared/context/ThemeContext';
@@ -694,18 +694,18 @@ export const SettingsPage = () => {
                       </p>
 
                       {isOfficerContactsLoading ? (
-                        <p className="text-xs text-gray-400 mt-2">Loading contact list...</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">Loading contact list...</p>
                       ) : (
                         officerContacts.length > 0 && (
                           <div className="mt-2 space-y-1">
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                            <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                               Officer / Admin Contacts:
                             </p>
-                            <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-gray-700 dark:text-slate-300 pr-1">
+                            <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-slate-700 dark:text-slate-300 pr-1">
                               {officerContacts.map((c) => (
-                                <div key={c.id} className="flex items-center justify-between text-[11px] py-0.5 border-b border-gray-100 dark:border-slate-800 last:border-0">
+                                <div key={c.id} className="flex items-center justify-between text-[11px] py-0.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
                                   <span className="font-medium truncate">{c.fullName} ({c.role}):</span>
-                                  <span className="text-blue-600 dark:text-blue-400 font-mono text-[10px] truncate ml-2">{c.email}</span>
+                                  <span className="text-blue-600 dark:text-blue-400 font-sans font-medium text-[11px] truncate ml-2">{c.email}</span>
                                 </div>
                               ))}
                             </div>
@@ -767,14 +767,14 @@ export const SettingsPage = () => {
                     </div>
 
                     {reactivationSuccess && (
-                      <div className="p-2.5 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 rounded-lg text-xs flex items-center gap-1.5">
-                        <CheckCircle size={14} className="text-green-600 shrink-0" />
+                      <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-1.5">
+                        <CheckCircle size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span>{reactivationSuccess}</span>
                       </div>
                     )}
                     {reactivationError && (
-                      <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 rounded-lg text-xs flex items-center gap-1.5">
-                        <AlertTriangle size={14} className="text-red-600 shrink-0" />
+                      <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 rounded-lg text-xs flex items-center gap-1.5">
+                        <AlertTriangle size={14} className="text-rose-600 dark:text-rose-400 shrink-0" />
                         <span>{reactivationError}</span>
                       </div>
                     )}
@@ -798,12 +798,12 @@ export const SettingsPage = () => {
               </div>
               <div className="min-w-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">Appearance & Theme</h3>
-                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
-                  Customize how PSITS looks on your device • Current: <span className="font-semibold text-blue-600 dark:text-blue-400 capitalize">{themeMode === 'system' ? 'System Default' : `${themeMode} Mode`}</span>
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
+                  Customize how PSITS looks on your device • Current: <span className="font-semibold text-primary-600 dark:text-cyan-400 capitalize">{themeMode === 'system' ? 'System Default' : `${themeMode} Mode`}</span>
                 </p>
               </div>
             </div>
-            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform">
               <ChevronDown
                 size={20}
                 className={`transition-transform duration-200 ${openSections.theme ? 'rotate-180' : ''}`}
@@ -833,8 +833,8 @@ export const SettingsPage = () => {
                     )}
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Light Mode</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Bright, crisp standard view</p>
+                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">Light Mode</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Bright, crisp standard view</p>
                   </div>
                 </button>
 
@@ -857,8 +857,8 @@ export const SettingsPage = () => {
                     )}
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-gray-900 dark:text-slate-100">Dark Mode</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Easy on the eyes in low light</p>
+                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">Dark Mode</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Easy on the eyes in low light</p>
                   </div>
                 </button>
 
@@ -881,8 +881,8 @@ export const SettingsPage = () => {
                     )}
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-gray-900 dark:text-slate-100">System Default</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Match device OS preference</p>
+                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">System Default</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Match device OS preference</p>
                   </div>
                 </button>
               </div>
@@ -904,12 +904,12 @@ export const SettingsPage = () => {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">
                   {isMember ? 'Member Profile Information' : 'Profile Information'}
                 </h3>
-                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
                   {getUserDisplayName(user)} • {user.email}
                 </p>
               </div>
             </div>
-            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform">
               <ChevronDown
                 size={20}
                 className={`transition-transform duration-200 ${openSections.profile ? 'rotate-180' : ''}`}
@@ -918,11 +918,11 @@ export const SettingsPage = () => {
           </button>
 
           {openSections.profile && (
-            <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-6">
+            <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in space-y-6">
 
             {/* Profile Picture Upload & Preview Card */}
             {isSuspended && (
-              <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-3 shadow-xs">
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-3 shadow-xs">
                 <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400 shrink-0" />
                 <div>
                   <p className="font-bold">Profile Editing Locked (Account Suspended)</p>
@@ -933,7 +933,7 @@ export const SettingsPage = () => {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row items-center gap-6 p-5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-2xl border border-blue-100 dark:border-slate-700 shadow-2xs">
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-xl border border-blue-100 dark:border-slate-700 shadow-2xs">
               <div className="relative group shrink-0">
                 {avatarPreview ? (
                   <img
@@ -1046,7 +1046,7 @@ export const SettingsPage = () => {
 
             {/* Non-member Profile Form */}
             {!isMember && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
                 <Input
                   label="Full Name"
                   required
@@ -1068,7 +1068,7 @@ export const SettingsPage = () => {
 
             {/* Member: Individual Form */}
             {isMember && formData.memberType === 'individual' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
                 <Input
                   label="Full Name"
                   required
@@ -1122,7 +1122,7 @@ export const SettingsPage = () => {
 
             {/* Member: Institution Form */}
             {isMember && formData.memberType === 'institution' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
                 <Input
                   label="Institution Name"
                   required
@@ -1193,7 +1193,7 @@ export const SettingsPage = () => {
 
             {/* Member: Industry Form */}
             {isMember && formData.memberType === 'industry' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
                 <Input
                   label="Company Name"
                   required
@@ -1267,9 +1267,9 @@ export const SettingsPage = () => {
             )}
 
             {/* Password Update Section */}
-            <div className="rounded-lg border border-gray-200 p-4 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2 text-balance">Change Password</h3>
-              <p className="text-xs text-gray-500">Leave blank if you do not wish to change your password.</p>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-2 text-balance">Change Password</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Leave blank if you do not wish to change your password.</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="New Password"
@@ -1323,13 +1323,13 @@ export const SettingsPage = () => {
                   <CreditCard size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">Payment Method Settings</h3>
-                  <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate text-balance">Payment Method Settings</h3>
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
                     Configure QR codes and instructions for registration and renewals
                   </p>
                 </div>
               </div>
-              <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+              <div className="ml-3 shrink-0 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform">
                 <ChevronDown
                   size={20}
                   className={`transition-transform duration-200 ${openSections.payment ? 'rotate-180' : ''}`}
@@ -1338,16 +1338,16 @@ export const SettingsPage = () => {
             </button>
 
             {openSections.payment && (
-              <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-4">
+              <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in space-y-4">
                 {/* Payment Method Selector Tabs */}
-                <div className="flex border-b border-gray-200 dark:border-slate-800 mb-6 gap-2 overflow-x-auto">
+                <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6 gap-2 overflow-x-auto">
                   <button
                     type="button"
                     onClick={() => setActivePaymentTab('gcash')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                       activePaymentTab === 'gcash'
                         ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                        : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     GCash
@@ -1358,7 +1358,7 @@ export const SettingsPage = () => {
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                       activePaymentTab === 'bank_transfer'
                         ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                        : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Bank Transfer
@@ -1369,7 +1369,7 @@ export const SettingsPage = () => {
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                       activePaymentTab === 'cheque'
                         ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                        : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Cheque
@@ -1380,7 +1380,7 @@ export const SettingsPage = () => {
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                       activePaymentTab === 'through_officer'
                         ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                        : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Through Officer
@@ -1388,27 +1388,25 @@ export const SettingsPage = () => {
                 </div>
 
                 {paymentSettingsError && (
-                  <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-300">
-                    {paymentSettingsError}
-                  </div>
+                  <Alert type="error" message={paymentSettingsError} className="mb-4" />
                 )}
 
                 <div className="space-y-4">
                   {activePaymentTab === 'gcash' && (
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">GCash QR Code</label>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">GCash QR Code</label>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                         Upload the official PSITS GCash QR code. Members must upload their transaction receipt and reference number.
                       </p>
                       <input
                         type="file"
                         accept="image/png, image/jpeg, image/webp"
                         onChange={(e) => handleQrFileSelect('gcash', e)}
-                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                        className="block w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
                       />
                       {qrPreviews.gcash && (
                         <div className="mt-3">
-                          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview GCash QR Code:</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Current / Preview GCash QR Code:</p>
                           <img
                             src={resolveImageUrl(qrPreviews.gcash)}
                             alt="GCash QR Code"
@@ -1422,19 +1420,19 @@ export const SettingsPage = () => {
                   {activePaymentTab === 'bank_transfer' && (
                     <div className="space-y-4">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Bank Transfer QR Code (Optional)</label>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Bank Transfer QR Code (Optional)</label>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                           Upload the bank QR code (InstaPay/PESONet). Members must upload their bank transfer receipt or deposit slip.
                         </p>
                         <input
                           type="file"
                           accept="image/png, image/jpeg, image/webp"
                           onChange={(e) => handleQrFileSelect('bank_transfer', e)}
-                          className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                          className="block w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
                         />
                         {qrPreviews.bank_transfer && (
                           <div className="mt-3">
-                            <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Current / Preview Bank QR Code:</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Current / Preview Bank QR Code:</p>
                             <img
                               src={resolveImageUrl(qrPreviews.bank_transfer)}
                               alt="Bank Transfer QR Code"
@@ -1474,8 +1472,8 @@ export const SettingsPage = () => {
 
                   {activePaymentTab === 'cheque' && (
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Cheque Payment Guidelines & Payee Details</label>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Cheque Payment Guidelines & Payee Details</label>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                         Specify the exact payee name and guidelines. Members must upload a clear photo or copy of their cheque receipt.
                       </p>
                       <textarea
@@ -1485,15 +1483,15 @@ export const SettingsPage = () => {
                           setPaymentSettings((prev) => ({ ...prev, cheque_details: e.target.value }))
                         }
                         placeholder="e.g. Please issue cheque payable to: 'Philippine Society of Information Technology Students Region XII'. Remind members to upload their cheque receipt or deposit slip."
-                        className="block w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
+                        className="block w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm"
                       />
                     </div>
                   )}
 
                   {activePaymentTab === 'through_officer' && (
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Through Officer Guidelines</label>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Through Officer Guidelines</label>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                         Specify instructions for direct officer collections. Members must upload the Official Receipt (OR) issued by the officer.
                       </p>
                       <textarea
@@ -1539,13 +1537,13 @@ export const SettingsPage = () => {
                   <ShieldCheck size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">Membership Validity</h2>
-                  <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate text-balance">Membership Validity</h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate tabular-nums">
                     Status: <span className="font-semibold capitalize text-emerald-600 dark:text-emerald-400">{user.status || (user.isActive ? 'active' : 'pending')}</span> • Expires: {formatDate(user.membershipExpiresAt) || '1 Year'}
                   </p>
                 </div>
               </div>
-              <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+              <div className="ml-3 shrink-0 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform">
                 <ChevronDown
                   size={20}
                   className={`transition-transform duration-200 ${openSections.validity ? 'rotate-180' : ''}`}
@@ -1554,10 +1552,10 @@ export const SettingsPage = () => {
             </button>
 
             {openSections.validity && (
-              <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-4">
+              <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in space-y-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">Memberships require renewal every year.</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Memberships require renewal every year.</p>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     {isSuspended && (
@@ -1580,17 +1578,17 @@ export const SettingsPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3 text-sm">
-                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
-                    <div className="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Status</div>
-                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">{user.status || (user.isActive ? 'active' : 'pending')}</div>
+                  <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">Status</div>
+                    <div className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{user.status || (user.isActive ? 'active' : 'pending')}</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
-                    <div className="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Expires On</div>
-                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">{formatDate(user.membershipExpiresAt) || '-'}</div>
+                  <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">Expires On</div>
+                    <div className="mt-1 font-semibold text-slate-900 dark:text-slate-100 tabular-nums">{formatDate(user.membershipExpiresAt) || '-'}</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
-                    <div className="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Remaining</div>
-                    <div className={`mt-1 font-semibold ${isExpired ? 'text-red-700 dark:text-red-400' : 'text-gray-900 dark:text-slate-100'}`}>
+                  <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">Remaining</div>
+                    <div className={`mt-1 font-semibold tabular-nums ${isExpired ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'}`}>
                       {daysLeft === null ? '-' : isExpired ? 'Expired' : `${daysLeft} day(s)`}
                     </div>
                   </div>
@@ -1605,22 +1603,22 @@ export const SettingsPage = () => {
           <button
             type="button"
             onClick={() => toggleSection('legal')}
-            className="w-full p-5 sm:p-6 flex items-center justify-between text-left hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors"
+            className="w-full p-5 sm:p-6 flex items-center justify-between text-left hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
           >
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-cyan-400 shrink-0">
                 <ShieldCheck size={20} />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate text-balance">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate text-balance">
                   Data Privacy & Terms of Service
                 </h2>
-                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-slate-400 truncate">
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
                   Republic Act No. 10173 • Acceptable Use & Account Governance
                 </p>
               </div>
             </div>
-            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform">
+            <div className="ml-3 shrink-0 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform">
               <ChevronDown
                 size={20}
                 className={`transition-transform duration-200 ${openSections.legal ? 'rotate-180' : ''}`}
@@ -1629,8 +1627,8 @@ export const SettingsPage = () => {
           </button>
 
           {openSections.legal && (
-            <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-gray-100 dark:border-slate-800 animate-fade-in space-y-4">
-              <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 space-y-2">
+            <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in space-y-4">
+              <div className="p-4 rounded-lg bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 space-y-2">
                 <div className="flex items-center gap-2 font-bold text-sm">
                   <Lock size={16} className="text-blue-600 dark:text-cyan-400" />
                   <span>Your Data Privacy Rights</span>
@@ -1641,12 +1639,12 @@ export const SettingsPage = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                  <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-slate-100">
+                <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm text-slate-900 dark:text-slate-100">
                     <ShieldCheck size={16} className="text-emerald-500" />
                     <span>Privacy Policy</span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                     Learn how your personal details, academic information, payment receipts, and ballots are protected.
                   </p>
                   <div className="pt-2 flex items-center gap-2">
@@ -1656,7 +1654,7 @@ export const SettingsPage = () => {
                         setLegalModalTab('privacy');
                         setLegalModalOpen(true);
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                      className="px-3 py-1.5 rounded-md text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                     >
                       Read Policy (Modal)
                     </button>
@@ -1664,19 +1662,19 @@ export const SettingsPage = () => {
                       href="/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                      className="px-3 py-1.5 rounded-md text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       Open Page
                     </a>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                  <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-slate-100">
+                <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm text-slate-900 dark:text-slate-100">
                     <FileText size={16} className="text-blue-500" />
                     <span>Terms & Conditions</span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                     Review acceptable use policies, election code of conduct, payment verification terms, and system protections.
                   </p>
                   <div className="pt-2 flex items-center gap-2">
@@ -1686,7 +1684,7 @@ export const SettingsPage = () => {
                         setLegalModalTab('terms');
                         setLegalModalOpen(true);
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                      className="px-3 py-1.5 rounded-md text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                     >
                       Read Terms (Modal)
                     </button>
@@ -1694,7 +1692,7 @@ export const SettingsPage = () => {
                       href="/terms"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                      className="px-3 py-1.5 rounded-md text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       Open Page
                     </a>
@@ -1702,7 +1700,7 @@ export const SettingsPage = () => {
                 </div>
               </div>
 
-              <div className="text-[11px] text-gray-500 dark:text-slate-400 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-gray-100 dark:border-slate-800">
+              <div className="text-[11px] text-slate-600 dark:text-slate-400 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800">
                 <span>Data Protection Officer Desk: <strong className="text-primary font-medium">dpo@psits12.org</strong></span>
                 <span>Regulated by National Privacy Commission (NPC)</span>
               </div>
@@ -1808,7 +1806,7 @@ export const SettingsPage = () => {
           }}
         >
           {renewalError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{renewalError}</div>
+            <Alert type="error" message={renewalError} />
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1862,7 +1860,7 @@ export const SettingsPage = () => {
           />
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
               {renewalForm.method === 'through_officer'
                 ? 'Upload Official Receipt (OR) *'
                 : renewalForm.method === 'bank_transfer'
@@ -1871,7 +1869,7 @@ export const SettingsPage = () => {
                 ? 'Upload Cheque Receipt / Copy *'
                 : 'Upload GCash Receipt *'}
             </label>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
               {renewalForm.method === 'through_officer'
                 ? 'Please upload a clear scan or photo of your PSITS Officer-issued Official Receipt (OR).'
                 : renewalForm.method === 'bank_transfer'

@@ -554,7 +554,7 @@ export const MembersPage = () => {
                   setFilterType(key);
                   setCurrentPage(1);
                 }}
-                className={`card-cyber p-5 text-left transition-all duration-300 relative overflow-hidden group bg-white dark:bg-[#131B2E] ${
+                className={`card-cyber p-5 text-left transition-all duration-300 relative overflow-hidden group bg-white dark:bg-obsidian-card ${
                   active
                     ? 'border-blue-600 dark:border-cyan-400 bg-blue-50/40 dark:bg-cyan-950/30 shadow-md ring-1 ring-blue-500 dark:ring-cyan-400'
                     : 'border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-cyan-500/40'
@@ -566,9 +566,9 @@ export const MembersPage = () => {
                       <p className="text-lg font-bold text-slate-900 dark:text-white">{meta.label}</p>
                       {active && <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-cyan-400"></span>}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-mono">{memberTypeCounts[key]} registered profiles</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 tabular-nums font-medium">{memberTypeCounts[key]} registered profiles</p>
                   </div>
-                  <div className={`p-3 rounded-xl border ${active ? 'bg-blue-100 dark:bg-cyan-500/20 text-blue-700 dark:text-cyan-400 border-blue-200 dark:border-cyan-500/40' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/60 group-hover:text-blue-700 dark:group-hover:text-cyan-400 group-hover:border-blue-300 dark:group-hover:border-cyan-500/30'}`}>
+                  <div className={`p-3 rounded-lg border ${active ? 'bg-blue-100 dark:bg-cyan-500/20 text-blue-700 dark:text-cyan-400 border-blue-200 dark:border-cyan-500/40' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/60 group-hover:text-blue-700 dark:group-hover:text-cyan-400 group-hover:border-blue-300 dark:group-hover:border-cyan-500/30'}`}>
                     <Icon size={22} />
                   </div>
                 </div>
@@ -580,7 +580,7 @@ export const MembersPage = () => {
         <Card className="p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="relative w-full md:col-span-2">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
               <Input
                 placeholder="Search name, email, contact, representative..."
                 value={searchTerm}
@@ -598,7 +598,7 @@ export const MembersPage = () => {
                     setCurrentPage(1);
                   }}
                   aria-label="Clear search query"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
                 >
                   <XCircle size={16} />
                 </button>
@@ -611,7 +611,7 @@ export const MembersPage = () => {
                 setFilterStatus(e.target.value as any);
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-obsidian-base text-slate-900 dark:text-slate-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -629,7 +629,7 @@ export const MembersPage = () => {
                 setFilterType(e.target.value as MemberTypeFilter);
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-obsidian-base text-slate-900 dark:text-slate-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="all">All Types</option>
               <option value="individual">Individual</option>
@@ -649,12 +649,12 @@ export const MembersPage = () => {
               aria-label="Members Directory Table"
               tabIndex={0}
             >
-              <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+              <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5">
                   <ArrowRight size={12} className="shrink-0" />
                   <span>Swipe table horizontally to view full row</span>
                 </span>
-                <span className="font-mono text-[10px]">{filteredMembers.length} records</span>
+                <span className="tabular-nums font-medium text-[10px]">{filteredMembers.length} records</span>
               </div>
               <table className="w-full min-w-[1200px]">
               <thead className="border-b border-gray-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80">
@@ -730,12 +730,12 @@ export const MembersPage = () => {
                                 </button>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">{expiryDate.toLocaleDateString()}</div>
+                            <div className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">{expiryDate.toLocaleDateString()}</div>
                           </div>
                         ) : daysLeft !== null && daysLeft <= 30 ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant="warning">Expiring ({daysLeft}d)</Badge>
+                              <Badge variant="warning" className="tabular-nums">Expiring ({daysLeft}d)</Badge>
                               {canManageMembers && (
                                 <button
                                   type="button"
@@ -749,10 +749,10 @@ export const MembersPage = () => {
                                 </button>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">{expiryDate.toLocaleDateString()}</div>
+                            <div className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">{expiryDate.toLocaleDateString()}</div>
                           </div>
                         ) : (
-                          expiryDate.toLocaleDateString()
+                          <span className="tabular-nums">{expiryDate.toLocaleDateString()}</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -1041,7 +1041,7 @@ export const MembersPage = () => {
               <select
                 value={editForm.status}
                 onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
-                className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-obsidian-base text-slate-900 dark:text-slate-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 aria-label="Edit member status"
               >
                 <option value="pending">Pending</option>
@@ -1079,11 +1079,11 @@ export const MembersPage = () => {
       >
         {viewingMember && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-base font-semibold text-gray-900 truncate">{getUserDisplayName(viewingMember as any)}</p>
-                  <p className="text-sm text-gray-600 truncate">{viewingMember.email || '-'}</p>
+                  <p className="text-base font-semibold text-gray-900 dark:text-slate-100 truncate">{getUserDisplayName(viewingMember as any)}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{viewingMember.email || '-'}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="info">{typeMeta[normalizeMemberType(viewingMember.memberType)].label}</Badge>
@@ -1092,7 +1092,7 @@ export const MembersPage = () => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+            <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-slate-800 pb-3">
               {[
                 { key: 'profile', label: 'Profile' },
                 { key: 'status', label: 'Membership Status' },
@@ -1105,8 +1105,8 @@ export const MembersPage = () => {
                   type="button"
                   onClick={() => setViewingTab(t.key as any)}
                   className={[
-                    'rounded-full px-3 py-1.5 text-sm font-semibold',
-                    viewingTab === t.key ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                    'rounded-full px-3 py-1.5 text-sm font-semibold transition-colors',
+                    viewingTab === t.key ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700',
                   ].join(' ')}
                 >
                   {t.label}
@@ -1115,24 +1115,24 @@ export const MembersPage = () => {
             </div>
 
             {viewingTab === 'profile' && (
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <div><span className="font-semibold">Contact Number:</span> {viewingMember.contactNumber || '-'}</div>
-                  <div><span className="font-semibold">Address:</span> {viewingMember.address || '-'}</div>
-                  <div><span className="font-semibold">Gender:</span> {viewingMember.gender || '-'}</div>
-                  <div><span className="font-semibold">Membership Mode:</span> {viewingMember.membershipMode || '-'}</div>
-                  <div>
-                    <span className="font-semibold">Membership Started:</span>{' '}
+                  <div><span className="font-semibold text-slate-900 dark:text-slate-100">Contact Number:</span> {viewingMember.contactNumber || '-'}</div>
+                  <div><span className="font-semibold text-slate-900 dark:text-slate-100">Address:</span> {viewingMember.address || '-'}</div>
+                  <div><span className="font-semibold text-slate-900 dark:text-slate-100">Gender:</span> {viewingMember.gender || '-'}</div>
+                  <div><span className="font-semibold text-slate-900 dark:text-slate-100">Membership Mode:</span> {viewingMember.membershipMode || '-'}</div>
+                  <div className="tabular-nums">
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">Membership Started:</span>{' '}
                     {viewingMember.membershipStartedAt ? new Date(viewingMember.membershipStartedAt).toLocaleDateString() : '-'}
                   </div>
-                  <div>
-                    <span className="font-semibold">Expiry (1 Year Limit):</span>{' '}
+                  <div className="tabular-nums">
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">Expiry (1 Year Limit):</span>{' '}
                     {viewingMember.membershipExpiresAt ? (
                       <span className="font-medium text-emerald-600 dark:text-emerald-400">
                         {new Date(viewingMember.membershipExpiresAt).toLocaleDateString()}
                       </span>
                     ) : (
-                      <span className="font-medium text-amber-600">Not Set</span>
+                      <span className="font-medium text-amber-700 dark:text-amber-300">Not Set</span>
                     )}
                     {canManageMembers && (
                       <button
@@ -1149,17 +1149,17 @@ export const MembersPage = () => {
                 </div>
 
                 {(viewingMember.sectorDetails || viewingMember.representativeName || viewingMember.representativeName2 || viewingMember.position || viewingMember.representativePosition2 || viewingMember.companyEmail || viewingMember.website || viewingMember.occupation) && (
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Organization Details</p>
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 p-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Organization Details</p>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div><span className="font-semibold">Institution / Company:</span> {viewingMember.sectorDetails || '-'}</div>
-                      <div><span className="font-semibold">Occupation:</span> {viewingMember.occupation || '-'}</div>
-                      <div><span className="font-semibold">Representative 1:</span> {viewingMember.representativeName || '-'}</div>
-                      <div><span className="font-semibold">Representative 2:</span> {viewingMember.representativeName2 || '-'}</div>
-                      <div><span className="font-semibold">Representative 1 Position:</span> {viewingMember.position || '-'}</div>
-                      <div><span className="font-semibold">Representative 2 Position:</span> {viewingMember.representativePosition2 || '-'}</div>
-                      <div><span className="font-semibold">Institution/Company Email:</span> {viewingMember.companyEmail || '-'}</div>
-                      <div className="md:col-span-2"><span className="font-semibold">Website:</span> {viewingMember.website || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Institution / Company:</span> {viewingMember.sectorDetails || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Occupation:</span> {viewingMember.occupation || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Representative 1:</span> {viewingMember.representativeName || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Representative 2:</span> {viewingMember.representativeName2 || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Representative 1 Position:</span> {viewingMember.position || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Representative 2 Position:</span> {viewingMember.representativePosition2 || '-'}</div>
+                      <div><span className="font-semibold text-slate-900 dark:text-slate-100">Institution/Company Email:</span> {viewingMember.companyEmail || '-'}</div>
+                      <div className="md:col-span-2"><span className="font-semibold text-slate-900 dark:text-slate-100">Website:</span> {viewingMember.website || '-'}</div>
                     </div>
                   </div>
                 )}
@@ -1168,21 +1168,21 @@ export const MembersPage = () => {
 
             {viewingTab === 'status' && (
               <div className="space-y-3">
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-gray-900">Current Status</p>
+                <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card p-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Current Status</p>
                   <div className="mt-2">
                     <StatusBadge status={viewingMember.status} />
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-gray-900">Status History</p>
+                <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-obsidian-card p-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Status History</p>
                   {isLoadingStatusLogs ? (
-                    <p className="mt-3 text-sm text-gray-500">Loading status history...</p>
+                    <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">Loading status history...</p>
                   ) : statusLogs.length ? (
                     <div className="mt-3 overflow-x-auto">
                       <table className="w-full min-w-[600px] text-sm">
-                        <thead className="bg-gray-50 text-xs uppercase text-gray-600">
+                        <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-slate-700 dark:text-slate-300">
                           <tr>
                             <th className="px-4 py-2 text-left">From</th>
                             <th className="px-4 py-2 text-left">To</th>
@@ -1190,20 +1190,20 @@ export const MembersPage = () => {
                             <th className="px-4 py-2 text-left">Date</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                           {statusLogs.map((log) => (
                             <tr key={log.id}>
                               <td className="px-4 py-2"><StatusBadge status={log.oldStatus} /></td>
                               <td className="px-4 py-2"><StatusBadge status={log.newStatus} /></td>
-                              <td className="px-4 py-2 text-gray-700">{log.changedByName || log.changedByEmail || '-'}</td>
-                              <td className="px-4 py-2 text-gray-600">{log.createdAt ? String(log.createdAt).replace('T', ' ').slice(0, 19) : '-'}</td>
+                              <td className="px-4 py-2 text-gray-700 dark:text-slate-300">{log.changedByName || log.changedByEmail || '-'}</td>
+                              <td className="px-4 py-2 text-slate-600 dark:text-slate-300 tabular-nums">{log.createdAt ? String(log.createdAt).replace('T', ' ').slice(0, 19) : '-'}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   ) : (
-                    <p className="mt-3 text-sm text-gray-500">No status changes recorded yet.</p>
+                    <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No status changes recorded yet.</p>
                   )}
                 </div>
               </div>
@@ -1211,22 +1211,22 @@ export const MembersPage = () => {
 
             {viewingTab === 'payments' && (
               isLoadingMemberHistory ? (
-                <p className="text-sm text-gray-500">Loading payment history...</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Loading payment history...</p>
               ) : memberHistory?.payments?.length ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[760px] text-sm">
-                    <thead className="bg-gray-50 text-xs uppercase text-gray-600">
+                    <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-slate-700 dark:text-slate-300">
                       <tr>
                         <th className="px-4 py-2 text-left">Date</th>
                         <th className="px-4 py-2 text-left">Type / Event</th>
-                        <th className="px-4 py-2 text-left">Amount</th>
+                        <th className="px-4 py-2 text-right">Amount</th>
                         <th className="px-4 py-2 text-left">Method & Ref</th>
                         <th className="px-4 py-2 text-left">Status</th>
                         <th className="px-4 py-2 text-left">Proof</th>
                         <th className="px-4 py-2 text-left">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                       {memberHistory.payments.map((p) => {
                         const statusStr = String(p.status || 'pending').toLowerCase();
                         const statusVariant =
@@ -1234,20 +1234,20 @@ export const MembersPage = () => {
                         const methodStr = String(p.paymentMethod || p.method || '-').toUpperCase();
 
                         return (
-                          <tr key={p.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-gray-600 text-xs">
+                          <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                            <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs tabular-nums">
                               {p.createdAt ? String(p.createdAt).slice(0, 10) : '-'}
                             </td>
-                            <td className="px-4 py-3 font-medium text-gray-900">
+                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
                               {p.eventTitle || (p.paymentKind === 'membership_renewal' ? 'Membership Renewal' : 'Membership Fee')}
                             </td>
-                            <td className="px-4 py-3 font-semibold text-primary">
+                            <td className="px-4 py-3 text-right font-semibold text-primary dark:text-cyan-400 tabular-nums">
                               ₱{Number(p.amount || 0).toLocaleString()}
                             </td>
                             <td className="px-4 py-3 text-xs">
-                              <span className="font-semibold text-gray-800">{methodStr}</span>
+                              <span className="font-semibold text-gray-800 dark:text-slate-200">{methodStr}</span>
                               {p.referenceNumber && (
-                                <div className="text-gray-500 font-mono">Ref: {p.referenceNumber}</div>
+                                <div className="text-slate-600 dark:text-slate-300 font-mono">Ref: {p.referenceNumber}</div>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -1260,12 +1260,12 @@ export const MembersPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => setViewingProofUrl(p.proofUrl)}
-                                  className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                                  className="flex items-center gap-1 text-xs text-primary dark:text-cyan-400 hover:underline font-medium"
                                 >
                                   <Eye size={14} /> View Proof
                                 </button>
                               ) : (
-                                <span className="text-xs text-gray-400">None</span>
+                                <span className="text-xs text-slate-600 dark:text-slate-300">None</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -1294,25 +1294,25 @@ export const MembersPage = () => {
 
             {viewingTab === 'events' && (
               isLoadingMemberHistory ? (
-                <p className="text-sm text-gray-500">Loading event history...</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Loading event history...</p>
               ) : memberHistory?.events?.length ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[760px] text-sm">
-                    <thead className="bg-gray-50 text-xs uppercase text-gray-600">
+                    <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-slate-700 dark:text-slate-300">
                       <tr>
                         <th className="px-4 py-2 text-left">Date</th>
                         <th className="px-4 py-2 text-left">Event</th>
                         <th className="px-4 py-2 text-left">Status</th>
-                        <th className="px-4 py-2 text-left">Participants</th>
+                        <th className="px-4 py-2 text-right">Participants</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                       {memberHistory.events.map((r) => (
                         <tr key={r.registrationId}>
-                          <td className="px-4 py-2 text-gray-600">{r.createdAt ? String(r.createdAt).slice(0, 10) : '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">{r.eventTitle || '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">{r.status || '-'}</td>
-                          <td className="px-4 py-2 text-gray-700">{r.participantCount || 1}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-300 tabular-nums">{r.createdAt ? String(r.createdAt).slice(0, 10) : '-'}</td>
+                          <td className="px-4 py-2 text-gray-700 dark:text-slate-200">{r.eventTitle || '-'}</td>
+                          <td className="px-4 py-2 text-gray-700 dark:text-slate-200">{r.status || '-'}</td>
+                          <td className="px-4 py-2 text-right text-gray-700 dark:text-slate-200 tabular-nums">{r.participantCount || 1}</td>
                         </tr>
                       ))}
                     </tbody>

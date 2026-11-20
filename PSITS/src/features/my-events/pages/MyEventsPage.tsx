@@ -49,7 +49,7 @@ export const MyEventsPage = () => {
         </div>
 
         {!hasRows && (
-          <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
+          <Card className="p-8 text-center text-slate-600 dark:text-slate-300">
             {isLoading ? 'Loading your event registrations...' : 'You have not joined any event yet.'}
           </Card>
         )}
@@ -61,7 +61,7 @@ export const MyEventsPage = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{registration.eventTitle || 'Event'}</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 tabular-nums">
                       <Calendar size={14} className="inline mr-1 text-primary" />
                       Registered: {registration.createdAt ? String(registration.createdAt).slice(0, 10) : '-'}
                     </p>
@@ -72,7 +72,7 @@ export const MyEventsPage = () => {
                 </div>
 
                 <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                  <p>Participants: {registration.participantCount || 1}</p>
+                  <p className="tabular-nums">Participants: {registration.participantCount || 1}</p>
                   {registration.rejectionReason && (
                     <p className="text-rose-600 dark:text-rose-400 font-medium">Reason: {registration.rejectionReason}</p>
                   )}

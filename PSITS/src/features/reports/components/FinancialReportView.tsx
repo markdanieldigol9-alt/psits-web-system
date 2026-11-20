@@ -632,7 +632,7 @@ export const FinancialReportView = ({
   const isRevenueByMethodReport = reportTitle === 'Revenue by Method';
 
   // Chart data for Revenue By Method
-  const chartColors = ['#003D82', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6B7280'];
+  const chartColors = ['#2563EB', '#10B981', '#F59E0B', '#06B6D4', '#1D4ED8', '#475569'];
   const methodChartData = methodBreakdown.map((m) => ({
     name: m.channel,
     'Verified Collections': m.verifiedTotal,
@@ -654,20 +654,20 @@ export const FinancialReportView = ({
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary/80 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                   {isRevenueByMethodReport ? 'Payment Channel Audit & Reconciliation' : 'Official Accounting Document'}
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-slate-600 font-mono tabular-nums">
                   REF: {isRevenueByMethodReport ? `PSITS-REV-METHOD-${new Date().getFullYear()}-${String(payments.length).padStart(4, '0')}` : `PSITS-FIN-${new Date().getFullYear()}-${String(payments.length).padStart(4, '0')}`}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-primary tracking-tight mt-0.5 text-balance">
                 {isRevenueByMethodReport ? 'REVENUE BY PAYMENT METHOD STATEMENT' : 'PHILIPPINE SOCIETY OF INFORMATION TECHNOLOGY STUDENTS'}
               </h1>
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
+              <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">
                 Regional Executive Council • Financial Audit & Treasury Office
               </p>
             </div>
           </div>
 
-          <div className="text-left sm:text-right text-xs text-gray-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[200px]">
+          <div className="text-left sm:text-right text-xs text-slate-600 space-y-1 bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 min-w-[200px] tabular-nums">
             <p>
               <strong className="text-gray-800">Statement:</strong>{' '}
               <span className="font-semibold text-primary">{reportTitle.toUpperCase()}</span>
@@ -694,7 +694,7 @@ export const FinancialReportView = ({
                 : 'Review total collections, approved payments, and balances.'}
             </span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-gray-500">
+          <div className="flex items-center gap-3 text-[11px] text-slate-600 tabular-nums">
             <span>Ledger Scope: <strong>{dateFilteredPayments.length} transactions</strong></span>
             <span>•</span>
             {isRevenueByMethodReport ? (
@@ -719,14 +719,14 @@ export const FinancialReportView = ({
               <CheckCircle2 size={16} className="text-emerald-600" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.verifiedTotal)}
               </p>
               <p className="text-[11px] text-emerald-700 mt-0.5">
                 Cleared across all payment channels
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium flex items-center justify-between">
+            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium flex items-center justify-between tabular-nums">
               <span>Settlement Rate</span>
               <strong className="text-emerald-900">{executiveMetrics.clearanceRate.toFixed(1)}%</strong>
             </div>
@@ -742,11 +742,11 @@ export const FinancialReportView = ({
               <p className="text-lg sm:text-xl font-black text-primary truncate">
                 {channelMetrics.topChannel.channel}
               </p>
-              <p className="text-xs font-bold text-blue-800 mt-0.5">
+              <p className="text-xs font-bold text-blue-800 mt-0.5 tabular-nums">
                 {formatPHP(channelMetrics.topChannel.verifiedTotal)}
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-blue-200/60 text-[10px] text-blue-800 font-medium flex items-center justify-between">
+            <div className="mt-2 pt-1.5 border-t border-blue-200/60 text-[10px] text-blue-800 font-medium flex items-center justify-between tabular-nums">
               <span>Channel Share</span>
               <strong className="text-blue-900">{channelMetrics.topChannel.sharePercentage.toFixed(1)}%</strong>
             </div>
@@ -759,36 +759,36 @@ export const FinancialReportView = ({
               <Smartphone size={16} className="text-sky-600" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-sky-800 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-sky-800 tracking-tight tabular-nums">
                 {formatPHP(channelMetrics.digitalVerified)}
               </p>
               <p className="text-[11px] text-sky-700 mt-0.5">
                 GCash, Bank Transfer & PayMaya
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-sky-200/60 text-[10px] text-sky-800 font-medium flex items-center justify-between">
+            <div className="mt-2 pt-1.5 border-t border-sky-200/60 text-[10px] text-sky-800 font-medium flex items-center justify-between tabular-nums">
               <span>Digital Volume</span>
               <strong className="text-sky-900">{channelMetrics.digitalCount} txns</strong>
             </div>
           </div>
 
           {/* Card 4: Official Receipts / Officer Cash */}
-          <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+          <div className="bg-cyan-50/70 border border-cyan-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wide">Officer Cash (OR)</span>
-              <Receipt size={16} className="text-purple-600" />
+              <span className="text-[11px] font-bold text-cyan-900 uppercase tracking-wide">Officer Cash (OR)</span>
+              <Receipt size={16} className="text-cyan-700" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-purple-800 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-cyan-800 tracking-tight tabular-nums">
                 {formatPHP(channelMetrics.officerVerified)}
               </p>
-              <p className="text-[11px] text-purple-700 mt-0.5">
+              <p className="text-[11px] text-cyan-800 mt-0.5">
                 Official Receipts (OR) issued
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-purple-200/60 text-[10px] text-purple-800 font-medium flex items-center justify-between">
+            <div className="mt-2 pt-1.5 border-t border-cyan-200/60 text-[10px] text-cyan-900 font-medium flex items-center justify-between tabular-nums">
               <span>OR Volume</span>
-              <strong className="text-purple-900">{channelMetrics.officerCount} txns</strong>
+              <strong className="text-cyan-950">{channelMetrics.officerCount} txns</strong>
             </div>
           </div>
 
@@ -799,14 +799,14 @@ export const FinancialReportView = ({
               <Clock size={16} className="text-amber-600" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.pendingTotal)}
               </p>
               <p className="text-[11px] text-amber-700 mt-0.5">
                 Awaiting officer verification
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 font-medium flex items-center justify-between">
+            <div className="mt-2 pt-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 font-medium flex items-center justify-between tabular-nums">
               <span>Unverified Items</span>
               <strong className="text-amber-900">{executiveMetrics.pendingCount} txns</strong>
             </div>
@@ -822,10 +822,10 @@ export const FinancialReportView = ({
               <Wallet size={16} className="text-primary" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-primary tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-primary tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.grossTotal)}
               </p>
-              <p className="text-[11px] text-blue-700 mt-0.5">
+              <p className="text-[11px] text-blue-700 mt-0.5 tabular-nums">
                 Across <strong>{executiveMetrics.totalCount}</strong> transactions
               </p>
             </div>
@@ -841,14 +841,14 @@ export const FinancialReportView = ({
               <CheckCircle2 size={16} className="text-emerald-600" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.verifiedTotal)}
               </p>
               <p className="text-[11px] text-emerald-700 mt-0.5">
                 Cleared in organization accounts
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium">
+            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 text-[10px] text-emerald-800 font-medium tabular-nums">
               {executiveMetrics.clearanceRate.toFixed(1)}% of gross collections
             </div>
           </div>
@@ -860,10 +860,10 @@ export const FinancialReportView = ({
               <Clock size={16} className="text-amber-600" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-amber-700 tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.pendingTotal)}
               </p>
-              <p className="text-[11px] text-amber-700 mt-0.5">
+              <p className="text-[11px] text-amber-700 mt-0.5 tabular-nums">
                 <strong>{executiveMetrics.pendingCount}</strong> awaiting officer verification
               </p>
             </div>
@@ -873,20 +873,20 @@ export const FinancialReportView = ({
           </div>
 
           {/* Outstanding Receivables */}
-          <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
+          <div className="bg-cyan-50/70 border border-cyan-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wide">Receivables Balance</span>
-              <DollarSign size={16} className="text-purple-600" />
+              <span className="text-[11px] font-bold text-cyan-900 uppercase tracking-wide">Receivables Balance</span>
+              <DollarSign size={16} className="text-cyan-700" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-purple-800 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-cyan-800 tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.remainingReceivables)}
               </p>
-              <p className="text-[11px] text-purple-700 mt-0.5">
+              <p className="text-[11px] text-cyan-800 mt-0.5 tabular-nums">
                 <strong>{executiveMetrics.partialCount}</strong> partial payments active
               </p>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-purple-200/60 text-[10px] text-purple-800 font-medium">
+            <div className="mt-2 pt-1.5 border-t border-cyan-200/60 text-[10px] text-cyan-900 font-medium">
               Outstanding balance due
             </div>
           </div>
@@ -898,10 +898,10 @@ export const FinancialReportView = ({
               <AlertCircle size={16} className="text-rose-600" />
             </div>
             <div className="mt-2">
-              <p className="text-xl sm:text-2xl font-black text-rose-700 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-rose-700 tracking-tight tabular-nums">
                 {formatPHP(executiveMetrics.rejectedTotal)}
               </p>
-              <p className="text-[11px] text-rose-700 mt-0.5">
+              <p className="text-[11px] text-rose-700 mt-0.5 tabular-nums">
                 <strong>{executiveMetrics.rejectedCount}</strong> invalid proofs flagged
               </p>
             </div>
@@ -915,17 +915,17 @@ export const FinancialReportView = ({
       {/* ============================================================== */}
       {/* 3. DEDICATED PAYMENT CHANNEL RECONCILIATION MATRIX TABLE       */}
       {/* ============================================================== */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3">
+      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2.5">
           <div>
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <CreditCard size={17} className="text-primary" /> Payment Channel Performance & Reconciliation Matrix
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-600">
               Audit analysis of collection instruments, transaction volumes, settlement rates, and share of regional revenue.
             </p>
           </div>
-          <span className="text-[11px] text-gray-500 font-mono bg-gray-100 px-2.5 py-1 rounded-md self-start sm:self-auto">
+          <span className="text-[11px] text-slate-600 font-semibold tabular-nums bg-gray-100 px-2.5 py-1 rounded-md self-start sm:self-auto">
             {methodBreakdown.filter(m => m.count > 0).length} Active Channels
           </span>
         </div>
@@ -935,13 +935,13 @@ export const FinancialReportView = ({
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold">
                 <th className="px-3 py-2.5">Payment Channel & Instrument</th>
-                <th className="px-3 py-2.5 text-center">Txns (Clr/Pnd)</th>
-                <th className="px-3 py-2.5 text-right">Gross Inflows (₱)</th>
-                <th className="px-3 py-2.5 text-right text-emerald-800">Cleared Revenue (₱)</th>
-                <th className="px-3 py-2.5 text-right text-amber-800">In-Flight / Pending (₱)</th>
-                <th className="px-3 py-2.5 text-right">Avg Txn (₱)</th>
-                <th className="px-3 py-2.5 text-center min-w-[130px]">Revenue Share</th>
-                <th className="px-3 py-2.5 text-center">Clearance Rate</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Txns (Clr/Pnd)</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Gross Inflows (₱)</th>
+                <th className="px-3 py-2.5 text-right text-emerald-800 tabular-nums">Cleared Revenue (₱)</th>
+                <th className="px-3 py-2.5 text-right text-amber-800 tabular-nums">In-Flight / Pending (₱)</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Avg Txn (₱)</th>
+                <th className="px-3 py-2.5 text-right min-w-[130px] tabular-nums">Revenue Share</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Clearance Rate</th>
                 <th className="px-3 py-2.5 text-center no-print">Action</th>
               </tr>
             </thead>
@@ -956,43 +956,43 @@ export const FinancialReportView = ({
                       <ChannelIcon size={16} strokeWidth={1.75} className="text-primary shrink-0" />
                       <div>
                         <span className="font-bold text-gray-900 block leading-tight">{m.channel}</span>
-                        <span className="text-[10px] text-gray-500 block">{m.instrument}</span>
+                        <span className="text-[10px] text-slate-600 block">{m.instrument}</span>
                       </div>
                     </div>
                   </td>
 
                   {/* Txn Count */}
-                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
                     <span className="font-bold text-gray-800">{m.count}</span>
-                    <span className="text-[10px] text-gray-400 block">
+                    <span className="text-[10px] text-slate-600 block">
                       ({m.verifiedCount} clr / {m.pendingCount} pnd)
                     </span>
                   </td>
 
                   {/* Gross Inflows */}
-                  <td className="px-3 py-2.5 text-right font-semibold text-gray-800 whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right font-semibold text-gray-800 whitespace-nowrap tabular-nums">
                     {formatPHP(m.totalGross)}
                   </td>
 
                   {/* Cleared Revenue */}
-                  <td className="px-3 py-2.5 text-right font-black text-emerald-700 whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right font-black text-emerald-700 whitespace-nowrap tabular-nums">
                     {formatPHP(m.verifiedTotal)}
                   </td>
 
                   {/* Pending In-Flight */}
-                  <td className="px-3 py-2.5 text-right font-medium text-amber-700 whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right font-medium text-amber-700 whitespace-nowrap tabular-nums">
                     {formatPHP(m.pendingTotal)}
                   </td>
 
                   {/* Avg Txn */}
-                  <td className="px-3 py-2.5 text-right text-gray-600 whitespace-nowrap font-mono text-[11px]">
+                  <td className="px-3 py-2.5 text-right text-slate-700 whitespace-nowrap tabular-nums text-[11px]">
                     {formatPHP(m.avgTransaction)}
                   </td>
 
                   {/* Share % */}
                   <td className="px-3 py-2.5">
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-semibold text-gray-700">
+                      <div className="flex justify-end text-[11px] font-semibold text-gray-700 tabular-nums">
                         <span>{m.sharePercentage.toFixed(1)}%</span>
                       </div>
                       <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
@@ -1008,7 +1008,7 @@ export const FinancialReportView = ({
                   </td>
 
                   {/* Clearance Rate */}
-                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
                     <span
                       className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
                         m.clearanceRate >= 90
@@ -1045,25 +1045,25 @@ export const FinancialReportView = ({
                 <td className="px-3 py-2.5 uppercase tracking-wide text-[11px]">
                   Total Reconciliation (All Channels):
                 </td>
-                <td className="px-3 py-2.5 text-center">
+                <td className="px-3 py-2.5 text-right tabular-nums">
                   {executiveMetrics.totalCount} txns
                 </td>
-                <td className="px-3 py-2.5 text-right font-black">
+                <td className="px-3 py-2.5 text-right font-black tabular-nums">
                   {formatPHP(executiveMetrics.grossTotal)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-black text-emerald-800">
+                <td className="px-3 py-2.5 text-right font-black text-emerald-800 tabular-nums">
                   {formatPHP(executiveMetrics.verifiedTotal)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-black text-amber-800">
+                <td className="px-3 py-2.5 text-right font-black text-amber-800 tabular-nums">
                   {formatPHP(executiveMetrics.pendingTotal)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono text-[11px]">
+                <td className="px-3 py-2.5 text-right tabular-nums text-[11px]">
                   {formatPHP(executiveMetrics.verifiedCount > 0 ? executiveMetrics.verifiedTotal / executiveMetrics.verifiedCount : 0)}
                 </td>
-                <td className="px-3 py-2.5 text-center text-primary">
+                <td className="px-3 py-2.5 text-right text-primary tabular-nums">
                   100.0%
                 </td>
-                <td className="px-3 py-2.5 text-center text-emerald-800">
+                <td className="px-3 py-2.5 text-right text-emerald-800 tabular-nums">
                   {executiveMetrics.clearanceRate.toFixed(1)}%
                 </td>
                 <td className="px-3 py-2.5 no-print"></td>
@@ -1078,13 +1078,13 @@ export const FinancialReportView = ({
       {/* ============================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Payment Channel Comparison Chart */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3 print:break-inside-avoid">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-2xs space-y-3 print:break-inside-avoid">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp size={18} className="text-primary" />
               <h3 className="text-sm font-bold text-gray-900">Payment Channel Settlement Comparison</h3>
             </div>
-            <span className="text-xs text-gray-500">Verified vs In-Flight Collections</span>
+            <span className="text-xs text-slate-600">Verified vs In-Flight Collections</span>
           </div>
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -1096,19 +1096,19 @@ export const FinancialReportView = ({
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Bar dataKey="Verified Collections" fill="#10B981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Pending In-Flight" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Total Volume" fill="#003D82" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Total Volume" fill="#2563EB" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Revenue Stream by Purpose Table */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs space-y-3 print:break-inside-avoid">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-2xs space-y-3 print:break-inside-avoid">
           <div className="flex items-center justify-between border-b pb-2">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
               <Layers size={15} className="text-primary" /> Revenue Stream by Purpose
             </h4>
-            <span className="text-[11px] text-gray-500">Cross-Purpose Inflows</span>
+            <span className="text-[11px] text-slate-600">Cross-Purpose Inflows</span>
           </div>
           <div className="space-y-2.5">
             {purposeBreakdown.map((p, idx) => (
@@ -1116,9 +1116,9 @@ export const FinancialReportView = ({
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-800">
                     {p.category}
-                    <span className="text-[10px] text-gray-500 font-normal ml-1">({p.count} txns)</span>
+                    <span className="text-[10px] text-slate-600 font-normal ml-1 tabular-nums">({p.count} txns)</span>
                   </span>
-                  <div className="text-right">
+                  <div className="text-right tabular-nums">
                     <span className="font-bold text-gray-900">{formatPHP(p.totalGross)}</span>
                     <span className="text-[10px] text-emerald-700 ml-1.5 font-medium">
                       ({formatPHP(p.verifiedTotal)} cleared)
@@ -1143,7 +1143,7 @@ export const FinancialReportView = ({
       {/* ============================================================== */}
       {/* 5. ITEMIZED TRANSACTION AUDIT LEDGER                          */}
       {/* ============================================================== */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden print:overflow-visible space-y-0">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xs overflow-hidden print:overflow-visible space-y-0">
         {/* Ledger Control & In-Document Filtering Header */}
         <div className="p-4 bg-gray-50/70 border-b border-gray-200 space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1151,7 +1151,7 @@ export const FinancialReportView = ({
               <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                 <Receipt size={17} className="text-primary" /> Itemized Transaction Audit Ledger
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-600">
                 Audited payment register with reference/OR tracking, verification timestamps, and payor records.
               </p>
             </div>
@@ -1159,7 +1159,7 @@ export const FinancialReportView = ({
             <div className="flex items-center gap-2 w-full sm:w-auto no-print">
               {/* In-Document Search Bar */}
               <div className="relative flex-1 sm:w-64">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   type="text"
                   placeholder="Search name, ref #, event..."
@@ -1196,7 +1196,7 @@ export const FinancialReportView = ({
 
           {/* Quick Filter Channel Pills */}
           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs no-print">
-            <span className="text-[11px] font-semibold text-gray-500 mr-1 flex items-center gap-1">
+            <span className="text-[11px] font-semibold text-slate-600 mr-1 flex items-center gap-1">
               <Filter size={12} /> Channel Filter:
             </span>
             <button
@@ -1205,7 +1205,7 @@ export const FinancialReportView = ({
                 setSelectedMethod('all');
                 setCurrentPage(1);
               }}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer tabular-nums ${
                 selectedMethod === 'all'
                   ? 'bg-primary text-white shadow-xs'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -1223,7 +1223,7 @@ export const FinancialReportView = ({
                   setSelectedMethod(m.channel);
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer tabular-nums ${
                   selectedMethod === m.channel
                     ? 'bg-primary text-white shadow-xs font-bold'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -1239,7 +1239,7 @@ export const FinancialReportView = ({
 
           {/* Quick Filter Status Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs no-print border-t border-gray-200">
-            <span className="text-[11px] font-semibold text-gray-500 mr-1">Status Filter:</span>
+            <span className="text-[11px] font-semibold text-slate-600 mr-1">Status Filter:</span>
             {[
               { id: 'all', label: `All (${dateFilteredPayments.length})` },
               { id: 'verified', label: `Verified (${executiveMetrics.verifiedCount})` },
@@ -1254,7 +1254,7 @@ export const FinancialReportView = ({
                   setSelectedStatus(tab.id as any);
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer tabular-nums ${
                   selectedStatus === tab.id
                     ? 'bg-emerald-700 text-white shadow-2xs font-bold'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -1266,7 +1266,7 @@ export const FinancialReportView = ({
 
             <div className="hidden sm:block border-l border-gray-300 h-4 mx-1"></div>
 
-            <span className="text-[11px] font-semibold text-gray-500 mr-1">Purpose:</span>
+            <span className="text-[11px] font-semibold text-slate-600 mr-1">Purpose:</span>
             <select
               value={selectedPurpose}
               onChange={(e) => {
@@ -1288,11 +1288,11 @@ export const FinancialReportView = ({
             <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 shadow-2xs print:static">
               <tr>
                 <th className="px-3 py-2.5">Ref / OR No.</th>
-                <th className="px-3 py-2.5">Date & Time</th>
+                <th className="px-3 py-2.5 tabular-nums">Date & Time</th>
                 <th className="px-3 py-2.5">Payor Information</th>
                 <th className="px-3 py-2.5">Particulars / Purpose</th>
                 <th className="px-3 py-2.5">Channel / Method</th>
-                <th className="px-3 py-2.5 text-right">Amount (₱)</th>
+                <th className="px-3 py-2.5 text-right tabular-nums">Amount (₱)</th>
                 <th className="px-3 py-2.5 text-center">Settlement Status</th>
                 <th className="px-3 py-2.5 text-center">Audit Verification</th>
               </tr>
@@ -1300,7 +1300,7 @@ export const FinancialReportView = ({
             <tbody className="divide-y divide-gray-200">
               {paginatedLedger.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-600">
                     No transactions match the selected filter parameters.
                   </td>
                 </tr>
@@ -1315,7 +1315,7 @@ export const FinancialReportView = ({
                   return (
                     <tr key={p.id || idx} className="hover:bg-blue-50/40 transition-colors">
                       {/* Ref / OR No */}
-                      <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="px-3 py-2.5 font-mono tabular-nums text-[11px] font-semibold text-gray-900 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           {isOfficerMethod ? (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
@@ -1326,7 +1326,7 @@ export const FinancialReportView = ({
                               GCASH
                             </span>
                           ) : isBankMethod ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-100 text-cyan-900 border border-cyan-300">
                               BANK
                             </span>
                           ) : isChequeMethod ? (
@@ -1339,7 +1339,7 @@ export const FinancialReportView = ({
                       </td>
 
                       {/* Date */}
-                      <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap text-[11px]">
+                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap text-[11px] tabular-nums">
                         {p.createdAt
                           ? new Date(p.createdAt).toLocaleDateString('en-US', {
                               month: 'short',
@@ -1354,7 +1354,7 @@ export const FinancialReportView = ({
                         <div className="font-semibold text-gray-900 leading-tight">
                           {p.memberName || p.fullName || p.userFullName || 'Authorized Member'}
                         </div>
-                        <div className="text-[10px] text-gray-500 font-mono">
+                        <div className="text-[10px] text-slate-600">
                           {p.memberEmail || p.email || p.userEmail || '—'}
                         </div>
                       </td>
@@ -1372,10 +1372,10 @@ export const FinancialReportView = ({
                       </td>
 
                       {/* Amount */}
-                      <td className="px-3 py-2.5 text-right font-black text-gray-900 whitespace-nowrap">
+                      <td className="px-3 py-2.5 text-right font-black text-gray-900 whitespace-nowrap tabular-nums">
                         {formatPHP(p.amount)}
                         {p.isPartial && p.remainingBalance && p.remainingBalance > 0 ? (
-                          <div className="text-[10px] font-normal text-purple-700">
+                          <div className="text-[10px] font-medium text-rose-700 tabular-nums">
                             {formatPHP(p.remainingBalance)} due
                           </div>
                         ) : null}
@@ -1406,13 +1406,13 @@ export const FinancialReportView = ({
                       </td>
 
                       {/* Audit Verification */}
-                      <td className="px-3 py-2.5 text-center text-[10px] text-gray-500 whitespace-nowrap">
+                      <td className="px-3 py-2.5 text-center text-[10px] text-slate-600 whitespace-nowrap">
                         {p.proofUrl ? (
                           <span className="text-primary font-medium flex items-center justify-center gap-1">
                             <Receipt size={12} /> Receipt Attached
                           </span>
                         ) : (
-                          <span className="text-gray-400">No Receipt</span>
+                          <span className="text-slate-600">No Receipt</span>
                         )}
                       </td>
                     </tr>
@@ -1424,13 +1424,13 @@ export const FinancialReportView = ({
             {/* Total Row Summary */}
             <tfoot className="bg-gray-100 font-bold border-t-2 border-gray-300 text-gray-900 sticky bottom-0 print:static">
               <tr>
-                <td colSpan={5} className="px-3 py-2.5 text-right uppercase tracking-wider text-[11px]">
+                <td colSpan={5} className="px-3 py-2.5 text-right uppercase tracking-wider text-[11px] tabular-nums">
                   Total for Visible Records ({visibleLedgerTotals.count} entries):
                 </td>
-                <td className="px-3 py-2.5 text-right font-black text-sm text-primary">
+                <td className="px-3 py-2.5 text-right font-black text-sm text-primary tabular-nums">
                   {formatPHP(visibleLedgerTotals.gross)}
                 </td>
-                <td colSpan={2} className="px-3 py-2.5 text-left text-[11px] text-emerald-700">
+                <td colSpan={2} className="px-3 py-2.5 text-left text-[11px] text-emerald-700 tabular-nums">
                   Verified: {formatPHP(visibleLedgerTotals.verified)}
                   {visibleLedgerTotals.balance > 0 ? ` • Bal Due: ${formatPHP(visibleLedgerTotals.balance)}` : ''}
                 </td>
@@ -1440,8 +1440,8 @@ export const FinancialReportView = ({
         </div>
 
         {/* Ledger Pagination Bar */}
-        <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600 no-print">
-          <div className="flex items-center gap-2">
+        <div className="p-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 no-print">
+          <div className="flex items-center gap-2 tabular-nums">
             <span>Show:</span>
             {[15, 30, 50, 'all'].map((sz) => (
               <button
@@ -1451,22 +1451,22 @@ export const FinancialReportView = ({
                   setPageSize(sz as any);
                   setCurrentPage(1);
                 }}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-[11px] font-medium cursor-pointer tabular-nums ${
                   pageSize === sz ? 'bg-primary text-white' : 'bg-white border text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {sz === 'all' ? 'All' : sz}
               </button>
             ))}
-            <span className="text-gray-400">|</span>
-            <span>
+            <span className="text-slate-500">|</span>
+            <span className="tabular-nums">
               Showing {filteredLedger.length > 0 ? (currentPage - 1) * (pageSize === 'all' ? filteredLedger.length : pageSize) + 1 : 0} to{' '}
               {pageSize === 'all' ? filteredLedger.length : Math.min(currentPage * (pageSize as number), filteredLedger.length)} of {filteredLedger.length} filtered entries
             </span>
           </div>
 
           {pageSize !== 'all' && totalPages > 1 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 tabular-nums">
               <button
                 type="button"
                 disabled={currentPage === 1}
@@ -1475,7 +1475,7 @@ export const FinancialReportView = ({
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="text-[11px] font-semibold px-2">
+              <span className="text-[11px] font-semibold px-2 tabular-nums">
                 Page {currentPage} of {totalPages}
               </span>
               <button
@@ -1505,29 +1505,29 @@ export const FinancialReportView = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 text-xs">
           {/* Prepared By */}
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Prepared & Audited By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Prepared & Audited By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-full sm:w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">{preparedBy}</p>
-            <p className="text-[11px] text-gray-500 capitalize">{userRole} / Financial Reporter</p>
-            <p className="text-[10px] text-gray-400">Date: {new Date().toLocaleDateString()}</p>
+            <p className="text-[11px] text-slate-600 capitalize">{userRole} / Financial Reporter</p>
+            <p className="text-[10px] text-slate-600 tabular-nums">Date: {new Date().toLocaleDateString()}</p>
           </div>
 
           {/* Certified Correct by Treasurer */}
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Certified Correct By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Certified Correct By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-full sm:w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">Regional Organization Treasurer</p>
-            <p className="text-[11px] text-gray-500">Committee on Treasury & Audit</p>
-            <p className="text-[10px] text-gray-400">Official Signature & Date</p>
+            <p className="text-[11px] text-slate-600">Committee on Treasury & Audit</p>
+            <p className="text-[10px] text-slate-600">Official Signature & Date</p>
           </div>
 
           {/* Approved by President */}
           <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Noted & Approved By:</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Noted & Approved By:</p>
             <div className="pt-8 border-b-2 border-gray-500 w-full sm:w-48"></div>
             <p className="font-extrabold text-gray-900 text-sm mt-1">Regional Organization President</p>
-            <p className="text-[11px] text-gray-500">PSITS Regional Executive Council</p>
-            <p className="text-[10px] text-gray-400">Official Seal & Ratification</p>
+            <p className="text-[11px] text-slate-600">PSITS Regional Executive Council</p>
+            <p className="text-[10px] text-slate-600">Official Seal & Ratification</p>
           </div>
         </div>
       </div>
