@@ -1,12 +1,35 @@
 const { pool } = require('./db');
 
+const PH_TIMEZONE = 'Asia/Manila';
+
+function formatPhDate(date) {
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-CA', { timeZone: PH_TIMEZONE });
+}
+
+function formatPhTime(date) {
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('en-GB', { timeZone: PH_TIMEZONE, hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function parsePhDate(str) {
+  if (!str) return null;
+  if (str instanceof Date) return str;
+  const s = String(str).trim();
+  if (!s) return null;
+  if (/(?:Z|[+-]\d{2}(?::?\d{2})?)$/.test(s)) {
+    return new Date(s);
+  }
+  return new Date(`${s}+08:00`);
+}
+
 function toEventDto(row) {
   const startAt = row.start_at ? new Date(row.start_at) : null;
-  const date = startAt ? startAt.toISOString().slice(0, 10) : '';
-  const time = startAt ? startAt.toTimeString().slice(0, 5) : '';
+  const date = formatPhDate(startAt);
+  const time = formatPhTime(startAt);
   const endAt = row.end_at ? new Date(row.end_at) : null;
-  const endDate = endAt ? endAt.toISOString().slice(0, 10) : '';
-  const endTime = endAt ? endAt.toTimeString().slice(0, 5) : '';
+  const endDate = formatPhDate(endAt);
+  const endTime = formatPhTime(endAt);
 
   const regStart = row.registration_start_at ? new Date(row.registration_start_at) : null;
   const regEnd = row.registration_end_at ? new Date(row.registration_end_at) : null;
@@ -27,6 +50,8 @@ function toEventDto(row) {
     time,
     endDate,
     endTime,
+    startAt: startAt && !Number.isNaN(startAt.getTime()) ? startAt.toISOString() : null,
+    endAt: endAt && !Number.isNaN(endAt.getTime()) ? endAt.toISOString() : null,
     location: row.location || '',
     fee: Number(row.registration_fee || 0),
     capacity: Number(row.capacity || 0),
@@ -118,10 +143,10 @@ async function createEvent(req, res) {
   const guidelines = body.guidelines ? String(body.guidelines).trim() : null;
   const registrationMode = body.registrationMode ? String(body.registrationMode).trim() : 'individual';
   const location = body.location ? String(body.location).trim() : '';
-  const startAt = body.startAt ? new Date(body.startAt) : null;
-  const endAt = body.endAt ? new Date(body.endAt) : null;
-  const registrationStartAt = body.registrationStartAt ? new Date(body.registrationStartAt) : null;
-  const registrationEndAt = body.registrationEndAt ? new Date(body.registrationEndAt) : null;
+  const startAt = parsePhDate(body.startAt);
+  const endAt = parsePhDate(body.endAt);
+  const registrationStartAt = parsePhDate(body.registrationStartAt);
+  const registrationEndAt = parsePhDate(body.registrationEndAt);
   const registrationOverride = body.registrationOverride ? String(body.registrationOverride).trim() : null;
   const fee = Number(body.fee ?? body.registrationFee ?? 0);
   const capacity = Number(body.capacity ?? 0);
@@ -326,14 +351,14 @@ async function updateEvent(req, res) {
     sets.push('event_type = ?'); params.push(et);
   }
   if (body.registrationStartAt !== undefined) {
-    const value = body.registrationStartAt ? new Date(body.registrationStartAt) : null;
+    const value = parsePhDate(body.registrationStartAt);
     if (value && Number.isNaN(value.getTime())) {
       return res.status(400).json({ success: false, message: 'Invalid registration start date/time.' });
     }
     sets.push('registration_start_at = ?'); params.push(value);
   }
   if (body.registrationEndAt !== undefined) {
-    const value = body.registrationEndAt ? new Date(body.registrationEndAt) : null;
+    const value = parsePhDate(body.registrationEndAt);
     if (value && Number.isNaN(value.getTime())) {
       return res.status(400).json({ success: false, message: 'Invalid registration end date/time.' });
     }
@@ -351,8 +376,8 @@ async function updateEvent(req, res) {
     sets.push('location = ?'); params.push(body.location.trim());
   }
   if (body.startAt !== undefined) {
-    const startAt = new Date(body.startAt);
-    if (Number.isNaN(startAt.getTime())) {
+    const startAt = parsePhDate(body.startAt);
+    if (!startAt || Number.isNaN(startAt.getTime())) {
       return res.status(400).json({ success: false, message: 'Invalid start date/time.' });
     }
     nextStartAt = startAt;
@@ -360,11 +385,11 @@ async function updateEvent(req, res) {
     startChanged = true;
   }
   if (body.endAt !== undefined) {
-    const endAt = body.endAt ? new Date(body.endAt) : null;
+    const endAt = parsePhDate(body.endAt);
     if (endAt && Number.isNaN(endAt.getTime())) {
       return res.status(400).json({ success: false, message: 'Invalid end date/time.' });
     }
-    const startCheck = body.startAt ? new Date(body.startAt) : nextStartAt;
+    const startCheck = body.startAt ? parsePhDate(body.startAt) : nextStartAt;
     if (endAt && startCheck && !Number.isNaN(startCheck.getTime()) && endAt < startCheck) {
       return res.status(400).json({ success: false, message: 'End date/time must be after start date/time.' });
     }

@@ -1,13 +1,21 @@
 const { pool } = require('./db');
 
+const PH_TIMEZONE = 'Asia/Manila';
+
 function json(res, status, body) {
   return res.status(status).json(body);
 }
 
-/** Local (server timezone) YYYY-MM-DD, consistent with toTimeString(). */
+/** Philippine Time YYYY-MM-DD. */
 function toLocalDate(date) {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-CA', { timeZone: PH_TIMEZONE });
+}
+
+/** Philippine Time HH:mm (24h). */
+function toLocalTime(date) {
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('en-GB', { timeZone: PH_TIMEZONE, hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 /**
@@ -48,6 +56,7 @@ async function getInstitutionLeaderboard(req, res) {
 
     const events = eventRows.map((e) => {
       const startAt = e.start_at ? new Date(e.start_at) : null;
+      const endAt = e.end_at ? new Date(e.end_at) : null;
       return {
         id: String(e.id),
         title: e.title,
@@ -55,8 +64,10 @@ async function getInstitutionLeaderboard(req, res) {
         eventType: e.event_type || 'competition',
         isEsports: Boolean(e.is_esports),
         esportsGame: e.esports_game || null,
-        date: startAt ? toLocalDate(startAt) : '',
-        time: startAt ? startAt.toTimeString().slice(0, 5) : '',
+        date: toLocalDate(startAt),
+        time: toLocalTime(startAt),
+        startAt: startAt ? startAt.toISOString() : null,
+        endAt: endAt ? endAt.toISOString() : null,
         location: e.location || 'Venue TBA',
         status: e.status,
       };
@@ -88,8 +99,8 @@ async function getInstitutionLeaderboard(req, res) {
       eventType: selectedEventRow.event_type || 'competition',
       isEsports: Boolean(selectedEventRow.is_esports),
       esportsGame: selectedEventRow.esports_game || null,
-      date: selectedStartAt ? toLocalDate(selectedStartAt) : '',
-      time: selectedStartAt ? selectedStartAt.toTimeString().slice(0, 5) : '',
+      date: toLocalDate(selectedStartAt),
+      time: toLocalTime(selectedStartAt),
       startAt: selectedStartAt ? selectedStartAt.toISOString() : null,
       endAt: selectedEndAt ? selectedEndAt.toISOString() : null,
       location: selectedEventRow.location || 'Venue TBA',

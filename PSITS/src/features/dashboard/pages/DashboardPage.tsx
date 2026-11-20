@@ -179,7 +179,18 @@ export const DashboardPage = () => {
     if (!dateValue) return 'N/A';
     const date = new Date(dateValue);
     if (Number.isNaN(date.getTime())) return String(dateValue);
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const formatTime12 = (t?: string | null) => {
+    if (!t) return '';
+    const parts = t.split(':');
+    if (parts.length < 2) return t;
+    const h = parseInt(parts[0], 10);
+    const m = parts[1];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
   };
 
   if (user.role === 'member') {
@@ -347,7 +358,7 @@ export const DashboardPage = () => {
                         <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">{event.title}</p>
                         <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 flex items-center gap-1.5 tabular-nums">
                           <CalendarDays size={13} className="text-cyan-500" />
-                          {formatDate(event.date)}{event.time ? ` at ${event.time}` : ''}
+                          {formatDate(event.date)}{event.time ? ` at ${formatTime12(event.time)}` : ''}
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">{event.location || 'TBA'}</p>
                       </div>

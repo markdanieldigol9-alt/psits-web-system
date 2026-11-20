@@ -39,6 +39,38 @@ const getParticipantCapacityLabel = (mode?: string) => {
   return 'Participant';
 };
 
+const formatEventScheduleSummary = (ev: any) => {
+  const s = ev.startAt
+    ? new Date(ev.startAt)
+    : ev.date && ev.time
+    ? new Date(`${ev.date}T${ev.time}:00+08:00`)
+    : null;
+  if (s && !Number.isNaN(s.getTime())) {
+    const sStr = s.toLocaleString('en-PH', {
+      timeZone: 'Asia/Manila',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    const e = ev.endAt
+      ? new Date(ev.endAt)
+      : ev.endDate && ev.endTime
+      ? new Date(`${ev.endDate}T${ev.endTime}:00+08:00`)
+      : null;
+    if (e && !Number.isNaN(e.getTime())) {
+      const sameDay = s.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }) === e.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+      const eStr = sameDay
+        ? e.toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit' })
+        : e.toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+      return `${sStr} → ${eStr}`;
+    }
+    return sStr;
+  }
+  return `${ev.date}${ev.time ? ` at ${ev.time}` : ''}`;
+};
+
 const PARTICIPANT_TEMPLATE =
   'fullName,email,contactNumber,gender,position,eventTitle,notes\nJuan Dela Cruz,juan@example.com,09123456789,Male,Participant,Sample Event,Team A';
 
@@ -534,7 +566,11 @@ export const EventsPage = () => {
     if (regEnd && !Number.isNaN(regEnd.getTime()) && now > regEnd) return { key: 'closed', label: 'Registration Closed', variant: 'warning' };
 
     // Default: open until event starts
-    const startAt = event?.date && event?.time ? new Date(`${event.date}T${event.time}:00`) : (event?.startAt ? new Date(String(event.startAt)) : null);
+    const startAt = event?.startAt
+      ? new Date(String(event.startAt))
+      : event?.date && event?.time
+      ? new Date(`${event.date}T${event.time}:00+08:00`)
+      : null;
     if (startAt && !Number.isNaN(startAt.getTime()) && now >= startAt) return { key: 'closed', label: 'Registration Closed (Event Started)', variant: 'warning' };
 
     return { key: 'open', label: 'Open for Registration', variant: 'success' };
@@ -717,10 +753,10 @@ export const EventsPage = () => {
 
   const getAutoStatusPreview = () => {
     if (!formData.startDate || !formData.startTime) return 'Auto: Draft';
-    const startAt = new Date(`${formData.startDate}T${formData.startTime}:00`);
+    const startAt = new Date(`${formData.startDate}T${formData.startTime}:00+08:00`);
     if (Number.isNaN(startAt.getTime())) return 'Auto: Draft';
     const endAt =
-      formData.endDate && formData.endTime ? new Date(`${formData.endDate}T${formData.endTime}:00`) : null;
+      formData.endDate && formData.endTime ? new Date(`${formData.endDate}T${formData.endTime}:00+08:00`) : null;
     const now = new Date();
     if (endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() <= now.getTime()) return 'Auto: Completed';
     return startAt.getTime() > now.getTime() ? 'Auto: Upcoming' : 'Auto: Ongoing';
@@ -847,7 +883,7 @@ export const EventsPage = () => {
     if (!validateCurrentFormStep('schedule')) { setActiveFormTab('schedule'); return; }
     if (!validateCurrentFormStep('guidelines')) { setActiveFormTab('guidelines'); return; }
 
-    const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00` : null;
+    const startAt = formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}:00+08:00` : null;
     if (!startAt) {
       addNotification({ userId: 'current', title: 'Validation', message: 'Start date/time is required.', type: 'error', isRead: false });
       setActiveFormTab('schedule');
@@ -860,11 +896,11 @@ export const EventsPage = () => {
 
     const registrationStartAt =
       !isSeminarOrConf && formData.registrationStartDate && formData.registrationStartTime
-        ? `${formData.registrationStartDate}T${formData.registrationStartTime}:00`
+        ? `${formData.registrationStartDate}T${formData.registrationStartTime}:00+08:00`
         : null;
     const registrationEndAt =
       !isSeminarOrConf && formData.registrationEndDate && formData.registrationEndTime
-        ? `${formData.registrationEndDate}T${formData.registrationEndTime}:00`
+        ? `${formData.registrationEndDate}T${formData.registrationEndTime}:00+08:00`
         : null;
 
     if (!isSeminarOrConf) {
@@ -894,7 +930,7 @@ export const EventsPage = () => {
       return;
     }
     const endAt =
-      formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}:00` : null;
+      formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}:00+08:00` : null;
     if (endAt) {
       const startCheck = new Date(startAt);
       const endCheck = new Date(endAt);
@@ -1389,7 +1425,7 @@ export const EventsPage = () => {
                       <div className="min-w-0">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{event.title}</h3>
                         <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 tabular-nums">
-                          Scheduled on {event.date} at {event.time}
+                          Scheduled on {formatEventScheduleSummary(event)}
                         </p>
                       </div>
                     </div>

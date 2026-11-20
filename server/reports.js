@@ -26,8 +26,8 @@ function resolveSchedule(eventRow) {
   const startAt = eventRow.start_at ? new Date(eventRow.start_at) : null;
   let endAt = eventRow.end_at ? new Date(eventRow.end_at) : null;
   if (startAt && (!endAt || endAt.getTime() < startAt.getTime())) {
-    endAt = new Date(startAt);
-    endAt.setHours(23, 59, 59, 0);
+    const phDateStr = startAt.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    endAt = new Date(`${phDateStr}T23:59:59+08:00`);
   }
   const timeInOpensAt = startAt ? new Date(startAt.getTime() - TIME_IN_OPENS_BEFORE_MIN * 60000) : null;
   const timeOutClosesAt = endAt ? new Date(endAt.getTime() + TIME_OUT_CLOSES_AFTER_MIN * 60000) : null;

@@ -18,19 +18,20 @@ function json(res, status, body) {
 const TIME_IN_OPENS_BEFORE_MIN = 60;
 const TIME_OUT_CLOSES_AFTER_MIN = 60;
 const LATE_GRACE_MIN = 15;
+const PH_TIMEZONE = 'Asia/Manila';
 
 const toIso = (value) => (value ? new Date(value).toISOString() : null);
 
 /**
  * Resolve the effective schedule window of an event.
- * If no end time is configured, the event is assumed to end at 23:59:59 of its start day.
+ * If no end time is configured, the event is assumed to end at 23:59:59 of its start day in Philippine Time.
  */
 function resolveSchedule(eventRow) {
   const startAt = eventRow.start_at ? new Date(eventRow.start_at) : null;
   let endAt = eventRow.end_at ? new Date(eventRow.end_at) : null;
   if (startAt && (!endAt || endAt.getTime() < startAt.getTime())) {
-    endAt = new Date(startAt);
-    endAt.setHours(23, 59, 59, 0);
+    const phDateStr = startAt.toLocaleDateString('en-CA', { timeZone: PH_TIMEZONE });
+    endAt = new Date(`${phDateStr}T23:59:59+08:00`);
   }
   const timeInOpensAt = startAt ? new Date(startAt.getTime() - TIME_IN_OPENS_BEFORE_MIN * 60000) : null;
   const timeInClosesAt = endAt ? new Date(endAt.getTime()) : null;
@@ -41,6 +42,7 @@ function resolveSchedule(eventRow) {
 function formatScheduleTime(date) {
   if (!date) return 'TBA';
   return date.toLocaleString('en-PH', {
+    timeZone: PH_TIMEZONE,
     month: 'short',
     day: 'numeric',
     year: 'numeric',

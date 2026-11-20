@@ -360,6 +360,8 @@ export interface InstitutionLeaderboardData {
     esportsGame?: string | null;
     date: string;
     time?: string;
+    endDate?: string | null;
+    endTime?: string | null;
     startAt?: string | null;
     endAt?: string | null;
     location?: string;

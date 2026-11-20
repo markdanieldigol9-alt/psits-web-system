@@ -454,21 +454,32 @@ export const InstitutionEventLeaderboard = () => {
 
   const formattedScheduleRange = useMemo(() => {
     if (!selectedEvent) return 'TBA';
-    if (selectedEvent.startAt) {
-      const s = new Date(selectedEvent.startAt);
+    const s = selectedEvent.startAt
+      ? new Date(selectedEvent.startAt)
+      : selectedEvent.date && selectedEvent.time
+      ? new Date(`${selectedEvent.date}T${selectedEvent.time}:00+08:00`)
+      : null;
+    if (s && !Number.isNaN(s.getTime())) {
       const startStr = s.toLocaleString('en-PH', {
+        timeZone: 'Asia/Manila',
         month: 'short',
         day: 'numeric',
         year: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
       });
-      if (selectedEvent.endAt) {
-        const e = new Date(selectedEvent.endAt);
-        const sameDay = s.toDateString() === e.toDateString();
+      const e = selectedEvent.endAt
+        ? new Date(selectedEvent.endAt)
+        : selectedEvent.endDate && selectedEvent.endTime
+        ? new Date(`${selectedEvent.endDate}T${selectedEvent.endTime}:00+08:00`)
+        : null;
+      if (e && !Number.isNaN(e.getTime())) {
+        const sDay = s.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const eDay = e.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const sameDay = sDay === eDay;
         const endStr = sameDay
-          ? e.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
-          : e.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+          ? e.toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit' })
+          : e.toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
         return `${startStr} – ${endStr}`;
       }
       return startStr;

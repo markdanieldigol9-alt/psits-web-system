@@ -56,6 +56,7 @@ interface AttendanceRow extends EventAttendanceParticipant {
 const DEFAULT_GRACE_MIN = 15;
 const DEFAULT_OPENS_BEFORE_MIN = 60;
 const DEFAULT_TIMEOUT_WINDOW_MIN = 60;
+const PH_TIMEZONE = 'Asia/Manila';
 
 const parseMs = (iso?: string | null): number | null => {
   if (!iso) return null;
@@ -64,12 +65,13 @@ const parseMs = (iso?: string | null): number | null => {
 };
 
 const fmtTime = (ms: number | null) =>
-  ms === null ? '—' : new Date(ms).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  ms === null ? '—' : new Date(ms).toLocaleTimeString('en-PH', { timeZone: PH_TIMEZONE, hour: 'numeric', minute: '2-digit' });
 
 const fmtDateTime = (ms: number | null) =>
   ms === null
     ? 'TBA'
     : new Date(ms).toLocaleString('en-PH', {
+        timeZone: PH_TIMEZONE,
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -78,7 +80,7 @@ const fmtDateTime = (ms: number | null) =>
       });
 
 const fmtShortDate = (ms: number | null) =>
-  ms === null ? '' : new Date(ms).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
+  ms === null ? '' : new Date(ms).toLocaleDateString('en-PH', { timeZone: PH_TIMEZONE, month: 'short', day: 'numeric' });
 
 const fmtDuration = (min: number | null) => {
   if (min === null || min < 0) return '—';

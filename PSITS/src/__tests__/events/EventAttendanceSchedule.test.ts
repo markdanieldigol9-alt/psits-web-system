@@ -74,4 +74,38 @@ describe('Dynamic Event Time In & Time Out Rules', () => {
     const at315am = Date.parse('2026-11-21T03:15:00+08:00');
     expect(resolvePhase(schedule, at315am)).toBe('ended');
   });
+
+  it('correctly calculates and formats Philippine Time for Nov 21, 2026, 9:30 AM → 1:30 PM', () => {
+    const PH_TZ = 'Asia/Manila';
+    const fmtTime = (ms: number) =>
+      new Date(ms).toLocaleTimeString('en-PH', { timeZone: PH_TZ, hour: 'numeric', minute: '2-digit' });
+    const fmtDateTime = (ms: number) =>
+      new Date(ms).toLocaleString('en-PH', {
+        timeZone: PH_TZ,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
+    // Schedule: Nov 21, 2026, 9:30 AM → Nov 21, 2026, 1:30 PM
+    const startIso = '2026-11-21T09:30:00+08:00';
+    const endIso = '2026-11-21T13:30:00+08:00';
+    const schedule = computeEventAttendanceSchedule(startIso, endIso);
+
+    // Schedule formatting
+    expect(fmtDateTime(schedule.startMs)).toBe('Nov 21, 2026, 9:30 AM');
+    expect(fmtDateTime(schedule.endMs)).toBe('Nov 21, 2026, 1:30 PM');
+
+    // Time-in opens 1h before start: 8:30 AM
+    expect(fmtTime(schedule.timeInOpensMs)).toBe('8:30 AM');
+
+    // Late after 15 min grace: 9:45 AM
+    const lateGraceMs = schedule.startMs + 15 * 60000;
+    expect(fmtTime(lateGraceMs)).toBe('9:45 AM');
+
+    // Time-out closes 1h after event end: 2:30 PM
+    expect(fmtTime(schedule.timeOutClosesMs)).toBe('2:30 PM');
+  });
 });
