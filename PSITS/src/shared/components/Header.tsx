@@ -66,6 +66,15 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
     location.pathname === path || location.pathname.startsWith(path + '/')
   )?.[1] ?? '';
 
+  // Front-load SPA document.title with unique route topic per WCAG 2.4.2
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.title.startsWith('PSITS - ')) return;
+    document.title = pageLabel
+      ? `${pageLabel} | PSITS Web System`
+      : 'PSITS Web System | Philippine Society of Information Technology Students Region XII';
+  }, [pageLabel]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -134,11 +143,13 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
           {/* ── Left: Mobile toggle + Breadcrumb ─── */}
           <div className="flex items-center gap-3 min-w-0">
             <button
+              type="button"
               onClick={onMenuClick}
+              aria-expanded={Boolean(isMenuOpen)}
               className="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
               aria-label="Toggle navigation menu"
             >
-              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {isMenuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
             </button>
 
             {/* Logo — mobile only (hidden on desktop since sidebar shows it) */}
@@ -146,7 +157,7 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
               to={user?.status === 'suspended' ? '/settings' : '/dashboard'}
               className="lg:hidden flex items-center gap-2.5 group"
             >
-              <img src={logo} alt="PSITS" className="h-8 w-8 object-contain rounded-full shadow-xs" />
+              <img src={logo} alt="PSITS Logo" width={32} height={32} className="h-8 w-8 object-contain rounded-full shadow-xs" />
               <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">PSITS</span>
             </Link>
 
@@ -240,6 +251,9 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
             {/* Profile dropdown */}
             <div className="relative" ref={menuRef}>
               <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={showProfileMenu}
                 onClick={() => setShowProfileMenu((prev) => !prev)}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all border ${
                   showProfileMenu
@@ -328,18 +342,22 @@ export const Header = ({ onMenuClick, isMenuOpen }: HeaderProps) => {
       {/* ── Quick Search Modal ───────────────────────────────── */}
       {showSearchModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 pt-20 animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Quick search pages and modules"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 pt-20 animate-fade-in overscroll-contain no-print"
           onClick={() => setShowSearchModal(false)}
         >
           <div
-            className="bg-white dark:bg-obsidian-surface w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-pop-in"
+            className="bg-white dark:bg-obsidian-surface w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-pop-in overscroll-contain"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-slate-800">
-              <Search size={18} className="text-primary-600 dark:text-cyan-400 shrink-0" />
+              <Search size={18} aria-hidden="true" className="text-primary-600 dark:text-cyan-400 shrink-0" />
               <input
                 ref={searchInputRef}
-                type="text"
+                type="search"
+                aria-label="Search pages and modules"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Jump to page or module..."

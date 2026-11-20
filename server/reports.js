@@ -12,6 +12,8 @@ function addMonths(date, delta) {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
 
+const TIME_IN_OPENS_BEFORE_MIN = 60;
+const TIME_OUT_CLOSES_AFTER_MIN = 60;
 const LATE_GRACE_MIN = 15;
 
 const toIso = (value) => {
@@ -27,7 +29,9 @@ function resolveSchedule(eventRow) {
     endAt = new Date(startAt);
     endAt.setHours(23, 59, 59, 0);
   }
-  return { startAt, endAt };
+  const timeInOpensAt = startAt ? new Date(startAt.getTime() - TIME_IN_OPENS_BEFORE_MIN * 60000) : null;
+  const timeOutClosesAt = endAt ? new Date(endAt.getTime() + TIME_OUT_CLOSES_AFTER_MIN * 60000) : null;
+  return { startAt, endAt, timeInOpensAt, timeOutClosesAt };
 }
 
 function isModeratorUser(req) {
@@ -1365,8 +1369,8 @@ async function getAttendanceReport(req, res) {
     const classifiedRecords = [];
 
     for (const row of participantRows) {
-      const { startAt, endAt } = resolveSchedule({ start_at: row.event_start_at, end_at: row.event_end_at });
-      const isEventClosed = String(row.event_status || '').toLowerCase() === 'completed' || Boolean(endAt && nowMs > endAt.getTime());
+      const { startAt, endAt, timeOutClosesAt } = resolveSchedule({ start_at: row.event_start_at, end_at: row.event_end_at });
+      const isAttendanceClosed = Boolean(timeOutClosesAt && nowMs > timeOutClosesAt.getTime());
       const isCheckedIn = Boolean(row.is_checked_in);
       const checkedInAt = isCheckedIn ? toIso(row.checked_in_at) : null;
       const checkedOutAt = isCheckedIn ? toIso(row.checked_out_at) : null;
@@ -1391,7 +1395,7 @@ async function getAttendanceReport(req, res) {
         leftEarly = Boolean(endAt && outMs < endAt.getTime());
         durationMinutes = inMs !== null ? Math.max(0, Math.round((outMs - inMs) / 60000)) : null;
         timeOutPlaceholder = null;
-      } else if (isEventClosed) {
+      } else if (isAttendanceClosed) {
         attendanceStatus = 'not_timed_out';
         attendanceStatusLabel = 'Not Timed Out';
         timeOutPlaceholder = 'Not Timed Out';

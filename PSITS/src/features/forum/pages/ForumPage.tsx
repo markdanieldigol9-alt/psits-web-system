@@ -570,7 +570,7 @@ export const ForumPage = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-balance">Community Forum &amp; Discussions</h1>
-            <p className="mt-2 text-gray-600 dark:text-slate-400">News, stories, and discussions.</p>
+            <p className="mt-2 text-slate-600 dark:text-slate-300">News, stories, and discussions.</p>
           </div>
           <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} className="w-full sm:w-auto">
             <Plus size={18} /> Create Post
@@ -628,15 +628,15 @@ export const ForumPage = () => {
                 'border-l-blue-500';
               
               // Determine card styling based on post type and urgency
-              let cardClass = `p-5 border border-gray-200 transition-all hover:shadow-md bg-white border-l-4 ${accentBorder} `;
+              let cardClass = `p-5 rounded-lg border border-gray-200 dark:border-slate-800 transition-all hover:shadow-md bg-white dark:bg-obsidian-card border-l-4 ${accentBorder} `;
               if (p.type === 'question' && info.isUrgent) {
-                cardClass += "bg-amber-50/20 border-amber-300 ";
+                cardClass += "bg-amber-50/20 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800/60 ";
               } else if (p.type === 'story') {
-                cardClass += "bg-gradient-to-br from-violet-50/10 to-indigo-50/5 ";
+                cardClass += "bg-gradient-to-br from-violet-50/10 to-indigo-50/5 dark:from-violet-950/15 dark:to-indigo-950/10 ";
               } else if (p.type === 'news') {
-                cardClass += "bg-white ";
+                cardClass += "bg-white dark:bg-obsidian-card ";
               } else if (p.type === 'blog') {
-                cardClass += "bg-slate-50/30 ";
+                cardClass += "bg-slate-50/30 dark:bg-obsidian-card ";
               }
 
               return (
@@ -709,15 +709,15 @@ export const ForumPage = () => {
 
                       {/* Subtitle summary for blogs */}
                       {p.type === 'blog' && info.subtitle && (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium -mt-1 pl-2 border-l-2 border-slate-300 dark:border-slate-700">
+                        <p className="text-sm text-slate-600 dark:text-slate-300 font-medium -mt-1 pl-2 border-l-2 border-slate-300 dark:border-slate-700">
                           {info.subtitle}
                         </p>
                       )}
 
                       {/* Body Content display */}
-                      <div className="mt-2 text-sm text-gray-700 leading-relaxed pl-0.5">
+                      <div className="mt-2 text-sm text-gray-700 dark:text-slate-200 leading-relaxed pl-0.5">
                         {p.type === 'story' ? (
-                          <blockquote className="border-l-4 border-violet-200/80 pl-3 italic text-gray-800 text-[15px] my-2">
+                          <blockquote className="border-l-4 border-violet-200/80 dark:border-violet-800/70 pl-3 text-gray-800 dark:text-slate-200 text-[15px] my-2">
                             {info.body || p.content}
                           </blockquote>
                         ) : (
@@ -727,7 +727,7 @@ export const ForumPage = () => {
 
                       {/* Cover Image Display */}
                       {p.imageUrl && (
-                        <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 shadow-2xs max-h-[420px]">
+                        <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800 shadow-2xs max-h-[420px]">
                           <img
                             src={p.imageUrl}
                             alt={p.title}
@@ -738,7 +738,7 @@ export const ForumPage = () => {
 
                       {/* Media Video Display */}
                       {p.videoUrl && (
-                        <div className="mt-3 overflow-hidden rounded-lg border border-gray-200">
+                        <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800">
                           {p.videoUrl.includes('youtube.com') || p.videoUrl.includes('youtu.be') ? (
                             <iframe
                               className="w-full aspect-video"
@@ -771,15 +771,15 @@ export const ForumPage = () => {
                       )}
 
                       {/* Citations/Links for news & footer stats */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 mt-3 pt-1 text-xs text-gray-500 border-t border-gray-100/50">
+                      <div className="flex flex-wrap items-center justify-between gap-4 mt-3 pt-1 text-xs text-slate-600 dark:text-slate-300 border-t border-gray-100 dark:border-slate-800">
                         <div className="flex items-center gap-2">
-                          <span>By <span className="font-semibold text-gray-700">{p.authorName || 'User'}</span></span>
+                          <span>By <span className="font-semibold text-gray-800 dark:text-slate-100">{p.authorName || 'User'}</span></span>
                           <span>•</span>
-                          <span>{p.createdAt ? String(p.createdAt).slice(0, 19).replace('T', ' ') : ''}</span>
+                          <span className="tabular-nums">{p.createdAt ? String(p.createdAt).slice(0, 19).replace('T', ' ') : ''}</span>
                           {p.type === 'blog' && (
                             <>
                               <span>•</span>
-                              <span className="font-medium text-slate-600 inline-flex items-center gap-1">
+                              <span className="font-medium text-slate-600 dark:text-slate-300 inline-flex items-center gap-1 tabular-nums">
                                 <Clock size={12} className="shrink-0" />
                                 <span>{info.readTime} read</span>
                               </span>
@@ -792,7 +792,7 @@ export const ForumPage = () => {
                             href={info.citation}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                            className="inline-flex items-center gap-1 font-semibold text-primary dark:text-cyan-400 hover:underline"
                           >
                             Read Official Source &rarr;
                           </a>
@@ -802,16 +802,16 @@ export const ForumPage = () => {
                   </div>
 
                   {/* Actions buttons */}
-                  <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                  <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => void api.setForumLike(String(p.id), true).then(load).catch(() => null)}
-                      className="hover:text-red-500 hover:border-red-200 transition-colors"
+                      className="hover:text-red-500 hover:border-red-200 transition-colors tabular-nums"
                     >
                       <Heart size={15} className="text-red-500" /> Like ({p.likesCount || 0})
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => void openComments(p)}>
+                    <Button variant="outline" size="sm" onClick={() => void openComments(p)} className="tabular-nums">
                       <MessageSquare size={15} /> Comments ({p.commentsCount || 0})
                     </Button>
                     {canModerate && (
@@ -862,7 +862,7 @@ export const ForumPage = () => {
               );
             })}
             {!filtered.length && (
-              <div className="p-6 text-sm text-gray-500">No posts yet.</div>
+              <div className="p-6 text-sm text-slate-600 dark:text-slate-300">No posts yet.</div>
             )}
           </div>
         </Card>
@@ -880,7 +880,7 @@ export const ForumPage = () => {
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   createTab === 'edit'
                     ? 'bg-white dark:bg-slate-900 text-primary shadow-xs'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Edit3 size={14} />
@@ -892,7 +892,7 @@ export const ForumPage = () => {
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   createTab === 'preview'
                     ? 'bg-white dark:bg-slate-900 text-primary shadow-xs'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Eye size={14} />
@@ -902,7 +902,7 @@ export const ForumPage = () => {
 
             {/* Accent Theme Color Dot Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
                 <Palette size={13} /> Theme:
               </span>
               <div className="flex items-center gap-1.5">
@@ -1188,7 +1188,7 @@ export const ForumPage = () => {
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300">
                     Content
                   </label>
-                  <span className="text-[11px] text-gray-400">Markdown formatting supported</span>
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300">Markdown formatting supported</span>
                 </div>
 
                 {/* Formatting Action Buttons Toolbar */}
@@ -1502,19 +1502,19 @@ export const ForumPage = () => {
                     <h3 className="font-bold text-lg text-gray-900 dark:text-slate-100 flex items-center gap-2">
                       {postForm.type === 'question' && <HelpCircle size={18} className="text-blue-600 shrink-0" />}
                       {postForm.type === 'story' && <BookOpen size={18} className="text-violet-600 shrink-0" />}
-                      {postForm.title || <span className="text-gray-400">Untitled Post</span>}
+                      {postForm.title || <span className="text-slate-600 dark:text-slate-300">Untitled Post</span>}
                     </h3>
 
                     {/* Subtitle for blog */}
                     {postForm.type === 'blog' && blogSubtitle && (
-                      <p className="text-sm text-gray-500 border-l-2 border-slate-300 pl-2">
+                      <p className="text-sm text-slate-600 dark:text-slate-300 border-l-2 border-slate-300 pl-2">
                         {blogSubtitle}
                       </p>
                     )}
 
                     {/* Content */}
                     <div className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                      {postForm.content || <span className="text-gray-400">Post content will appear here...</span>}
+                      {postForm.content || <span className="text-slate-600 dark:text-slate-300">Post content will appear here...</span>}
                     </div>
 
                     {/* Image Preview */}
@@ -1643,7 +1643,7 @@ export const ForumPage = () => {
                     return (
                       <div key={c.id} className="space-y-2">
                         {/* Parent Comment */}
-                        <div className="rounded-xl border border-gray-200 dark:border-slate-800 p-3.5 bg-white dark:bg-slate-900/90 shadow-xs">
+                        <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3.5 bg-white dark:bg-slate-900/90 shadow-xs">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center justify-center border border-blue-200 dark:border-blue-800">
@@ -1656,7 +1656,7 @@ export const ForumPage = () => {
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] text-gray-400">
+                            <span className="text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
                               {c.createdAt ? String(c.createdAt).slice(0, 19).replace('T', ' ') : ''}
                             </span>
                           </div>
@@ -1705,7 +1705,7 @@ export const ForumPage = () => {
                         {replies.length > 0 && expandedComments[c.id] && (
                           <div className="ml-5 sm:ml-9 pl-3.5 sm:pl-4 border-l-2 border-blue-200 dark:border-blue-800/60 space-y-2 pt-0.5 animate-fadeIn">
                             {replies.map((r) => (
-                              <div key={r.id} className="rounded-xl border border-gray-200/80 dark:border-slate-800/80 p-3 bg-gray-50/70 dark:bg-slate-900/50 shadow-xs">
+                              <div key={r.id} className="rounded-lg border border-gray-200/80 dark:border-slate-800/80 p-3 bg-gray-50/70 dark:bg-slate-900/50 shadow-xs">
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold flex items-center justify-center shrink-0">
@@ -1713,7 +1713,7 @@ export const ForumPage = () => {
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-wrap text-xs">
                                       <span className="font-bold text-gray-900 dark:text-slate-100">{r.authorName || 'User'}</span>
-                                      <ChevronRight size={13} className="text-gray-400 dark:text-slate-500 shrink-0 stroke-[2.5]" />
+                                      <ChevronRight size={13} className="text-slate-500 dark:text-slate-400 shrink-0 stroke-[2.5]" />
                                       <span className="font-semibold text-blue-600 dark:text-blue-400">
                                         {r.parentAuthorName || c.authorName || 'User'}
                                       </span>
@@ -1724,7 +1724,7 @@ export const ForumPage = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <span className="text-[10px] text-gray-400 shrink-0">
+                                  <span className="text-[10px] text-slate-600 dark:text-slate-300 shrink-0 tabular-nums">
                                     {r.createdAt ? String(r.createdAt).slice(0, 19).replace('T', ' ') : ''}
                                   </span>
                                 </div>

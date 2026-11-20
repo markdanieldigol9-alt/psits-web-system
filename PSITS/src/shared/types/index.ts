@@ -277,7 +277,10 @@ export interface EventAttendanceSchedule {
   startAt?: string | null;
   endAt?: string | null;
   timeInOpensAt?: string | null;
+  timeInClosesAt?: string | null;
+  timeOutClosesAt?: string | null;
   timeInOpensBeforeMinutes: number;
+  timeOutClosesAfterMinutes: number;
   lateGraceMinutes: number;
 }
 

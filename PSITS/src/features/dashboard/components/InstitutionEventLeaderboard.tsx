@@ -1424,10 +1424,10 @@ export const InstitutionEventLeaderboard = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {activeInstitution.participants.map((p, idx) => {
-                        const isEventClosed =
-                          selectedEvent?.status === 'completed' ||
-                          Boolean(selectedEvent?.endAt && Date.now() > Date.parse(selectedEvent.endAt));
-                        const isNotTimedOut = Boolean(p.isCheckedIn && !p.checkedOutAt && isEventClosed);
+                        const endAtMs = selectedEvent?.endAt ? Date.parse(selectedEvent.endAt) : null;
+                        const timeOutClosesMs = endAtMs ? endAtMs + 60 * 60000 : null;
+                        const isAttendanceClosed = Boolean(timeOutClosesMs && Date.now() > timeOutClosesMs);
+                        const isNotTimedOut = Boolean(p.isCheckedIn && !p.checkedOutAt && isAttendanceClosed);
 
                         return (
                           <tr key={p.id}>

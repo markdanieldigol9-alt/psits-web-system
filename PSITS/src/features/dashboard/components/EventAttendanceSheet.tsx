@@ -37,7 +37,7 @@ import type {
 type AttendanceKey = 'not_arrived' | 'in_venue' | 'timed_out' | 'not_timed_out';
 type StatusFilter = 'all' | AttendanceKey | 'late' | 'left_early';
 type SourceFilter = 'all' | 'Individual Registration' | 'Institution Roster';
-type SchedulePhase = 'unscheduled' | 'not_open' | 'gate_open' | 'in_progress' | 'ended';
+type SchedulePhase = 'unscheduled' | 'not_open' | 'gate_open' | 'in_progress' | 'time_out_window' | 'ended';
 
 interface RowState {
   key: AttendanceKey;
@@ -54,7 +54,8 @@ interface AttendanceRow extends EventAttendanceParticipant {
 }
 
 const DEFAULT_GRACE_MIN = 15;
-const DEFAULT_OPENS_BEFORE_MIN = 120;
+const DEFAULT_OPENS_BEFORE_MIN = 60;
+const DEFAULT_TIMEOUT_WINDOW_MIN = 60;
 
 const parseMs = (iso?: string | null): number | null => {
   if (!iso) return null;
@@ -116,7 +117,7 @@ const computeRowState = (
   endMs: number | null,
   graceMin: number,
   nowMs: number,
-  isEventClosed: boolean
+  isAttendanceClosed: boolean
 ): RowState => {
   const timeInMs = parseMs(p.checkedInAt);
   const timeOutMs = parseMs(p.checkedOutAt);
@@ -141,8 +142,8 @@ const computeRowState = (
     };
   }
 
-  // If the event is closed and the participant did not time out, system marks them as "not_timed_out"
-  if (isEventClosed) {
+  // If attendance is closed (1 hour after event ends) and the participant did not time out
+  if (isAttendanceClosed) {
     return {
       key: 'not_timed_out',
       timeInMs,
@@ -154,7 +155,7 @@ const computeRowState = (
     };
   }
 
-  // Still inside the venue while event is ongoing: live duration, capped at the scheduled end.
+  // Still inside the venue while event or post-event time-out window is active
   const liveEnd = endMs !== null ? Math.min(nowMs, endMs) : nowMs;
   return {
     key: 'in_venue',
@@ -259,17 +260,19 @@ export const EventAttendanceSheet = ({
   const graceMin = schedule?.lateGraceMinutes ?? DEFAULT_GRACE_MIN;
   const opensBeforeMin = schedule?.timeInOpensBeforeMinutes ?? DEFAULT_OPENS_BEFORE_MIN;
   const opensMs = parseMs(schedule?.timeInOpensAt) ?? (startMs !== null ? startMs - opensBeforeMin * 60000 : null);
+  const timeOutClosesAfterMin = schedule?.timeOutClosesAfterMinutes ?? DEFAULT_TIMEOUT_WINDOW_MIN;
+  const timeOutClosesMs = parseMs(schedule?.timeOutClosesAt) ?? (endMs !== null ? endMs + timeOutClosesAfterMin * 60000 : null);
 
   const phase: SchedulePhase = useMemo(() => {
-    if (data?.event?.status === 'completed') return 'ended';
     if (startMs === null) return 'unscheduled';
     if (opensMs !== null && nowMs < opensMs) return 'not_open';
     if (nowMs < startMs) return 'gate_open';
     if (endMs === null || nowMs <= endMs) return 'in_progress';
+    if (timeOutClosesMs !== null && nowMs <= timeOutClosesMs) return 'time_out_window';
     return 'ended';
-  }, [data?.event?.status, startMs, endMs, opensMs, nowMs]);
+  }, [startMs, endMs, opensMs, timeOutClosesMs, nowMs]);
 
-  const isEventClosed = phase === 'ended' || data?.event?.status === 'completed';
+  const isAttendanceClosed = phase === 'ended';
 
   // Default the override time picker to the event's scheduled end time (or current time)
   useEffect(() => {
@@ -278,11 +281,11 @@ export const EventAttendanceSheet = ({
     }
   }, [endMs, overrideTimeInput]);
 
-  const canTimeIn = canManage && !isEventClosed && (phase === 'gate_open' || phase === 'in_progress' || phase === 'unscheduled');
+  const canTimeIn = canManage && (phase === 'gate_open' || phase === 'in_progress' || phase === 'unscheduled');
   const timeInBlockedReason =
     phase === 'not_open'
-      ? `Time-in opens ${fmtDateTime(opensMs)}`
-      : isEventClosed
+      ? `Time-in opens ${fmtDateTime(opensMs)} (1 hour before event start)`
+      : phase === 'time_out_window' || phase === 'ended'
       ? `Time-in closed — event ended ${fmtDateTime(endMs)}`
       : '';
 
@@ -291,9 +294,9 @@ export const EventAttendanceSheet = ({
     () =>
       (data?.participants || []).map((p) => ({
         ...p,
-        state: computeRowState(p, startMs, endMs, graceMin, nowMs, isEventClosed),
+        state: computeRowState(p, startMs, endMs, graceMin, nowMs, isAttendanceClosed),
       })),
-    [data?.participants, startMs, endMs, graceMin, nowMs, isEventClosed]
+    [data?.participants, startMs, endMs, graceMin, nowMs, isAttendanceClosed]
   );
 
   const institutions = useMemo(() => {
@@ -517,13 +520,15 @@ export const EventAttendanceSheet = ({
   const phaseChip = (() => {
     switch (phase) {
       case 'not_open':
-        return { label: `Time-in opens ${fmtTime(opensMs)} ${fmtShortDate(opensMs)}`, cls: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' };
+        return { label: `Time-in opens ${fmtTime(opensMs)} ${fmtShortDate(opensMs)} (1h before start)`.trim(), cls: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' };
       case 'gate_open':
         return { label: 'Gate open • Time-in accepted', cls: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800' };
       case 'in_progress':
         return { label: 'Event in progress', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800' };
+      case 'time_out_window':
+        return { label: `Event ended • Time-out window open (until ${fmtTime(timeOutClosesMs)})`, cls: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800' };
       case 'ended':
-        return { label: 'Event ended • Time-in closed', cls: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800' };
+        return { label: 'Attendance closed', cls: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800' };
       default:
         return { label: 'No schedule set', cls: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800' };
     }
@@ -534,8 +539,8 @@ export const EventAttendanceSheet = ({
 
   const statCards = [
     { label: 'Registered', value: stats.total, hint: 'Individual + roster', icon: Users, tone: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400', filter: 'all' as StatusFilter },
-    isEventClosed
-      ? { label: 'Not Timed Out', value: stats.notTimedOut, hint: 'Event closed, no time out', icon: AlertTriangle, tone: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400', filter: 'not_timed_out' as StatusFilter }
+    isAttendanceClosed
+      ? { label: 'Not Timed Out', value: stats.notTimedOut, hint: 'Window closed, no time out', icon: AlertTriangle, tone: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400', filter: 'not_timed_out' as StatusFilter }
       : { label: 'In Venue', value: stats.inVenue, hint: 'Timed in, not out', icon: UserCheck, tone: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400', filter: 'in_venue' as StatusFilter },
     { label: 'Timed Out', value: stats.timedOut, hint: 'Departed venue', icon: LogOut, tone: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400', filter: 'timed_out' as StatusFilter },
     { label: 'Not Arrived', value: stats.notArrived, hint: 'No time in yet', icon: UserX, tone: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300', filter: 'not_arrived' as StatusFilter },
@@ -564,6 +569,11 @@ export const EventAttendanceSheet = ({
                 <Clock size={13} className="text-amber-600" /> Late after <strong className="text-slate-900 dark:text-slate-100">{fmtTime(startMs + graceMin * 60000)}</strong>
               </span>
             </>
+          )}
+          {endMs !== null && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <LogOut size={13} className="text-indigo-600" /> Time-out closes <strong className="text-slate-900 dark:text-slate-100">{fmtTime(timeOutClosesMs)}</strong>
+            </span>
           )}
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide ${phaseChip.cls}`}>
             {phase === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
@@ -689,7 +699,7 @@ export const EventAttendanceSheet = ({
                 >
                   <LogIn size={14} /> Time In ({selectedTimeInKeys.length})
                 </Button>
-                {!isEventClosed && (
+                {!isAttendanceClosed && (
                   <Button
                     variant="primary"
                     size="sm"
@@ -718,9 +728,9 @@ export const EventAttendanceSheet = ({
               </>
             ) : (
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                {isEventClosed
-                  ? `${missingTimeOutKeys.length} participant(s) marked "Not Timed Out" after event close.`
-                  : `${missingTimeOutKeys.length} participant(s) currently in venue without time-out.`}
+                {isAttendanceClosed
+                  ? `${missingTimeOutKeys.length} participant(s) marked "Not Timed Out" after time-out window closed.`
+                  : `${missingTimeOutKeys.length} participant(s) currently in venue eligible for time out.`}
               </span>
             )}
           </div>
@@ -902,7 +912,7 @@ export const EventAttendanceSheet = ({
                         </td>
                         <td className="px-3 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
                           {fmtDuration(s.durationMin)}
-                          {s.key === 'in_venue' && s.durationMin !== null && !isEventClosed && (
+                          {s.key === 'in_venue' && s.durationMin !== null && !isAttendanceClosed && (
                             <span className="block text-[9px] font-bold uppercase text-emerald-600">live</span>
                           )}
                         </td>
@@ -1019,7 +1029,7 @@ export const EventAttendanceSheet = ({
         )}
 
         <p className="mt-3 text-[11px] text-slate-600 dark:text-slate-300">
-          Time-in opens {opensBeforeMin / 60}h before the scheduled start and closes at the scheduled end. Arrivals more than {graceMin} minutes after
+          Time-in opens 1 hour before the scheduled start and closes when the event ends. Time-out is active during the event and extends for 1 hour after the event ends. Arrivals more than {graceMin} minutes after
           the start are marked <strong>Late</strong>; departures before the scheduled end are marked <strong>Left Early</strong>.
           {!canManage && ' Only admins and officers can record time in / time out.'}
         </p>

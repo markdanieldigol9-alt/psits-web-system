@@ -169,7 +169,7 @@ export const NotificationsPage = () => {
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <Card className="p-12 text-center text-slate-600 dark:text-slate-300 space-y-2">
-              <Bell className="mx-auto h-10 w-10 text-slate-400 dark:text-slate-500 mb-2" />
+              <Bell className="mx-auto h-10 w-10 text-slate-500 dark:text-slate-400 mb-2" />
               <p className="text-base font-semibold text-gray-800 dark:text-slate-200">No notifications found</p>
               <p className="text-xs text-slate-600 dark:text-slate-300">
                 {activeTab === 'unread'

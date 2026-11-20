@@ -647,21 +647,26 @@ export const AttendanceReportView = ({
         </div>
 
         {/* Structured Attendance Data Table */}
-        <div className="overflow-x-auto max-h-[500px] overflow-y-auto print:overflow-visible print:max-h-none">
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Attendance time-in and time-out report table"
+          className="overflow-x-auto max-h-[500px] overflow-y-auto print:overflow-visible print:max-h-none"
+        >
           <table className="w-full text-left border-collapse text-xs" data-testid="attendance-report-table">
             <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 print:static">
               <tr>
-                <th className="px-2.5 py-2.5 text-right w-10 tabular-nums">#</th>
-                <th className="px-2.5 py-2.5">Participant ID</th>
-                <th className="px-3 py-2.5">Participant Name</th>
-                <th className="px-3 py-2.5">Event Title</th>
-                <th className="px-3 py-2.5">Institution / Affiliation</th>
-                <th className="px-2.5 py-2.5">Role / Position</th>
-                <th className="px-2.5 py-2.5 text-center">Registration Source</th>
-                <th className="px-3 py-2.5 text-center tabular-nums">Time In</th>
-                <th className="px-3 py-2.5 text-center tabular-nums">Time Out</th>
-                <th className="px-2.5 py-2.5 text-right tabular-nums">Duration (Mins)</th>
-                <th className="px-3 py-2.5 text-center">Attendance Status</th>
+                <th scope="col" className="px-2.5 py-2.5 text-right w-10 tabular-nums">#</th>
+                <th scope="col" className="px-2.5 py-2.5">Participant ID</th>
+                <th scope="col" className="px-3 py-2.5">Participant Name</th>
+                <th scope="col" className="px-3 py-2.5">Event Title</th>
+                <th scope="col" className="px-3 py-2.5">Institution / Affiliation</th>
+                <th scope="col" className="px-2.5 py-2.5">Role / Position</th>
+                <th scope="col" className="px-2.5 py-2.5 text-center">Registration Source</th>
+                <th scope="col" className="px-3 py-2.5 text-center tabular-nums">Time In</th>
+                <th scope="col" className="px-3 py-2.5 text-center tabular-nums">Time Out</th>
+                <th scope="col" className="px-2.5 py-2.5 text-right tabular-nums">Duration (Mins)</th>
+                <th scope="col" className="px-3 py-2.5 text-center">Attendance Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">

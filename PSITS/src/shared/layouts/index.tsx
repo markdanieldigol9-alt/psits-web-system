@@ -17,13 +17,16 @@ export const MainLayout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen flex bg-surface-secondary dark:bg-obsidian-lowest text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-200">
+      <a href="#main-content" className="skip-link visually-hidden no-print">
+        Skip to main content
+      </a>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 min-w-0 flex flex-col">
         <Header
           onMenuClick={() => setSidebarOpen((v) => !v)}
           isMenuOpen={sidebarOpen}
         />
-        <main className="flex-1 min-w-0 overflow-y-auto">
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 overflow-y-auto focus:outline-none">
           {/* Subtle dot-grid page background */}
           <div className="w-full min-h-full p-4 sm:p-6 bg-dot-grid">
             <div className="page-container">

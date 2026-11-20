@@ -1309,19 +1309,19 @@ export const EventsPage = () => {
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Search Events</label>
             <div className="relative">
-              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
               <input
                 type="text"
                 placeholder="Search events by title, description, location, or category..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm text-slate-900 dark:text-white placeholder-slate-400"
+                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-obsidian-surface border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1"
                   aria-label="Clear search"
                 >
                   <X size={15} />
@@ -1381,14 +1381,14 @@ export const EventsPage = () => {
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 gap-3">
                       <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-sm"
                         style={{ backgroundColor: cardThemeColor }}
                       >
                         EV
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{event.title}</h3>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 tabular-nums">
                           Scheduled on {event.date} at {event.time}
                         </p>
                       </div>
@@ -1411,6 +1411,7 @@ export const EventsPage = () => {
                             ? 'warning'
                             : 'secondary'
                         }
+                        className="tabular-nums"
                       >
                         {String(event.status || 'upcoming').replace(/^./, (x: string) => x.toUpperCase())} • {isPaidEvent ? formatCurrency(event.fee) : 'Free'}
                       </Badge>
@@ -1418,13 +1419,13 @@ export const EventsPage = () => {
                   </div>
 
                 {event.description && (
-                  <p className="mb-4 whitespace-pre-wrap text-gray-700 text-sm">{event.description}</p>
+                  <p className="mb-4 whitespace-pre-wrap text-slate-700 dark:text-slate-300 text-sm">{event.description}</p>
                 )}
 
-                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 rounded-lg bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2"><MapPin size={16} className="text-gray-400 shrink-0" /> <span>{event.location}</span></div>
-                  <div className="flex items-center gap-2"><Users size={16} className="text-gray-400 shrink-0" /> <span><strong>{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.total_participants ?? event.registrations ?? event.participantsCount ?? 0} / {Number(event.capacity) > 0 ? event.capacity : 'Unlimited'}</span></div>
-                  <div className="flex items-center gap-2"><Megaphone size={16} className="text-gray-400 shrink-0" /> <span>{String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 rounded-lg bg-slate-50 dark:bg-obsidian-surface/60 border border-slate-200/80 dark:border-slate-800 p-4 text-sm text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center gap-2"><MapPin size={16} className="text-slate-500 dark:text-slate-400 shrink-0" /> <span>{event.location}</span></div>
+                  <div className="flex items-center gap-2 tabular-nums"><Users size={16} className="text-slate-500 dark:text-slate-400 shrink-0" /> <span><strong className="text-slate-800 dark:text-slate-200">{getParticipantCapacityLabel(event.registrationMode)}:</strong> {event.total_participants ?? event.registrations ?? event.participantsCount ?? 0} / {Number(event.capacity) > 0 ? event.capacity : 'Unlimited'}</span></div>
+                  <div className="flex items-center gap-2"><Megaphone size={16} className="text-slate-500 dark:text-slate-400 shrink-0" /> <span>{String(event.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}</span></div>
                   {event.requiresCoach && (
                     <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-medium">
                       <UserCheck size={16} className="shrink-0" /> <span>Coach Required</span>
@@ -1436,7 +1437,7 @@ export const EventsPage = () => {
                     </div>
                   )}
                   {isMember && !['seminar', 'conference'].includes(String(event.eventType || '').toLowerCase()) && (event.registrationStartAt || event.registrationEndAt) && (
-                    <div className="sm:col-span-2 md:col-span-3 text-xs text-gray-500 border-t border-gray-200/60 pt-2 mt-1">
+                    <div className="sm:col-span-2 md:col-span-3 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-200/60 dark:border-slate-800 pt-2 mt-1 tabular-nums">
                       <strong>Registration Window:</strong> {event.registrationStartAt ? String(event.registrationStartAt).replace('T', ' ').slice(0, 16) : '—'} to {event.registrationEndAt ? String(event.registrationEndAt).replace('T', ' ').slice(0, 16) : '—'}
                     </div>
                   )}
@@ -1445,14 +1446,14 @@ export const EventsPage = () => {
                 {isMember && isPaidEvent && isRegistered && (() => {
                   const stats = getEventPaymentStats(event.id, Number(event.fee || 0));
                   return (
-                    <div className="mb-4 space-y-1 text-xs bg-blue-50/20 p-3 rounded-lg border border-blue-100/30">
-                      <div className="flex justify-between font-semibold text-gray-600">
+                    <div className="mb-4 space-y-1 text-xs bg-blue-50/30 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200/50 dark:border-blue-900/40">
+                      <div className="flex justify-between font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
                         <span>Paid: {formatCurrency(stats.totalVerifiedPaid)} ({stats.percentPaid}%)</span>
                         {stats.totalPendingPaid > 0 && (
-                          <span className="font-medium text-amber-700 dark:text-amber-400">({formatCurrency(stats.totalPendingPaid)} pending)</span>
+                          <span className="font-medium text-amber-700 dark:text-amber-400 tabular-nums">({formatCurrency(stats.totalPendingPaid)} pending)</span>
                         )}
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-gray-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                         <div
                           className="bg-primary h-2 rounded-full transition-all duration-500"
                           style={{ width: `${stats.percentPaid}%` }}
@@ -1462,15 +1463,15 @@ export const EventsPage = () => {
                   );
                 })()}
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 pt-4 mt-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 dark:border-slate-800 pt-4 mt-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-lg font-bold text-primary">Fee: {formatCurrency(event.fee)}</span>
+                    <span className="text-lg font-bold text-primary dark:text-cyan-400 tabular-nums">Fee: {formatCurrency(event.fee)}</span>
                     {isMember && (
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant={isRegistered ? 'success' : regState.variant}>
                           {isRegistered ? 'Registered' : regState.label}
                         </Badge>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
                           <strong>Registration Status:</strong> {String(statusText).charAt(0).toUpperCase() + String(statusText).slice(1)}
                         </span>
                       </div>
@@ -1559,7 +1560,7 @@ export const EventsPage = () => {
             );
               })}
               {filteredEvents.length === 0 && (
-                <Card className="p-8 text-center text-gray-500">
+                <Card className="p-8 text-center text-slate-600 dark:text-slate-300">
                   No events found matching your criteria.
                 </Card>
               )}
@@ -1569,7 +1570,7 @@ export const EventsPage = () => {
       </div>
       <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={editingEventId ? 'Edit Event' : 'Create New Event'} size="lg">
         {/* Navigation Tabs Header */}
-        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar gap-1 bg-gray-50/80 p-1.5 rounded-xl border">
+        <div className="flex border-b border-gray-200 dark:border-slate-800 mb-6 overflow-x-auto no-scrollbar gap-1 bg-gray-50/80 dark:bg-slate-800/50 p-1.5 rounded-xl border">
           <button
             type="button"
             onClick={() => {
@@ -1577,7 +1578,7 @@ export const EventsPage = () => {
               setActiveFormTab('basic');
             }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeFormTab === 'basic' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+              activeFormTab === 'basic' ? 'bg-white dark:bg-slate-900 text-primary dark:text-cyan-400 shadow-sm border border-gray-200/80 dark:border-slate-700' : 'text-slate-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800'
             }`}
           >
             <Layers size={15} /> 1. Basic Info
@@ -1589,7 +1590,7 @@ export const EventsPage = () => {
               setActiveFormTab('schedule');
             }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeFormTab === 'schedule' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+              activeFormTab === 'schedule' ? 'bg-white dark:bg-slate-900 text-primary dark:text-cyan-400 shadow-sm border border-gray-200/80 dark:border-slate-700' : 'text-slate-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800'
             }`}
           >
             <MapPin size={15} /> 2. Schedule & Venue
@@ -1601,7 +1602,7 @@ export const EventsPage = () => {
               setActiveFormTab('guidelines');
             }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeFormTab === 'guidelines' ? 'bg-white text-primary shadow-sm border border-gray-200/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+              activeFormTab === 'guidelines' ? 'bg-white dark:bg-slate-900 text-primary dark:text-cyan-400 shadow-sm border border-gray-200/80 dark:border-slate-700' : 'text-slate-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800'
             }`}
           >
             <FileSpreadsheet size={15} /> 3. Guidelines
@@ -1659,7 +1660,7 @@ export const EventsPage = () => {
                     onChange={(e) => setFormData((p) => ({ ...p, registrationMode: (e.target as HTMLSelectElement).value }))}
                   />
                   {isSeminarOrConference && (
-                    <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300">
                       Seminars and Conferences are automatically set to Individual Registration.
                     </p>
                   )}
@@ -1696,12 +1697,12 @@ export const EventsPage = () => {
 
               {/* Coach Requirement Checkbox Button - Hidden for Seminars and Conferences */}
               {!isSeminarOrConference && (
-                <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between animate-fadeIn">
+                <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/50 rounded-xl flex items-center justify-between animate-fadeIn">
                   <div className="flex items-center gap-2.5">
-                    <UserCheck size={18} className="text-blue-600 shrink-0" />
+                    <UserCheck size={18} className="text-blue-600 dark:text-blue-400 shrink-0" />
                     <div>
-                      <span className="text-sm font-bold text-gray-900 block">Require Coach for this Event</span>
-                      <span className="text-xs text-gray-500">Check if institutions must designate an official Coach from their roster during registration.</span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100 block">Require Coach for this Event</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-300">Check if institutions must designate an official Coach from their roster during registration.</span>
                     </div>
                   </div>
                   <input
@@ -1720,7 +1721,7 @@ export const EventsPage = () => {
                   <ShieldCheck size={18} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
                   <div>
                     <span className="text-sm font-bold text-gray-900 dark:text-gray-100 block">Assign Officer as Event Moderator</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Designate official PSITS officer(s) to moderate, oversee, and facilitate this event.</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-300">Designate official PSITS officer(s) to moderate, oversee, and facilitate this event.</span>
                   </div>
                 </div>
                 <input
@@ -1754,12 +1755,12 @@ export const EventsPage = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     Select the officer(s) who will act as moderator for this event:
                   </p>
 
                   {isLoadingOfficers ? (
-                    <div className="flex items-center justify-center py-4 text-xs text-gray-500">
+                    <div className="flex items-center justify-center py-4 text-xs text-slate-600 dark:text-slate-300">
                       <RefreshCw size={15} className="animate-spin mr-2 text-indigo-600" />
                       Loading active officers...
                     </div>
@@ -1811,7 +1812,7 @@ export const EventsPage = () => {
                                 <span className="text-xs font-bold text-gray-900 dark:text-gray-100 block">
                                   {officer.fullName}
                                 </span>
-                                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                <span className="text-[11px] text-slate-600 dark:text-slate-300">
                                   {officer.position || 'Officer'} {officer.email ? `• ${officer.email}` : ''}
                                 </span>
                               </div>
@@ -1898,14 +1899,14 @@ export const EventsPage = () => {
                 onChange={(e) => setFormData((p) => ({ ...p, location: e.target.value }))}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-900/60 p-3 rounded-lg border border-gray-200 dark:border-slate-800">
                 <Input label="Start Date *" type="date" value={formData.startDate} onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))} />
                 <Input label="Start Time *" type="time" value={formData.startTime} onChange={(e) => setFormData((p) => ({ ...p, startTime: e.target.value }))} />
                 <Input label="End Date" type="date" value={formData.endDate} onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))} />
                 <Input label="End Time" type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} />
               </div>
 
-              <div className="text-xs text-gray-500 flex items-center justify-between px-1">
+              <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between px-1">
                 <span>Calculated Event Status:</span>
                 <span className="font-semibold text-blue-600 dark:text-blue-400">{getAutoStatusPreview()}</span>
               </div>
@@ -1959,7 +1960,7 @@ export const EventsPage = () => {
                       />
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500 dark:text-slate-400 pt-0.5">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 pt-0.5">
                       No participant capacity limit (unlimited registrations allowed).
                     </p>
                   )}
@@ -1973,7 +1974,7 @@ export const EventsPage = () => {
                     <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                       Registration Window
                     </h4>
-                    <span className="text-[11px] text-gray-400">Controls registration schedule</span>
+                    <span className="text-[11px] text-slate-600 dark:text-slate-300">Controls registration schedule</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-slate-800">
                     <Input
@@ -2001,7 +2002,7 @@ export const EventsPage = () => {
                       onChange={(e) => setFormData((p) => ({ ...p, registrationEndTime: e.target.value }))}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     Leave blank to naturally keep registration open based on event schedule.
                   </p>
                 </div>
@@ -2022,7 +2023,7 @@ export const EventsPage = () => {
                     value={formData.guidelines}
                     onChange={(e) => setFormData((p) => ({ ...p, guidelines: (e.target as HTMLTextAreaElement).value }))}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     Provide clear rules and mechanics that participants must follow.
                   </p>
                 </div>
@@ -2033,7 +2034,7 @@ export const EventsPage = () => {
                     <span className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider block">
                       Upload Guidelines Document (Optional)
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-slate-400">
+                    <span className="text-xs text-slate-600 dark:text-slate-300">
                       Upload an official PDF, Word (.docx/.doc), Markdown (.md), Text (.txt), or Image guidelines document.
                     </span>
                   </div>
@@ -2048,7 +2049,7 @@ export const EventsPage = () => {
                           <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
                             {formData.guidelinesFile?.name || formData.guidelinesFileName || 'Uploaded Guidelines Document'}
                           </p>
-                          <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
                             {formData.guidelinesFile
                               ? `${(formData.guidelinesFile.size / 1024).toFixed(1)} KB • Attached`
                               : 'Attached Document'}
@@ -2077,13 +2078,13 @@ export const EventsPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary dark:hover:border-cyber-cyan rounded-xl p-4 text-center transition-colors bg-white/50 dark:bg-obsidian-card/40">
-                      <Upload size={20} className="text-slate-400" />
+                    <label className="flex flex-col items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary dark:hover:border-cyber-cyan rounded-lg p-4 text-center transition-colors bg-white/50 dark:bg-obsidian-card/40">
+                      <Upload size={20} className="text-slate-500 dark:text-slate-400" />
                       <div>
                         <span className="text-xs font-semibold text-primary dark:text-cyber-cyan hover:underline">
                           Click to upload guidelines document
                         </span>
-                        <span className="text-xs text-slate-500 block mt-0.5">
+                        <span className="text-xs text-slate-600 dark:text-slate-300 block mt-0.5">
                           PDF, DOCX, DOC, TXT, MD, or Image (max 15MB)
                         </span>
                       </div>
@@ -2133,9 +2134,9 @@ export const EventsPage = () => {
               {/* Event Banner - Hidden for Seminars and Conferences */}
               {!isSeminarOrConference && (
                 <div className="space-y-2 animate-fadeIn">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Event Banner (Optional)</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Event Banner (Optional)</label>
                   {formData.bannerPreviewUrl && (
-                    <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-100">
+                    <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 h-32 bg-gray-100 dark:bg-slate-800">
                       <img
                         src={formData.bannerPreviewUrl}
                         alt="Banner preview"
@@ -2151,7 +2152,7 @@ export const EventsPage = () => {
                       </button>
                     </div>
                   )}
-                  <label className="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 hover:border-primary rounded-lg px-4 py-3 text-sm text-gray-600 hover:text-primary transition-colors">
+                  <label className="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 dark:border-slate-700 hover:border-primary rounded-lg px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">
                     <Upload size={16} />
                     <span>{formData.bannerPreviewUrl ? 'Change Banner Image' : 'Upload Banner Image'}</span>
                     <input
@@ -2176,15 +2177,15 @@ export const EventsPage = () => {
               {/* Theme Color & Custom Badge */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Theme Color</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">Theme Color</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={formData.themeColor}
                       onChange={(e) => setFormData((p) => ({ ...p, themeColor: e.target.value }))}
-                      className="h-10 w-16 rounded-lg border border-gray-300 cursor-pointer p-1"
+                      className="h-10 w-16 rounded-lg border border-gray-300 dark:border-slate-700 cursor-pointer p-1"
                     />
-                    <span className="text-sm text-gray-500 font-mono">{formData.themeColor}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300 font-mono">{formData.themeColor}</span>
                   </div>
                 </div>
                 <Input
@@ -2397,55 +2398,55 @@ export const EventsPage = () => {
 
               return (
                 <>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-slate-600 dark:text-slate-300 tabular-nums">
               {detailsEvent.date}{detailsEvent.time ? ` • ${detailsEvent.time}` : ''}{detailsEvent.location ? ` • ${detailsEvent.location}` : ''}
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-900">Event Status:</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">Event Status:</span>
               <Badge variant={getStatusColor(detailsEvent.status)}>
                 {String((memberStatusByEvent[String(detailsEvent.id)] || detailsEvent.status) || '').replace(/^./, (x: string) => x.toUpperCase())}
               </Badge>
             </div>
 
             {/* 2-Phase Lifecycle Process Stepper */}
-            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 space-y-2.5">
-              <div className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-gray-200 dark:border-slate-800 space-y-2.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center justify-between">
                 <span>Event Process Lifecycle</span>
                 <Badge variant={detailsEvent.status === 'ongoing' ? 'success' : detailsEvent.status === 'upcoming' ? 'info' : 'secondary'}>
                   {detailsEvent.status === 'ongoing' ? 'Phase 2: Event Started' : detailsEvent.status === 'upcoming' ? 'Phase 1: Registration Open' : (String(detailsEvent.status).charAt(0).toUpperCase() + String(detailsEvent.status).slice(1))}
                 </Badge>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className={`p-3 rounded-lg border transition-all ${detailsEvent.status === 'upcoming' ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20 shadow-sm' : 'bg-white border-gray-200 opacity-60'}`}>
+                <div className={`p-3 rounded-md border transition-all ${detailsEvent.status === 'upcoming' ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800 ring-2 ring-blue-500/20 shadow-sm' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 opacity-60'}`}>
                   <div className="flex items-center gap-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${detailsEvent.status === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>1</span>
-                    <span className="font-semibold text-sm text-gray-900">Phase 1: Open for Registration</span>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${detailsEvent.status === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>1</span>
+                    <span className="font-semibold text-sm text-gray-900 dark:text-slate-100">Phase 1: Open for Registration</span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1 pl-8">Registration is active. Preparing participants and rosters.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 pl-8">Registration is active. Preparing participants and rosters.</p>
                 </div>
-                <div className={`p-3 rounded-lg border transition-all ${detailsEvent.status === 'ongoing' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20 shadow-sm' : 'bg-white border-gray-200 opacity-60'}`}>
+                <div className={`p-3 rounded-md border transition-all ${detailsEvent.status === 'ongoing' ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 ring-2 ring-emerald-500/20 shadow-sm' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 opacity-60'}`}>
                   <div className="flex items-center gap-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${detailsEvent.status === 'ongoing' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-600'}`}>2</span>
-                    <span className="font-semibold text-sm text-gray-900">Phase 2: Event Started</span>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${detailsEvent.status === 'ongoing' ? 'bg-emerald-600 text-white' : 'bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>2</span>
+                    <span className="font-semibold text-sm text-gray-900 dark:text-slate-100">Phase 2: Event Started</span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1 pl-8">All participants are ready. Registration is closed.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 pl-8">All participants are ready. Registration is closed.</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
               <div>
-                <span className="font-semibold text-gray-900">Registration Mode:</span>{' '}
+                <span className="font-semibold text-gray-900 dark:text-slate-100">Registration Mode:</span>{' '}
                 {String(detailsEvent.registrationMode || 'individual').replace(/^./, (x: string) => x.toUpperCase())}
               </div>
               {detailsEvent.requiresCoach && (
-                <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-indigo-200">
+                <span className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-indigo-200 dark:border-indigo-800">
                   <UserCheck size={12} /> Coach Required
                 </span>
               )}
               {Boolean(detailsEvent.hasModerator || detailsEvent.moderatorOfficerName) && (
-                <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
                   <ShieldCheck size={12} /> Moderator: {detailsEvent.moderatorOfficerName || 'Officer Assigned'}
                 </span>
               )}
@@ -2453,18 +2454,18 @@ export const EventsPage = () => {
 
             {detailsEvent.description && (
               <div>
-                <div className="text-sm font-semibold text-gray-900 mb-2">Description</div>
-                <div className="text-sm text-gray-700 whitespace-pre-wrap">{detailsEvent.description}</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">Description</div>
+                <div className="text-sm text-gray-700 dark:text-slate-300 whitespace-pre-wrap">{detailsEvent.description}</div>
               </div>
             )}
 
             {(detailsEvent.guidelines || detailsEvent.guidelinesFileUrl) && (
               <div>
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
                     <span>Guidelines</span>
                     {detailsEvent.guidelinesFileUrl && (
-                      <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 font-medium">
+                      <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-medium">
                         Document Attached
                       </span>
                     )}
@@ -2473,13 +2474,13 @@ export const EventsPage = () => {
                     View Guidelines
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Open the guidelines in a separate view.</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Open the guidelines in a separate view.</p>
               </div>
             )}
 
             {canManageEvents && (
-              <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Admin/Officer Tools</p>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Admin/Officer Tools</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {detailsEvent.status === 'upcoming' && (
                     <Button
@@ -2558,19 +2559,19 @@ export const EventsPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="rounded-lg border border-gray-200 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Registration Approvals</p>
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-2">Registration Approvals</p>
                     {isLoadingDetailsLists ? (
-                      <p className="text-sm text-gray-500">Loading...</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">Loading...</p>
                     ) : (
                       <div className="space-y-2">
                         {eventRegistrations
                           .filter((r) => String(r.status) === 'pending')
                           .slice(0, 6)
                           .map((registration) => (
-                            <div key={registration.id} className="rounded border border-gray-200 p-2">
-                              <p className="text-sm font-semibold text-gray-900">{registration.memberName || registration.memberEmail}</p>
-                              <p className="text-xs text-gray-600">Participants: {registration.participantCount || 1}</p>
+                            <div key={registration.id} className="rounded border border-gray-200 dark:border-slate-700 p-2">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{registration.memberName || registration.memberEmail}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">Participants: {registration.participantCount || 1}</p>
                               {registration.teamProfileUrl && (
                                 <a
                                   href={registration.teamProfileUrl}
@@ -2592,25 +2593,25 @@ export const EventsPage = () => {
                             </div>
                           ))}
                         {!eventRegistrations.filter((r) => String(r.status) === 'pending').length && (
-                          <p className="text-sm text-gray-500">No pending registrations.</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">No pending registrations.</p>
                         )}
                       </div>
                     )}
                   </div>
 
-                  <div className="rounded-lg border border-gray-200 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Participant Profile Approvals</p>
+                  <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-2">Participant Profile Approvals</p>
                     {isLoadingDetailsLists ? (
-                      <p className="text-sm text-gray-500">Loading...</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">Loading...</p>
                     ) : (
                       <div className="space-y-2">
                         {eventParticipants
                           .filter((p) => String(p.status) === 'pending')
                           .slice(0, 6)
                           .map((participant) => (
-                            <div key={participant.id} className="rounded border border-gray-200 p-2">
-                              <p className="text-sm font-semibold text-gray-900">{participant.fullName}</p>
-                              <p className="text-xs text-gray-600">{participant.institutionName || '-'} • {participant.position || '-'}</p>
+                            <div key={participant.id} className="rounded border border-gray-200 dark:border-slate-700 p-2">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{participant.fullName}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-300">{participant.institutionName || '-'} • {participant.position || '-'}</p>
                               <div className="mt-2 flex gap-2">
                                 <Button size="sm" variant="success" onClick={() => setPendingApproval({ kind: 'participant', id: String(participant.id), approve: true, name: participant.fullName || 'Participant' })}>
                                   Approve
@@ -2622,7 +2623,7 @@ export const EventsPage = () => {
                             </div>
                           ))}
                         {!eventParticipants.filter((p) => String(p.status) === 'pending').length && (
-                          <p className="text-sm text-gray-500">No pending participants.</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">No pending participants.</p>
                         )}
                       </div>
                     )}
@@ -2632,33 +2633,33 @@ export const EventsPage = () => {
             )}
 
             {canManageEvents && (
-              <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Participants List</p>
+              <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Participants List</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Event Registrations</p>
+                  <div className="rounded border border-gray-200 dark:border-slate-800 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-2">Event Registrations</p>
                     {eventRegistrations.length === 0 ? (
-                      <p className="text-sm text-gray-500">No registrations yet.</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">No registrations yet.</p>
                     ) : (
                       <div className="space-y-2">
                         {eventRegistrations.slice(0, 8).map((registration) => (
                           <div key={registration.id} className="flex items-center justify-between gap-2 text-sm">
-                            <span className="font-medium text-gray-900">{registration.memberName || registration.memberEmail}</span>
+                            <span className="font-medium text-gray-900 dark:text-slate-100">{registration.memberName || registration.memberEmail}</span>
                             <Badge variant={getStatusColor(registration.status)}>{registration.status}</Badge>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Institution Members</p>
+                  <div className="rounded border border-gray-200 dark:border-slate-800 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-2">Institution Members</p>
                     {eventParticipants.length === 0 ? (
-                      <p className="text-sm text-gray-500">No institution participants yet.</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">No institution participants yet.</p>
                     ) : (
                       <div className="space-y-2">
                         {eventParticipants.slice(0, 8).map((participant) => (
                           <div key={participant.id} className="flex items-center justify-between gap-2 text-sm">
-                            <span className="font-medium text-gray-900">{participant.fullName}</span>
+                            <span className="font-medium text-gray-900 dark:text-slate-100">{participant.fullName}</span>
                             <Badge variant={getStatusColor(participant.status)}>{participant.status}</Badge>
                           </div>
                         ))}
@@ -2670,13 +2671,13 @@ export const EventsPage = () => {
             )}
 
             {isMember && (
-              <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Member Registration Actions</p>
+              <div className="rounded-xl border border-gray-200 dark:border-slate-800 p-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Member Registration Actions</p>
                 {isPaidEvent && !isRegistered && (
-                  <p className="text-xs text-gray-500">Paid events require a transaction proof upload to complete registration.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">Paid events require a transaction proof upload to complete registration.</p>
                 )}
                 {isPaidEvent && isRegistered && hasPaymentSubmitted && (
-                  <p className="text-xs text-gray-500">Payment proof already submitted. Waiting for verification.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">Payment proof already submitted. Waiting for verification.</p>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -2688,11 +2689,11 @@ export const EventsPage = () => {
                 </div>
 
                 {(isTeamRegistration || isInstitution) && (
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
+                  <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
                             {isInstitution && registrationSource === 'select' ? (
                               <Users size={16} className="text-primary" />
                             ) : (
@@ -2704,7 +2705,7 @@ export const EventsPage = () => {
                               ? 'Team Registration'
                               : 'Institution Member Registration'}
                           </p>
-                          <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                          <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full">
                             {detailsEvent.registrationMode === 'pair'
                               ? 'Required for Pair / Duo'
                               : detailsEvent.registrationMode === 'team'
@@ -2712,7 +2713,7 @@ export const EventsPage = () => {
                               : 'Institution Entry'}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
                           {isInstitution
                             ? 'Select participating members from your institution or upload a spreadsheet file.'
                             : `Upload your ${detailsEvent.registrationMode === 'pair' ? 'pair / duo' : 'team'} members in CSV, Excel, or spreadsheet format only (.csv, .xlsx, .xls).`}
@@ -2779,19 +2780,19 @@ export const EventsPage = () => {
                       <div className="space-y-3">
                         {/* Event Coach Selection (when requiresCoach is true) */}
                         {detailsEvent.requiresCoach && (
-                          <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5 space-y-2.5">
+                          <div className="rounded-md border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/30 p-3.5 space-y-2.5">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <UserCheck size={17} className="text-indigo-600 shrink-0" />
-                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900">
+                                <UserCheck size={17} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
                                   Event Coach Required
                                 </span>
                               </div>
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800">
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
                                 Official Coach
                               </span>
                             </div>
-                            <p className="text-xs text-indigo-900 leading-relaxed">
+                            <p className="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
                               This event requires an assigned Coach. Select your designated Coach from your institution members below:
                             </p>
 
@@ -2806,7 +2807,7 @@ export const EventsPage = () => {
                                   }
                                   setTeamProfileError(null);
                                 }}
-                                className="w-full text-xs rounded-lg border border-indigo-300 bg-white px-3 py-2 text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-medium"
+                                className="w-full text-xs rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-obsidian-base px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                               >
                                 <option value="">-- Choose Coach from Institution Members --</option>
                                 {uniqueInstitutionMembers.map((m) => {
@@ -2838,13 +2839,13 @@ export const EventsPage = () => {
 
                         <div className="flex items-center justify-between gap-2">
                           <div className="relative flex-1">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
                             <input
                               type="text"
                               placeholder="Search members by name, email, or role..."
                               value={memberSearchQuery}
                               onChange={(e) => setMemberSearchQuery(e.target.value)}
-                              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary"
+                              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-obsidian-base text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                             />
                           </div>
                           {filteredInstitutionMembers.length > 0 && (
@@ -2860,7 +2861,7 @@ export const EventsPage = () => {
                                 }
                                 setTeamProfileError(null);
                               }}
-                              className="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer shrink-0"
+                              className="px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer shrink-0"
                             >
                               {filteredInstitutionMembers.every((m) => selectedInstitutionMemberIds.includes(String(m.id)))
                                 ? 'Deselect All'
@@ -2870,15 +2871,15 @@ export const EventsPage = () => {
                         </div>
 
                         {isLoadingInstitutionRoster ? (
-                          <div className="py-6 text-center text-xs text-gray-500">Loading institution members...</div>
+                          <div className="py-6 text-center text-xs text-slate-600 dark:text-slate-300">Loading institution members...</div>
                         ) : filteredInstitutionMembers.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-gray-500 rounded-lg border border-dashed border-gray-300 bg-white p-4 space-y-2">
-                            <Users size={28} className="mx-auto text-gray-400 mb-1" />
-                            <p className="font-semibold text-gray-700">
+                          <div className="py-6 text-center text-xs text-slate-600 dark:text-slate-300 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-white dark:bg-obsidian-card p-4 space-y-2">
+                            <Users size={28} className="mx-auto text-slate-500 dark:text-slate-400 mb-1" />
+                            <p className="font-semibold text-gray-700 dark:text-slate-200">
                               {memberSearchQuery ? 'No members match your search.' : 'No institution members registered yet.'}
                             </p>
                             {!memberSearchQuery && (
-                              <p className="text-[11px] text-gray-500">
+                              <p className="text-[11px] text-slate-600 dark:text-slate-300">
                                 You can register members under your institution in{' '}
                                 <a href="/institution-members" target="_blank" rel="noreferrer" className="text-primary underline font-medium">
                                   Institution Members
@@ -3165,21 +3166,21 @@ export const EventsPage = () => {
                   </div>
                 )}
 
-                <div className="text-sm text-gray-600">Registration Fee: <span className="font-semibold text-gray-900">{formatCurrency(detailsEvent.fee)}</span></div>
+                <div className="text-sm text-slate-600 dark:text-slate-300 tabular-nums">Registration Fee: <span className="font-semibold text-gray-900 dark:text-slate-100">{formatCurrency(detailsEvent.fee)}</span></div>
                 {isMember && isPaidEvent && (
-                  <div className="space-y-1.5 mt-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50">
-                    <div className="flex justify-between text-xs font-semibold text-gray-700">
+                  <div className="space-y-1.5 mt-2 bg-blue-50/50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/40">
+                    <div className="flex justify-between text-xs font-semibold text-gray-700 dark:text-slate-200 tabular-nums">
                       <span>Payment Progress</span>
                       <span>{formatCurrency(stats.totalVerifiedPaid)} / {formatCurrency(detailsEvent.fee)} Paid ({stats.percentPaid}%)</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div className="w-full bg-gray-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
                       <div
                         className="bg-primary h-2.5 rounded-full transition-all duration-500"
                         style={{ width: `${stats.percentPaid}%` }}
                       ></div>
                     </div>
                     {stats.totalPendingPaid > 0 && (
-                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 tabular-nums">
                         * PHP {stats.totalPendingPaid.toLocaleString()} pending verification
                       </p>
                     )}
@@ -3234,22 +3235,22 @@ export const EventsPage = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
             {detailsEvent?.title || 'Guidelines'}
           </p>
 
           {/* Attached Guidelines Document */}
           {detailsEvent?.guidelinesFileUrl && (
-            <div className="p-4 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="p-4 bg-blue-50/80 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 shrink-0">
+                <div className="p-2.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 shrink-0">
                   <FileSpreadsheet size={22} />
                 </div>
                 <div className="min-w-0">
                   <span className="text-sm font-bold text-gray-900 dark:text-white block truncate">
                     {detailsEvent.guidelinesFileName || 'Official Guidelines Document'}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400">Attached file for participant review & reference</span>
+                  <span className="text-xs text-slate-600 dark:text-slate-300">Attached file for participant review & reference</span>
                 </div>
               </div>
               <a
@@ -3386,14 +3387,14 @@ export const EventsPage = () => {
           )}
 
           {canManageEvents && Object.keys(customTemplates).length > 0 && (
-            <div className="rounded-lg border border-gray-200 p-3 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Uploaded Templates</p>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-800 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Uploaded Templates</p>
               <div className="space-y-2">
                 {Object.entries(customTemplates).map(([key, t]) => (
                   <div key={key} className="flex items-center justify-between gap-3 text-sm">
                     <div className="min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{t.label}</div>
-                      <div className="text-xs text-gray-500">Key: {key}</div>
+                      <div className="font-medium text-gray-900 dark:text-slate-100 truncate">{t.label}</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300">Key: {key}</div>
                     </div>
                     <Button
                       size="sm"
@@ -3455,11 +3456,11 @@ export const EventsPage = () => {
           {paymentError && <div className="text-sm text-red-600">{paymentError}</div>}
 
           {paymentEvent && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <p className="text-sm font-semibold text-gray-900">{paymentEvent.title}</p>
-              <p className="text-xs text-gray-600">Registration fee: {formatCurrency(Number(paymentEvent.fee || 0))}</p>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60 p-3">
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{paymentEvent.title}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">Registration fee: {formatCurrency(Number(paymentEvent.fee || 0))}</p>
               {paymentFlow === 'pre_register' && (
-                <p className="text-xs text-gray-600 mt-1">Upload transaction proof to submit your registration.</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Upload transaction proof to submit your registration.</p>
               )}
             </div>
           )}
@@ -3529,7 +3530,7 @@ export const EventsPage = () => {
                 ? 'Cheque Receipt / Copy *'
                 : 'GCash Transaction Receipt / Screenshot *'}
             </label>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
               {paymentForm.method === 'through_officer'
                 ? 'Please upload a clear photo or scanned image of the Official Receipt (OR) issued by the PSITS officer.'
                 : paymentForm.method === 'bank_transfer'

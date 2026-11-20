@@ -19,6 +19,18 @@
     <link rel="canonical" href="https://psits-web-system.vercel.app/" />
 
     <!-- Theme & App Details -->
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      try {
+        var mode = localStorage.getItem('psits_theme_mode') || 'light';
+        var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = mode === 'dark' || (mode === 'system' && sysDark);
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        var metaCs = document.querySelector('meta[name="color-scheme"]');
+        if (metaCs) metaCs.setAttribute('content', mode === 'system' ? 'light dark' : (isDark ? 'dark' : 'light'));
+      } catch (e) {}
+    </script>
     <meta name="theme-color" content="#1e3a8a" />
     <meta name="application-name" content="PSITS Web System" />
 

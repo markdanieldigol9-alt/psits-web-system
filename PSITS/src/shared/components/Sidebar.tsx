@@ -276,7 +276,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
       >
         {/* ── Logo area ─────────────────────────── */}
         <div className="flex items-center gap-3 px-5 h-[60px] border-b border-slate-100/80 dark:border-slate-800/60 shrink-0">
-          <img src={logo} alt="PSITS" className="h-9 w-9 object-contain rounded-full shadow-xs" />
+          <img src={logo} alt="PSITS Logo" width={36} height={36} className="h-9 w-9 object-contain rounded-full shadow-xs" />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">PSITS</span>
             <span className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold tracking-wide">Web System</span>
@@ -284,7 +284,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
         </div>
 
         {/* ── Navigation ────────────────────────── */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+        <nav aria-label="Primary" className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
           {groupsToDisplay.map((group, gi) => (
             <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
               {/* Group label */}
@@ -304,6 +304,7 @@ export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
                     key={item.href}
                     to={item.href}
                     onClick={onClose}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`group flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition-all duration-150 ${
                       isActive
                         ? 'bg-gradient-to-r from-blue-50 to-cyan-50/50 dark:from-blue-950/60 dark:to-cyan-950/30 text-primary-700 dark:text-cyan-300 font-bold shadow-xs border-l-[3px] border-l-cyan-500 dark:border-l-cyan-400'

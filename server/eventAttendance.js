@@ -6,14 +6,17 @@ function json(res, status, body) {
 
 /**
  * Schedule rules for venue attendance (time in / time out).
- * - Time-in opens TIME_IN_OPENS_BEFORE_MIN minutes before the scheduled start
+ * - Time-in opens TIME_IN_OPENS_BEFORE_MIN (60 minutes / 1 hour) before the scheduled start
  *   and closes at the scheduled end.
+ * - Time-out is active during the event and extends for TIME_OUT_CLOSES_AFTER_MIN (60 minutes / 1 hour)
+ *   after the scheduled end.
  * - Arrivals later than LATE_GRACE_MIN after the start are flagged as "Late".
  * - Departures before the scheduled end are flagged as "Left Early".
- * - After the event ends, officers may auto time-out everyone still in venue
- *   at the scheduled end time.
+ * - After the 1-hour time-out window closes, participants who never timed out
+ *   are marked as "Not Timed Out".
  */
-const TIME_IN_OPENS_BEFORE_MIN = 120;
+const TIME_IN_OPENS_BEFORE_MIN = 60;
+const TIME_OUT_CLOSES_AFTER_MIN = 60;
 const LATE_GRACE_MIN = 15;
 
 const toIso = (value) => (value ? new Date(value).toISOString() : null);
@@ -30,7 +33,9 @@ function resolveSchedule(eventRow) {
     endAt.setHours(23, 59, 59, 0);
   }
   const timeInOpensAt = startAt ? new Date(startAt.getTime() - TIME_IN_OPENS_BEFORE_MIN * 60000) : null;
-  return { startAt, endAt, timeInOpensAt };
+  const timeInClosesAt = endAt ? new Date(endAt.getTime()) : null;
+  const timeOutClosesAt = endAt ? new Date(endAt.getTime() + TIME_OUT_CLOSES_AFTER_MIN * 60000) : null;
+  return { startAt, endAt, timeInOpensAt, timeInClosesAt, timeOutClosesAt };
 }
 
 function formatScheduleTime(date) {
@@ -135,7 +140,7 @@ async function getEventAttendance(req, res) {
     let totalTimedOut = 0;
     let totalLate = 0;
     const now = new Date();
-    const isEventClosed = event.status === 'completed' || Boolean(schedule.endAt && now > schedule.endAt);
+    const isAttendanceClosed = Boolean(schedule.timeOutClosesAt && now > schedule.timeOutClosesAt);
     const lateThreshold = schedule.startAt ? schedule.startAt.getTime() + LATE_GRACE_MIN * 60000 : null;
     const instMap = new Map();
 
@@ -165,8 +170,8 @@ async function getEventAttendance(req, res) {
 
     const totalRegistered = participants.length;
     const withoutTimeOut = Math.max(0, totalCheckedIn - totalTimedOut);
-    const totalNotTimedOut = isEventClosed ? withoutTimeOut : 0;
-    const currentlyInVenue = isEventClosed ? 0 : withoutTimeOut;
+    const totalNotTimedOut = isAttendanceClosed ? withoutTimeOut : 0;
+    const currentlyInVenue = isAttendanceClosed ? 0 : withoutTimeOut;
     const attendanceRate = totalRegistered > 0 ? Number(((totalCheckedIn / totalRegistered) * 100).toFixed(1)) : 0;
 
     return json(res, 200, {
@@ -185,7 +190,10 @@ async function getEventAttendance(req, res) {
         startAt: toIso(schedule.startAt),
         endAt: toIso(schedule.endAt),
         timeInOpensAt: toIso(schedule.timeInOpensAt),
+        timeInClosesAt: toIso(schedule.timeInClosesAt),
+        timeOutClosesAt: toIso(schedule.timeOutClosesAt),
         timeInOpensBeforeMinutes: TIME_IN_OPENS_BEFORE_MIN,
+        timeOutClosesAfterMinutes: TIME_OUT_CLOSES_AFTER_MIN,
         lateGraceMinutes: LATE_GRACE_MIN,
       },
       summary: {
@@ -259,7 +267,7 @@ async function recordAttendanceTime(req, res) {
       return json(res, 400, { success: false, message: 'Attendance cannot be recorded for a cancelled event.' });
     }
 
-    const { startAt, endAt, timeInOpensAt } = resolveSchedule(event);
+    const { startAt, endAt, timeInOpensAt, timeOutClosesAt } = resolveSchedule(event);
     const now = new Date();
 
     // ── Schedule enforcement ──────────────────────────────
@@ -267,13 +275,21 @@ async function recordAttendanceTime(req, res) {
       if (timeInOpensAt && now < timeInOpensAt) {
         return json(res, 400, {
           success: false,
-          message: `Time-in is not open yet. It opens at ${formatScheduleTime(timeInOpensAt)} (${TIME_IN_OPENS_BEFORE_MIN / 60}h before the event starts).`,
+          message: `Time-in is not open yet. It opens at ${formatScheduleTime(timeInOpensAt)} (1 hour before the event starts).`,
         });
       }
       if (endAt && now > endAt) {
         return json(res, 400, {
           success: false,
-          message: `Time-in is closed. The event schedule ended at ${formatScheduleTime(endAt)}.`,
+          message: `Time-in is closed. Time-in closed at ${formatScheduleTime(endAt)} when the event ended.`,
+        });
+      }
+    }
+    if (action === 'time_out') {
+      if (timeOutClosesAt && now > timeOutClosesAt) {
+        return json(res, 400, {
+          success: false,
+          message: `Regular time-out window closed at ${formatScheduleTime(timeOutClosesAt)} (1 hour after event end). Use Override Time Out to record time out for participants who did not time out on time.`,
         });
       }
     }
@@ -287,7 +303,7 @@ async function recordAttendanceTime(req, res) {
     // ── Build per-table SET / guard clauses ───────────────
     // Resolve the effective time-out timestamp:
     // - customTimeOut (if provided & valid) overrides with the admin/officer's chosen timestamp
-    // - auto_time_out or override_time_out after event close defaults to the scheduled end (endAt)
+    // - auto_time_out or override_time_out after the 1-hour time-out window defaults to the scheduled end (endAt)
     // - normal time_out uses current time (now)
     let parsedCustomOut = null;
     if (customTimeOut) {
@@ -296,10 +312,10 @@ async function recordAttendanceTime(req, res) {
         parsedCustomOut = candidate;
       }
     }
-    const isPastEnd = Boolean(endAt && now > endAt);
+    const isPastTimeOutWindow = Boolean(timeOutClosesAt && now > timeOutClosesAt);
     const outStamp =
       parsedCustomOut ||
-      (action === 'auto_time_out' || (action === 'override_time_out' && isPastEnd) ? endAt || now : now);
+      (action === 'auto_time_out' || (action === 'override_time_out' && isPastTimeOutWindow) ? endAt || now : now);
     const fallbackInStamp = startAt && startAt < outStamp ? startAt : outStamp;
 
     const instSql = {

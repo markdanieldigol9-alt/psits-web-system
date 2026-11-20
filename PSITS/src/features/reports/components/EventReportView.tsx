@@ -441,18 +441,23 @@ export const EventReportView = ({
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto max-h-[460px] overflow-y-auto print:overflow-visible print:max-h-none">
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Event participation registry table"
+          className="overflow-x-auto max-h-[460px] overflow-y-auto print:overflow-visible print:max-h-none"
+        >
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 print:static">
               <tr>
-                <th className="px-3 py-2.5">Event Title</th>
-                <th className="px-3 py-2.5">Type / Category</th>
-                <th className="px-3 py-2.5">Venue / Location</th>
-                <th className="px-3 py-2.5 text-center">Status</th>
-                <th className="px-3 py-2.5 text-right tabular-nums">Capacity</th>
-                <th className="px-3 py-2.5 text-right tabular-nums">Registered</th>
-                <th className="px-3 py-2.5 text-right tabular-nums">Fee (₱)</th>
-                <th className="px-3 py-2.5 text-center no-print">Action</th>
+                <th scope="col" className="px-3 py-2.5">Event Title</th>
+                <th scope="col" className="px-3 py-2.5">Type / Category</th>
+                <th scope="col" className="px-3 py-2.5">Venue / Location</th>
+                <th scope="col" className="px-3 py-2.5 text-center">Status</th>
+                <th scope="col" className="px-3 py-2.5 text-right tabular-nums">Capacity</th>
+                <th scope="col" className="px-3 py-2.5 text-right tabular-nums">Registered</th>
+                <th scope="col" className="px-3 py-2.5 text-right tabular-nums">Fee (₱)</th>
+                <th scope="col" className="px-3 py-2.5 text-center no-print">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">

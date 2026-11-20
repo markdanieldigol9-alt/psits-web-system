@@ -1310,7 +1310,7 @@ export const ReportsPage = () => {
           disablePrintableId={Boolean(previewReport)}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 no-print">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 no-print defer-offscreen-section">
           <Card
             title="Membership Growth"
             subtitle={

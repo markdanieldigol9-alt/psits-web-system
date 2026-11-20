@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { X, CheckCircle2, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
@@ -24,6 +24,7 @@ export const Modal = ({
   hideCloseButton = false,
 }: ModalProps) => {
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,10 +46,11 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/55 dark:bg-black/70 backdrop-blur-[2px] overflow-y-auto"
+      className="fixed inset-0 z-50 bg-slate-900/55 dark:bg-black/70 backdrop-blur-[2px] overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      aria-labelledby={titleId}
       ref={overlayRef}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
@@ -56,12 +58,12 @@ export const Modal = ({
     >
       <div className="min-h-[100dvh] flex items-start sm:items-center justify-center p-4 sm:p-6">
         <div
-          className={`bg-white dark:bg-obsidian-card rounded-2xl shadow-modal ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden border border-slate-200/80 dark:border-slate-800 animate-pop-in text-slate-900 dark:text-slate-100`}
+          className={`bg-white dark:bg-obsidian-card rounded-2xl shadow-modal ${sizeClasses[size]} w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden border border-slate-200/80 dark:border-slate-800 animate-pop-in text-slate-900 dark:text-slate-100 overscroll-contain`}
         >
           {/* Header */}
           <div className="relative flex items-start justify-between p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <div className="flex-1 min-w-0 pr-4">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight text-balance max-w-xl">
+              <h2 id={titleId} className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight text-balance max-w-xl">
                 {title}
               </h2>
               {subtitle && (
@@ -71,17 +73,18 @@ export const Modal = ({
 
             {!hideCloseButton && (
               <button
+                type="button"
                 onClick={onClose}
                 aria-label="Close modal"
                 className="shrink-0 p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors mt-0.5"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             )}
           </div>
 
           {/* Body */}
-          <div className="p-5 sm:p-6 overflow-y-auto flex-1">{children}</div>
+          <div className="p-5 sm:p-6 overflow-y-auto overscroll-contain flex-1">{children}</div>
         </div>
       </div>
     </div>

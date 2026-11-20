@@ -38,7 +38,26 @@ export default defineConfig(({ mode }) => {
           cssMinify: false,
           sourcemap: true,
         }
-      : undefined,
+      : {
+          rollupOptions: {
+            output: {
+              manualChunks(id) {
+                if (id.includes("node_modules")) {
+                  if (id.includes("recharts") || id.includes("d3-")) {
+                    return "vendor-charts";
+                  }
+                  if (id.includes("xlsx")) {
+                    return "vendor-xlsx";
+                  }
+                  if (id.includes("lucide-react")) {
+                    return "vendor-icons";
+                  }
+                }
+                return undefined;
+              },
+            },
+          },
+        },
     test: {
       environment: 'jsdom',
       setupFiles: ['./jest.setup.ts'],

@@ -1078,16 +1078,16 @@ export const InstitutionMembersPage = () => {
               )}
               <div className={`grid grid-cols-1 sm:grid-cols-2 ${displayHasPartial ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3.5`}>
                 {/* 1. Total Amount */}
-                <div className="p-3.5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/30 flex items-center justify-between">
+                <div className="p-3.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/30 flex items-center justify-between">
                   <div>
                     <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
                       <Receipt size={13} />
                       Total Amount
                     </div>
-                    <div className="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-0.5">
+                    <div className="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-0.5 tabular-nums">
                       ₱{displayTotalBill.toLocaleString()}
                     </div>
-                    <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 tabular-nums">
                       {displayTotalHeads} person(s) @ ₱250 {displayFreeSlots > 0 ? `• ${displayFreeSlots} Free` : ''}
                     </div>
                   </div>
@@ -1095,16 +1095,16 @@ export const InstitutionMembersPage = () => {
 
                 {/* 2. Partial Amount Paid (Included ONLY when partial payment was made) */}
                 {displayHasPartial && (
-                  <div className="p-3.5 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/30 flex items-center justify-between">
+                  <div className="p-3.5 rounded-lg border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/30 flex items-center justify-between">
                     <div>
                       <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                         <Coins size={13} />
                         Partial Amount Paid
                       </div>
-                      <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
+                      <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5 tabular-nums">
                         ₱{displayPartialPaid.toLocaleString()}
                       </div>
-                      <div className="text-[11px] text-amber-700/80 font-medium mt-0.5">
+                      <div className="text-[11px] text-amber-800 dark:text-amber-300 font-medium mt-0.5">
                         Initial Downpayment
                       </div>
                     </div>
@@ -1112,7 +1112,7 @@ export const InstitutionMembersPage = () => {
                 )}
 
                 {/* 3. Remaining Balance */}
-                <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
+                <div className={`p-3.5 rounded-lg border flex items-center justify-between ${
                   displayRemainingBalance > 0
                     ? 'border-rose-200/80 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30'
                     : 'border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/30'
@@ -1124,13 +1124,13 @@ export const InstitutionMembersPage = () => {
                       <CreditCard size={13} />
                       Remaining Balance
                     </div>
-                    <div className={`text-xl font-black mt-0.5 ${
+                    <div className={`text-xl font-black mt-0.5 tabular-nums ${
                       displayRemainingBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}>
                       ₱{displayRemainingBalance.toLocaleString()}
                     </div>
                     <div className={`text-[11px] font-medium mt-0.5 flex items-center gap-1 ${
-                      displayRemainingBalance > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
+                      displayRemainingBalance > 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'
                     }`}>
                       {displayRemainingBalance > 0 ? (
                         'To be settled'
@@ -1172,7 +1172,7 @@ export const InstitutionMembersPage = () => {
           <Card className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
                   <Building2 size={20} />
                 </div>
                 <div>
@@ -1182,7 +1182,7 @@ export const InstitutionMembersPage = () => {
                       Admin Tracking
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-slate-400 font-normal">
+                  <div className="text-xs text-slate-600 dark:text-slate-300 font-normal">
                     Track each institution's total amount, partial amount paid, and remaining balance in real time.
                   </div>
                 </div>
@@ -1200,7 +1200,7 @@ export const InstitutionMembersPage = () => {
             {/* Top Toolbar: Search and Filter Pills */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div className="relative w-full sm:w-72">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search institution..."
@@ -1212,7 +1212,7 @@ export const InstitutionMembersPage = () => {
                   <button
                     type="button"
                     onClick={() => setBoardSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-gray-200 p-0.5"
                     aria-label="Clear search"
                   >
                     <X size={14} />
@@ -1224,7 +1224,7 @@ export const InstitutionMembersPage = () => {
                 <button
                   type="button"
                   onClick={() => setBoardStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer tabular-nums ${
                     boardStatusFilter === 'all'
                       ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
                       : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
@@ -1235,7 +1235,7 @@ export const InstitutionMembersPage = () => {
                 <button
                   type="button"
                   onClick={() => setBoardStatusFilter('with_balance')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer tabular-nums ${
                     boardStatusFilter === 'with_balance'
                       ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-xs'
                       : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
@@ -1246,7 +1246,7 @@ export const InstitutionMembersPage = () => {
                 <button
                   type="button"
                   onClick={() => setBoardStatusFilter('settled')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer tabular-nums ${
                     boardStatusFilter === 'settled'
                       ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
                       : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
@@ -1258,14 +1258,14 @@ export const InstitutionMembersPage = () => {
             </div>
 
             {/* Board Table */}
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-800">
+            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-800">
               <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50/80 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800 text-[11px] uppercase tracking-wider font-bold text-gray-500 dark:text-slate-400">
+                <thead className="bg-gray-50/80 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800 text-[11px] uppercase tracking-wider font-bold text-slate-700 dark:text-slate-300">
                   <tr>
                     <th className="py-3 px-4">Institution Name</th>
-                    <th className="py-3 px-4">Total Amount</th>
-                    <th className="py-3 px-4">Partial Amount Paid</th>
-                    <th className="py-3 px-4">Remaining Balance</th>
+                    <th className="py-3 px-4 text-right">Total Amount</th>
+                    <th className="py-3 px-4 text-right">Partial Amount Paid</th>
+                    <th className="py-3 px-4 text-right">Remaining Balance</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -1273,7 +1273,7 @@ export const InstitutionMembersPage = () => {
                 <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60 font-medium">
                   {filteredBoardAccounts.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-400 dark:text-slate-500">
+                      <td colSpan={6} className="py-8 text-center text-slate-600 dark:text-slate-300">
                         No institutions match the current search or filter.
                       </td>
                     </tr>
@@ -1307,43 +1307,43 @@ export const InstitutionMembersPage = () => {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-gray-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                <div className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2 mt-0.5 tabular-nums">
                                   <span>{inst.headCount} member(s)</span>
                                   <span>•</span>
                                   <span>{inst.freeSlots} Free Slots</span>
                                   {inst.email && (
                                     <>
                                       <span>•</span>
-                                      <span className="text-gray-400">{inst.email}</span>
+                                      <span className="text-slate-600 dark:text-slate-300">{inst.email}</span>
                                     </>
                                   )}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 text-right tabular-nums">
                             <div className="font-black text-indigo-700 dark:text-indigo-400 text-sm">
                               ₱{inst.totalAmount.toLocaleString()}
                             </div>
-                            <div className="text-[10px] text-gray-400">
+                            <div className="text-[10px] text-slate-600 dark:text-slate-300">
                               {inst.headCount} × ₱250
                             </div>
                           </td>
-                          <td className="py-3.5 px-4">
-                            <div className="font-black text-amber-600 dark:text-amber-400 text-sm flex items-center gap-1.5">
+                          <td className="py-3.5 px-4 text-right tabular-nums">
+                            <div className="font-black text-amber-600 dark:text-amber-400 text-sm flex items-center justify-end gap-1.5">
                               ₱{inst.partialAmountPaid.toLocaleString()}
-                              <span className="text-[10px] font-bold text-gray-400">
+                              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
                                 ({percentPaid}%)
                               </span>
                             </div>
-                            <div className="w-28 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 mt-1 overflow-hidden">
+                            <div className="w-28 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 mt-1 overflow-hidden ml-auto">
                               <div
                                 className="bg-amber-500 h-1.5 rounded-full transition-all duration-300"
                                 style={{ width: `${percentPaid}%` }}
                               />
                             </div>
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 text-right tabular-nums">
                             <div className={`font-black text-sm ${
                               inst.remainingBalance > 0
                                 ? 'text-rose-600 dark:text-rose-400'
@@ -1351,8 +1351,8 @@ export const InstitutionMembersPage = () => {
                             }`}>
                               ₱{inst.remainingBalance.toLocaleString()}
                             </div>
-                            <div className={`text-[10px] font-medium flex items-center gap-1 ${
-                              inst.remainingBalance > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'
+                            <div className={`text-[10px] font-medium flex items-center justify-end gap-1 ${
+                              inst.remainingBalance > 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'
                             }`}>
                               {inst.remainingBalance > 0 ? (
                                 'Outstanding balance'
@@ -1462,9 +1462,9 @@ export const InstitutionMembersPage = () => {
               </button>
             </div>
           )}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-200 dark:border-slate-800">
             <div className="relative w-full">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
               <Input
                 placeholder="Search member, institution, gender, email..."
                 value={searchTerm}
@@ -1481,7 +1481,7 @@ export const InstitutionMembersPage = () => {
                     setSearchTerm('');
                     setCurrentPage(1);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-gray-200 p-1"
                   aria-label="Clear search"
                 >
                   <X size={16} />
@@ -1500,12 +1500,12 @@ export const InstitutionMembersPage = () => {
                 aria-label="Institution Roster Table"
                 tabIndex={0}
               >
-                <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <div className="sm:hidden px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5">
                     <ArrowRight size={12} className="shrink-0" />
                     <span>Swipe table horizontally to view full row</span>
                   </span>
-                  <span className="font-mono text-[10px]">{filteredMembers.length} records</span>
+                  <span className="tabular-nums font-medium text-[10px]">{filteredMembers.length} records</span>
                 </div>
                 <table className="w-full min-w-[1100px]">
               <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-800">
@@ -1518,7 +1518,7 @@ export const InstitutionMembersPage = () => {
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Password</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Contact</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Position</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Fee / Rate</th>
+                  <th className="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Fee / Rate</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Gender</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Status</th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Date</th>
@@ -1577,9 +1577,9 @@ export const InstitutionMembersPage = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.contactNumber || '-'}</td>
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.position || '-'}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    <td className="px-6 py-4 text-sm text-right font-semibold text-blue-600 dark:text-blue-400 tabular-nums">
                       <div>₱250.00</div>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">per person</span>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-300 font-normal">per person</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.gender || '-'}</td>
                     <td className="px-6 py-4">
@@ -1587,7 +1587,7 @@ export const InstitutionMembersPage = () => {
                         {String(member.status || 'pending').charAt(0).toUpperCase() + String(member.status || 'pending').slice(1)}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{member.date || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 tabular-nums">{member.date || '-'}</td>
                     {canApprove && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
@@ -1626,7 +1626,7 @@ export const InstitutionMembersPage = () => {
           )}
 
           <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-gray-600 flex items-center gap-2">
+            <div className="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2 tabular-nums">
               <Users size={16} />
               {filteredMembers.length} member(s)
             </div>
@@ -1772,8 +1772,8 @@ export const InstitutionMembersPage = () => {
       >
         <div className="space-y-5">
           {/* Header Description */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/40 border border-blue-200/80 dark:border-blue-900 rounded-2xl p-4 flex items-start gap-3.5">
-            <div className="p-2 bg-primary/10 text-primary rounded-xl shrink-0 mt-0.5">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/40 border border-blue-200/80 dark:border-blue-900 rounded-lg p-4 flex items-start gap-3.5">
+            <div className="p-2 bg-primary/10 text-primary rounded-md shrink-0 mt-0.5">
               <Receipt size={22} />
             </div>
             <div className="text-xs text-gray-800 dark:text-slate-200 leading-relaxed">
@@ -1788,42 +1788,42 @@ export const InstitutionMembersPage = () => {
 
           {/* 4 Financial Metric Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs">
-              <div className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="p-3.5 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs">
+              <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Users size={14} className="text-blue-600" />
                 Uploaded Heads
               </div>
-              <div className="text-xl font-black text-gray-900 dark:text-white mt-1">
-                {batchCount} <span className="text-xs font-normal text-gray-500">persons</span>
+              <div className="text-xl font-black text-gray-900 dark:text-white mt-1 tabular-nums">
+                {batchCount} <span className="text-xs font-normal text-slate-600 dark:text-slate-300">persons</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs">
-              <div className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="p-3.5 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs">
+              <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Coins size={14} className="text-indigo-600" />
                 Rate Per Head
               </div>
-              <div className="text-xl font-black text-gray-900 dark:text-white mt-1">
+              <div className="text-xl font-black text-gray-900 dark:text-white mt-1 tabular-nums">
                 ₱{ratePerHead.toLocaleString()}
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs">
+            <div className="p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs">
               <div className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Gift size={14} />
                 Complimentary
               </div>
-              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
                 {freeSlots} Free <span className="text-xs font-normal">(-₱{discountAmount.toLocaleString()})</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/30 shadow-xs">
+            <div className="p-3.5 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/30 shadow-xs">
               <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Receipt size={14} />
                 Total Bill
               </div>
-              <div className="text-xl font-black text-blue-700 dark:text-blue-300 mt-1">
+              <div className="text-xl font-black text-blue-700 dark:text-blue-300 mt-1 tabular-nums">
                 ₱{netAmount.toLocaleString()}
               </div>
             </div>
@@ -1838,7 +1838,7 @@ export const InstitutionMembersPage = () => {
               <button
                 type="button"
                 onClick={() => setPaymentType('full')}
-                className={`p-4 rounded-xl border text-left transition-all ${
+                className={`p-4 rounded-lg border text-left transition-all ${
                   paymentType === 'full'
                     ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/20'
                     : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-gray-300'
@@ -1846,9 +1846,9 @@ export const InstitutionMembersPage = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm text-gray-900 dark:text-white">Full Payment</span>
-                  <span className="font-black text-blue-600 dark:text-blue-400">₱{netAmount.toLocaleString()}</span>
+                  <span className="font-black text-blue-600 dark:text-blue-400 tabular-nums">₱{netAmount.toLocaleString()}</span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   Pay the total bill in full today.
                 </p>
               </button>
@@ -1856,7 +1856,7 @@ export const InstitutionMembersPage = () => {
               <button
                 type="button"
                 onClick={() => setPaymentType('partial')}
-                className={`p-4 rounded-xl border text-left transition-all ${
+                className={`p-4 rounded-lg border text-left transition-all ${
                   paymentType === 'partial'
                     ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20'
                     : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-gray-300'
@@ -1868,14 +1868,14 @@ export const InstitutionMembersPage = () => {
                     Flexible
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   Pay an initial partial amount and settle the remaining balance later.
                 </p>
               </button>
             </div>
 
             {paymentType === 'partial' && (
-              <div className="mt-3 p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 space-y-3 animate-fadeIn">
+              <div className="mt-3 p-4 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 space-y-3 animate-fadeIn">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="w-full sm:w-1/2">
                     <Input
@@ -1889,9 +1889,9 @@ export const InstitutionMembersPage = () => {
                       helperText={`Must be between ₱1 and ₱${Math.max(1, netAmount - 1).toLocaleString()}`}
                     />
                   </div>
-                  <div className="w-full sm:w-1/2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-amber-200 dark:border-amber-800/40 text-right">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Remaining Balance Later</div>
-                    <div className="text-lg font-black text-amber-600 dark:text-amber-400 mt-0.5">
+                  <div className="w-full sm:w-1/2 bg-white dark:bg-slate-900 p-3 rounded-md border border-amber-200 dark:border-amber-800/40 text-right">
+                    <div className="text-xs text-slate-600 dark:text-slate-300">Remaining Balance Later</div>
+                    <div className="text-lg font-black text-amber-600 dark:text-amber-400 mt-0.5 tabular-nums">
                       ₱{remainingBalance.toLocaleString()}
                     </div>
                   </div>
@@ -1901,7 +1901,7 @@ export const InstitutionMembersPage = () => {
           </div>
 
           {/* Official Total Billing Card (Exact User Requirement) */}
-          <div className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-800/80 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm space-y-3">
+          <div className="rounded-lg border-2 border-indigo-200 dark:border-indigo-800/80 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 pb-2.5">
               <div className="flex items-center gap-2">
                 <Receipt className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -1917,10 +1917,10 @@ export const InstitutionMembersPage = () => {
             <div className="space-y-2 text-sm text-gray-700 dark:text-slate-300">
               {/* 1. Total Amount Per Head */}
               <div className="flex justify-between items-center py-1">
-                <span className="text-gray-600 dark:text-slate-400">
+                <span className="text-slate-600 dark:text-slate-300 tabular-nums">
                   Total Amount Per Head (<strong>{batchCount} persons</strong> × <strong>₱250.00</strong>):
                 </span>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="font-semibold text-gray-900 dark:text-white tabular-nums">
                   ₱{grossAmount.toLocaleString()}
                 </span>
               </div>
@@ -1931,27 +1931,27 @@ export const InstitutionMembersPage = () => {
                   <Gift size={15} />
                   Complimentary Discount ({freeSlots} Free Slots):
                 </span>
-                <span>-₱{discountAmount.toLocaleString()}</span>
+                <span className="tabular-nums">-₱{discountAmount.toLocaleString()}</span>
               </div>
 
               {/* 3. Total Bill */}
               <div className="border-t border-gray-200 dark:border-slate-800 pt-2 flex justify-between items-center text-base font-black text-gray-900 dark:text-white">
                 <span>Total Bill (Net Payable):</span>
-                <span className="text-indigo-600 dark:text-indigo-400 text-lg">
+                <span className="text-indigo-600 dark:text-indigo-400 text-lg tabular-nums">
                   ₱{netAmount.toLocaleString()}
                 </span>
               </div>
 
               {/* 4. Partial Amount (Included ONLY if partial payment is selected) */}
               {paymentType === 'partial' && isPartialValid && (
-                <div className="pt-2.5 border-t border-dashed border-indigo-200 dark:border-indigo-800/80 space-y-1.5 bg-indigo-50/40 dark:bg-indigo-950/20 p-2.5 rounded-xl">
+                <div className="pt-2.5 border-t border-dashed border-indigo-200 dark:border-indigo-800/80 space-y-1.5 bg-indigo-50/40 dark:bg-indigo-950/20 p-2.5 rounded-md">
                   <div className="flex justify-between items-center text-sm font-bold text-blue-700 dark:text-blue-300">
                     <span>Partial Amount to Pay Now:</span>
-                    <span>₱{enteredPartial.toLocaleString()}</span>
+                    <span className="tabular-nums">₱{enteredPartial.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs font-semibold text-amber-700 dark:text-amber-400">
                     <span>Remaining Balance to Settle Later:</span>
-                    <span>₱{remainingBalance.toLocaleString()}</span>
+                    <span className="tabular-nums">₱{remainingBalance.toLocaleString()}</span>
                   </div>
                 </div>
               )}
@@ -2019,7 +2019,7 @@ export const InstitutionMembersPage = () => {
                     ? 'Attach Cheque Receipt / Copy *'
                     : 'Attach GCash Receipt / Screenshot *'}
                 </label>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   {batchPaymentMethod === 'through_officer' || batchPaymentMethod === 'cash_officer'
                     ? 'Please upload a photo or scan of the Official Receipt (OR) issued by the PSITS officer.'
                     : batchPaymentMethod === 'bank_transfer'
@@ -2075,7 +2075,7 @@ export const InstitutionMembersPage = () => {
                       <div className="font-semibold text-gray-900 dark:text-white truncate">
                         {idx + 1}. {m.fullName}
                       </div>
-                      <div className="text-gray-500 dark:text-slate-400 text-[11px] truncate flex items-center gap-1.5 flex-wrap">
+                      <div className="text-slate-600 dark:text-slate-300 text-[11px] truncate flex items-center gap-1.5 flex-wrap">
                         <span>{m.email || 'No email'}</span>
                         <span>•</span>
                         <span>{m.contactNumber || 'No contact'}</span>
@@ -2148,46 +2148,46 @@ export const InstitutionMembersPage = () => {
               <h3 className="text-xl font-black text-gray-900 dark:text-white">
                 Batch Registration & Billing Confirmed
               </h3>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                 Your institution members roster and billing have been registered in the system.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 p-4 space-y-2.5 text-xs">
+            <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 p-4 space-y-2.5 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-gray-500">Reference Number:</span>
+                <span className="text-slate-600 dark:text-slate-300">Reference Number:</span>
                 <span className="font-mono font-bold text-gray-900 dark:text-white">{batchReceiptModal.referenceNumber}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500">Total Registered Members:</span>
-                <span className="font-bold text-gray-900 dark:text-white">{batchReceiptModal.totalHeads} Persons</span>
+                <span className="text-slate-600 dark:text-slate-300">Total Registered Members:</span>
+                <span className="font-bold text-gray-900 dark:text-white tabular-nums">{batchReceiptModal.totalHeads} Persons</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500">Rate Per Head:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">₱{batchReceiptModal.ratePerHead || 250}.00</span>
+                <span className="text-slate-600 dark:text-slate-300">Rate Per Head:</span>
+                <span className="font-semibold text-gray-900 dark:text-white tabular-nums">₱{batchReceiptModal.ratePerHead || 250}.00</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500">Gross Amount ({batchReceiptModal.totalHeads} × ₱250.00):</span>
-                <span className="font-semibold text-gray-900 dark:text-white">₱{Number(batchReceiptModal.grossAmount || 0).toLocaleString()}</span>
+                <span className="text-slate-600 dark:text-slate-300 tabular-nums">Gross Amount ({batchReceiptModal.totalHeads} × ₱250.00):</span>
+                <span className="font-semibold text-gray-900 dark:text-white tabular-nums">₱{Number(batchReceiptModal.grossAmount || 0).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center text-emerald-600 font-semibold">
+              <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold">
                 <span>Complimentary ({batchReceiptModal.freeSlots || 2} Free Slots):</span>
-                <span>-₱{Number(batchReceiptModal.discountAmount || 0).toLocaleString()}</span>
+                <span className="tabular-nums">-₱{Number(batchReceiptModal.discountAmount || 0).toLocaleString()}</span>
               </div>
               <div className="border-t border-gray-200 dark:border-slate-800 pt-2 flex justify-between items-center text-sm font-black text-gray-900 dark:text-white">
                 <span>Total Bill:</span>
-                <span className="text-indigo-600 dark:text-indigo-400">₱{Number(batchReceiptModal.netAmount || 0).toLocaleString()}</span>
+                <span className="text-indigo-600 dark:text-indigo-400 tabular-nums">₱{Number(batchReceiptModal.netAmount || 0).toLocaleString()}</span>
               </div>
 
               {batchReceiptModal.isPartial && (
                 <div className="pt-2 border-t border-dashed border-gray-300 dark:border-slate-700 space-y-1">
                   <div className="flex justify-between items-center font-bold text-blue-600 dark:text-blue-400">
                     <span>Partial Amount Paid:</span>
-                    <span>₱{Number(batchReceiptModal.partialAmount || batchReceiptModal.amountPaid || 0).toLocaleString()}</span>
+                    <span className="tabular-nums">₱{Number(batchReceiptModal.partialAmount || batchReceiptModal.amountPaid || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center font-semibold text-amber-600 dark:text-amber-400">
                     <span>Remaining Balance:</span>
-                    <span>₱{Number(batchReceiptModal.remainingBalance || 0).toLocaleString()}</span>
+                    <span className="tabular-nums">₱{Number(batchReceiptModal.remainingBalance || 0).toLocaleString()}</span>
                   </div>
                 </div>
               )}
@@ -2222,25 +2222,25 @@ export const InstitutionMembersPage = () => {
 
           return (
             <div className="space-y-4">
-              <p className="text-xs text-gray-500 dark:text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
                 {boardTargetInstitution
                   ? `Record or submit a payment for ${boardTargetInstitution.name} to reduce their registration balance. All submitted payments are reflected directly in Payment Tracking.`
                   : "Submit a partial payment to reduce your institution's registration balance. All submitted payments are recorded and will update your remaining balance immediately upon verification."}
               </p>
 
               {/* Balance Overview Snapshot */}
-              <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/60 p-4 space-y-2.5">
+              <div className="rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/60 p-4 space-y-2.5">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 font-medium">Institution Total Bill:</span>
-                  <span className="font-bold text-gray-900 dark:text-white">₱{modalTargetBill.toLocaleString()}</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Institution Total Bill:</span>
+                  <span className="font-bold text-gray-900 dark:text-white tabular-nums">₱{modalTargetBill.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-amber-600 dark:text-amber-400 font-medium">Total Paid So Far:</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">₱{modalPaidAmount.toLocaleString()}</span>
+                  <span className="text-amber-700 dark:text-amber-400 font-medium">Total Paid So Far:</span>
+                  <span className="font-bold text-amber-700 dark:text-amber-400 tabular-nums">₱{modalPaidAmount.toLocaleString()}</span>
                 </div>
                 <div className="border-t border-gray-200 dark:border-slate-800 pt-2 flex justify-between items-center text-sm font-black">
                   <span className="text-rose-600 dark:text-rose-400">Current Outstanding Balance:</span>
-                  <span className="text-rose-600 dark:text-rose-400 text-base">₱{modalRemainingBalance.toLocaleString()}</span>
+                  <span className="text-rose-600 dark:text-rose-400 text-base tabular-nums">₱{modalRemainingBalance.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -2276,7 +2276,7 @@ export const InstitutionMembersPage = () => {
                       <label className="text-xs font-bold text-gray-700 dark:text-slate-300">
                         Payment Amount (₱) *
                       </label>
-                      <span className="text-[11px] text-gray-400">
+                      <span className="text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
                         Max: ₱{modalRemainingBalance.toLocaleString()}
                       </span>
                     </div>
@@ -2332,14 +2332,14 @@ export const InstitutionMembersPage = () => {
                     />
 
                     {parseFloat(partialPaymentAmount) > 0 && (
-                      <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl space-y-1 text-xs">
+                      <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-lg space-y-1 text-xs">
                         <div className="flex justify-between items-center text-blue-900 dark:text-blue-200">
                           <span>Amount paying now:</span>
-                          <strong className="font-bold text-sm">₱{Number(partialPaymentAmount).toLocaleString()}</strong>
+                          <strong className="font-bold text-sm tabular-nums">₱{Number(partialPaymentAmount).toLocaleString()}</strong>
                         </div>
                         <div className="flex justify-between items-center text-amber-700 dark:text-amber-400 font-semibold">
                           <span>Remaining balance after this payment:</span>
-                          <strong>₱{Math.max(0, modalRemainingBalance - parseFloat(partialPaymentAmount)).toLocaleString()}</strong>
+                          <strong className="tabular-nums">₱{Math.max(0, modalRemainingBalance - parseFloat(partialPaymentAmount)).toLocaleString()}</strong>
                         </div>
                       </div>
                     )}
@@ -2432,7 +2432,7 @@ export const InstitutionMembersPage = () => {
                               <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                                 <CheckCircle2 size={14} /> Receipt attached
                               </span>
-                              <span className="text-[11px] text-gray-400">
+                              <span className="text-[11px] text-slate-600 dark:text-slate-300">
                                 {partialPaymentFile?.name || 'Receipt Proof'}
                               </span>
                             </div>

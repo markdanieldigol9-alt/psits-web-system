@@ -33,15 +33,29 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Listen to OS system color scheme changes
+  // Listen to OS system color scheme changes & cross-tab localStorage updates
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
       setSystemIsDark(e.matches);
     };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        const next = e.newValue;
+        if (next === 'light' || next === 'dark' || next === 'system') {
+          setThemeModeState(next);
+        } else if (next === null) {
+          setThemeModeState('light');
+        }
+      }
+    };
     mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const effectiveTheme: EffectiveTheme = useMemo(() => {
@@ -50,15 +64,21 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return systemIsDark ? 'dark' : 'light';
   }, [themeMode, systemIsDark]);
 
-  // Synchronize HTML element class
+  // Synchronize HTML element class, color-scheme CSS property, and <meta name="color-scheme">
   useEffect(() => {
     const root = document.documentElement;
     if (effectiveTheme === 'dark') {
       root.classList.add('dark');
+      root.style.colorScheme = 'dark';
     } else {
       root.classList.remove('dark');
+      root.style.colorScheme = 'light';
     }
-  }, [effectiveTheme]);
+    const meta = document.querySelector('meta[name="color-scheme"]');
+    if (meta) {
+      meta.setAttribute('content', themeMode === 'system' ? 'light dark' : effectiveTheme);
+    }
+  }, [effectiveTheme, themeMode]);
 
   const setThemeMode = useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);

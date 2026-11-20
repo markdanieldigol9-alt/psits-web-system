@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
 
 // ─── Button ──────────────────────────────────────────────────
@@ -93,26 +94,43 @@ export const Input = ({
   required,
   variant = 'default',
   style,
+  id,
   ...props
 }: InputProps) => {
+  const generatedId = useId();
+  const controlId = id || `input-${generatedId}`;
+  const descriptionId = error
+    ? `${controlId}-error`
+    : helperText
+    ? `${controlId}-helper`
+    : undefined;
   const isLight = variant === 'light';
   const hasSuffix = Boolean(suffixAction || suffixIcon);
 
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label className={`block text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}>
-          {label} {required && <span className="text-rose-600 dark:text-rose-400">*</span>}
+        <label
+          htmlFor={controlId}
+          className={`block text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}
+        >
+          {label} {required && <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>}
         </label>
       )}
       <div className="relative">
         {prefixIcon && (
-          <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-500' : 'text-slate-500 dark:text-slate-400'} pointer-events-none`}>
+          <div
+            aria-hidden="true"
+            className={`absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-500' : 'text-slate-500 dark:text-slate-400'} pointer-events-none`}
+          >
             {prefixIcon}
           </div>
         )}
         <input
+          id={controlId}
           required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={descriptionId}
           className={`w-full py-2.5 rounded-lg text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 ${
             isLight
               ? 'bg-white text-slate-900 placeholder:text-slate-500 hover:border-slate-300 border-slate-200 [color-scheme:light]'
@@ -137,13 +155,24 @@ export const Input = ({
             {suffixAction}
           </div>
         ) : suffixIcon ? (
-          <div className={`absolute right-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-500' : 'text-slate-500 dark:text-slate-400'} pointer-events-none`}>
+          <div
+            aria-hidden="true"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-500' : 'text-slate-500 dark:text-slate-400'} pointer-events-none`}
+          >
             {suffixIcon}
           </div>
         ) : null}
       </div>
-      {error && <p className={`text-xs font-medium animate-fade-in ${isLight ? 'text-rose-600' : 'text-rose-600 dark:text-rose-400'}`}>{error}</p>}
-      {helperText && !error && <p className={`text-xs font-medium ${isLight ? 'text-slate-600' : 'text-slate-600 dark:text-slate-400'}`}>{helperText}</p>}
+      {error && (
+        <p id={`${controlId}-error`} className={`text-xs font-medium animate-fade-in ${isLight ? 'text-rose-600' : 'text-rose-600 dark:text-rose-400'}`}>
+          {error}
+        </p>
+      )}
+      {helperText && !error && (
+        <p id={`${controlId}-helper`} className={`text-xs font-medium ${isLight ? 'text-slate-600' : 'text-slate-600 dark:text-slate-400'}`}>
+          {helperText}
+        </p>
+      )}
     </div>
   );
 };
@@ -168,8 +197,12 @@ export const Select = ({
   hidePlaceholder = false,
   variant = 'default',
   style,
+  id,
   ...props
 }: SelectProps) => {
+  const generatedId = useId();
+  const controlId = id || `select-${generatedId}`;
+  const errorId = error ? `${controlId}-error` : undefined;
   const hasEmptyOption = options.some((o) => o.value === '');
   const filteredOptions = hasEmptyOption ? options.filter((o) => o.value !== '') : options;
   const isLight = variant === 'light';
@@ -177,12 +210,18 @@ export const Select = ({
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label className={`block text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}>
-          {label} {required && <span className="text-rose-600 dark:text-rose-400">*</span>}
+        <label
+          htmlFor={controlId}
+          className={`block text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}
+        >
+          {label} {required && <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>}
         </label>
       )}
       <select
+        id={controlId}
         required={required}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errorId}
         className={`w-full px-3.5 py-2.5 rounded-lg text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 appearance-none cursor-pointer ${
           isLight
             ? 'bg-white text-slate-900 border border-slate-200 hover:border-slate-300 [color-scheme:light]'
@@ -219,7 +258,11 @@ export const Select = ({
           </option>
         ))}
       </select>
-      {error && <p className={`text-xs font-medium animate-fade-in ${isLight ? 'text-rose-600' : 'text-rose-600 dark:text-rose-400'}`}>{error}</p>}
+      {error && (
+        <p id={errorId} className={`text-xs font-medium animate-fade-in ${isLight ? 'text-rose-600' : 'text-rose-600 dark:text-rose-400'}`}>
+          {error}
+        </p>
+      )}
     </div>
   );
 };
@@ -231,18 +274,27 @@ interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   variant?: 'default' | 'light';
 }
 
-export const TextArea = ({ label, error, className = '', required, variant = 'default', style, ...props }: TextAreaProps) => {
+export const TextArea = ({ label, error, className = '', required, variant = 'default', style, id, ...props }: TextAreaProps) => {
+  const generatedId = useId();
+  const controlId = id || `textarea-${generatedId}`;
+  const errorId = error ? `${controlId}-error` : undefined;
   const isLight = variant === 'light';
 
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label className={`block text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}>
-          {label} {required && <span className="text-rose-600 dark:text-rose-400">*</span>}
+        <label
+          htmlFor={controlId}
+          className={`block text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}
+        >
+          {label} {required && <span className="text-rose-600 dark:text-rose-400" aria-hidden="true">*</span>}
         </label>
       )}
       <textarea
+        id={controlId}
         required={required}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errorId}
         className={`w-full px-3.5 py-2.5 rounded-lg text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 resize-y ${
           isLight
             ? 'bg-white text-slate-900 placeholder:text-slate-500 border border-slate-200 hover:border-slate-300 [color-scheme:light]'
@@ -260,7 +312,11 @@ export const TextArea = ({ label, error, className = '', required, variant = 'de
         }}
         {...props}
       />
-      {error && <p className={`text-xs font-medium animate-fade-in ${isLight ? 'text-rose-600' : 'text-rose-600 dark:text-rose-400'}`}>{error}</p>}
+      {error && (
+        <p id={errorId} className={`text-xs font-medium animate-fade-in ${isLight ? 'text-rose-600' : 'text-rose-600 dark:text-rose-400'}`}>
+          {error}
+        </p>
+      )}
     </div>
   );
 };

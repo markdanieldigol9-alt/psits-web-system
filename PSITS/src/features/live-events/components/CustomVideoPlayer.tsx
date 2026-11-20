@@ -346,7 +346,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
         {/* Top Header Bar */}
         <div className="flex items-center justify-between text-white drop-shadow-md">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono tabular-nums font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
               {selectedQuality}
             </span>
             {title && <span className="text-xs sm:text-sm font-semibold truncate max-w-md">{title}</span>}

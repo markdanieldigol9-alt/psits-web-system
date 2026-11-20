@@ -682,17 +682,22 @@ export const EventWinnersReportView = ({
         </div>
 
         {/* Structured Winners Data Table */}
-        <div className="overflow-x-auto max-h-[500px] overflow-y-auto print:overflow-visible print:max-h-none">
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Event winners report table"
+          className="overflow-x-auto max-h-[500px] overflow-y-auto print:overflow-visible print:max-h-none"
+        >
           <table className="w-full text-left border-collapse text-xs" data-testid="event-winners-table">
             <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 sticky top-0 z-10 print:static">
               <tr>
-                <th className="px-2.5 py-2.5 text-right w-10 tabular-nums">#</th>
-                <th className="px-3 py-2.5">Event Title</th>
-                <th className="px-2.5 py-2.5">Category</th>
-                <th className="px-2.5 py-2.5">Mode</th>
-                <th className="px-2.5 py-2.5 text-center">Event Status</th>
-                <th className="px-2.5 py-2.5 text-right tabular-nums">Rank</th>
-                <th className="px-3 py-2.5">Award Title</th>
+                <th scope="col" className="px-2.5 py-2.5 text-right w-10 tabular-nums">#</th>
+                <th scope="col" className="px-3 py-2.5">Event Title</th>
+                <th scope="col" className="px-2.5 py-2.5">Category</th>
+                <th scope="col" className="px-2.5 py-2.5">Mode</th>
+                <th scope="col" className="px-2.5 py-2.5 text-center">Event Status</th>
+                <th scope="col" className="px-2.5 py-2.5 text-right tabular-nums">Rank</th>
+                <th scope="col" className="px-3 py-2.5">Award Title</th>
                 <th className="px-3 py-2.5">Winner (Participant / Team)</th>
                 <th className="px-3 py-2.5">Institution / School</th>
                 <th className="px-2.5 py-2.5 text-right tabular-nums">Points</th>
